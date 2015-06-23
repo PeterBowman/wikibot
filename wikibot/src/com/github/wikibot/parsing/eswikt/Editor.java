@@ -122,6 +122,7 @@ public class Editor extends EditorBase {
 		//formatted = formatted.replaceAll("<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->\n?", "");
+		formatted = formatted.replaceAll("<!--\\s*$", "");
 		
 		checkDifferences(original, formatted, "removeComments", "eliminando comentarios");
 	}
@@ -308,8 +309,14 @@ public class Editor extends EditorBase {
 			// TODO: review, catch special cases
 			
 			boolean isEmpty = true;
+			LangSection langSectionParent = section.getLangSectionParent();
 			
-			if (header.matches("^Etimolog(i|í)a \\d+$")) {
+			if (
+				header.matches("^Etimolog(i|í)a \\d+$") && !(
+					langSectionParent != null &&
+					langSectionParent.findSubSectionsWithHeader("^Etimolog(i|í)a.*").size() == 1
+				)
+			) {
 				if (!content.isEmpty()) {
 					section.setIntro(content);
 					isEmpty = false;
@@ -348,6 +355,10 @@ public class Editor extends EditorBase {
 					}
 				}
 			} else {
+				// In case there is one single "Etimología 1" section in the current LangSection parent
+				
+				section.setHeader("Etimología");
+				
 				// Move etymology template to the newly created etymology section
 				
 				Pattern tempPatt = Pattern.compile("\n?(\\{\\{(?:e|E)timología[^\n]+)", Pattern.DOTALL);
@@ -372,7 +383,7 @@ public class Editor extends EditorBase {
 			if (isEmpty) {
 				HashMap<String, String> params = new LinkedHashMap<String, String>();
 				params.put("templateName", "etimología");
-				String langCode = section.getLangSectionParent().getLangCode().toLowerCase();
+				String langCode = langSectionParent.getLangCode().toLowerCase();
 				
 				if (!langCode.equals("es")) {
 					params.put("leng", langCode);
@@ -478,6 +489,7 @@ public class Editor extends EditorBase {
 
 	public void rearrangeSubsections() {
 		// TODO: satura, review sortSections (intermediate Sections - between LangSections)
+		// TODO: tagua tagua (single, numbered etymology sections), temporarily fixed in transformToNewStructure
 		String original = this.text;
 		Page page = Page.store(title, original);
 		Section references = page.getReferencesSection();
@@ -1061,7 +1073,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "insectario";
+		String title = "tagua tagua";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
