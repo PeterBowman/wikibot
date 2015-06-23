@@ -5,7 +5,7 @@
               directory with the processing instruction <?eclipse.ant.import?>
               as the first entry and export the buildfile again. --><project basedir="." default="build" name="wikibot">
     <property environment="env"/>
-    <property name="wiki-java.location" value="../../../Documents/Eclipse/workspace/wiki-java"/>
+    <property name="wiki-java.location" value="../wiki-java"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.8"/>
     <property name="source" value="1.8"/>
