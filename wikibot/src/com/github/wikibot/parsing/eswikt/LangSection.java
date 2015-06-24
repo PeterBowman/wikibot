@@ -175,7 +175,7 @@ public class LangSection extends Section {
 			Collections.sort(childSections);
 		} else {
 			for (Section etymologySection : etymologySections) {
-				List<Section> childSections = etymologySection.getChildSections();
+				List<Section> childSections = (List<Section>) etymologySection.getChildSections();
 				
 				if (childSections != null) {
 					Collections.sort(childSections);

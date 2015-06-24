@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -158,8 +159,8 @@ public final class Page extends PageBase<Section> {
 		}
 	}
 	
-	public List<LangSection> getAllLangSections() {
-		return langSections;
+	public Collection<LangSection> getAllLangSections() {
+		return Collections.unmodifiableCollection(new ArrayList<LangSection>(langSections));
 	}
 
 	public Section getReferencesSection() {

@@ -2,6 +2,7 @@ package com.github.wikibot.parsing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -92,8 +93,8 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		}
 	}
 	
-	public List<T> getAllSections() {
-		return sections;
+	public Collection<T> getAllSections() {
+		return Collections.unmodifiableCollection(new ArrayList<T>(sections));
 	}
 	
 	public void normalizeChildLevels() {

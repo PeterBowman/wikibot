@@ -2,6 +2,7 @@ package com.github.wikibot.parsing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -174,12 +175,12 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		return parentSection;
 	}
 	
-	public List<T> getSiblingSections() {
-		return siblingSections;
+	public Collection<T> getSiblingSections() {
+		return Collections.unmodifiableCollection(new ArrayList<T>(siblingSections));
 	}
 	
-	public List<T> getChildSections() {
-		return childSections;
+	public Collection<T> getChildSections() {
+		return Collections.unmodifiableCollection(new ArrayList<T>(childSections));
 	}
 	
 	public T nextSection() {
@@ -390,10 +391,6 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		}
 		
 		setLevel(level + diff);
-		
-		if (containingPage != null) {
-			containingPage.buildSectionTree();
-		}
 	}
 	
 	public List<T> findSubSectionsWithHeader(String regex) {
