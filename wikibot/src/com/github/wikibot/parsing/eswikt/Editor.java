@@ -49,16 +49,20 @@ public class Editor extends EditorBase {
 	
 	public Editor(Page page) {
 		super(page.getTitle(), page.toString());
-		
+		checkOldStructure();
+	}
+	
+	public Editor(PageContainer pc) {
+		super(pc.getTitle(), pc.getText());
+		checkOldStructure();
+	}
+	
+	private void checkOldStructure() {
 		if (text.contains("{{ES") || text.contains("-ES}}") || text.contains("-ES|")) {
 			isOldStructure = true;
 		} else {
 			isOldStructure = false;
 		}
-	}
-	
-	public Editor(PageContainer pc) {
-		super(pc.getTitle(), pc.getText());
 	}
 	
 	@Override
