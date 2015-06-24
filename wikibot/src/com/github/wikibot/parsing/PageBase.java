@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -14,7 +13,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
@@ -140,7 +138,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	protected void extractSections(String text, Function<String, T> func, Pattern pSection) {
-		List<Range<Integer>> ignoredRanges = getIgnoredRanges(text);
+		List<Range<Integer>> ignoredRanges = Utils.getIgnoredRanges(text);
 		Matcher m = pSection.matcher(text);
 		StringBuffer sb = new StringBuffer(1000);
 		List<String> sections = new ArrayList<String>();
@@ -182,37 +180,6 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		}
 		
 		buildSectionTree();
-	}
-	
-	private List<Range<Integer>> getIgnoredRanges(String text) {
-		Range<Integer>[] comments = Utils.findRanges(text, "<!--", "-->");
-		Range<Integer>[] nowikis = Utils.findRanges(text, "<nowiki>", "</nowiki>");
-		Range<Integer>[] pres = Utils.findRanges(text, Pattern.compile("<pre(?: |>).+?</pre>", Pattern.DOTALL));
-		Range<Integer>[] codes = Utils.findRanges(text, Pattern.compile("<code(?: |>).+?</code>", Pattern.DOTALL));
-		
-		List<Range<Integer>> ranges = Arrays.asList(comments, nowikis, pres, codes)
-			.stream()
-			.filter(Objects::nonNull)
-			.flatMap(array -> Stream.of(array))
-			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
-			.collect(Collectors.toList());
-		
-		ListIterator<Range<Integer>> iterator = ranges.listIterator(ranges.size());
-		
-		while (iterator.hasPrevious()) {
-			Range<Integer> range = iterator.previous();
-			int previousIndex = iterator.previousIndex();
-			
-			if (previousIndex != -1) {
-				Range<Integer> range2 = ranges.get(previousIndex);
-				
-				if (range2.isOverlappedBy(range)) {
-					iterator.remove();
-				}
-			}
-		}
-		
-		return ranges;
 	}
 	
 	protected void extractIntro() {
