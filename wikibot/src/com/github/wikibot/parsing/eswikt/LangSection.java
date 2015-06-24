@@ -179,7 +179,9 @@ public class LangSection extends Section {
 			}
 		}
 		
-		((Page) containingPage).buildSectionTree();
+		if (containingPage != null) {
+			((Page) containingPage).buildSectionTree();
+		}
 	}
 
 	@Override
