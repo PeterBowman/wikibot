@@ -21,7 +21,7 @@ public abstract class EditorBase {
 		this.notifyModifications = false;
 		this.logger = new ArrayList<String>();
 		this.title = title;
-		this.text = PageBase.sanitizeWhiteSpaces(text);
+		this.text = Utils.sanitizeWhitespaces(text);
 	}
 	
 	public String getPageText() {

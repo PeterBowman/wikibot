@@ -10,6 +10,7 @@ import javax.security.auth.login.FailedLoginException;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.PageBase;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
@@ -21,7 +22,7 @@ public final class Page extends PageBase<Section> implements Serializable {
 		super(title);
 		
 		if (text != null && !text.isEmpty()) {
-			text = sanitizeWhiteSpaces(text);
+			text = Utils.sanitizeWhitespaces(text);
 			extractSections(text);
 		}
 	}

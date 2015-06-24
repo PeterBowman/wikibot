@@ -21,6 +21,7 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.PageBase;
 import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
@@ -62,7 +63,7 @@ public final class Page extends PageBase<Section> {
 		this.trailingContent = "";
 
 		if (text != null && !text.isEmpty()) {
-			text = sanitizeWhiteSpaces(text);
+			text = Utils.sanitizeWhitespaces(text);
 			extractSections(text);
 		}
 	}

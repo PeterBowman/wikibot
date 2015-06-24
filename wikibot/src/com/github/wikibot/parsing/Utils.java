@@ -46,4 +46,10 @@ public final class Utils {
 		
 		return list.toArray(new Range[list.size()]);
 	}
+
+	public static String sanitizeWhitespaces(String text) {
+		text = text.replaceAll("[ ]{2,}", " ");
+		text = text.replace(" \n", "\n");
+		return text;
+	}
 }

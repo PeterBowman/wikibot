@@ -135,12 +135,6 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		Collections.sort(sections, comparator);
 	}
 	
-	protected static String sanitizeWhiteSpaces(String text) {
-		text = text.replaceAll("[ ]{2,}", " ");
-		text = text.replace(" \n", "\n");
-		return text;
-	}
-	
 	protected void extractSections(String text, Function<String, T> func) {
 		extractSections(text, func, P_SECTION);
 	}
