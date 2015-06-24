@@ -250,14 +250,6 @@ public class Editor extends EditorBase {
 		
 		page = Page.store(page.getTitle(), newText);
 		
-		// TODO: make getAllSections return an Array?
-		for (Section section : page.getAllSections().toArray(new Section[page.getAllSections().size()])) {
-			section.setLevel(section.getLevel() + 1);
-		}
-		
-		// TODO: add a method to reparse all Sections?
-		page = Page.store(page.getTitle(), page.toString());
-		
 		for (Section section : page.getAllSections()) {
 			section.setLevel(section.getLevel() + 1);
 		}
