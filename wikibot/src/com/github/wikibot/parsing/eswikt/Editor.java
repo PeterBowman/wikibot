@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -251,6 +250,14 @@ public class Editor extends EditorBase {
 		newText = newText.replaceAll("\\{\\{transic\\}\\}\n?", "");
 		
 		page = Page.store(page.getTitle(), newText);
+		
+		// TODO: make getAllSections return an Array?
+		for (Section section : page.getAllSections().toArray(new Section[page.getAllSections().size()])) {
+			section.setLevel(section.getLevel() + 1);
+		}
+		
+		// TODO: add a method to reparse all Sections?
+		page = Page.store(page.getTitle(), page.toString());
 		
 		for (Section section : page.getAllSections()) {
 			section.setLevel(section.getLevel() + 1);
@@ -1058,12 +1065,13 @@ public class Editor extends EditorBase {
 		
 		String text = null;
 		String title = "insectario";
+		//String title = "árido";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
