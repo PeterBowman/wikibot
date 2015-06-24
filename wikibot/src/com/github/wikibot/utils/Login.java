@@ -107,7 +107,7 @@ public class Login {
 				wiki.logout();
 				login(wiki, user);
 			}
-		} catch (ClassNotFoundException | IOException e2) {
+		} catch (ClassCastException | ClassNotFoundException | IOException e2) {
 			System.out.println(e2.getMessage());
 			
 			switch (domain) {
