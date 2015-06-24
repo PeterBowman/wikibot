@@ -123,8 +123,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[ ˈ \\]\\}\\}.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- ?en general, no se indica la etimología .+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->\n?", "");
-		// TODO
-		//formatted = formatted.replaceAll("<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->\n?", "");
+		formatted = formatted.replaceAll("<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->\n?", "");
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
