@@ -247,10 +247,17 @@ public class Editor extends EditorBase {
 		
 		newText = newText.replaceAll("=+? *?<small>(Referencias.*?)</small> *?=+", "=$1=");
 		newText = newText.replaceAll("=+? *?(Referencias.*?) *?=+", "=$1=");
-		newText = newText.replaceAll("(?m)^(=+?)(.+?)(=+?)$", "=$1$2$3=");
 		newText = newText.replaceAll("\\{\\{transic\\}\\}\n?", "");
 		
 		page = Page.store(page.getTitle(), newText);
+		
+		// TODO: make getAllSections return an Array?
+		for (Section section : page.getAllSections().toArray(new Section[page.getAllSections().size()])) {
+			section.setLevel(section.getLevel() + 1);
+		}
+		
+		// TODO: add a method to reparse all Sections?
+		page = Page.store(page.getTitle(), page.toString());
 		
 		// Rearrange etymology sections
 		
@@ -1079,13 +1086,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "che";
+		String title = "árido";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);

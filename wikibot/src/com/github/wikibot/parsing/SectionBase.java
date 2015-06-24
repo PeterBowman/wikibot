@@ -390,10 +390,6 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		}
 		
 		setLevel(level + diff);
-		
-		if (containingPage != null) {
-			containingPage.buildSectionTree();
-		}
 	}
 	
 	public List<T> findSubSectionsWithHeader(String regex) {
