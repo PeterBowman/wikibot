@@ -171,7 +171,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		for (int i = 1; i < sections.size(); i++) {
 			String sectionText = sections.get(i);
 			
-			if (sectionText.endsWith("\n")) {
+			if (sectionText.endsWith("\n") && i < sections.size() - 1) {
 				sectionText = sectionText.substring(0, sectionText.length() - 1);
 			}
 			
