@@ -124,10 +124,12 @@ public final class Page extends PageBase<Section> {
 		}
 	}
 	
+	// TODO: move to parsing.Page
 	private void extractTrailingContent(Section lastSection) {
 		String content = lastSection.getIntro();
 		List<String> excluded = new ArrayList<String>(Arrays.asList(INTERWIKI_PREFIXES));
-		excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
+		// TODO: review per [[Especial:Diff/2709872]]
+		//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
 		String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
 		Matcher m = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher("\n" + content);
 		

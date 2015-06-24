@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -126,6 +127,7 @@ public class Editor extends EditorBase {
 		//formatted = formatted.replaceAll("<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.+?-->\n?", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->\n?", "");
+		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		formatted = formatted.replaceAll("<!--\\s*$", "");
 		
 		checkDifferences(original, formatted, "removeComments", "eliminando comentarios");
@@ -144,7 +146,7 @@ public class Editor extends EditorBase {
 		if (!isOldStructure ||
 			original.contains("{{lengua|") ||
 			original.contains("{{TRANS") ||
-			//original.contains("{{TRANSLIT|") ||
+			original.contains("{{TRANSLIT|") ||
 			original.contains("{{Chono-ES") ||
 			original.contains("{{Protopolinesio-ES") ||
 			original.contains("{{carácter oriental") ||
@@ -171,6 +173,7 @@ public class Editor extends EditorBase {
 			
 			if (name.equals("TRANSLIT")) {
 				params.put("templateName", "translit");
+				name = params.get("ParamWithoutName2");
 			} else {
 				name = name.replace("-ES", "");
 				params.put("templateName", "lengua");
@@ -314,12 +317,11 @@ public class Editor extends EditorBase {
 			
 			boolean isEmpty = true;
 			LangSection langSectionParent = section.getLangSectionParent();
+			Section nextParentSiblingSection = (langSectionParent != null) ? langSectionParent.nextSiblingSection() : null;
 			
 			if (
-				header.matches("^Etimolog(i|í)a \\d+$") && !(
-					langSectionParent != null &&
-					langSectionParent.findSubSectionsWithHeader("^Etimolog(i|í)a.*").size() == 1
-				)
+				header.matches("^Etimología \\d+$") &&
+				!(nextParentSiblingSection instanceof LangSection)
 			) {
 				if (!content.isEmpty()) {
 					section.setIntro(content);
@@ -627,7 +629,7 @@ public class Editor extends EditorBase {
 						
 						if (param1 != null && (
 							param1.isEmpty() || param1.equals("-") || param1.equals("[]") ||
-							param1.equals("//") || param1.equals("...")
+							param1.equals("//") || param1.equals("...") || param1.equals("ˈ")
 						)) {
 							param1 = null;
 						}
@@ -1077,13 +1079,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "tagua tagua";
+		String title = "che";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
