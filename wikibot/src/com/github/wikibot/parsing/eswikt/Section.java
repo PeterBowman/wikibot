@@ -1,6 +1,7 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,6 +50,14 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 		}
 		
 		return null;
+	}
+	
+	void sortSections() {
+		if (childSections == null) {
+			return;
+		}
+		
+		Collections.sort(childSections);
 	}
 
 	@Override

@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -251,8 +252,7 @@ public class Editor extends EditorBase {
 		
 		page = Page.store(page.getTitle(), newText);
 		
-		// TODO: make getAllSections return an Array?
-		for (Section section : page.getAllSections().toArray(new Section[page.getAllSections().size()])) {
+		for (Section section : page.getAllSections()) {
 			section.setLevel(section.getLevel() + 1);
 		}
 		
@@ -260,8 +260,6 @@ public class Editor extends EditorBase {
 		page = Page.store(page.getTitle(), page.toString());
 		
 		// Rearrange etymology sections
-		
-		List<Section> deleteTempList = new ArrayList<Section>();
 		
 		for (Section section : page.getAllSections()) {
 			String header = section.getHeader();
@@ -338,7 +336,7 @@ public class Editor extends EditorBase {
 						previousSection.setIntro("");
 						previousSection.setTrailingNewlines(1);
 					} else {
-						deleteTempList.add(previousSection);
+						previousSection.detachOnlySelf();
 					}
 					
 					// Search for the etymology template and move it to the last line
@@ -408,15 +406,9 @@ public class Editor extends EditorBase {
 			section.setTrailingNewlines(1);
 		}
 		
-		for (Section section : deleteTempList) {
-			section.detachOnlySelf();
-		}
-		
 		page.normalizeChildLevels();
 		
 		// Check section levels
-		
-		Map<Section, Integer> pushLevelsTempMap = new LinkedHashMap<Section, Integer>();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			Collection<Section> childSections = langSection.getChildSections();
@@ -443,7 +435,7 @@ public class Editor extends EditorBase {
 				}
 				
 				for (Section child : etymologyChildren) {
-					pushLevelsTempMap.put(child, -1);
+					child.pushLevels(-1);
 				}
 			} else {
 				for (Section sibling : childSections) {
@@ -451,15 +443,9 @@ public class Editor extends EditorBase {
 						continue;
 					}
 					
-					pushLevelsTempMap.put(sibling, 1);
+					sibling.pushLevels(1);
 				}
 			}
-		}
-		
-		for (Entry<Section, Integer> entry : pushLevelsTempMap.entrySet()) {
-			Section section = entry.getKey();
-			int diff = entry.getValue();
-			section.pushLevels(diff);
 		}
 		
 		String formatted = page.toString();
@@ -861,7 +847,6 @@ public class Editor extends EditorBase {
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
 		String original = this.text;
 		Page page = Page.store(title, original);
-		Map<LangSection, LangSection> replacementMap = new LinkedHashMap<LangSection, LangSection>();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String langCode = langSection.getLangCode().toLowerCase();
@@ -902,16 +887,8 @@ public class Editor extends EditorBase {
 			
 			if (sectionModified) {
 				LangSection newLangSection = LangSection.parse(content);
-				replacementMap.put(langSection, newLangSection);
+				langSection.replaceWith(newLangSection);
 			}
-		}
-		
-		if (replacementMap.isEmpty()) {
-			return;
-		}
-		
-		for (Entry<LangSection, LangSection> entry : replacementMap.entrySet()) {
-			entry.getKey().replaceWith(entry.getValue());
 		}
 		
 		String formatted = page.toString();
@@ -929,8 +906,6 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		List<Section> deleteList = new ArrayList<Section>();
-		
 		for (Section section : allReferences) {
 			if (
 				section.getChildSections() == null &&
@@ -942,13 +917,9 @@ public class Editor extends EditorBase {
 				content = content.trim();
 				
 				if (content.isEmpty()) {
-					deleteList.add(section);
+					section.detachOnlySelf();
 				}
 			}
-		}
-		
-		for (Section section : deleteList) {
-			section.detachOnlySelf();
 		}
 		
 		String formatted = page.toString();
@@ -1086,13 +1057,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "árido";
+		String title = "insectario";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
