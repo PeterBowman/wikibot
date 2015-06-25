@@ -72,7 +72,7 @@ public final class MaintenanceScript {
 		
 		List<String> titles = new ArrayList<String>(Stream
 			.of(wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wikibot.MAIN_NAMESPACE))
-			.map(rev -> rev.getPage())
+			.map(Revision::getPage)
 			.collect(Collectors.toCollection(LinkedHashSet::new)));
 		
 		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(new String[titles.size()])))
