@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -939,17 +938,32 @@ public class Editor extends EditorBase {
 		String original = this.text;
 		Page page = Page.store(title, original);
 		Section references = page.getReferencesSection();
+		boolean onlyTag = false;
 		
-		if (page.getAllSections().isEmpty() || references != null || page.hasSectionWithHeader(".*?Referencias.*")) {
+		if (page.getAllSections().isEmpty() || (references == null && page.hasSectionWithHeader(".*?Referencias.*"))) {
 			return;
 		}
 		
-		references = Section.create("Referencias y notas", 2);
-		references.setIntro("<references />");
-		page.setReferencesSection(references);
+		if (references == null) {
+			references = Section.create("Referencias y notas", 2);
+			references.setIntro("<references />");
+			page.setReferencesSection(references);
+		} else {
+			String intro = references.getIntro();
+			
+			// TODO: check other elements (templates, manually introduced references...)
+			if (!intro.isEmpty()) {
+				return;
+			}
+			
+			references.setIntro("<references />");
+			onlyTag = true;
+		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "addMissingReferencesSection", "añadiendo título de referencias y notas");
+		String summary = onlyTag ? "añadiendo <references>" : "añadiendo título de referencias y notas";
+		
+		checkDifferences(original, formatted, "addMissingReferencesSection", summary);
 	}
 	
 	public void sortSubSections() {
@@ -1057,13 +1071,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "árido";
+		String title = "tiquear";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
