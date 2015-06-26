@@ -854,6 +854,27 @@ public class Wikibot extends WMFWiki {
 		}
     }
     
+	/**
+	 *  Purges the server-side cache for various pages
+	 *  and update the links tables recursively.
+	 *  @param titles the titles of the page to purge
+	 *  @throws IOException if a network error occurs
+	 *  @since 0.17
+	 */
+	public void purgeRecursive(String... titles) throws IOException {
+		StringBuilder url = new StringBuilder(apiUrl);
+		url.append("action=purge");
+		url.append("&forcerecursivelinkupdate=");
+		
+		String[] temp = constructTitleString(titles);
+		
+		for (String x : temp) {
+			post(url.toString(), "&titles=" + x, "purgeRecursive");
+		}
+		
+		log(Level.INFO, "purgeRecursive", "Successfully purged " + titles.length + " pages.");
+	}
+    
     public void fetchRequest(Map<String, String> params, String tag, Consumer<String> cons) throws IOException {
     	List<String> temp = new ArrayList<String>(params.size());
     	
