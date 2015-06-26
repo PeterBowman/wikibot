@@ -23,9 +23,11 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class ReviewPolishGerunds implements Selectorizable {
 	private static PLWikt wb;
@@ -38,16 +40,14 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb, false);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				getLists();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'r':
-				wb = new PLWikt();
-				Login.login(wb, false);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				review();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

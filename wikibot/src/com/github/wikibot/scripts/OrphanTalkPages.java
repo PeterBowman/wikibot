@@ -11,13 +11,14 @@ import javax.security.auth.login.LoginException;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Users;
 
 public class OrphanTalkPages {
 	@SuppressWarnings({ "rawtypes" })
 	public static void main(String[] args) throws IOException, LoginException {
-		PLWikt wb = new PLWikt();
-		Login.login(wb, true);
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 		Integer[] namespaces = new Integer[]{
 			PLWikt.TALK_NAMESPACE,
 			//PLWikt.USER_TALK_NAMESPACE,
@@ -65,5 +66,7 @@ public class OrphanTalkPages {
 		
 		System.out.printf("Tamaño de la lista: %d%n", missing.size());
 		IOUtils.writeToFile(String.join("\n", missing), "./test2.txt");
+		
+		Login.saveSession(wb);
 	}
 }

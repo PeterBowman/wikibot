@@ -28,10 +28,12 @@ import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.RAE;
+import com.github.wikibot.utils.Users;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
 	private static PLWikt wb;
@@ -45,10 +47,9 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			case '1':
 			case '2':
 			case '3':
-				wb = new PLWikt();
-				Login.login(wb, op == '3');
+				wb = Login.retrieveSession(Domains.PLWIKT, op != '3' ? Users.User1 : Users.User2);
 				process(op == '1', op != '3');
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '4':
 				String source = locationser + "hashmap.ser";

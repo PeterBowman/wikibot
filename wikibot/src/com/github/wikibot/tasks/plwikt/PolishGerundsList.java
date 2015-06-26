@@ -25,10 +25,12 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.scripts.plwikt.MissingPolishGerunds;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public class PolishGerundsList implements Selectorizable {
 	private static PLWikt wb;
@@ -40,37 +42,32 @@ public class PolishGerundsList implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				foreignGerunds();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = new PLWikt();
-				Login.login(wb);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				//incorrectFormat();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = new PLWikt();
-				Login.login(wb);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				makeLists();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'm':
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				//writeFormat();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				writeLists();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

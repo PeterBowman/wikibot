@@ -1050,7 +1050,7 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		
 		formatted = formatted.replaceAll("<references */ *>", "<references />");
-		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // might be strong whitespace
+		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
 		
 		checkDifferences(original, formatted, "weakWhitespaces", null);
 	}

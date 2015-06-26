@@ -9,17 +9,18 @@ import org.wikipedia.Wiki.Revision;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Users;
 
 public final class Rollback {
 	private static Wikibot wb;
-	private static final String domain = "pl.wiktionary.org";
+	private static final Domains domain = Domains.PLWIKT;
 	private static final String location = "./data/scripts/Rollback/";
 	private static final String worklist = location + "worklist.txt";
 	
 	public static void main(String[] args) throws IOException, LoginException {
-		wb = new Wikibot(domain);
-		Login.login(wb);
+		wb = Login.retrieveSession(domain, Users.User1);
 		wb.setThrottle(2000);
 		
 		String[] titles = IOUtils.loadFromFile(worklist, "", "UTF8");
@@ -34,5 +35,7 @@ public final class Rollback {
 		f.delete();
 		(new File (worklist)).renameTo(f);
 		(new File(worklist)).createNewFile();
+		
+		Login.saveSession(wb);
 	}
 }

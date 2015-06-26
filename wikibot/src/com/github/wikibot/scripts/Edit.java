@@ -24,13 +24,15 @@ import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class Edit implements Selectorizable {
 	private static Wikibot wb;
-	private static final String domain = "pl.wiktionary.org";
+	private static final Domains domain = Domains.PLWIKT;
 	private static final String location = "./data/scripts/Edit/";
 	private static final String locationser = location + "ser/";
 	private static final String difflist = location + "difflist.txt";
@@ -43,37 +45,32 @@ public final class Edit implements Selectorizable {
 				getList();
 				break;
 			case '2':
-				wb = new Wikibot(domain);
-				Login.login(wb, false);
+				wb = Login.retrieveSession(domain, Users.User1);
 				makeList();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '3':
 				makeList2();
 				break;
 			case '4':
-				wb = new Wikibot(domain);
-				Login.login(wb, false);
+				wb = Login.retrieveSession(domain, Users.User1);
 				makeList3();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'd':
-				wb = new Wikibot(domain);
-				Login.login(wb, false);
+				wb = Login.retrieveSession(domain, Users.User1);
 				getDiffs();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'g':
-				wb = new Wikibot(domain);
-				Login.login(wb, false);
+				wb = Login.retrieveSession(domain, Users.User1);
 				getContents();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = new Wikibot(domain);
-				Login.login(wb, true);
+				wb = Login.retrieveSession(domain, Users.User2);
 				edit();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

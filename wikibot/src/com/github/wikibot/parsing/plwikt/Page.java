@@ -7,12 +7,13 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.login.FailedLoginException;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.PageBase;
 import com.github.wikibot.parsing.Utils;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class Page extends PageBase<Section> implements Serializable {
 	private static final long serialVersionUID = 4112162751333437538L;
@@ -133,8 +134,7 @@ public final class Page extends PageBase<Section> implements Serializable {
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wiki = new PLWikt();
-		Login.login(wiki);
+		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 		String text = wiki.getPageText("rescate");
 		Page page = Page.store("rescate", text);
 		Section esp = page.getSection("język hiszpański");

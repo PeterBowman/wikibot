@@ -2,7 +2,8 @@ package com.github.wikibot.utils;
 
 public enum Domains {
 	PLWIKT ("pl.wiktionary.org"),
-	ESWIKT ("es.wiktionary.org");
+	ESWIKT ("es.wiktionary.org"),
+	PLQUOTE ("pl.wikiquote.org");
 	
 	private String domain;
 	

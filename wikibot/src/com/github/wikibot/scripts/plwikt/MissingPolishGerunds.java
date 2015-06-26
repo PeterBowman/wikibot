@@ -21,9 +21,11 @@ import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class MissingPolishGerunds implements Selectorizable {
 	private static PLWikt wb;
@@ -40,31 +42,27 @@ public final class MissingPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				checkGerunds();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = new PLWikt();
-				Login.login(wb);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				getMissing();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '3':
 				makeArrayLists();
 				break;
 			case '8':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				writeAff();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '9':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				writeNeg();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

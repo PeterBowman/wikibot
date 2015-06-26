@@ -14,11 +14,12 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.github.wikibot.utils.Users;
 
 public final class OlafbotTilde implements Selectorizable {
 	private static Wikibot wb;
@@ -37,10 +38,9 @@ public final class OlafbotTilde implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb, false);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				//getList();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '2':
 				getEntries();
@@ -64,10 +64,9 @@ public final class OlafbotTilde implements Selectorizable {
 				Misc.serialize(471, locationser + "stats.ser");
 				break;
 			case 'e':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				edit();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

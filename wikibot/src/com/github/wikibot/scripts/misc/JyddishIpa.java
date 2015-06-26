@@ -22,9 +22,11 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public class JyddishIpa implements Selectorizable {
 	private static final String location = "./data/scripts.misc/JyddishIpa/";
@@ -33,22 +35,19 @@ public class JyddishIpa implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				getList(false, false);
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				getList(true, false);
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				getList(true, true);
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

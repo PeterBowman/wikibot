@@ -18,9 +18,11 @@ import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	private static PLWikt wb;
@@ -30,19 +32,18 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = new PLWikt();
-				Login.login(wb, false);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 				getList();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			case '2':
 				makePreview();
 				break;
 			case 'e':
 				wb = new PLWikt();
-				Login.login(wb, true);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
 				edit();
-				wb.logout();
+				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
