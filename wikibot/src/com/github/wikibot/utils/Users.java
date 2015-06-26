@@ -1,19 +1,31 @@
 package com.github.wikibot.utils;
 
+import java.util.stream.Stream;
+
 public enum Users {
-	User1 ("Peter Bowman", "peterbowman", true, false),
-	User2 ("PBbot", "pbbot", false, true);
+	User1 (
+			"Peter Bowman",
+			"peterbowman",
+			new Domains[] {Domains.PLWIKT, Domains.ESWIKT},
+			new Domains[] {}
+		),
+	User2 (
+			"PBbot",
+			"pbbot",
+			new Domains[] {},
+			new Domains[] {Domains.PLWIKT, Domains.ESWIKT}
+		);
 	
 	private String username;
 	private String alias;
-	private boolean isSysop;
-	private boolean isBot;
+	private Domains[] hasSysop;
+	private Domains[] hasBot;
 	
-	private Users(String username, String alias, boolean isSysop, boolean isBot) {
+	private Users(String username, String alias, Domains[] hasSysop, Domains[] hasBot) {
 		this.username = username;
 		this.alias = alias;
-		this.isSysop = isSysop;
-		this.isBot = isBot;
+		this.hasSysop = hasSysop;
+		this.hasBot = hasBot;
 	}
 	
 	public String getUsername() {
@@ -24,11 +36,18 @@ public enum Users {
 		return alias;
 	}
 	
-	public boolean isSysop() {
-		return isSysop;
+	public Domains[] hasSysop() {
+		return hasSysop;
 	}
 	
-	public boolean isBot() {
-		return isBot;
+	public Domains[] hasBot() {
+		return hasBot;
+	}
+	
+	public static Users findUser(String username) {
+		return Stream.of(Users.values())
+			.filter(user -> user.getUsername().equals(username))
+			.findFirst()
+			.orElse(null);
 	}
 }

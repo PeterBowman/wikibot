@@ -4,11 +4,11 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -30,7 +30,10 @@ public class Login {
 	
 	public static void login(Wiki wiki, Users user) throws FailedLoginException, IOException {
 		Objects.requireNonNull(user);
-		retrieveCredentials();
+		
+		if (credentials == null) {
+			retrieveCredentials();
+		}
 		
 		if (!credentials.containsKey(user.getUsername())) {
 			throw new FailedLoginException("No credentials found for this user");
@@ -42,8 +45,10 @@ public class Login {
 		wiki.setThrottle(5000);
 		wiki.setMaxLag(5);
 		wiki.setUserAgent(wiki.getUserAgent() + ", " + userAgent);
-		wiki.setAssertionMode(user.isBot() ? Wiki.ASSERT_BOT : Wiki.ASSERT_USER);
-		wiki.setMarkBot(user.isBot());
+		
+		boolean isBot = Arrays.asList(user.hasBot()).contains(Domains.findDomain(wiki.getDomain()));
+		wiki.setAssertionMode(isBot ? Wiki.ASSERT_BOT : Wiki.ASSERT_USER);
+		wiki.setMarkBot(isBot);
 		
 		wiki.getSiteInfo();
 		
@@ -75,8 +80,27 @@ public class Login {
 			String password = scanner.nextLine();
 			credentials.put(user.getUsername(), password.toCharArray());
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T extends Wikibot> T generateSession(Domains domain, Users user) throws FailedLoginException, IOException {
+		T wiki;
 		
-		Misc.serialize(credentials, LOCATION + "credentials.ser");
+		switch (domain) {
+			case PLWIKT:
+				wiki = (T) new PLWikt();
+				break;
+			case ESWIKT:
+				wiki = (T) new ESWikt();
+				break;
+			default:
+				wiki = (T) new Wikibot(domain.getDomain());
+				break;
+		}
+		
+		login(wiki, user);
+		
+		return wiki;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -95,20 +119,7 @@ public class Login {
 			}
 		} catch (ClassCastException | ClassNotFoundException | IOException e2) {
 			System.out.println(e2.getMessage());
-			
-			switch (domain) {
-				case PLWIKT:
-					wiki = (T) new PLWikt();
-					break;
-				case ESWIKT:
-					wiki = (T) new ESWikt();
-					break;
-				default:
-					wiki = (T) new Wikibot(domain.getDomain());
-					break;
-			}
-			
-			login(wiki, user);
+			wiki = generateSession(domain, user);
 		}
 		
 		return wiki;
@@ -121,10 +132,7 @@ public class Login {
 			throw new UnsupportedOperationException("Cannot save session with no account logged in");
 		}
 		
-		Users user = Stream.of(Users.values())
-			.filter(u -> u.getUsername().equals(currentUser.getUsername()))
-			.findFirst()
-			.orElse(null);
+		Users user = Users.findUser(currentUser.getUsername());
 		
 		if (user == null) {
 			throw new UnsupportedOperationException("Unrecognized user: " + currentUser.getUsername());
@@ -134,7 +142,7 @@ public class Login {
 		wiki.logout();
 	}
 	
-	public static void main(String[] args) throws FileNotFoundException, IOException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, FailedLoginException {
 		retrieveCredentials();
 		
 		if (!credentials.isEmpty()) {
@@ -144,5 +152,13 @@ public class Login {
 		for (Users user : Users.values()) {
 			storeCredentials(user);
 		}
+		
+		for (Users user : Users.values()) {
+			for (Domains domain : Domains.values()) {
+				saveSession(generateSession(domain, user));
+			}
+		}
+		
+		//Misc.serialize(credentials, LOCATION + "credentials.ser");
 	}
 }

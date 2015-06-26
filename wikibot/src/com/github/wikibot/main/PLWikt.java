@@ -58,6 +58,9 @@ public class PLWikt extends Wikibot {
 	}
 	
 	public synchronized void review(Revision rev) throws LoginException, IOException {
+		// TODO: move to new FlaggedRevsWiki with support for clone contructors
+		// TODO: fix token caching
+		
 		User user = getCurrentUser();
 		
 		if (user == null || !user.isAllowedTo("review")) {
