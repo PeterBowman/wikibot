@@ -449,7 +449,7 @@ public final class LinkManager implements Selectorizable {
 			String summary = String.format(
 				"linkowanie na podstawie [[%s|listy]] (%s)",
 				revid != 0
-					? String.format("Specjalna:Niezmienny link/%d", revid)
+					? String.format("Specjalna:Niezmienny link/%d#Lista robocza", revid)
 					: mainpage,
 				difflistmod
 			);
