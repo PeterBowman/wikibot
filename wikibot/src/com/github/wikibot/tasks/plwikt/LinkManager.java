@@ -41,7 +41,6 @@ import com.github.wikibot.utils.Misc.MyRandom;
 public final class LinkManager implements Selectorizable {
 	private static PLWikt wb;
 	private static final String location = "./data/tasks.plwikt/LinkManager/";
-	private static final String locationser = location + "ser/";
 	private static final String mainpage = "Wikipedysta:PBbot/linkowanie";
 	private static final int requestsectionnumber = 2;
 	private static final int worklistsectionnumber = 3;
@@ -51,13 +50,14 @@ public final class LinkManager implements Selectorizable {
 	private static final String worklistintro = "* Zatwierdzone: \n";
 	private static final String reportheader = "== Raport ==\n";
 	
-	private static final File f_data = new File(locationser + "data.ser");
-	private static final File f_codes = new File(locationser + "codes.ser");
-	private static final File f_timestamps = new File(locationser + "timestamps.ser");
-	private static final File f_stats = new File(locationser + "stats.ser");
-	private static final File f_request = new File(locationser + "request.ser");
+	private static final File f_data = new File(location + "data.ser");
+	private static final File f_codes = new File(location + "codes.ser");
+	private static final File f_timestamps = new File(location + "timestamps.ser");
+	private static final File f_stats = new File(location + "stats.ser");
+	private static final File f_request = new File(location + "request.ser");
 	
 	private static final int assertbatch = 5;
+	private static final int pagecap = 100;
 	
 	private static String mainpagetext = null;
 
@@ -119,7 +119,7 @@ public final class LinkManager implements Selectorizable {
 		MyRandom r = new Misc.MyRandom(5);
 				
 		for (LinkData entry : data) {
-			if ((entry.lang != null && entry.lang.equals("")) || entry.links == null || entry.forms == null) {
+			if ((entry.lang != null && entry.lang.isEmpty()) || entry.links == null || entry.forms == null) {
 				output.add(printErrorMessage(entry.target, "Nieprawidłowy format zgłoszenia."));
 				continue;
 			}
@@ -226,21 +226,23 @@ public final class LinkManager implements Selectorizable {
 				List<LinkDiff> info = getMatches(entry, contentmap.getValue());
 				entry.diffmap.put(backlink, info);
 				
-				if (info.size() != 0) {
+				if (!info.isEmpty()) {
 					sb.append(String.format("%n* [[%s]]%n", backlink));
 					pagecount++;
 					matchcount += info.size();
 					backlinks.add(backlink);
 					
-					for (LinkDiff diff : info) {
-						int editcode = r.generateInt();
-						String codemark = String.format("<span style=\"display:none;\">%d</span>", editcode);
-						sb.append(String.format("*: <nowiki>%s</nowiki>", diff.highlighted));
-						sb.append(String.format(" {{red|(→&nbsp;'''<nowiki>%s</nowiki>''')}}%s%n", diff.newlink, codemark));
-						diff.page = backlink;
-						diff.targetlink = String.format("[[%s]]", entry.target);
-						diff.lang = entry.lang;
-						editcodes.put(editcode, diff);
+					if (pagecount <= pagecap) {
+						for (LinkDiff diff : info) {
+							int editcode = r.generateInt();
+							String codemark = String.format("<span style=\"display:none;\">%d</span>", editcode);
+							sb.append(String.format("*: <nowiki>%s</nowiki>", diff.highlighted));
+							sb.append(String.format(" {{red|(→&nbsp;'''<nowiki>%s</nowiki>''')}}%s%n", diff.newlink, codemark));
+							diff.page = backlink;
+							diff.targetlink = String.format("[[%s]]", entry.target);
+							diff.lang = entry.lang;
+							editcodes.put(editcode, diff);
+						}
 					}
 				}
 			}
@@ -248,11 +250,11 @@ public final class LinkManager implements Selectorizable {
 			String template = printResults(entry, pagecount, matchcount);
 			output.add(template.replace("$1", sb.toString()));
 			
-			if (backlinks.size() != 0) {
+			if (!backlinks.isEmpty()) {
 				Map<String, Calendar> tmp = new HashMap<String, Calendar>(timestamps);
 				tmp.keySet().removeAll(timestamps.keySet());
 				
-				if (tmp.size() != 0) {
+				if (!tmp.isEmpty()) {
 					timestamps.putAll(wb.getTimestamps(tmp.keySet().toArray(new String[tmp.size()])));
 				}
 			}
@@ -359,13 +361,7 @@ public final class LinkManager implements Selectorizable {
 			String pagetext = wb.getPageText(page);
 			Map<Integer, LineInfo> linemap = new TreeMap<Integer, LineInfo>(new Comparator<Integer>() {
 				public int compare(Integer arg0, Integer arg1) {
-					if (arg0 > arg1) {
-						return -1;
-					} else if (arg0 < arg1) {
-						return 1;
-					} else {
-						return 0;
-					}
+					return Integer.compare(arg1, arg0);
 				}
 			});
 			
@@ -502,7 +498,7 @@ public final class LinkManager implements Selectorizable {
 			sb.append("\n");
 		}
 		
-		if (errormap.size() != 0) {
+		if (!errormap.isEmpty()) {
 			sb.append(String.format("'''Błędów: %d'''%n", errormap.size()));
 			
 			for (Entry<String, String[]> error : errormap.entrySet()) {
@@ -563,10 +559,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!currentRequest.equals(request.currentRequest)) {
-				if (f_codes.exists()) {
-					f_codes.delete();
-				}
-				
+				f_codes.delete();
 				getRequest();
 				request.currentRequest = currentRequest;
 			} else if (f_codes.exists()) {
@@ -596,10 +589,7 @@ public final class LinkManager implements Selectorizable {
 							} catch (Exception e) {
 								System.out.println("Fallo desconocido");
 								System.out.println(e);
-								
-								if (f_codes.exists()) {
-									f_codes.delete();
-								}
+								f_codes.delete();
 							}
 						} else {
 							System.out.printf("Prueba de edición fallida, falta de privilegios (%s)%n", username);
@@ -654,14 +644,14 @@ public final class LinkManager implements Selectorizable {
 						aux.lang = line.equals("wszystkie") ? null : line;
 						break;
 					case 2:
-						aux.links = line.split(",\\s?");
+						aux.links = line.split("\\s*?,\\s?");
 						break;
 					case 3:
 						if (line.startsWith("odmiana-")) {
 							aux.forms = new String[]{};
 							aux.templatelinker = line;
 						} else {
-							String[] forms = line.split(",\\s?");
+							String[] forms = line.split("\\s*?,\\s*");
 							Set<String> set = new HashSet<String>(Arrays.asList(forms));
 							aux.forms = set.toArray(new String[set.size()]);
 						}
@@ -707,15 +697,15 @@ public final class LinkManager implements Selectorizable {
 		
 		List<String> tempforms = new ArrayList<String>();
 		
-		if (entry.linkedFormsLower != null && entry.linkedFormsLower.size() != 0) {
+		if (entry.linkedFormsLower != null && !entry.linkedFormsLower.isEmpty()) {
 			tempforms.addAll(entry.linkedFormsLower);
 		}
 		
-		if (entry.linkedFormsUpper != null && entry.linkedFormsUpper.size() != 0) {
+		if (entry.linkedFormsUpper != null && !entry.linkedFormsUpper.isEmpty()) {
 			tempforms.addAll(entry.linkedFormsUpper);
 		}
 		
-		if (tempforms.size() != 0) {
+		if (!tempforms.isEmpty()) {
 			sb.append(String.format("<nowiki>%s</nowiki>%n", String.join(", ", tempforms)));
 		} else {
 			sb.append("''brak''\n");
@@ -723,9 +713,13 @@ public final class LinkManager implements Selectorizable {
 		
 		sb.append(": '''wyniki:''' ");
 		sb.append(Misc.makePluralPL(pagecount, "strona", "strony", "stron") + ", ");
-		sb.append(Misc.makePluralPL(matchcount, "wystąpienie", "wystąpienia", "wystąpień") + "\n");
+		sb.append(Misc.makePluralPL(matchcount, "wystąpienie", "wystąpienia", "wystąpień"));
 		
-		sb.append("----\n");
+		if (pagecount > pagecap) {
+			sb.append(" (ograniczono do " + pagecap + " stron)");
+		}
+		
+		sb.append("\n----\n");
 		sb.append("$1");
 		
 		return sb.toString();
