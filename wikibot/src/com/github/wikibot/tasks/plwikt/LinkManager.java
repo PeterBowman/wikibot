@@ -570,8 +570,8 @@ public final class LinkManager implements Selectorizable {
 				getRequest();
 				request.currentRequest = currentRequest;
 			} else if (f_codes.exists()) {
-				Calendar starttimestamp = currentRevision.getTimestamp();
-				Calendar endtimestamp = (request.currentTimestamp != null) ? request.currentTimestamp : starttimestamp;
+				Calendar endtimestamp = currentRevision.getTimestamp();
+				Calendar starttimestamp = (request.currentTimestamp != null) ? request.currentTimestamp : endtimestamp;
 				Revision[] revs = wb.getPageHistory(mainpage, starttimestamp, endtimestamp, true);
 				
 				for (Revision rev : revs) {
@@ -609,7 +609,7 @@ public final class LinkManager implements Selectorizable {
 					}
 				}
 				
-				request.currentTimestamp = starttimestamp;
+				request.currentTimestamp = endtimestamp;
 			}
 			
 			Misc.serialize(request, f_request);
