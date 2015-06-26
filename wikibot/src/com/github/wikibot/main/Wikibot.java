@@ -856,10 +856,9 @@ public class Wikibot extends WMFWiki {
     
 	/**
 	 *  Purges the server-side cache for various pages
-	 *  and update the links tables recursively.
-	 *  @param titles the titles of the page to purge
+	 *  and updates the links tables recursively.
+	 *  @param titles the titles of the pages to purge
 	 *  @throws IOException if a network error occurs
-	 *  @since 0.17
 	 */
 	public void purgeRecursive(String... titles) throws IOException {
 		StringBuilder url = new StringBuilder(apiUrl);
