@@ -28,20 +28,6 @@ public class Login {
 	
 	private Login() {}
 	
-	@Deprecated
-	public static void login(Wiki wiki) throws FailedLoginException, IOException {
-		login(wiki, false);
-	}
-	
-	@Deprecated
-	public static void login(Wiki wiki, boolean isBot) throws FailedLoginException, IOException {
-		if (!isBot) {
-			login(wiki, Users.User1);
-		} else {
-			login(wiki, Users.User2);
-		}
-	}
-	
 	public static void login(Wiki wiki, Users user) throws FailedLoginException, IOException {
 		Objects.requireNonNull(user);
 		retrieveCredentials();
