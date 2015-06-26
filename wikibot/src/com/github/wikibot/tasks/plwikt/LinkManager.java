@@ -570,12 +570,12 @@ public final class LinkManager implements Selectorizable {
 				getRequest();
 				request.currentRequest = currentRequest;
 			} else if (f_codes.exists()) {
-				Calendar endtimestamp = currentRevision.getTimestamp();
-				Calendar starttimestamp = (request.currentTimestamp != null) ? request.currentTimestamp : endtimestamp;
-				Revision[] revs = wb.getPageHistory(mainpage, starttimestamp, endtimestamp, true);
+				Calendar startTimestamp = request.currentTimestamp; // earliest
+				Calendar endTimestamp = currentRevision.getTimestamp(); // latest
+				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
 				
 				for (Revision rev : revs) {
-					if (rev.getUser().equals("PBbot")) {
+					if (rev.getUser().equals(Users.User2.getUsername())) {
 						break;
 					}
 					
@@ -584,7 +584,7 @@ public final class LinkManager implements Selectorizable {
 					diff = diff.replaceAll("</?ins.*?>", "");
 					diff = diff.replace("\n", "");
 					
-					if (diff.matches(".*?<td class=\"diff-addedline\"><div>\\* *Zatwierdzone: *tak *</div></td>.*")) {
+					if (diff.matches(".*?<td class=\"diff-addedline\"><div>\\* *?Zatwierdzone: *?tak *?</div></td>.*")) {
 						String username = rev.getUser();
 						User user = wb.getUser(username);
 						Map<String, Object> userinfo = user.getUserInfo();
@@ -609,7 +609,7 @@ public final class LinkManager implements Selectorizable {
 					}
 				}
 				
-				request.currentTimestamp = endtimestamp;
+				request.currentTimestamp = endTimestamp;
 			}
 			
 			Misc.serialize(request, f_request);
