@@ -159,13 +159,14 @@ public class Editor extends EditorBase {
 		
 		// Process headers
 		
-		Matcher m = Pattern.compile("^(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*$", Pattern.MULTILINE).matcher(original);
+		Matcher m = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE).matcher(original);
 		StringBuffer sb = new StringBuffer();
 		String currentEtym = "";
 		int lastIndex = 0;
 		
 		while (m.find()) {
-			String template = m.group(1);
+			String pre = m.group(1);
+			String template = m.group(2);
 			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
 			String name = params.get("templateName");
 			String altGraf = params.getOrDefault("ParamWithoutName1", "");
@@ -199,11 +200,13 @@ public class Editor extends EditorBase {
 				altGraf = "";
 			}
 			
+			pre = pre.isEmpty() ? "" : "$1\n";
+			
 			if (!etym.isEmpty() && !etym.equals("1")) {
-				m.appendReplacement(sb, String.format("=ETYM%s alt-%s=", etym, altGraf));
+				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=", pre, etym, altGraf));
 			} else {
 				String newTemplate = ParseUtils.templateFromMap(params);
-				m.appendReplacement(sb, String.format("=%s=", newTemplate));
+				m.appendReplacement(sb, String.format("%s=%s=", pre, newTemplate));
 			}
 			
 			if (lastIndex != 0) {
@@ -1071,7 +1074,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "truco";
+		String title = "wayna";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
