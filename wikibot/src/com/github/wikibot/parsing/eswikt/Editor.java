@@ -31,6 +31,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -159,7 +160,7 @@ public class Editor extends EditorBase {
 		
 		// Process headers
 		
-		Matcher m = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE).matcher(original);
+		Matcher m = P_OLD_STRUCT_HEADER.matcher(original);
 		StringBuffer sb = new StringBuffer();
 		String currentEtym = "";
 		int lastIndex = 0;
@@ -467,8 +468,9 @@ public class Editor extends EditorBase {
 			String header = section.getHeader();
 			
 			header = header.replaceAll("^(?:e|E)timolog(?:i|í)a ?(\\d)?$", "Etimología $1").trim();
-			header = header.replaceAll("^(?:L|l)ocuci(ó|o)n(?:es)?$", "Locuciones");
-			header = header.replaceAll("^(?:R|r)efr(á|a)n(?:es)?$", "Refranes");
+			// TODO: don't confuse with {{locución}}, {{refrán}}
+			header = header.replaceAll("^(?:L|l)ocuciones$", "Locuciones");
+			header = header.replaceAll("^(?:R|r)efranes$", "Refranes");
 			header = header.replaceAll("^(?:c|C)onjugaci(?:ó|o)n$", "Conjugación");
 			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
