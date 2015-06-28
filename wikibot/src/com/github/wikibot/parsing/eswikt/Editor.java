@@ -47,7 +47,7 @@ public class Editor extends EditorBase {
 			"grafía alternativa", "variantes", "parónimo"
 		);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", templateNames) + ") *?(?:\\|[^\\{]+?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", templateNames) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 	}
 	
 	public Editor(Page page) {
@@ -1078,7 +1078,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "wayna";
+		String title = "atqásap";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
