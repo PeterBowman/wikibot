@@ -34,11 +34,19 @@ import com.github.wikibot.utils.Users;
 public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
+	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación"
 	);
+	
+	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
+	private static final List<String> AMBOX_TMPLS = Arrays.asList(
+		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
+		"falta", "revisión", "revisar"
+	);
+	
 	private boolean isOldStructure;
 	
 	static {
