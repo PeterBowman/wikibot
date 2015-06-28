@@ -240,7 +240,7 @@ public final class Page extends PageBase<Section> {
 		langSections.add(langSection);
 		sortSections();
 		
-		return false;
+		return true;
 	}
 
 	public boolean removeLangSection(String langCode) {
@@ -253,7 +253,7 @@ public final class Page extends PageBase<Section> {
 		sections.remove(langSection);
 		buildSectionTree();
 		
-		return false;
+		return true;
 	}
 
 	public boolean hasLangSection(String langCode) {

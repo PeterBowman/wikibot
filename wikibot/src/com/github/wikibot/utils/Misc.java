@@ -153,6 +153,7 @@ public final class Misc {
 			));
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 	
@@ -163,6 +164,7 @@ public final class Misc {
 			c.selector(value);
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 	
