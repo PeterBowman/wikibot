@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -467,6 +468,7 @@ public class Editor extends EditorBase {
 			
 			String header = section.getHeader();
 			
+			header = StringUtils.strip(header, "=").trim();
 			header = header.replaceAll("^(?:e|E)timolog(?:i|í)a ?(\\d)?$", "Etimología $1").trim();
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceAll("^(?:L|l)ocuciones$", "Locuciones");
