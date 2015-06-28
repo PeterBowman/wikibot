@@ -34,17 +34,12 @@ import com.github.wikibot.utils.Users;
 public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
+	private static final Pattern P_AMBOX_TMPLS;
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación"
-	);
-	
-	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
-	private static final List<String> AMBOX_TMPLS = Arrays.asList(
-		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
-		"falta", "revisión", "revisar"
 	);
 	
 	private boolean isOldStructure;
@@ -56,6 +51,14 @@ public class Editor extends EditorBase {
 		);
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", templateNames) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		
+		// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
+		final List<String> amboxTemplates = Arrays.asList(
+				"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
+				"falta", "revisión", "revisar"
+			);
+		
+		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}$", Pattern.CASE_INSENSITIVE);
 	}
 	
 	public Editor(Page page) {
@@ -590,13 +593,19 @@ public class Editor extends EditorBase {
 			boolean noMatch = false;
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
+			List<String> amboxTemplates = new ArrayList<String>();
 			
 			linesLoop:
 			for (String line : lines) {
-				// TODO: more cases (images, stub templates, comments...)
+				// TODO: more cases (images, comments...)
 				
 				if (line.contains("{{etimología")) {
 					editedLines.add(line);
+					continue;
+				}
+				
+				if (P_AMBOX_TMPLS.matcher(line).matches()) {
+					amboxTemplates.add(line);
 					continue;
 				}
 				
@@ -797,6 +806,11 @@ public class Editor extends EditorBase {
 			}
 			
 			editedLines.add(0, ParseUtils.templateFromMap(newMap));
+			
+			if (!amboxTemplates.isEmpty()) {
+				editedLines.addAll(0, amboxTemplates);
+			}
+			
 			section.setIntro(String.join("\n", editedLines));
 		}
 		
@@ -1086,7 +1100,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "atqásap";
+		String title = "sueño";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
