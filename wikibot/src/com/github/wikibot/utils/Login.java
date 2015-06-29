@@ -145,12 +145,16 @@ public class Login {
 	public static void main(String[] args) throws FileNotFoundException, IOException, FailedLoginException {
 		retrieveCredentials();
 		
-		if (!credentials.isEmpty()) {
+		if (
+			!credentials.isEmpty() &&
+			credentials.size() == Users.values().length &&
+			credentials.keySet().containsAll(Arrays.asList(Users.values()))
+		) {
 			System.out.printf("Credentials available: %s%n", credentials.keySet().toString());
-		}
-		
-		for (Users user : Users.values()) {
-			storeCredentials(user);
+			
+			for (Users user : Users.values()) {
+				storeCredentials(user);
+			}
 		}
 		
 		for (Users user : Users.values()) {
