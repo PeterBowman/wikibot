@@ -22,7 +22,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -840,26 +839,14 @@ public class Editor extends EditorBase {
 			
 			if (i == 1) {
 				targetMap.put(prefix + "alt", sourceMap.getOrDefault("alt", sourceMap.get("alt1")));
-			} else {
-				targetMap.put(prefix + "alt", sourceMap.get("alt" + i));
-			}
-			
-			if (i == 1) {
 				targetMap.put(prefix + "num", sourceMap.getOrDefault("num", sourceMap.getOrDefault("núm", sourceMap.getOrDefault("núm1", sourceMap.get("num1")))));
-			} else {
-				targetMap.put(prefix + "num", sourceMap.getOrDefault("núm" + i, sourceMap.get("num" + i)));
-			}
-			
-			if (i == 1) {
 				targetMap.put(prefix + "tr", sourceMap.getOrDefault("tr", sourceMap.get("tr1")));
-			} else {
-				targetMap.put(prefix + "tr", sourceMap.get("tr" + i));
-			}
-			
-			if (i == 1) {
 				targetMap.put(prefix + "nota", sourceMap.getOrDefault("nota", sourceMap.get("nota1")));
 			} else {
-				targetMap.put(prefix + "nota", sourceMap.get("nota" + i));
+				targetMap.put(prefix + "alt" + i, sourceMap.get("alt" + i));
+				targetMap.put(prefix + "num" + i, sourceMap.getOrDefault("núm" + i, sourceMap.get("num" + i)));
+				targetMap.put(prefix + "tr" + i, sourceMap.get("tr" + i));
+				targetMap.put(prefix + "nota" + i, sourceMap.get("nota" + i));
 			}
 		}
 		
@@ -1104,13 +1091,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "coches";
+		String title = "surveyor";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
