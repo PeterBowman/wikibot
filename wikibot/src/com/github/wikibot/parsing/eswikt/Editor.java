@@ -22,10 +22,12 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.EditorBase;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
@@ -141,6 +143,8 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->", "");
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		formatted = formatted.replaceAll("<!--\\s*$", "");
+		
+		formatted = Utils.sanitizeWhitespaces(formatted);
 		
 		checkDifferences(original, formatted, "removeComments", "eliminando comentarios");
 	}
@@ -1100,13 +1104,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "sueño";
+		String title = "coches";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
