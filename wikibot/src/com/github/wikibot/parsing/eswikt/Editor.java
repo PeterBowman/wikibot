@@ -491,6 +491,7 @@ public class Editor extends EditorBase {
 			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
 			header = header.replaceAll("^(?:V|v)(?:é|e)ase tambi(?:é|e)n$", "Véase también");
+			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(?:es)?$", "Traducciones");
 			// TODO: check structure, normalize header levels
 			if (!isOldStructure) {
@@ -928,10 +929,10 @@ public class Editor extends EditorBase {
 		for (Section section : allReferences) {
 			if (
 				section.getChildSections() == null &&
-				!(bottomReferences == null || section == bottomReferences)
+				section != bottomReferences
 			) {
 				String content = section.getIntro();
-				content = content.replaceAll("<!--.*?-->", ""); 
+				content = content.replaceAll("(?s)<!--.*?-->", ""); 
 				content = content.replaceAll("<references *?/ *?>", "");
 				content = content.trim();
 				
@@ -939,6 +940,14 @@ public class Editor extends EditorBase {
 					section.detachOnlySelf();
 				}
 			}
+		}
+		
+		allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
+		
+		if (allReferences.isEmpty()) {
+			bottomReferences = Section.create("Referencias y notas", 2);
+			bottomReferences.setIntro("<references />");
+			page.setReferencesSection(bottomReferences);
 		}
 		
 		String formatted = page.toString();
@@ -1091,7 +1100,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "surveyor";
+		String title = "yam";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

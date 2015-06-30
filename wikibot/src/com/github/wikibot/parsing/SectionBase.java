@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -176,11 +177,15 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public Collection<T> getSiblingSections() {
-		return Collections.unmodifiableCollection(new ArrayList<T>(siblingSections));
+		return Objects.nonNull(siblingSections)
+			? Collections.unmodifiableCollection(new ArrayList<T>(siblingSections))
+			: null;
 	}
 	
 	public Collection<T> getChildSections() {
-		return Collections.unmodifiableCollection(new ArrayList<T>(childSections));
+		return Objects.nonNull(childSections)
+			? Collections.unmodifiableCollection(new ArrayList<T>(childSections))
+			: null;
 	}
 	
 	public T nextSection() {
