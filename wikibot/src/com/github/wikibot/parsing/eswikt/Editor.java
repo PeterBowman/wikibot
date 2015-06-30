@@ -36,6 +36,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
+	private static final Pattern P_PRON_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -43,21 +44,25 @@ public class Editor extends EditorBase {
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación"
 	);
 	
+	private static final List<String> PRON_TEMPLS = Arrays.asList(
+		"pronunciación", "pron.la",  "audio", "transliteración", "homófono",
+		"grafía alternativa", "variantes", "parónimo"
+	);
+	
+	private static final List<String> PRON_TEMPLS_PL = Arrays.asList(
+		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", null, "parónimos"
+	);
+	
 	private boolean isOldStructure;
 	
 	static {
-		final List<String> templateNames = Arrays.asList(
-			"pronunciación", "pron.la",  "audio", "transliteración", "homófono",
-			"grafía alternativa", "variantes", "parónimo"
-		);
-		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", templateNames) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TEMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
 		// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
 		final List<String> amboxTemplates = Arrays.asList(
-				"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
-				"falta", "revisión", "revisar"
-			);
+			"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
+			"falta", "revisión", "revisar"
+		);
 		
 		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}$", Pattern.CASE_INSENSITIVE);
 	}
@@ -623,7 +628,14 @@ public class Editor extends EditorBase {
 					continue;
 				}
 				
-				Matcher m = P_ADAPT_PRON_TMPL.matcher(line);
+				Matcher m = P_PRON_LINE.matcher(line);
+				
+				if (m.matches() && ((line = makePronLine(m)) == null)) {
+					noMatch = true;
+					break;
+				}
+				
+				m = P_ADAPT_PRON_TMPL.matcher(line);
 				
 				if (!m.matches()) {
 					noMatch = true;
@@ -871,6 +883,55 @@ public class Editor extends EditorBase {
 			}
 		}
 	}
+	
+	private String makePronLine(Matcher m) {
+		String name = m.group(1).trim().toLowerCase();
+		
+		if (name.endsWith(":")) {
+			name = name.substring(0, name.length() - 1).trim();
+		}
+		
+		if (name.isEmpty()) {
+			return null;
+		}
+		
+		if (PRON_TEMPLS_PL.contains(name)) {
+			name = PRON_TEMPLS.get(PRON_TEMPLS_PL.indexOf(name));
+		}
+		
+		if (!PRON_TEMPLS.contains(name)) {
+			return null;
+		}
+		
+		String content = m.group(2).trim();
+		
+		if (StringUtils.containsAny(content, '{', '}', '(', ')', '|')) {
+			return null;
+		}
+		
+		String[] terms = content.split(" *?, *?");
+		HashMap<String, String> map = new LinkedHashMap<String, String>(terms.length, 1);
+		map.put("templateName", name);
+		
+		for (int i = 0; i < terms.length; i++) {
+			String term = terms[i];
+			String param = "ParamWithoutName" + i;
+			
+			if (StringUtils.containsAny(term, '[', ']')) {
+				Matcher m2 = Pattern.compile("\\[\\[(.+?)\\]\\](.*)").matcher(term);
+				
+				if (!m2.find() || StringUtils.containsAny(m2.group(2), '[', ']')) {
+					return null;
+				} else {
+					map.put(param, String.format("%s%s", m2.group(1), m2.group(2)));
+				}
+			} else {
+				map.put(param, term);
+			}
+		}
+		
+		return ParseUtils.templateFromMap(map);
+	}
 
 	public void lengTemplateParams() {
 		// TODO: ISO code as parameter without name
@@ -1110,7 +1171,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "yam";
+		String title = "garaje";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
