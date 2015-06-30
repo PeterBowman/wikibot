@@ -932,15 +932,16 @@ public class Editor extends EditorBase {
 		Section bottomReferences = page.getReferencesSection();
 		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
 		
-		if (allReferences.isEmpty() || (allReferences.size() == 1 && bottomReferences != null)) {
+		if (allReferences.size() < 2) {
 			return;
 		}
 		
-		for (Section section : allReferences) {
-			if (
-				section.getChildSections() == null &&
-				section != bottomReferences
-			) {
+		Iterator<Section> iterator = allReferences.iterator();
+		
+		while (iterator.hasNext()) {
+			Section section = iterator.next();
+			
+			if (section.getChildSections() == null) {
 				String content = section.getIntro();
 				content = content.replaceAll("(?s)<!--.*?-->", ""); 
 				content = content.replaceAll("<references *?/ *?>", "");
@@ -948,11 +949,10 @@ public class Editor extends EditorBase {
 				
 				if (content.isEmpty()) {
 					section.detachOnlySelf();
+					iterator.remove();
 				}
 			}
 		}
-		
-		allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
 		
 		if (allReferences.isEmpty()) {
 			bottomReferences = Section.create("Referencias y notas", 2);
