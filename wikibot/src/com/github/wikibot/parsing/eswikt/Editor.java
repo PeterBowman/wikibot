@@ -491,8 +491,18 @@ public class Editor extends EditorBase {
 			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
 			header = header.replaceAll("^(?:V|v)(?:é|e)ase tambi(?:é|e)n$", "Véase también");
+			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
-			header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(?:es)?$", "Traducciones");
+			LangSection langSection = section.getLangSectionParent();
+			
+			if (langSection != null) {
+				if (langSection.getLangName().equals("español")) {
+					header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(es)?$", "Traducciones");
+				} else {
+					header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(es)?$", "Traducción");
+				}
+			}
+			
 			// TODO: check structure, normalize header levels
 			if (!isOldStructure) {
 				header = header.replaceAll("^(?:<small> *?)?(?:R|r)eferencias?.*?$", "Referencias y notas");
