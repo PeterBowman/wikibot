@@ -810,6 +810,8 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, original);
 		Set<String> modified = new HashSet<String>();
 		List<String> recognizedSpanishParams = Arrays.asList("y", "ll", "s", "c", "ys", "yc", "lls", "llc");
+		Pattern pImages = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
+		Pattern pComments = Pattern.compile(" *?<!--.+-->");
 		
 		for (Section section : page.getAllSections()) {
 			String content = section.getIntro();
@@ -835,9 +837,11 @@ public class Editor extends EditorBase {
 			
 			linesLoop:
 			for (String line : lines) {
-				// TODO: more cases (images, comments...)
-				
-				if (line.contains("{{etimología")) {
+				if (
+					line.contains("{{etimología") ||
+					pImages.matcher(line).matches() ||
+					pComments.matcher(line).matches()
+				) {
 					editedLines.add(line);
 					continue;
 				}
@@ -1304,7 +1308,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "demonio";
+		String title = "alguacil";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
