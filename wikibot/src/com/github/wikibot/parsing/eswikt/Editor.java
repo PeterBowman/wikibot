@@ -952,11 +952,15 @@ public class Editor extends EditorBase {
 								param1 += "]";
 							} else if (!param1.startsWith("[") && param1.endsWith("]")) {
 								param1 = "[" + param1;
+							} else if (param1.startsWith("/") && !param1.endsWith("/")) {
+								param1 += "/";
+							} else if (!param1.startsWith("/") && param1.endsWith("/")) {
+								param1 = "/" + param1;
 							}
 							
 							if (param1.matches("\\[.+\\]")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("\\] *?o? *?\\[");
+								String[] alts = param1.split("\\] *?(o|,)? *?\\[");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -969,7 +973,17 @@ public class Editor extends EditorBase {
 								}
 							} else if (param1.matches("/.+/")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								newParams.put("fono", param1);
+								String[] alts = param1.split("/ *?(o|,)? *?/");
+								
+								if (alts.length > 1) {
+									for (int i = 1; i <= alts.length; i++) {
+										String param = alts[i - 1].trim();
+										String num = (i != 1) ? Integer.toString(i) : "";
+										newParams.put("fono" + num, param);
+									}
+								} else {
+									newParams.put("fono", param1);
+								}
 							} else {
 								newParams.put("fone", param1);
 							}
