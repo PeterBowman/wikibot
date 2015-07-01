@@ -1151,8 +1151,8 @@ public class Editor extends EditorBase {
 		HashMap<String, String> map = new LinkedHashMap<String, String>(terms.length, 1);
 		map.put("templateName", name);
 		
-		for (int i = 0; i < terms.length; i++) {
-			String term = terms[i];
+		for (int i = 1; i <= terms.length; i++) {
+			String term = terms[i - 1].trim();
 			String param = "ParamWithoutName" + i;
 			
 			if (StringUtils.containsAny(term, '[', ']')) {
