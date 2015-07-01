@@ -854,7 +854,15 @@ public class Editor extends EditorBase {
 				
 				Matcher m = P_PRON_LINE.matcher(line);
 				
-				if (m.matches() && ((line = makePronLine(m)) == null)) {
+				if (
+					m.matches() && (
+						(line = makeTemplLine(
+							m.group(1).trim().toLowerCase(),
+							m.group(2).trim(),
+							PRON_TEMPLS,
+							PRON_TEMPLS_PL)
+						) == null
+				)) {
 					noMatch = true;
 					break;
 				}
@@ -1122,9 +1130,7 @@ public class Editor extends EditorBase {
 		}
 	}
 	
-	private String makePronLine(Matcher m) {
-		String name = m.group(1).trim().toLowerCase();
-		
+	private String makeTemplLine(String name, String content, List<String> listSg, List<String> listPl) {
 		if (name.endsWith(":")) {
 			name = name.substring(0, name.length() - 1).trim();
 		}
@@ -1133,15 +1139,13 @@ public class Editor extends EditorBase {
 			return null;
 		}
 		
-		if (PRON_TEMPLS_PL.contains(name)) {
-			name = PRON_TEMPLS.get(PRON_TEMPLS_PL.indexOf(name));
+		if (listPl.contains(name)) {
+			name = listSg.get(listPl.indexOf(name));
 		}
 		
-		if (!PRON_TEMPLS.contains(name)) {
+		if (!listSg.contains(name)) {
 			return null;
 		}
-		
-		String content = m.group(2).trim();
 		
 		if (StringUtils.containsAny(content, '(', ')')) {
 			return null;
