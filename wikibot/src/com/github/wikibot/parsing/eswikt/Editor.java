@@ -36,7 +36,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
-	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(?:(?:<!--.*?-->)+\\s*)?$", Pattern.MULTILINE);
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*?(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_PRON_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
@@ -194,6 +194,7 @@ public class Editor extends EditorBase {
 		while (m.find()) {
 			String pre = m.group(1);
 			String template = m.group(2);
+			String post = m.group(3);
 			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
 			String name = params.get("templateName");
 			String altGraf = params.getOrDefault("ParamWithoutName1", "");
@@ -228,12 +229,13 @@ public class Editor extends EditorBase {
 			}
 			
 			pre = pre.isEmpty() ? "" : "$1\n";
+			post = post.isEmpty() ? "" : "\n$3";
 			
 			if (!etym.isEmpty() && !etym.equals("1")) {
-				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=", pre, etym, altGraf));
+				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post));
 			} else {
 				String newTemplate = ParseUtils.templateFromMap(params);
-				m.appendReplacement(sb, String.format("%s=%s=", pre, newTemplate));
+				m.appendReplacement(sb, String.format("%s=%s=%s", pre, newTemplate, post));
 			}
 			
 			if (lastIndex != 0) {
@@ -1302,7 +1304,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "veintiuno";
+		String title = "demonio";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
