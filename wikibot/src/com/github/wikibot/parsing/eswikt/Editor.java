@@ -5,11 +5,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -22,6 +24,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -95,6 +98,7 @@ public class Editor extends EditorBase {
 		adaptPronunciationTemplates();
 		lengTemplateParams();
 		rearrangeSubsections();
+		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		sortLangSections();
 		addMissingReferencesSection();
@@ -993,6 +997,58 @@ public class Editor extends EditorBase {
 		checkDifferences(original, formatted, "lengTemplateParams", "parámetros \"leng=\"");
 	}
 
+	public void substituteReferencesTemplate() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		String template = "{{título referencias}}";
+		List<String> contents = new ArrayList<String>();
+		boolean found = false;
+		
+		List<Section> sections = page.getAllSections();
+		ListIterator<Section> iterator = sections.listIterator(sections.size());
+		
+		while (iterator.hasPrevious()) {
+			Section section = iterator.previous();
+			String intro = section.getIntro();
+			int index = intro.indexOf(template);
+			
+			if (index != -1) {
+				found = true;
+				String content = intro.substring(index + template.length()).trim();
+				
+				if (!content.isEmpty()) {
+					contents.add(content);
+				}
+				
+				intro = intro.substring(0, index).trim();
+				section.setIntro(intro);
+			}
+		}
+		
+		if (!found) {
+			return;
+		}
+		
+		Collections.reverse(contents);
+		Section references = page.getReferencesSection();
+		
+		if (references == null) {
+			references = Section.create("Referencias y notas", 2);
+			contents.add("<references />");
+			references.setIntro(String.join("\n", contents));
+			page.setReferencesSection(references);
+		} else {
+			String intro = references.getIntro();
+			intro = intro.replaceAll("<references *?/ *?>", "").trim();
+			contents.addAll(Arrays.asList(intro.split("\n")));
+			contents.add("<references />");
+			references.setIntro(String.join("\n", contents));
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "substituteReferencesTemplate", "sustituyendo {{título referencias}}");
+	}
+	
 	public void duplicateReferencesSection() {
 		String original = this.text;
 		Page page = Page.store(title, original);
@@ -1178,13 +1234,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "garaje";
+		String title = "wasi";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);

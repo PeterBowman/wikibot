@@ -274,7 +274,7 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 	}
 	
 	public List<Field> getAllFields() {
-		return fields;
+		return Collections.unmodifiableList(new ArrayList<Field>(fields));
 	}
 	
 	@Override

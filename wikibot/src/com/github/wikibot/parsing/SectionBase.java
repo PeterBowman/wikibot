@@ -2,7 +2,6 @@ package com.github.wikibot.parsing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +39,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		containingPage = null;
 		
 		if (text != null && !text.isEmpty()) {
+			// FIXME: this won't parse inner sections
 			parseSection(text);
 		}
 	}
@@ -176,15 +176,15 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		return parentSection;
 	}
 	
-	public Collection<T> getSiblingSections() {
+	public List<T> getSiblingSections() {
 		return Objects.nonNull(siblingSections)
-			? Collections.unmodifiableCollection(new ArrayList<T>(siblingSections))
+			? Collections.unmodifiableList(new ArrayList<T>(siblingSections))
 			: null;
 	}
 	
-	public Collection<T> getChildSections() {
+	public List<T> getChildSections() {
 		return Objects.nonNull(childSections)
-			? Collections.unmodifiableCollection(new ArrayList<T>(childSections))
+			? Collections.unmodifiableList(new ArrayList<T>(childSections))
 			: null;
 	}
 	
