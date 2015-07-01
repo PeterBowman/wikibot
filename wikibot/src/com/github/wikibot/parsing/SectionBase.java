@@ -418,21 +418,26 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		}
 		
 		int index = containingPage.sections.indexOf(this);
-		containingPage.sections.remove(index);
-		
-		if (childSections != null) {
-			List<T> flattened = flattenSubSections(childSections);
-			containingPage.sections.removeAll(flattened);
-		}
+		this.detach();
+		containingPage.sections.add(index, section);
 		
 		if (section.childSections != null) {
-			List<T> replacementSections = new ArrayList<T>();
-			replacementSections.addAll(flattenSubSections(section));
-			containingPage.sections.addAll(index, replacementSections);
-		} else {
-			containingPage.sections.add(index, section);
+			section.propagateTree();
 		}
 		
+		containingPage.buildSectionTree();
+	}
+	
+	protected void propagateTree() {
+		if (childSections == null) {
+			return;
+		}
+		
+		int index = containingPage.sections.indexOf(this);
+		
+		List<T> flattened = flattenSubSections(childSections);
+		containingPage.sections.removeAll(flattened);
+		containingPage.sections.addAll(index + 1, flattened);
 		containingPage.buildSectionTree();
 	}
 	

@@ -24,11 +24,11 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.EditorBase;
+import com.github.wikibot.parsing.SectionBase;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -94,15 +94,15 @@ public class Editor extends EditorBase {
 		transformToNewStructure();
 		normalizeSectionHeaders();
 		rearrangeSubsections();
-		normalizeTemplateNames();
-		adaptPronunciationTemplates();
-		lengTemplateParams();
-		rearrangeSubsections();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
+		normalizeSectionLevels();
 		sortLangSections();
 		addMissingReferencesSection();
 		sortSubSections();
+		normalizeTemplateNames();
+		adaptPronunciationTemplates();
+		lengTemplateParams();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -437,18 +437,9 @@ public class Editor extends EditorBase {
 		// Check section levels
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			Collection<Section> childSections = langSection.getChildSections();
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimolog(i|í)a.*");
 			
-			if (childSections == null) {
-				continue;
-			}
-			
-			List<Section> etymologySections = childSections
-				.parallelStream()
-				.filter(section -> section.getHeader().matches("^Etimolog(i|í)a.*"))
-				.collect(Collectors.toList());
-			
-			if (etymologySections == null) {
+			if (etymologySections.isEmpty()) {
 				continue;
 			}
 			
@@ -464,7 +455,7 @@ public class Editor extends EditorBase {
 					child.pushLevels(-1);
 				}
 			} else {
-				for (Section sibling : childSections) {
+				for (Section sibling : langSection.getChildSections()) {
 					if (etymologySections.contains(sibling)) {
 						continue;
 					}
@@ -481,6 +472,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeSectionHeaders() {
+		// TODO: check etymology sections (Etimología X)
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
@@ -524,10 +516,11 @@ public class Editor extends EditorBase {
 		
 		checkDifferences(original, formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
-
+	
 	public void rearrangeSubsections() {
 		// TODO: satura, review sortSections (intermediate Sections - between LangSections)
 		// TODO: tagua tagua (single, numbered etymology sections), temporarily fixed in transformToNewStructure
+		// TODO: merge with normalizeSectionLevels()?
 		String original = this.text;
 		Page page = Page.store(title, original);
 		Section references = page.getReferencesSection();
@@ -540,6 +533,224 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		checkDifferences(original, formatted, "rearrangeSubsections", "reorganizando secciones");
+	}
+
+	public void substituteReferencesTemplate() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		String template = "{{título referencias}}";
+		List<String> contents = new ArrayList<String>();
+		boolean found = false;
+		
+		List<Section> sections = page.getAllSections();
+		ListIterator<Section> iterator = sections.listIterator(sections.size());
+		
+		while (iterator.hasPrevious()) {
+			Section section = iterator.previous();
+			String intro = section.getIntro();
+			int index = intro.indexOf(template);
+			
+			if (index != -1) {
+				found = true;
+				String content = intro.substring(index + template.length()).trim();
+				
+				if (!content.isEmpty()) {
+					contents.add(content);
+				}
+				
+				intro = intro.substring(0, index).trim();
+				section.setIntro(intro);
+			}
+		}
+		
+		if (!found) {
+			return;
+		}
+		
+		Collections.reverse(contents);
+		Section references = page.getReferencesSection();
+		
+		if (references == null) {
+			references = Section.create("Referencias y notas", 2);
+			contents.add("<references />");
+			references.setIntro(String.join("\n", contents));
+			page.setReferencesSection(references);
+		} else {
+			String intro = references.getIntro();
+			intro = intro.replaceAll("<references *?/ *?>", "").trim();
+			contents.addAll(Arrays.asList(intro.split("\n")));
+			contents.add("<references />");
+			references.setIntro(String.join("\n", contents));
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "substituteReferencesTemplate", "sustituyendo {{título referencias}}");
+	}
+
+	public void duplicateReferencesSection() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		
+		Section bottomReferences = page.getReferencesSection();
+		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
+		
+		if (allReferences.size() < 2) {
+			return;
+		}
+		
+		Iterator<Section> iterator = allReferences.iterator();
+		
+		while (iterator.hasNext()) {
+			Section section = iterator.next();
+			
+			if (section.getChildSections() == null) {
+				String content = section.getIntro();
+				content = content.replaceAll("(?s)<!--.*?-->", ""); 
+				content = content.replaceAll("<references *?/ *?>", "");
+				content = content.trim();
+				
+				if (content.isEmpty()) {
+					section.detachOnlySelf();
+					iterator.remove();
+				}
+			}
+		}
+		
+		if (allReferences.isEmpty()) {
+			bottomReferences = Section.create("Referencias y notas", 2);
+			bottomReferences.setIntro("<references />");
+			page.setReferencesSection(bottomReferences);
+		}
+		
+		String formatted = page.toString();
+		
+		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
+	}
+
+	public void normalizeSectionLevels() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		
+		page.normalizeChildLevels();
+		
+		List<Section> tempList = page.findSectionsWithHeader("^Etimología.*");
+		
+		if (tempList.isEmpty()) {
+			// TODO: add missing etymology sections
+			return;
+		}
+		
+		for (Section etymologySection : tempList) {
+			int level = etymologySection.getLevel();
+			
+			if (level > 3) {
+				etymologySection.pushLevels(3 - level);
+			}
+		}
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			}
+			
+			if (etymologySections.size() == 1) {
+				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
+				
+				if (etymologyChildren != null) {
+					for (Section child : etymologyChildren) {
+						child.pushLevels(-1);
+					}
+				}
+				
+				pushStandardSections(langSection.getChildSections(), 3);
+			} else {
+				for (Section sibling : langSection.getChildSections()) {
+					if (etymologySections.contains(sibling)) {
+						continue;
+					}
+					
+					sibling.pushLevels(1);
+				}
+				
+				for (Section etymologySection : etymologySections) {
+					pushStandardSections(etymologySection.getChildSections(), 4);
+				}
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
+	}
+	
+	private void pushStandardSections(List<Section> sections, int level) {
+		// TODO: get rid of those null checks, find a better way
+		if (sections == null) {
+			return;
+		}
+		
+		final List<String> bottomList = Arrays.asList(
+			"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
+		);
+		
+		SectionBase.flattenSubSections(sections).stream()
+			.filter(s -> bottomList.contains(s.getHeader()))
+			.filter(s -> s.getLevel() > level)
+			.forEach(s -> s.pushLevels(level - s.getLevel()));
+	}
+
+	public void sortLangSections() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		page.sortSections();
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "sortLangSections", "ordenando secciones de idioma");
+	}
+
+	public void addMissingReferencesSection() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		Section references = page.getReferencesSection();
+		boolean onlyTag = false;
+		
+		if (page.getAllSections().isEmpty() || (references == null && page.hasSectionWithHeader(".*?Referencias.*"))) {
+			return;
+		}
+		
+		if (references == null) {
+			references = Section.create("Referencias y notas", 2);
+			references.setIntro("<references />");
+			page.setReferencesSection(references);
+		} else {
+			String intro = references.getIntro();
+			
+			// TODO: check other elements (templates, manually introduced references...)
+			if (!intro.isEmpty()) {
+				return;
+			}
+			
+			references.setIntro("<references />");
+			onlyTag = true;
+		}
+		
+		String formatted = page.toString();
+		String summary = onlyTag ? "añadiendo <references>" : "añadiendo título de referencias y notas";
+		
+		checkDifferences(original, formatted, "addMissingReferencesSection", summary);
+	}
+
+	public void sortSubSections() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
+		
+		for (LangSection langSection : list) {
+			langSection.sortSections();
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "sortSubSections", "ordenando subsecciones");
 	}
 
 	public void normalizeTemplateNames() {
@@ -997,151 +1208,6 @@ public class Editor extends EditorBase {
 		checkDifferences(original, formatted, "lengTemplateParams", "parámetros \"leng=\"");
 	}
 
-	public void substituteReferencesTemplate() {
-		String original = this.text;
-		Page page = Page.store(title, original);
-		String template = "{{título referencias}}";
-		List<String> contents = new ArrayList<String>();
-		boolean found = false;
-		
-		List<Section> sections = page.getAllSections();
-		ListIterator<Section> iterator = sections.listIterator(sections.size());
-		
-		while (iterator.hasPrevious()) {
-			Section section = iterator.previous();
-			String intro = section.getIntro();
-			int index = intro.indexOf(template);
-			
-			if (index != -1) {
-				found = true;
-				String content = intro.substring(index + template.length()).trim();
-				
-				if (!content.isEmpty()) {
-					contents.add(content);
-				}
-				
-				intro = intro.substring(0, index).trim();
-				section.setIntro(intro);
-			}
-		}
-		
-		if (!found) {
-			return;
-		}
-		
-		Collections.reverse(contents);
-		Section references = page.getReferencesSection();
-		
-		if (references == null) {
-			references = Section.create("Referencias y notas", 2);
-			contents.add("<references />");
-			references.setIntro(String.join("\n", contents));
-			page.setReferencesSection(references);
-		} else {
-			String intro = references.getIntro();
-			intro = intro.replaceAll("<references *?/ *?>", "").trim();
-			contents.addAll(Arrays.asList(intro.split("\n")));
-			contents.add("<references />");
-			references.setIntro(String.join("\n", contents));
-		}
-		
-		String formatted = page.toString();
-		checkDifferences(original, formatted, "substituteReferencesTemplate", "sustituyendo {{título referencias}}");
-	}
-	
-	public void duplicateReferencesSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
-		
-		Section bottomReferences = page.getReferencesSection();
-		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
-		
-		if (allReferences.size() < 2) {
-			return;
-		}
-		
-		Iterator<Section> iterator = allReferences.iterator();
-		
-		while (iterator.hasNext()) {
-			Section section = iterator.next();
-			
-			if (section.getChildSections() == null) {
-				String content = section.getIntro();
-				content = content.replaceAll("(?s)<!--.*?-->", ""); 
-				content = content.replaceAll("<references *?/ *?>", "");
-				content = content.trim();
-				
-				if (content.isEmpty()) {
-					section.detachOnlySelf();
-					iterator.remove();
-				}
-			}
-		}
-		
-		if (allReferences.isEmpty()) {
-			bottomReferences = Section.create("Referencias y notas", 2);
-			bottomReferences.setIntro("<references />");
-			page.setReferencesSection(bottomReferences);
-		}
-		
-		String formatted = page.toString();
-		
-		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
-	}
-	
-	public void sortLangSections() {
-		String original = this.text;
-		Page page = Page.store(title, original);
-		page.sortSections();
-		String formatted = page.toString();
-		checkDifferences(original, formatted, "sortLangSections", "ordenando secciones de idioma");
-	}
-	
-	public void addMissingReferencesSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
-		Section references = page.getReferencesSection();
-		boolean onlyTag = false;
-		
-		if (page.getAllSections().isEmpty() || (references == null && page.hasSectionWithHeader(".*?Referencias.*"))) {
-			return;
-		}
-		
-		if (references == null) {
-			references = Section.create("Referencias y notas", 2);
-			references.setIntro("<references />");
-			page.setReferencesSection(references);
-		} else {
-			String intro = references.getIntro();
-			
-			// TODO: check other elements (templates, manually introduced references...)
-			if (!intro.isEmpty()) {
-				return;
-			}
-			
-			references.setIntro("<references />");
-			onlyTag = true;
-		}
-		
-		String formatted = page.toString();
-		String summary = onlyTag ? "añadiendo <references>" : "añadiendo título de referencias y notas";
-		
-		checkDifferences(original, formatted, "addMissingReferencesSection", summary);
-	}
-	
-	public void sortSubSections() {
-		String original = this.text;
-		Page page = Page.store(title, original);
-		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
-		
-		for (LangSection langSection : list) {
-			langSection.sortSections();
-		}
-		
-		String formatted = page.toString();
-		checkDifferences(original, formatted, "sortSubSections", "ordenando subsecciones");
-	}
-
 	public void deleteEmptySections() {
 		// TODO
 	}
@@ -1234,13 +1300,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "wasi";
+		String title = "caución";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
