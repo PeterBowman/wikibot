@@ -948,7 +948,7 @@ public class Editor extends EditorBase {
 							
 							if (param1.matches("\\[.+\\]")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("\\] *?o *?\\[");
+								String[] alts = param1.split("\\] *?o? *?\\[");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -1300,7 +1300,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "caución";
+		String title = "veintiuno";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
