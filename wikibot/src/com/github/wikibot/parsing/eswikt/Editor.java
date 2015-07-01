@@ -960,8 +960,15 @@ public class Editor extends EditorBase {
 							params.remove("leng");
 							templateModified = true;
 						}
-					} else if (leng == null || !leng.equals(langCode)) {
-						// TODO: "leng" as first param?
+					} else if (leng == null) {
+						@SuppressWarnings("unchecked")
+						Map<String, String> tempMap = (Map<String, String>) params.clone();
+						params.clear();
+						params.put("templateName", tempMap.remove("templateName"));
+						params.put("leng", langCode);
+						params.putAll(tempMap);
+						templateModified = true;
+					} else if (!leng.equals(langCode)) {
 						params.put("leng", langCode);
 						templateModified = true;
 					}
