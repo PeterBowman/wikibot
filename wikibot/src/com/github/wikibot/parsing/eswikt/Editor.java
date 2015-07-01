@@ -144,11 +144,13 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("\n?<!-- ?¿flexión?: mira en .+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\[ ˈ \\]\\}\\}.+?-->", "");
+		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\[ ˈð? \\]\\}\\} \\|-\\|c= ˈθ\\|s= ˈs\\}\\}.+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?en general, no se indica la etimología .+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?si se trata de un país,? por favor,? pon.+?-->", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->", "");
+		formatted = formatted.replaceAll("<!-- *?antropónimos .+?-->", "");
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		formatted = formatted.replaceAll("<!--\\s*$", "");
 		
