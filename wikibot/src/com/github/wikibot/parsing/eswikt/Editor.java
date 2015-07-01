@@ -1128,7 +1128,7 @@ public class Editor extends EditorBase {
 		
 		String content = m.group(2).trim();
 		
-		if (StringUtils.containsAny(content, '{', '}', '(', ')', '|')) {
+		if (StringUtils.containsAny(content, '(', ')')) {
 			return null;
 		}
 		
@@ -1147,6 +1147,38 @@ public class Editor extends EditorBase {
 					return null;
 				} else {
 					map.put(param, String.format("%s%s", m2.group(1), m2.group(2)));
+				}
+			} else if (StringUtils.containsAny(term, '{', '}')) {
+				List<String> templates = ParseUtils.getTemplates("l", term);
+				
+				if (templates.isEmpty()) {
+					return null;
+				}
+				
+				String template = templates.get(0);
+				
+				if (!term.replace(" ", "").replace(template.replace(" ", ""), "").isEmpty()) {
+					return null;
+				}
+				
+				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				
+				if (params.containsKey("glosa")) {
+					return null;
+				}
+				
+				map.put(param, params.get("ParamWithoutName2"));
+				
+				if (params.containsKey("ParamWithoutName3")) {
+					map.put("alt" + i, params.get("ParamWithoutName3"));
+				}
+				
+				if (params.containsKey("num") || params.containsKey("núm")) {
+					map.put("num" + i, params.getOrDefault("num", params.get("núm")));
+				}
+				
+				if (params.containsKey("tr")) {
+					map.put("tr" + i, params.get("tr"));
 				}
 			} else {
 				map.put(param, term);
@@ -1308,7 +1340,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "alguacil";
+		String title = "os";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
