@@ -40,7 +40,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*?(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_PRON_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TEMPL_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -55,6 +55,14 @@ public class Editor extends EditorBase {
 	
 	private static final List<String> PRON_TEMPLS_PL = Arrays.asList(
 		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", null, "parónimos"
+	);
+	
+	private static final List<String> TERM_TEMPLS = Arrays.asList(
+		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama", "derivado"
+	);
+	
+	private static final List<String> TERM_TEMPLS_PL = Arrays.asList(
+		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
 	);
 	
 	private boolean isOldStructure;
@@ -103,6 +111,7 @@ public class Editor extends EditorBase {
 		sortSubSections();
 		normalizeTemplateNames();
 		adaptPronunciationTemplates();
+		convertToTemplate();
 		lengTemplateParams();
 		strongWhitespaces();
 		weakWhitespaces();
@@ -852,19 +861,23 @@ public class Editor extends EditorBase {
 					continue;
 				}
 				
-				Matcher m = P_PRON_LINE.matcher(line);
+				Matcher m = P_TEMPL_LINE.matcher(line);
+				String templateFromText = null;
 				
-				if (
-					m.matches() && (
-						(line = makeTemplLine(
-							m.group(1).trim().toLowerCase(),
-							m.group(2).trim(),
-							PRON_TEMPLS,
-							PRON_TEMPLS_PL)
-						) == null
-				)) {
-					noMatch = true;
-					break;
+				if (m.matches()) {
+					line = makeTemplLine(
+						m.group(1).trim().toLowerCase(),
+						m.group(2).trim(),
+						PRON_TEMPLS,
+						PRON_TEMPLS_PL
+					);
+					
+					if (line == null) {
+						noMatch = true;
+						break;
+					} else {
+						templateFromText = m.group(1).trim();
+					}
 				}
 				
 				m = P_ADAPT_PRON_TMPL.matcher(line);
@@ -1055,7 +1068,12 @@ public class Editor extends EditorBase {
 				}
 				
 				tempMap.put(templateName, newParams);
-				modified.add(templateName);
+				
+				if (templateFromText != null) {
+					modified.add(templateFromText);
+				} else {
+					modified.add(templateName);
+				}
 			}
 			
 			if (noMatch || tempMap.isEmpty() || (tempMap.containsKey("pronunciación") && tempMap.containsKey("pron.la"))) {
@@ -1100,7 +1118,7 @@ public class Editor extends EditorBase {
 		
 		checkDifferences(original, formatted, "adaptPronunciationTemplates", summary);
 	}
-
+	
 	private void makePronGrafParams(Map<String, String> sourceMap, Map<String, String> targetMap, String prefix) {
 		for (int i = 1; i < 21; i++) {
 			String num = (i == 1) ? "" : Integer.toString(i);
@@ -1130,6 +1148,49 @@ public class Editor extends EditorBase {
 		}
 	}
 	
+	public void convertToTemplate() {
+		String original = this.text;
+		Set<String> modified = new HashSet<String>();
+		String[] lines = original.split("\n");
+		
+		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
+			
+			if (line.isEmpty()) {
+				continue;
+			}
+			
+			Matcher m = P_TEMPL_LINE.matcher(line);
+			
+			if (
+				!m.matches() || !((
+					(line = makeTemplLine(
+						m.group(1).trim().toLowerCase(),
+						m.group(2).trim(),
+						TERM_TEMPLS,
+						TERM_TEMPLS_PL)
+					) != null) || (
+					(line = makeTemplLine(
+						m.group(1).trim().toLowerCase(),
+						m.group(2).trim(),
+						PRON_TEMPLS,
+						PRON_TEMPLS_PL)
+					) != null))
+			) {
+				continue;
+			}
+			
+			line = line.replace("{{derivado|", "{{derivad|");
+			lines[i] = line + ".";
+			modified.add(m.group(1).trim());
+		}
+		
+		String formatted = String.join("\n", lines);
+		String summary = "conversión a plantilla: " + String.join(", ", modified);
+		
+		checkDifferences(original, formatted, "convertToTemplate", summary);
+	}
+
 	private String makeTemplLine(String name, String content, List<String> listSg, List<String> listPl) {
 		if (name.endsWith(":")) {
 			name = name.substring(0, name.length() - 1).trim();
@@ -1155,8 +1216,8 @@ public class Editor extends EditorBase {
 		HashMap<String, String> map = new LinkedHashMap<String, String>(terms.length, 1);
 		map.put("templateName", name);
 		
-		for (int i = 0; i < terms.length; i++) {
-			String term = terms[i];
+		for (int i = 1; i <= terms.length; i++) {
+			String term = terms[i - 1].trim();
 			String param = "ParamWithoutName" + i;
 			
 			if (StringUtils.containsAny(term, '[', ']')) {
@@ -1363,7 +1424,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "os";
+		String title = "referéndum";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
