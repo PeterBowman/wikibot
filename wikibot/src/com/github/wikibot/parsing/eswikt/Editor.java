@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -309,7 +310,7 @@ public class Editor extends EditorBase {
 			}
 			
 			Section previousSection = section.previousSection();
-			String content = previousSection.getIntro();
+			String previousIntro = previousSection.getIntro();
 			String previousHeader = previousSection.getHeader();
 			String prevHeaderTmpl = null;
 			HashMap<String, String> prevHeaderTmplParams = null;
@@ -335,7 +336,7 @@ public class Editor extends EditorBase {
 			// TODO: handle etymology for compounds and {{pron-graf}} for alt parameters
 			
 			if (!alt.isEmpty()) {
-				List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", content);
+				List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", previousIntro);
 				
 				if (!pronLaTmpls.isEmpty() && pronLaTmpls.size() == 1) {
 					String pronLaTmpl = pronLaTmpls.get(0);
@@ -343,7 +344,7 @@ public class Editor extends EditorBase {
 					
 					if (!pronLaParams.containsKey("alt")) {
 						pronLaParams.put("alt", alt);
-						content = content.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
+						previousIntro = previousIntro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
 					}
 					
 					if (previousSection instanceof LangSection) {
@@ -368,8 +369,8 @@ public class Editor extends EditorBase {
 				header.matches("^Etimología \\d+$") &&
 				!(nextParentSiblingSection instanceof LangSection)
 			) {
-				if (!content.isEmpty()) {
-					section.setIntro(content);
+				if (!previousIntro.isEmpty()) {
+					section.setIntro(previousIntro);
 					isEmpty = false;
 					
 					if (previousSection instanceof LangSection) {
@@ -381,7 +382,7 @@ public class Editor extends EditorBase {
 					
 					// Search for the etymology template and move it to the last line
 					
-					String[] lines = content.split("\n");
+					String[] lines = previousIntro.split("\n");
 					
 					if (lines.length > 1) {
 						int lineNumber = 0;
@@ -407,24 +408,24 @@ public class Editor extends EditorBase {
 				}
 			} else {
 				// In case there is one single "Etimología 1" section in the current LangSection parent
-				
-				section.setHeader("Etimología");
+				header = "Etimología";
+				section.setHeader(header);
 				
 				// Move etymology template to the newly created etymology section
 				
 				Pattern tempPatt = Pattern.compile("\n?(\\{\\{(?:e|E)timología[^\n]+)", Pattern.DOTALL);
-				Matcher m2 = tempPatt.matcher(content);
+				Matcher m2 = tempPatt.matcher(previousIntro);
 				List<String> temp = new ArrayList<String>();
 				
 				while (m2.find()) {
 					isEmpty = false;
 					temp.add(m2.group(1).trim());
-					content = content.substring(0, m2.start()) + content.substring(m2.end());
-					m2 = tempPatt.matcher(content);
+					previousIntro = previousIntro.substring(0, m2.start()) + previousIntro.substring(m2.end());
+					m2 = tempPatt.matcher(previousIntro);
 				}
 				
 				if (!temp.isEmpty()) {
-					previousSection.setIntro(content);
+					previousSection.setIntro(previousIntro);
 					section.setIntro(String.join("\n\n", temp));
 				}
 			}
@@ -440,7 +441,35 @@ public class Editor extends EditorBase {
 					params.put("leng", langCode);
 				}
 				
-				section.setIntro(ParseUtils.templateFromMap(params) + ".");
+				String etymologyTemplate = ParseUtils.templateFromMap(params) + ".";
+				String newIntro = "";
+				
+				if (header.matches("^Etimología \\d+$")) {
+					params = new LinkedHashMap<String, String>();
+					params.put("templateName", "pron-graf");
+					
+					if (!langCode.equals("es")) {
+						params.put("leng", langCode);
+					}
+					
+					newIntro = ParseUtils.templateFromMap(params);
+					newIntro += "\n";
+				}
+				
+				newIntro += etymologyTemplate;
+				section.setIntro(newIntro);
+			}
+			
+			if (header.matches("^Etimología$") && previousIntro.isEmpty()) {
+				HashMap<String, String> params = new LinkedHashMap<String, String>();
+				params.put("templateName", "pron-graf");
+				String langCode = langSectionParent.getLangCode().toLowerCase();
+				
+				if (!langCode.equals("es")) {
+					params.put("leng", langCode);
+				}
+				
+				previousSection.setIntro(ParseUtils.templateFromMap(params));
 			}
 			
 			section.setTrailingNewlines(1);
@@ -1481,8 +1510,8 @@ public class Editor extends EditorBase {
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
