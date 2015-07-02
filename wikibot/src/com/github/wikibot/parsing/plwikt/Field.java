@@ -137,13 +137,17 @@ public class Field implements Comparable<Field> {
 	
 	@Override
 	public int hashCode() {
-		return toString().hashCode();
+		return 0;
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof Field)) {
 			return false;
+		}
+		
+		if (o == this) {
+			return true;
 		}
 		
 		Field f = (Field) o;
