@@ -39,7 +39,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TEMPL_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -47,27 +47,27 @@ public class Editor extends EditorBase {
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación"
 	);
 	
-	private static final List<String> PRON_TEMPLS = Arrays.asList(
+	private static final List<String> PRON_TMPLS = Arrays.asList(
 		"pronunciación", "pron.la",  "audio", "transliteración", "homófono",
 		"grafía alternativa", "variantes", "parónimo"
 	);
 	
-	private static final List<String> PRON_TEMPLS_PL = Arrays.asList(
+	private static final List<String> PRON_TMPLS_PL = Arrays.asList(
 		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", null, "parónimos"
 	);
 	
-	private static final List<String> TERM_TEMPLS = Arrays.asList(
+	private static final List<String> TERM_TMPLS = Arrays.asList(
 		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama", "derivado"
 	);
 	
-	private static final List<String> TERM_TEMPLS_PL = Arrays.asList(
+	private static final List<String> TERM_TMPLS_PL = Arrays.asList(
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
 	);
 	
 	private boolean isOldStructure;
 	
 	static {
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TEMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
 		// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
 		final List<String> amboxTemplates = Arrays.asList(
@@ -104,6 +104,7 @@ public class Editor extends EditorBase {
 		rearrangeSubsections();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
+		removePronGrafSection();
 		normalizeSectionLevels();
 		sortLangSections();
 		addMissingReferencesSection();
@@ -622,6 +623,7 @@ public class Editor extends EditorBase {
 				content = content.replaceAll("<references *?/ *?>", "");
 				content = content.trim();
 				
+				// TODO: handle non-empty sections, too
 				if (content.isEmpty()) {
 					section.detachOnlySelf();
 					iterator.remove();
@@ -639,19 +641,68 @@ public class Editor extends EditorBase {
 		
 		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
 	}
+	
+	public void removePronGrafSection() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		
+		List<Section> sections = page.findSectionsWithHeader("(P|p)ronunciaci(ó|o)n( y escritura)?");
+		
+		if (sections.isEmpty()) {
+			return;
+		}
+		
+		for (Section section : sections) {
+			Section parentSection = section.getParentSection();
+			
+			if (parentSection == null || section.getChildSections() != null) {
+				continue;
+			}
+			
+			String selfIntro = section.getIntro();
+			String parentIntro = parentSection.getIntro();
+			
+			if (
+				!(parentSection instanceof LangSection) &&
+				!parentSection.getHeader().matches("^Etimología.*")
+			) {
+				// TODO: ¿?
+				continue;
+			}
+			
+			String newIntro = Stream.of(String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n"))
+				.sorted((line1, line2) -> -Boolean.compare(
+					line1.matches(P_AMBOX_TMPLS.toString()),
+					line2.matches(P_AMBOX_TMPLS.toString())
+				))
+				.collect(Collectors.joining("\n"));
+			
+			parentSection.setIntro(newIntro);
+			section.detachOnlySelf();
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "removePronGrafSection", "eliminando título de pronunciación");
+	}
 
 	public void normalizeSectionLevels() {
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
 		page.normalizeChildLevels();
+		Section references = page.getReferencesSection();
+		
+		for (Section section : page.getAllSections()) {
+			if (section.getTocLevel() != 1 || section instanceof LangSection || section == references) {
+				continue;
+			}
+			
+			try {
+				section.pushLevels(1);
+			} catch (IllegalArgumentException e) {}
+		}
 		
 		List<Section> tempList = page.findSectionsWithHeader("^Etimología.*");
-		
-		if (tempList.isEmpty()) {
-			// TODO: add missing etymology sections
-			return;
-		}
 		
 		for (Section etymologySection : tempList) {
 			int level = etymologySection.getLevel();
@@ -860,15 +911,15 @@ public class Editor extends EditorBase {
 					continue;
 				}
 				
-				Matcher m = P_TEMPL_LINE.matcher(line);
+				Matcher m = P_TMPL_LINE.matcher(line);
 				String templateFromText = null;
 				
 				if (m.matches()) {
-					line = makeTemplLine(
+					line = makeTmplLine(
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
-						PRON_TEMPLS,
-						PRON_TEMPLS_PL
+						PRON_TMPLS,
+						PRON_TMPLS_PL
 					);
 					
 					if (line == null) {
@@ -1071,7 +1122,7 @@ public class Editor extends EditorBase {
 				if (templateFromText != null) {
 					modified.add(templateFromText);
 				} else {
-					modified.add(String.format("{{$s}}", templateName));
+					modified.add(String.format("{{%s}}", templateName));
 				}
 			}
 			
@@ -1154,21 +1205,21 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			Matcher m = P_TEMPL_LINE.matcher(line);
+			Matcher m = P_TMPL_LINE.matcher(line);
 			
 			if (
 				!m.matches() || !((
-					(line = makeTemplLine(
+					(line = makeTmplLine(
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
-						TERM_TEMPLS,
-						TERM_TEMPLS_PL)
+						TERM_TMPLS,
+						TERM_TMPLS_PL)
 					) != null) || (
-					(line = makeTemplLine(
+					(line = makeTmplLine(
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
-						PRON_TEMPLS,
-						PRON_TEMPLS_PL)
+						PRON_TMPLS,
+						PRON_TMPLS_PL)
 					) != null))
 			) {
 				continue;
@@ -1185,7 +1236,7 @@ public class Editor extends EditorBase {
 		checkDifferences(original, formatted, "convertToTemplate", summary);
 	}
 
-	private String makeTemplLine(String name, String content, List<String> listSg, List<String> listPl) {
+	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
 		if (name.endsWith(":")) {
 			name = name.substring(0, name.length() - 1).trim();
 		}
@@ -1421,7 +1472,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "que";
+		String title = "decumbente";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
