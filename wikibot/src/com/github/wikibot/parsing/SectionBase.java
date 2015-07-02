@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	protected List<T> siblingSections;
 	protected List<T> childSections;
 	protected PageBase<T> containingPage;
+	private UUID uuid;
 	
 	protected SectionBase(String text) {
 		header = "";
@@ -37,6 +39,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		siblingSections = null;
 		childSections = null;
 		containingPage = null;
+		uuid = UUID.randomUUID();
 		
 		if (text != null && !text.isEmpty()) {
 			// FIXME: this won't parse inner sections
@@ -332,18 +335,8 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public void detach() {
-		if (parentSection == null) {
-			throw new UnsupportedOperationException("Cannot detach Sections with no parent Section");
-		}
-		
-		parentSection.childSections.remove(this);
-		
-		if (!parentSection.childSections.isEmpty()) {
-			for (T sibling : parentSection.childSections) {
-				sibling.siblingSections.remove(this);
-			}
-		} else {
-			parentSection.childSections = null;
+		if (parentSection == null && containingPage == null) {
+			throw new UnsupportedOperationException("Cannot detach Sections with no parent Section and containing Page");
 		}
 		
 		if (containingPage != null) {
@@ -352,7 +345,18 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 			if (childSections != null) {
 				List<T> flattened = flattenSubSections(childSections);
 				containingPage.sections.removeAll(flattened);
-				containingPage.buildSectionTree();
+			}
+			
+			containingPage.buildSectionTree();
+		} else if (parentSection != null) {
+			parentSection.childSections.remove(this);
+			
+			if (!parentSection.childSections.isEmpty()) {
+				for (T sibling : parentSection.childSections) {
+					sibling.siblingSections.remove(this);
+				}
+			} else {
+				parentSection.childSections = null;
 			}
 		}
 	}
@@ -461,18 +465,23 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	
 	@Override
 	public int hashCode() {
-		return 31 * toString().hashCode();
+		return 0;
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof SectionBase)) {
+		if (obj == null || !(obj instanceof SectionBase)) {
 			return false;
+		}
+		
+		if (obj == this) {
+			return true;
 		}
 		
 		@SuppressWarnings("unchecked")
 		SectionBase<T> s = (SectionBase<T>) obj;
-		return s.toString().equals(toString());
+		
+		return uuid.equals(s.uuid);
 	}
 	
 	@Override

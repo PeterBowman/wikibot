@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -1427,13 +1426,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "referéndum";
+		String title = "que";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);

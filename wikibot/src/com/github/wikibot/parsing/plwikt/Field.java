@@ -1,6 +1,7 @@
 package com.github.wikibot.parsing.plwikt;
 
 import java.security.InvalidParameterException;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,6 +13,7 @@ public class Field implements Comparable<Field> {
 	private int trailingNewlines;
 	private Character eolMark;
 	Section containingSection;
+	private UUID uuid;
 	
 	protected Field(FieldTypes fieldType, String content) {
 		this.fieldType = fieldType;
@@ -19,6 +21,7 @@ public class Field implements Comparable<Field> {
 		this.leadingNewlines = 0;
 		this.trailingNewlines = 0;
 		this.containingSection = null;
+		this.uuid = UUID.randomUUID();
 		
 		extractContent();
 	}
@@ -144,7 +147,7 @@ public class Field implements Comparable<Field> {
 		}
 		
 		Field f = (Field) o;
-		return fieldType.equals(f.fieldType);
+		return uuid.equals(f.uuid);
 	}
 
 	@Override
