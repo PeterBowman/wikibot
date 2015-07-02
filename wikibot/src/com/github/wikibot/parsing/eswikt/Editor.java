@@ -890,7 +890,6 @@ public class Editor extends EditorBase {
 			String langCode = langSection.getLangCode().toLowerCase();
 			boolean isSpanishSection = langCode.equals("es");
 			String[] lines = content.split("\n");
-			boolean noMatch = false;
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
 			List<String> amboxTemplates = new ArrayList<String>();
@@ -913,6 +912,7 @@ public class Editor extends EditorBase {
 				
 				Matcher m = P_TMPL_LINE.matcher(line);
 				String templateFromText = null;
+				String origLine = line;
 				
 				if (m.matches()) {
 					line = makeTmplLine(
@@ -923,8 +923,8 @@ public class Editor extends EditorBase {
 					);
 					
 					if (line == null) {
-						noMatch = true;
-						break;
+						editedLines.add(origLine);
+						continue;
 					} else {
 						templateFromText = m.group(1).trim();
 					}
@@ -933,22 +933,22 @@ public class Editor extends EditorBase {
 				m = P_ADAPT_PRON_TMPL.matcher(line);
 				
 				if (!m.matches()) {
-					noMatch = true;
-					break;
+					editedLines.add(origLine);
+					continue;
 				}
 				
 				String templateName = m.group(1).toLowerCase();
 				
 				if (tempMap.containsKey(templateName)) {
-					noMatch = true;
-					break;
+					editedLines.add(origLine);
+					continue;
 				}
 				
 				List<String> templates = ParseUtils.getTemplates(templateName, line);
 				
 				if (templates.isEmpty() || templates.size() > 1) {
-					noMatch = true;
-					break;
+					editedLines.add(origLine);
+					continue;
 				}
 				
 				Map<String, String> params = ParseUtils.getTemplateParametersWithValue(templates.get(0));
@@ -957,8 +957,8 @@ public class Editor extends EditorBase {
 				switch (templateName) {
 					case "pronunciación":
 						if (params.containsKey("fuente")) {
-							noMatch = true;
-							break linesLoop;
+							editedLines.add(origLine);
+							continue linesLoop;
 						}
 						
 						String param1 = params.get("ParamWithoutName1");
@@ -1020,6 +1020,8 @@ public class Editor extends EditorBase {
 								count++;
 							}
 						} else {
+							param1 = param1.replace("'", "ˈ");
+							
 							if (param1.startsWith("[") && !param1.endsWith("]")) {
 								param1 += "]";
 							} else if (!param1.startsWith("[") && param1.endsWith("]")) {
@@ -1091,8 +1093,8 @@ public class Editor extends EditorBase {
 								!params.get("ParamWithoutName2").matches("(?i)audio.?")
 							)
 						) {
-							noMatch = true;
-							break linesLoop;
+							editedLines.add(origLine);
+							continue linesLoop;
 						} else {
 							newParams.put("audio", params.get("ParamWithoutName1"));
 							break;
@@ -1113,8 +1115,8 @@ public class Editor extends EditorBase {
 						makePronGrafParams(params, newParams, "p");
 						break;
 					default:
-						noMatch = true;
-						break linesLoop;
+						editedLines.add(origLine);
+						continue linesLoop;
 				}
 				
 				tempMap.put(templateName, newParams);
@@ -1126,7 +1128,9 @@ public class Editor extends EditorBase {
 				}
 			}
 			
-			if (noMatch || tempMap.isEmpty() || (tempMap.containsKey("pronunciación") && tempMap.containsKey("pron.la"))) {
+			if (tempMap.isEmpty() || (
+				tempMap.containsKey("pronunciación") && tempMap.containsKey("pron.la")
+			)) {
 				continue;
 			}
 			
@@ -1472,7 +1476,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "decumbente";
+		String title = "como";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
