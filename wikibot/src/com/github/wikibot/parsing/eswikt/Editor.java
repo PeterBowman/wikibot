@@ -37,7 +37,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
-	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*?(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|\\w+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\})\\s*(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_PRON_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
@@ -230,7 +230,7 @@ public class Editor extends EditorBase {
 			}
 			
 			pre = pre.isEmpty() ? "" : "$1\n";
-			post = post.isEmpty() ? "" : "\n$3";
+			post = post.isEmpty() || post.matches("<!--.+?-->") ? "" : "\n$3";
 			
 			if (!etym.isEmpty() && !etym.equals("1")) {
 				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post));
