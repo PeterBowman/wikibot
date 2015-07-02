@@ -1071,7 +1071,7 @@ public class Editor extends EditorBase {
 				if (templateFromText != null) {
 					modified.add(templateFromText);
 				} else {
-					modified.add(templateName);
+					modified.add(String.format("{{$s}}", templateName));
 				}
 			}
 			
@@ -1108,12 +1108,7 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		
-		String summary = modified.stream()
-			.map(template -> String.format("{{%s}}", template))
-			.collect(Collectors.joining(", "));
-		
-		summary += " → {{pron-graf}}";
+		String summary = String.join(", ", modified) + " → {{pron-graf}}";
 		
 		checkDifferences(original, formatted, "adaptPronunciationTemplates", summary);
 	}
