@@ -1208,7 +1208,10 @@ public class Editor extends EditorBase {
 			return null;
 		}
 		
-		if (StringUtils.containsAny(content, '(', ')')) {
+		if (
+			StringUtils.containsAny(content, '(', ')') ||
+			!StringUtils.containsAny(content, '[', ']', '{', '}')
+		) {
 			return null;
 		}
 		
@@ -1261,7 +1264,7 @@ public class Editor extends EditorBase {
 					map.put("tr" + i, params.get("tr"));
 				}
 			} else {
-				map.put(param, term);
+				return null;
 			}
 		}
 		
