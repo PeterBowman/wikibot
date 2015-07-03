@@ -988,6 +988,10 @@ public class Editor extends EditorBase {
 					}
 				}
 				
+				line = line.replaceFirst(
+					"\\{\\{(?:P|p)ronunciación(?:\\|leng=[^\\|]*?)?\\|(.+?)\\}\\} (?:o|ó) \\{\\{AFI\\|(.+?)\\}\\}\\.?",
+					"{{pronunciación|$1 o $2}}"
+				);
 				m = P_ADAPT_PRON_TMPL.matcher(line);
 				
 				if (!m.matches()) {
