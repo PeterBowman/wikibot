@@ -57,7 +57,7 @@ public class PLWikt extends Wikibot {
 		return id;
 	}
 	
-	public synchronized void review(Revision rev) throws LoginException, IOException {
+	public synchronized void review(Revision rev, String comment) throws LoginException, IOException {
 		// TODO: move to new FlaggedRevsWiki with support for clone contructors
 		// TODO: fix token caching
 		
@@ -73,11 +73,16 @@ public class PLWikt extends Wikibot {
 		
 		StringBuilder sb = new StringBuilder();
 		
+		if (comment != null && !comment.isEmpty()) {
+			sb.append("comment=" + comment + "&");
+		}
+		
 		sb.append("flag_accuracy=1&");
 		sb.append("revid=" + rev.getRevid() + "&");
 		sb.append("token=" + token);
 				
 		String response = post(apiUrl + "action=review", sb.toString(), "review");
+		checkErrorsAndUpdateStatus(response, "review");
 
 		if (!response.contains("error ")) {
 			log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());

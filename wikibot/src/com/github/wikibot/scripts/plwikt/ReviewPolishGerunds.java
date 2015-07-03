@@ -136,7 +136,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 				continue;
 			}
 			
-			wb.review(rev);
+			wb.review(rev, "");
 		}
 		
 		System.out.printf("Detectados %d conflictos en: %s%n", errors.size(), errors.toString());
