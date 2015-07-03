@@ -932,16 +932,15 @@ public class Editor extends EditorBase {
 		Pattern pComments = Pattern.compile(" *?<!--.+-->");
 		
 		for (Section section : page.getAllSections()) {
-			String content = section.getIntro();
-			content = content.replaceAll("\n{2,}", "\n");
-			
-			if (content.isEmpty() || content.contains("{{pron-graf")) {
+			if (!(section instanceof LangSection) && !section.getHeader().matches("^Etimología \\d+")) {
 				continue;
 			}
 			
 			LangSection langSection = section.getLangSectionParent();
+			String content = section.getIntro();
+			content = content.replaceAll("\n{2,}", "\n");
 			
-			if (langSection == null) {
+			if (langSection == null || content.isEmpty() || content.contains("{{pron-graf")) {
 				continue;
 			}
 			
