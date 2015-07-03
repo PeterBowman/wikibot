@@ -1017,7 +1017,10 @@ public class Editor extends EditorBase {
 				
 				switch (templateName) {
 					case "pronunciación":
-						if (params.containsKey("fuente")) {
+						if (
+							params.containsKey("ParamWithoutName2") &&
+							!params.get("ParamWithoutName2").contains("AFI")
+						) {
 							editedLines.add(origLine);
 							continue linesLoop;
 						}
@@ -1081,6 +1084,14 @@ public class Editor extends EditorBase {
 								count++;
 							}
 						} else {
+							if (
+								param1.contains("<ref") ||
+								StringUtils.containsAny(param1, '(', ')', '{', '}', '[', ']')
+							) {
+								editedLines.add(origLine);
+								continue linesLoop;
+							}
+							
 							param1 = param1.replace("'", "ˈ");
 							
 							if (param1.startsWith("[") && !param1.endsWith("]")) {
