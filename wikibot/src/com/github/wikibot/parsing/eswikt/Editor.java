@@ -110,6 +110,7 @@ public class Editor extends EditorBase {
 		sortLangSections();
 		addMissingReferencesSection();
 		sortSubSections();
+		removeInflectionTemplates();
 		normalizeTemplateNames();
 		adaptPronunciationTemplates();
 		convertToTemplate();
@@ -693,12 +694,12 @@ public class Editor extends EditorBase {
 	
 	public void normalizeSectionLevels() {
 		String original = this.text;
-		Page page = Page.store(title, original);
 		
 		if (isOldStructure) {
 			return;
 		}
 		
+		Page page = Page.store(title, original);
 		page.normalizeChildLevels();
 		Section references = page.getReferencesSection();
 		
@@ -873,6 +874,34 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		checkDifferences(original, formatted, "sortSubSections", "ordenando subsecciones");
+	}
+	
+	public void removeInflectionTemplates() {
+		String original = this.text;
+		
+		if (isOldStructure || !original.contains("{{inflect.")) {
+			return;
+		}
+		
+		Page page = Page.store(title, original);
+		
+		for (Section section : page.getAllSections()) {
+			String intro = section.getIntro();
+			
+			if (
+				section.getLangSectionParent() == null ||
+				!section.getHeader().startsWith("Forma ") || 
+				!intro.contains("{{inflect.")
+			) {
+				continue;
+			}
+			
+			intro = intro.replace("\\{\\{inflect\\..+?\\}\\}", "").trim();
+			section.setIntro(intro);
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "removeInflectionTemplates", "eliminando plantillas de flexión");
 	}
 
 	public void normalizeTemplateNames() {
@@ -1572,7 +1601,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "un";
+		String title = "gentes";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
