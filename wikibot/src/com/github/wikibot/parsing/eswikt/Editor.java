@@ -15,6 +15,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1393,12 +1394,16 @@ public class Editor extends EditorBase {
 			String param = "ParamWithoutName" + i;
 			
 			if (StringUtils.containsAny(term, '[', ']')) {
-				Matcher m2 = Pattern.compile("\\[\\[(.+?)\\]\\](.*)").matcher(term);
+				Matcher m2 = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)").matcher(term);
 				
-				if (!m2.find() || StringUtils.containsAny(m2.group(2), '[', ']')) {
+				if (!m2.find() || StringUtils.containsAny(m2.group(3), '[', ']')) {
 					return null;
 				} else {
-					map.put(param, String.format("%s%s", m2.group(1), m2.group(2)));
+					map.put(param, m2.group(1));
+					
+					if (!m2.group(3).isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
+						map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + m2.group(3));
+					}
 				}
 			} else if (StringUtils.containsAny(term, '{', '}')) {
 				List<String> templates = ParseUtils.getTemplates("l", term);
@@ -1596,7 +1601,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "moro";
+		String title = "bol";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
