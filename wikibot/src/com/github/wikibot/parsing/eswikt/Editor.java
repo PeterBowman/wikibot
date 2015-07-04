@@ -1125,7 +1125,7 @@ public class Editor extends EditorBase {
 								param1 = "/" + param1;
 							}
 							
-							if (param1.matches("\\[.+\\]")) {
+							if (param1.matches("\\[[^\\[\\]]+\\]")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
 								String[] alts = param1.split("\\] *?(o|,)? *?\\[");
 								
@@ -1138,7 +1138,7 @@ public class Editor extends EditorBase {
 								} else {
 									newParams.put("fone", param1);
 								}
-							} else if (param1.matches("/.+/")) {
+							} else if (param1.matches("/[^/]+/")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
 								String[] alts = param1.split("/ *?(o|,)? *?/");
 								
@@ -1151,8 +1151,11 @@ public class Editor extends EditorBase {
 								} else {
 									newParams.put("fono", param1);
 								}
-							} else {
+							} else if (!StringUtils.containsAny(param1, '[', ']', '/')) {
 								newParams.put("fone", param1);
+							} else {
+								editedLines.add(origLine);
+								continue linesLoop;
 							}
 						}
 						
@@ -1593,7 +1596,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "despintar";
+		String title = "arte marcial";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
