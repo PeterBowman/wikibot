@@ -37,13 +37,14 @@ public final class MassReview {
 		
 		List<String[]> list;
 		
-		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA)))) {
+		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), "UTF-8"))) {
 			list = parser.parseAll(reader);
 		}
 		
 		System.out.printf("Total elements: %d%n", list.size());
 		
 		File f = new File(F_LAST);
+		String lastReviewed = "";
 		
 		if (f.exists()) {
 			String lastEntry = IOUtils.loadFromFile(F_LAST, "", "UTF8")[0];
@@ -53,6 +54,7 @@ public final class MassReview {
 				.findFirst()
 				.map(arr -> temp.indexOf(arr))
 				.get();
+			lastReviewed = list.get(index)[0];
 			list = list.subList(index + 1, list.size());
 		}
 		
@@ -61,7 +63,6 @@ public final class MassReview {
 		ListIterator<String[]> iterator = list.listIterator();
 		List<String> errors = new ArrayList<String>();
 		String comment = "[[Specjalna:Niezmienny link/4711423#Masowe oznaczanie importu]]";
-		String lastReviewed = "";
 		wb.setThrottle(5000);
 		
 		while (iterator.hasNext()) {
@@ -72,7 +73,7 @@ public final class MassReview {
 			try {
 				Revision rev = wb.getTopRevision(title);
 				
-				if (rev.getRevid() != revid) {
+				if (rev == null || rev.getRevid() != revid) {
 					errors.add(title);
 					continue;
 				}
