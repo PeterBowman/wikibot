@@ -304,32 +304,25 @@ public class Editor extends EditorBase {
 		// Rearrange etymology sections
 		
 		for (Section section : page.getAllSections()) {
-			String header = section.getHeader();
-			
-			if (!header.matches("^Etimología.*")) {
+			if (!section.getHeader().matches("^Etimología.*")) {
 				continue;
 			}
 			
 			Section previousSection = section.previousSection();
-			String previousIntro = previousSection.getIntro();
-			String previousHeader = previousSection.getHeader();
-			String prevHeaderTmpl = null;
-			HashMap<String, String> prevHeaderTmplParams = null;
 			String alt = "";
 			
 			// Extract alt parameter
 			
-			if (previousHeader.startsWith("ETYM")) {
+			if (previousSection.getHeader().startsWith("ETYM")) {
+				String previousHeader = previousSection.getHeader(); 
 				alt = previousHeader.substring(previousHeader.indexOf(" alt-") + " alt-".length());
-			} else {
-				List<String> prevHeaderTmpls = ParseUtils.getTemplates("lengua", previousHeader);
-				
-				if (prevHeaderTmpls.isEmpty()) {
-					prevHeaderTmpls = ParseUtils.getTemplates("translit", previousHeader);
-				}
-				
-				prevHeaderTmpl = prevHeaderTmpls.get(0);
-				prevHeaderTmplParams = ParseUtils.getTemplateParametersWithValue(prevHeaderTmpl);
+			} else if (
+				previousSection instanceof LangSection && (
+					((LangSection) previousSection).getTemplateType().equals("lengua") ||
+					((LangSection) previousSection).getTemplateType().equals("translit")
+				)
+			) {
+				Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
 				alt = prevHeaderTmplParams.getOrDefault("alt", "");
 			}
 			
@@ -341,7 +334,7 @@ public class Editor extends EditorBase {
 			
 			if (!alt.isEmpty()) {
 				if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
-					List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", previousIntro);
+					List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", previousSection.getIntro());
 					
 					if (pronLaTmpls.size() == 1) {
 						String pronLaTmpl = pronLaTmpls.get(0);
@@ -349,32 +342,35 @@ public class Editor extends EditorBase {
 						
 						if (!pronLaParams.containsKey("alt")) {
 							pronLaParams.put("alt", alt);
+							String previousIntro = previousSection.getIntro();
 							previousIntro = previousIntro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
+							previousSection.setIntro(previousIntro);
 						}
 						
 						if (previousSection instanceof LangSection) {
+							Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
 							prevHeaderTmplParams.remove("alt");
-							String newTemplate = ParseUtils.templateFromMap(prevHeaderTmplParams);
-							previousHeader = previousHeader.replace(prevHeaderTmpl, newTemplate);
-							previousSection.setHeader(previousHeader);
+							((LangSection) previousSection).setTemplateParams(prevHeaderTmplParams);
 						}
 					} else if (!(previousSection instanceof LangSection)) {
-						List<String> altGrafTmpls = ParseUtils.getTemplates("diacrítico", previousIntro);
+						List<String> altGrafTmpls = ParseUtils.getTemplates("diacrítico", previousSection.getIntro());
 						
-						if (altGrafTmpls.isEmpty() && !previousIntro.contains("Diacrítico:")) {
+						if (altGrafTmpls.isEmpty() && !previousSection.getIntro().contains("Diacrítico:")) {
 							HashMap<String, String> altGrafParams = new LinkedHashMap<String, String>();
 							altGrafParams.put("templateName", "diacrítico");
 							altGrafParams.put("ParamWithoutName1", alt);
 							String altGrafTmpl = ParseUtils.templateFromMap(altGrafParams) + ".";
+							String previousIntro = previousSection.getIntro();
 							previousIntro = previousIntro + "\n" + altGrafTmpl;
 							previousIntro = previousIntro.trim();
+							previousSection.setIntro(previousIntro);
 						} else {
 							return;
 						}
 					}
 				} else if (
-					!(previousSection instanceof LangSection) ||
-					!(nextParentSiblingSection instanceof LangSection)
+					previousSection.getHeader().startsWith("ETYM") ||
+					nextParentSiblingSection.getHeader().startsWith("ETYM")
 				) {
 					return;
 				}
@@ -383,15 +379,15 @@ public class Editor extends EditorBase {
 			// Move contents to the new etymology sections
 			// TODO: review, catch special cases
 			
-			boolean isEmpty = true;
-			
 			if (
-				header.matches("^Etimología \\d+$") &&
-				!(nextParentSiblingSection instanceof LangSection)
+				section.getHeader().matches("^Etimología \\d+$") &&
+				(
+					previousSection.getHeader().startsWith("ETYM") ||
+					nextParentSiblingSection.getHeader().startsWith("ETYM")
+				)
 			) {
-				if (!previousIntro.isEmpty()) {
-					section.setIntro(previousIntro);
-					isEmpty = false;
+				if (!previousSection.getIntro().isEmpty()) {
+					section.setIntro(previousSection.getIntro());
 					
 					if (previousSection instanceof LangSection) {
 						previousSection.setIntro("");
@@ -402,7 +398,7 @@ public class Editor extends EditorBase {
 					
 					// Search for the etymology template and move it to the last line
 					
-					String[] lines = previousIntro.split("\n");
+					String[] lines = section.getIntro().split("\n");
 					
 					if (lines.length > 1) {
 						int lineNumber = 0;
@@ -428,17 +424,16 @@ public class Editor extends EditorBase {
 				}
 			} else {
 				// In case there is one single "Etimología 1" section in the current LangSection parent
-				header = "Etimología";
-				section.setHeader(header);
+				section.setHeader("Etimología");
 				
 				// Move etymology template to the newly created etymology section
 				
 				Pattern tempPatt = Pattern.compile("\n?(\\{\\{(?:e|E)timología[^\n]+)", Pattern.DOTALL);
+				String previousIntro = previousSection.getIntro();
 				Matcher m2 = tempPatt.matcher(previousIntro);
 				List<String> temp = new ArrayList<String>();
 				
 				while (m2.find()) {
-					isEmpty = false;
 					temp.add(m2.group(1).trim());
 					previousIntro = previousIntro.substring(0, m2.start()) + previousIntro.substring(m2.end());
 					m2 = tempPatt.matcher(previousIntro);
@@ -452,7 +447,7 @@ public class Editor extends EditorBase {
 			
 			// TODO: move to new task
 			
-			if (isEmpty) {
+			if (section.getIntro().isEmpty()) {
 				HashMap<String, String> params = new LinkedHashMap<String, String>();
 				params.put("templateName", "etimología");
 				String langCode = langSectionParent.getLangCode().toLowerCase();
@@ -464,7 +459,7 @@ public class Editor extends EditorBase {
 				String etymologyTemplate = ParseUtils.templateFromMap(params) + ".";
 				String newIntro = "";
 				
-				if (header.matches("^Etimología \\d+$")) {
+				if (section.getHeader().matches("^Etimología \\d+$")) {
 					params = new LinkedHashMap<String, String>();
 					params.put("templateName", "pron-graf");
 					
@@ -480,7 +475,7 @@ public class Editor extends EditorBase {
 				section.setIntro(newIntro);
 			}
 			
-			if (header.matches("^Etimología$") && previousIntro.isEmpty()) {
+			if (section.getHeader().matches("^Etimología$") && previousSection.getIntro().isEmpty()) {
 				HashMap<String, String> params = new LinkedHashMap<String, String>();
 				params.put("templateName", "pron-graf");
 				String langCode = langSectionParent.getLangCode().toLowerCase();
@@ -1322,7 +1317,7 @@ public class Editor extends EditorBase {
 	public void convertToTemplate() {
 		String original = this.text;
 		Set<String> modified = new HashSet<String>();
-		String[] lines = original.split("\n");
+		String[] lines = original.split("\n", -1);
 		
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -1598,7 +1593,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "gluten";
+		String title = "despintar";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
