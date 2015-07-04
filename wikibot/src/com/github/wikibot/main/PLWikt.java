@@ -67,6 +67,7 @@ public class PLWikt extends Wikibot {
             throw new CredentialNotFoundException("Permission denied: cannot review.");
 		}
 		
+		long start = System.currentTimeMillis();
 		@SuppressWarnings("rawtypes")
 		Map info = getPageInfo(rev.getPage());
 		String token = URLEncoder.encode((String)info.get("token"), "UTF-8");
@@ -82,13 +83,26 @@ public class PLWikt extends Wikibot {
 		sb.append("token=" + token);
 				
 		String response = post(apiUrl + "action=review", sb.toString(), "review");
-		checkErrorsAndUpdateStatus(response, "review");
-
-		if (!response.contains("error ")) {
-			log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());
-		} else {
-			log(Level.SEVERE, "review", "REVIEW FAILED");
+		
+		try {
+			checkErrorsAndUpdateStatus(response, "review");
+		} catch (IOException e) {
+			if (retry) {
+				retry = false;
+				log(Level.WARNING, "review", "Exception: " + e.getMessage() + " Retrying...");
+				review(rev, comment);
+			} else {
+				log(Level.SEVERE, "review", "EXCEPTION: " + e);
+				throw e;
+			}
 		}
+
+		if (retry) {
+			log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());
+		}
+		
+		retry = true;
+		throttle(start);
 	}
 	
 	public void readXmlDump(Consumer<PageContainer> cons) throws IOException {
