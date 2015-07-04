@@ -39,7 +39,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|.+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?'''(.+?)'''(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?'{0,3}(.+?:)'{0,3}(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -1596,7 +1596,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "subida";
+		String title = "moro";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
