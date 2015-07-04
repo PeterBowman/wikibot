@@ -156,7 +156,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("\n?<!-- ?¿flexión?: mira en .+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\[ ˈ \\]\\}\\}.+?-->", "");
-		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\[ ˈð? \\]\\}\\} \\|-\\|c= ˈθ\\|s= ˈs\\}\\}.+?-->", "");
+		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?en general, no se indica la etimología .+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?si vas a insertar una nueva sección de etimología o de idioma.+?-->", "");
@@ -1596,7 +1596,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "arte marcial";
+		String title = "subida";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
