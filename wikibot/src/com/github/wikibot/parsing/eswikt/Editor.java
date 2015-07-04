@@ -1113,10 +1113,7 @@ public class Editor extends EditorBase {
 								count++;
 							}
 						} else {
-							if (
-								param1.contains("<ref") ||
-								StringUtils.containsAny(param1, '(', ')', '{', '}', '[', ']')
-							) {
+							if (StringUtils.containsAny(param1, '(', ')', '{', '}', '<', '>')) {
 								editedLines.add(origLine);
 								continue linesLoop;
 							}
@@ -1601,7 +1598,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "gentes";
+		String title = "gluten";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
