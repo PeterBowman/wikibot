@@ -550,7 +550,7 @@ public class Editor extends EditorBase {
 			header = header.replaceAll("^(?:e|E)timolog(?:i|í)a ?(\\d)?$", "Etimología $1").trim();
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceAll("^(?:L|l)ocuciones$", "Locuciones");
-			header = header.replaceAll("^(?:R|r)efranes$", "Refranes");
+			header = header.replaceAll("^(?:(?:R|r)efranes|(?:D|d)ichos?)$", "Refranes");
 			header = header.replaceAll("^(?:c|C)onjugaci(?:ó|o)n$", "Conjugación");
 			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
