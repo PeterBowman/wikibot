@@ -52,7 +52,7 @@ public final class MassReview {
 			int index = list.stream()
 				.filter(arr -> arr[0].equals(lastEntry))
 				.findFirst()
-				.map(arr -> temp.indexOf(arr))
+				.map(temp::indexOf)
 				.get();
 			lastReviewed = list.get(index)[0];
 			list = list.subList(index + 1, list.size());
@@ -95,7 +95,7 @@ public final class MassReview {
 			}
 		}
 		
-		System.out.printf("Errors: %d%n", errors.size());
+		System.out.printf("%d errors: %s%n", errors.size(), errors);
 		IOUtils.writeToFile(String.join("\n", errors), F_ERRORS);
 		IOUtils.writeToFile(lastReviewed, F_LAST);
 		

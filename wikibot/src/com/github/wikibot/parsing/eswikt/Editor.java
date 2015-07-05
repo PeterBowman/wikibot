@@ -1129,9 +1129,9 @@ public class Editor extends EditorBase {
 								param1 = "/" + param1;
 							}
 							
-							if (param1.matches("\\[[^\\[\\]]+\\]")) {
+							if (param1.matches("\\[.+\\]")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("\\] *?(o|,)? *?\\[");
+								String[] alts = param1.split("\\] *?(o|,) *?\\[");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -1139,12 +1139,15 @@ public class Editor extends EditorBase {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fone" + num, param);
 									}
+								} else if (StringUtils.containsAny(param1, '[', ']')) {
+									editedLines.add(origLine);
+									continue linesLoop;
 								} else {
 									newParams.put("fone", param1);
 								}
-							} else if (param1.matches("/[^/]+/")) {
+							} else if (param1.matches("/.+/")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("/ *?(o|,)? *?/");
+								String[] alts = param1.split("/ *?(o|,) *?/");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -1152,6 +1155,9 @@ public class Editor extends EditorBase {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fono" + num, param);
 									}
+								} else if (param1.contains("/")) {
+									editedLines.add(origLine);
+									continue linesLoop;
 								} else {
 									newParams.put("fono", param1);
 								}
@@ -1451,6 +1457,7 @@ public class Editor extends EditorBase {
 	public void lengTemplateParams() {
 		// TODO: ISO code as parameter without name
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
+		// TODO: {{ampliable}}, etc.
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
@@ -1604,7 +1611,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "un";
+		String title = "jo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
