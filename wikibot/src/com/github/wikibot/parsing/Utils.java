@@ -53,6 +53,7 @@ public final class Utils {
 	}
 
 	public static String sanitizeWhitespaces(String text) {
+		text = text.replace("\t", " ");
 		text = text.replaceAll("[ ]{2,}", " ");
 		text = text.replace(" \n", "\n");
 		return text;

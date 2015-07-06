@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -24,7 +25,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -46,7 +46,7 @@ public class Editor extends EditorBase {
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación",
-		"diacrítico"
+		"diacrítico", "ampliable"
 	);
 	
 	private static final List<String> PRON_TMPLS = Arrays.asList(
@@ -954,7 +954,7 @@ public class Editor extends EditorBase {
 	public void adaptPronunciationTemplates() {
 		String original = this.text;
 		Page page = Page.store(title, original);
-		Set<String> modified = new HashSet<String>();
+		Set<String> modified = new LinkedHashSet<String>();
 		List<String> recognizedSpanishParams = Arrays.asList("y", "ll", "s", "c", "ys", "yc", "lls", "llc");
 		Pattern pImages = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
 		Pattern pComments = Pattern.compile(" *?<!--.+-->");
@@ -1611,13 +1611,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "jo";
+		String title = "όχι";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
