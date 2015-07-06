@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -40,7 +41,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{(?:ES|.+?-ES|TRANSLIT)(?:\\|[^\\}]+?)?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?'{0,3}(.+?:)'{0,3}(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -1391,6 +1392,8 @@ public class Editor extends EditorBase {
 	}
 
 	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
+		name = StringUtils.strip(name, "'");
+		
 		if (name.endsWith(":")) {
 			name = name.substring(0, name.length() - 1).trim();
 		}
@@ -1407,10 +1410,7 @@ public class Editor extends EditorBase {
 			return null;
 		}
 		
-		if (
-			StringUtils.containsAny(content, '(', ')') ||
-			!StringUtils.containsAny(content, '[', ']', '{', '}')
-		) {
+		if (!StringUtils.containsAny(content, '[', ']', '{', '}')) {
 			return null;
 		}
 		
@@ -1429,12 +1429,27 @@ public class Editor extends EditorBase {
 					return null;
 				} else {
 					map.put(param, m2.group(1));
+					String trail = m2.group(3);
 					
-					if (!m2.group(3).isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
-						map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + m2.group(3));
+					if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
+						Matcher m3 = Pattern.compile("(.*?) \\(([^\\)]+)\\)").matcher(trail);
+						
+						if (!m3.matches()) {
+							return null;
+						} else {
+							trail = m3.group(1).trim();
+							map.put("nota" + i, m3.group(2));
+						}
+					}
+					
+					if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
+						map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
 					}
 				}
-			} else if (StringUtils.containsAny(term, '{', '}')) {
+			} else if (
+				StringUtils.containsAny(term, '{', '}') &&
+				term.matches("^\\{\\{l\\|[^\\}]+\\}\\}$")
+			) {
 				List<String> templates = ParseUtils.getTemplates("l", term);
 				
 				if (templates.isEmpty()) {
@@ -1636,13 +1651,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "ja";
+		String title = "un";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
