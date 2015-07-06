@@ -183,7 +183,6 @@ public class Editor extends EditorBase {
 		
 		// TODO
 		if (!isOldStructure ||
-			original.contains("{{lengua|") ||
 			original.contains("{{TRANS") ||
 			original.contains("{{TRANSLIT|") ||
 			original.contains("{{Chono-ES") ||
@@ -191,7 +190,6 @@ public class Editor extends EditorBase {
 			original.contains("{{carácter oriental") ||
 			original.contains("{{Carácter oriental") ||
 			original.contains("{{TAXO}}") ||
-			page.hasSectionWithHeader("^Etimolog(i|í)a.*") ||
 			page.hasSectionWithHeader("^(F|f)orma .+")
 		) {
 			return;
@@ -296,7 +294,9 @@ public class Editor extends EditorBase {
 		page = Page.store(page.getTitle(), newText);
 		
 		for (Section section : page.getAllSections()) {
-			section.setLevel(section.getLevel() + 1);
+			if (section.getLangSectionParent() == null) {
+				section.setLevel(section.getLevel() + 1);
+			}
 		}
 		
 		// TODO: add a method to reparse all Sections?
@@ -600,6 +600,11 @@ public class Editor extends EditorBase {
 
 	public void substituteReferencesTemplate() {
 		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, original);
 		String template = "{{título referencias}}";
 		List<String> contents = new ArrayList<String>();
@@ -657,7 +662,7 @@ public class Editor extends EditorBase {
 		Section bottomReferences = page.getReferencesSection();
 		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
 		
-		if (allReferences.size() < 2) {
+		if (isOldStructure || allReferences.size() < 2) {
 			return;
 		}
 		
@@ -782,7 +787,7 @@ public class Editor extends EditorBase {
 		
 		List<Section> sections = page.findSectionsWithHeader("(P|p)ronunciaci(ó|o)n( y escritura)?");
 		
-		if (sections.isEmpty()) {
+		if (isOldStructure || sections.isEmpty()) {
 			return;
 		}
 		
@@ -821,6 +826,11 @@ public class Editor extends EditorBase {
 
 	public void sortLangSections() {
 		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, original);
 		page.sortSections();
 		String formatted = page.toString();
@@ -864,6 +874,11 @@ public class Editor extends EditorBase {
 
 	public void sortSubSections() {
 		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, original);
 		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
 		
@@ -953,6 +968,11 @@ public class Editor extends EditorBase {
 
 	public void adaptPronunciationTemplates() {
 		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, original);
 		Set<String> modified = new LinkedHashSet<String>();
 		List<String> recognizedSpanishParams = Arrays.asList("y", "ll", "s", "c", "ys", "yc", "lls", "llc");
@@ -1459,6 +1479,11 @@ public class Editor extends EditorBase {
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
 		// TODO: {{ampliable}}, etc.
 		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, original);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
@@ -1611,7 +1636,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "όχι";
+		String title = "ja";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
