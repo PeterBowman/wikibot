@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -1414,12 +1413,20 @@ public class Editor extends EditorBase {
 			return null;
 		}
 		
-		String[] terms = content.split(" *?, *?");
-		HashMap<String, String> map = new LinkedHashMap<String, String>(terms.length, 1);
+		// http://stackoverflow.com/a/2787064
+		Pattern psep = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.*?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
+		Matcher msep = psep.matcher(content);
+		List<String> lterms = new ArrayList<String>();
+		
+		while (msep.find()) {
+			lterms.add(msep.group().trim());
+		}
+		
+		HashMap<String, String> map = new LinkedHashMap<String, String>(lterms.size(), 1);
 		map.put("templateName", name);
 		
-		for (int i = 1; i <= terms.length; i++) {
-			String term = terms[i - 1].trim();
+		for (int i = 1; i <= lterms.size(); i++) {
+			String term = lterms.get(i - 1);
 			String param = "ParamWithoutName" + i;
 			
 			if (StringUtils.containsAny(term, '[', ']')) {
@@ -1651,13 +1658,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "un";
+		String title = "vaina";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
