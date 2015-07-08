@@ -103,10 +103,9 @@ public class Editor extends EditorBase {
 		removeComments();
 		transformToNewStructure();
 		normalizeSectionHeaders();
-		rearrangeSubsections();
+		normalizeSectionLevels();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
-		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
 		addMissingReferencesSection();
@@ -535,7 +534,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeSectionHeaders() {
-		// TODO: check etymology sections (Etimología X)
+		// TODO: check etymology sections (Etimología # even if there is only one etymology section)
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
@@ -580,23 +579,101 @@ public class Editor extends EditorBase {
 		checkDifferences(original, formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
 	
-	public void rearrangeSubsections() {
-		// TODO: satura, review sortSections (intermediate Sections - between LangSections)
-		// TODO: tagua tagua (single, numbered etymology sections), temporarily fixed in transformToNewStructure
-		// TODO: merge with normalizeSectionLevels()?
-		// TODO: properly organize elements like {{pron-graf}} (https://es.wiktionary.org/w/index.php?title=Abcde&diff=prev&oldid=2742165)
+	public void normalizeSectionLevels() {
+		// TODO: handle single- to multiple-etymology sections edits and vice versa
+		// TODO: satura
 		String original = this.text;
-		Page page = Page.store(title, original);
-		Section references = page.getReferencesSection();
 		
-		if (references != null && references.getLevel() != 2 && references.getChildSections() == null) {
-			references.setLevel(2);
-		} else {
+		if (isOldStructure) {
 			return;
 		}
 		
+		Page page = Page.store(title, original);
+		page.normalizeChildLevels();
+		Section references = page.getReferencesSection();
+		
+		for (Section section : page.getAllSections()) {
+			if (section.getTocLevel() != 1 || section instanceof LangSection || section == references) {
+				continue;
+			}
+			
+			try {
+				section.pushLevels(1);
+			} catch (IllegalArgumentException e) {}
+		}
+		
+		// TODO: reparse Page
+		page = Page.store(title, page.toString());
+		references = page.getReferencesSection();
+		
+		if (references.getLevel() != 2) {
+			try {
+				references.pushLevels(2 - references.getLevel());
+			} catch (IllegalArgumentException e) {}
+		}
+		
+		List<Section> tempList = page.findSectionsWithHeader("^Etimología.*");
+		
+		for (Section etymologySection : tempList) {
+			int level = etymologySection.getLevel();
+			
+			if (level > 3) {
+				etymologySection.pushLevels(3 - level);
+			}
+		}
+		
+		page.normalizeChildLevels();
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			}
+			
+			if (etymologySections.size() == 1) {
+				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
+				
+				if (etymologyChildren != null) {
+					for (Section child : etymologyChildren) {
+						child.pushLevels(-1);
+					}
+				}
+				
+				pushStandardSections(langSection.getChildSections(), 3);
+			} else {
+				for (Section sibling : langSection.getChildSections()) {
+					if (etymologySections.contains(sibling)) {
+						continue;
+					}
+					
+					sibling.pushLevels(1);
+				}
+				
+				for (Section etymologySection : etymologySections) {
+					pushStandardSections(etymologySection.getChildSections(), 4);
+				}
+			}
+		}
+		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "rearrangeSubsections", "reorganizando secciones");
+		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
+	}
+	
+	private void pushStandardSections(List<Section> sections, int level) {
+		// TODO: get rid of those null checks, find a better way
+		if (sections == null) {
+			return;
+		}
+		
+		final List<String> bottomList = Arrays.asList(
+			"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
+		);
+		
+		SectionBase.flattenSubSections(sections).stream()
+			.filter(s -> bottomList.contains(s.getHeader()))
+			.filter(s -> s.getLevel() > level)
+			.forEach(s -> s.pushLevels(level - s.getLevel()));
 	}
 
 	public void substituteReferencesTemplate() {
@@ -695,91 +772,6 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		
 		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
-	}
-	
-	public void normalizeSectionLevels() {
-		String original = this.text;
-		
-		if (isOldStructure) {
-			return;
-		}
-		
-		Page page = Page.store(title, original);
-		page.normalizeChildLevels();
-		Section references = page.getReferencesSection();
-		
-		for (Section section : page.getAllSections()) {
-			if (section.getTocLevel() != 1 || section instanceof LangSection || section == references) {
-				continue;
-			}
-			
-			try {
-				section.pushLevels(1);
-			} catch (IllegalArgumentException e) {}
-		}
-		
-		List<Section> tempList = page.findSectionsWithHeader("^Etimología.*");
-		
-		for (Section etymologySection : tempList) {
-			int level = etymologySection.getLevel();
-			
-			if (level > 3) {
-				etymologySection.pushLevels(3 - level);
-			}
-		}
-		
-		page.normalizeChildLevels();
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
-			
-			if (etymologySections.isEmpty()) {
-				continue;
-			}
-			
-			if (etymologySections.size() == 1) {
-				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
-				
-				if (etymologyChildren != null) {
-					for (Section child : etymologyChildren) {
-						child.pushLevels(-1);
-					}
-				}
-				
-				pushStandardSections(langSection.getChildSections(), 3);
-			} else {
-				for (Section sibling : langSection.getChildSections()) {
-					if (etymologySections.contains(sibling)) {
-						continue;
-					}
-					
-					sibling.pushLevels(1);
-				}
-				
-				for (Section etymologySection : etymologySections) {
-					pushStandardSections(etymologySection.getChildSections(), 4);
-				}
-			}
-		}
-		
-		String formatted = page.toString();
-		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
-	}
-	
-	private void pushStandardSections(List<Section> sections, int level) {
-		// TODO: get rid of those null checks, find a better way
-		if (sections == null) {
-			return;
-		}
-		
-		final List<String> bottomList = Arrays.asList(
-			"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
-		);
-		
-		SectionBase.flattenSubSections(sections).stream()
-			.filter(s -> bottomList.contains(s.getHeader()))
-			.filter(s -> s.getLevel() > level)
-			.forEach(s -> s.pushLevels(level - s.getLevel()));
 	}
 
 	public void removePronGrafSection() {
