@@ -141,6 +141,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{sinónimo\\|<(SINÓNIMO )?1>\\|<(SINÓNIMO )?2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{antónimo\\|<(ANTÓNIMO )?1>\\|<(ANTÓNIMO )?2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{hipónimo\\|<(HIPÓNIMO )?1>\\|<(HIPÓNIMO )?2>\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{hiperónimo\\|<(HIPERÓNIMO )?1>\\|<(HIPERÓNIMO )?2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{relacionado\\|<1>\\|<2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{ejemplo\\|<oración.+?-->", "");
 		formatted = formatted.replaceAll("\n?<!-- ?\\{\\{ejemplo\\}\\} ?-->", "");
