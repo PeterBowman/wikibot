@@ -534,7 +534,6 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeSectionHeaders() {
-		// TODO: check etymology sections (Etimología # even if there is only one etymology section)
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
@@ -566,12 +565,27 @@ public class Editor extends EditorBase {
 				}
 			}
 			
-			// TODO: check structure, normalize header levels
 			if (!isOldStructure) {
 				header = header.replaceAll("^(?:<small> *?)?(?:R|r)eferencias?.*?$", "Referencias y notas");
 			}
 			
 			section.setHeader(header);
+		}
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			} else if (etymologySections.size() == 1) {
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setHeader("Etimología");
+			} else {
+				for (int i = 0; i < etymologySections.size(); i++) {
+					Section etymologySection = etymologySections.get(i);
+					etymologySection.setHeader(String.format("Etimología %d", i + 1));
+				}
+			}
 		}
 		
 		String formatted = page.toString();
