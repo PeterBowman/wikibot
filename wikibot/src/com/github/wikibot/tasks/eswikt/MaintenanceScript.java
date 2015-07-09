@@ -144,6 +144,10 @@ class RevisionCollector implements Collector<Revision, LinkedHashMap<String, Rev
 	@Override
 	public BiConsumer<LinkedHashMap<String, Revision>, Revision> accumulator() {
 		return (accum, rev) -> {
+			if (accum.containsKey(rev.getPage())) {
+				accum.remove(rev.getPage());
+			}
+			
 			accum.put(rev.getPage(), rev);
 		};
 	}
