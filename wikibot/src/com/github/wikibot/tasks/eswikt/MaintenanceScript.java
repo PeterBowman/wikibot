@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -37,6 +37,7 @@ public final class MaintenanceScript {
 	private static final String LOCATION = "./data/tasks.eswikt/MaintenanceScript/";
 	private static final String LAST_DATE = LOCATION + "last_date.txt";
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
+	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
 		
@@ -60,6 +61,7 @@ public final class MaintenanceScript {
 		if (gap > 0) {
 			gapCal.add(Calendar.HOUR, -gap);
 		}
+		
 		if (gapCal.before(startCal)) {
 			return;
 		}
@@ -126,7 +128,7 @@ public final class MaintenanceScript {
 	}
 }
 
-class RevisionCollector implements Collector<Revision, LinkedHashMap<String, Revision>, List<String>> {
+class RevisionCollector implements Collector<Revision, HashMap<String, Revision>, List<String>> {
 	// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 	// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 	
@@ -137,31 +139,28 @@ class RevisionCollector implements Collector<Revision, LinkedHashMap<String, Rev
 	}
 	
 	@Override
-	public Supplier<LinkedHashMap<String, Revision>> supplier() {
-		return LinkedHashMap::new;
+	public Supplier<HashMap<String, Revision>> supplier() {
+		return HashMap::new;
 	}
 
 	@Override
-	public BiConsumer<LinkedHashMap<String, Revision>, Revision> accumulator() {
+	public BiConsumer<HashMap<String, Revision>, Revision> accumulator() {
 		return (accum, rev) -> {
-			if (accum.containsKey(rev.getPage())) {
-				accum.remove(rev.getPage());
-			}
-			
 			accum.put(rev.getPage(), rev);
 		};
 	}
 
 	@Override
-	public BinaryOperator<LinkedHashMap<String, Revision>> combiner() {
+	public BinaryOperator<HashMap<String, Revision>> combiner() {
 		return null;
 	}
 
 	@Override
-	public Function<LinkedHashMap<String, Revision>, List<String>> finisher() {
+	public Function<HashMap<String, Revision>, List<String>> finisher() {
 		return accum -> {
 			return accum.values().stream()
 				.filter(rev -> rev.getTimestamp().before(cal))
+				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
 				.map(Revision::getPage)
 				.collect(Collectors.toList());
 		};
