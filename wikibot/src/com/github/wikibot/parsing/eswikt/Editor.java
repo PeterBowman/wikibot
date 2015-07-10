@@ -41,6 +41,8 @@ public class Editor extends EditorBase {
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_IMAGES = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -64,6 +66,10 @@ public class Editor extends EditorBase {
 	
 	private static final List<String> TERM_TMPLS_PL = Arrays.asList(
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
+	);
+	
+	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
+		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
 	private boolean isOldStructure;
@@ -327,9 +333,6 @@ public class Editor extends EditorBase {
 				alt = prevHeaderTmplParams.getOrDefault("alt", "");
 			}
 			
-			LangSection langSectionParent = section.getLangSectionParent();
-			Section nextParentSiblingSection = (langSectionParent != null) ? langSectionParent.nextSiblingSection() : null;
-			
 			// Apply or dismiss "alt" parameter
 			// TODO: handle etymology for compounds and {{pron-graf}} for "alt" parameters
 			
@@ -347,35 +350,34 @@ public class Editor extends EditorBase {
 							previousIntro = previousIntro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
 							previousSection.setIntro(previousIntro);
 						}
-						
-						if (previousSection instanceof LangSection) {
-							Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
-							prevHeaderTmplParams.remove("alt");
-							((LangSection) previousSection).setTemplateParams(prevHeaderTmplParams);
-						}
-					} else if (!(previousSection instanceof LangSection)) {
-						List<String> altGrafTmpls = ParseUtils.getTemplates("diacrítico", previousSection.getIntro());
-						
-						if (altGrafTmpls.isEmpty() && !previousSection.getIntro().contains("Diacrítico:")) {
-							HashMap<String, String> altGrafParams = new LinkedHashMap<String, String>();
-							altGrafParams.put("templateName", "diacrítico");
-							altGrafParams.put("ParamWithoutName1", alt);
-							String altGrafTmpl = ParseUtils.templateFromMap(altGrafParams) + ".";
-							String previousIntro = previousSection.getIntro();
-							previousIntro = previousIntro + "\n" + altGrafTmpl;
-							previousIntro = previousIntro.trim();
-							previousSection.setIntro(previousIntro);
-						} else {
-							return;
-						}
+					} else if (
+						ParseUtils.getTemplates("diacrítico", previousSection.getIntro()).isEmpty() &&
+						!previousSection.getIntro().contains("Diacrítico:")
+					) {
+						HashMap<String, String> altGrafParams = new LinkedHashMap<String, String>();
+						altGrafParams.put("templateName", "diacrítico");
+						altGrafParams.put("ParamWithoutName1", alt);
+						String altGrafTmpl = ParseUtils.templateFromMap(altGrafParams) + ".";
+						String previousIntro = previousSection.getIntro();
+						previousIntro = previousIntro + "\n" + altGrafTmpl;
+						previousIntro = previousIntro.trim();
+						previousSection.setIntro(previousIntro);
+					} else {
+						return;
 					}
-				} else if (
-					previousSection.getHeader().startsWith("ETYM") ||
-					nextParentSiblingSection.getHeader().startsWith("ETYM")
-				) {
+					
+					if (previousSection instanceof LangSection) {
+						Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
+						prevHeaderTmplParams.remove("alt");
+						((LangSection) previousSection).setTemplateParams(prevHeaderTmplParams);
+					}
+				} else if (!(previousSection instanceof LangSection)) {
 					return;
 				}
 			}
+			
+			LangSection langSectionParent = section.getLangSectionParent();
+			Section nextParentSiblingSection = (langSectionParent != null) ? langSectionParent.nextSiblingSection() : null;
 			
 			// Move contents to the new etymology sections
 			// TODO: review, catch special cases
@@ -982,12 +984,9 @@ public class Editor extends EditorBase {
 		
 		Page page = Page.store(title, original);
 		Set<String> modified = new LinkedHashSet<String>();
-		List<String> recognizedSpanishParams = Arrays.asList("y", "ll", "s", "c", "ys", "yc", "lls", "llc");
-		Pattern pImages = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
-		Pattern pComments = Pattern.compile(" *?<!--.+-->");
 		
 		for (Section section : page.getAllSections()) {
-			if (!(section instanceof LangSection) && !section.getHeader().matches("^Etimología \\d+")) {
+			if (!(section instanceof LangSection) && !section.getHeader().matches("Etimología \\d+")) {
 				continue;
 			}
 			
@@ -995,23 +994,20 @@ public class Editor extends EditorBase {
 			String content = section.getIntro();
 			content = content.replaceAll("\n{2,}", "\n");
 			
-			if (langSection == null || content.isEmpty() || content.contains("{{pron-graf")) {
+			if (langSection == null || content.isEmpty() || content.contains("pron-graf")) {
 				continue;
 			}
 			
-			String langCode = langSection.getLangCode().toLowerCase();
-			boolean isSpanishSection = langCode.equals("es");
-			String[] lines = content.split("\n");
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
 			List<String> amboxTemplates = new ArrayList<String>();
 			
 			linesLoop:
-			for (String line : lines) {
+			for (String line : content.split("\n")) {
 				if (
 					line.contains("{{etimología") ||
-					pImages.matcher(line).matches() ||
-					pComments.matcher(line).matches()
+					P_IMAGES.matcher(line).matches() ||
+					P_COMMENTS.matcher(line).matches()
 				) {
 					editedLines.add(line);
 					continue;
@@ -1091,7 +1087,7 @@ public class Editor extends EditorBase {
 						}
 						
 						if (param1 == null) {
-							if (!isSpanishSection) {
+							if (!langSection.getLangCode().equalsIgnoreCase("es")) {
 								break;
 							}
 							
@@ -1100,7 +1096,7 @@ public class Editor extends EditorBase {
 							for (Entry<String, String> entry : params.entrySet()) {
 								String type = entry.getKey();
 								
-								if (!recognizedSpanishParams.contains(type)) {
+								if (!SPANISH_PRON_TMPL_PARAMS.contains(type)) {
 									continue;
 								}
 								
@@ -1282,8 +1278,8 @@ public class Editor extends EditorBase {
 			HashMap<String, String> newMap = new LinkedHashMap<String, String>();
 			newMap.put("templateName", "pron-graf");
 			
-			if (!isSpanishSection) {
-				newMap.put("leng", langCode);
+			if (!!langSection.getLangCode().equalsIgnoreCase("es")) {
+				newMap.put("leng", langSection.getLangCode());
 			}
 			
 			Map<String, String> langTemplateParams = langSection.getTemplateParams();
@@ -1315,12 +1311,11 @@ public class Editor extends EditorBase {
 			section.setIntro(String.join("\n", editedLines));
 		}
 		
-		if (modified.isEmpty()) {
-			return;
-		}
-		
 		String formatted = page.toString();
-		String summary = String.join(", ", modified) + " → {{pron-graf}}";
+		
+		String summary = !modified.isEmpty()
+			? String.join(", ", modified) + " → {{pron-graf}}"
+			: "conversión a {{pron-graf}}";
 		
 		checkDifferences(original, formatted, "adaptPronunciationTemplates", summary);
 	}
@@ -1665,7 +1660,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "ransack";
+		String title = "Dorado";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
