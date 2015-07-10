@@ -81,9 +81,16 @@ public final class LinkManager implements Selectorizable {
 				Login.saveSession(wb);
 				break;
 			case 'p':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
-				patrol();
-				Login.saveSession(wb);
+				try {
+					wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+					patrol();
+					Login.saveSession(wb);
+				} catch (IOException e) {
+					e.printStackTrace();
+					Thread.sleep(10 * 60 * 1000);
+					selector(op);
+				}
+				
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
