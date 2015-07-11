@@ -35,8 +35,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
-import com.univocity.parsers.common.ParsingContext;
-import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 import com.univocity.parsers.tsv.TsvWriter;
@@ -63,6 +61,11 @@ public final class UpdateLanguageCodes {
 			return;
 		}
 		
+		System.out.printf(
+			"Added: %d, removed: %d, modified: %d%n",
+			addedCodes.size(), removedCodes.size(), modifiedCodes.size()
+		);
+		
 		String text = wb.getPageText(TARGET_PAGE);
 		text = makePage(text, storedLangs);
 		String summary = makeSummary(addedCodes, removedCodes, modifiedCodes);
@@ -75,30 +78,27 @@ public final class UpdateLanguageCodes {
 
 	private static Map<String, String> extractStoredLangs() throws FileNotFoundException, IOException {
 		File f_langs = new File(F_LANGS);
-		Map<String, String> langs = new TreeMap<String, String>();
+		List<String[]> list;
 		TsvParserSettings settings = new TsvParserSettings();
-		
-		ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
-			@Override
-			public void rowProcessed(Object[] arg0, ParsingContext arg1) {
-				String code = (String) arg0[0];
-				String lang = (String) arg0[1];
-				langs.put(code, lang);
-			}
-		};
-		
-		settings.setRowProcessor(rowProcessor);
 		TsvParser parser = new TsvParser(settings);
 		
 		if (f_langs.exists()) {
-			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs)))) {
-				parser.parse(reader);
+			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), "UTF8"))) {
+				list = parser.parseAll(reader);
 			}
 			
-			System.out.printf("%d language codes extracted", langs.size());
+			System.out.printf("%d language codes extracted%n", list.size());
+		} else {
+			return new TreeMap<String, String>();
 		}
 		
-		return langs;
+		return list.stream()
+			.collect(Collectors.toMap(
+				arr -> arr[0],
+				arr -> arr[1],
+				(arr1, arr2) -> arr1,
+				TreeMap::new
+			));
 	}
 	
 	private static Map<String, String> extractFetchedLangs(PageContainer[] pages) {
