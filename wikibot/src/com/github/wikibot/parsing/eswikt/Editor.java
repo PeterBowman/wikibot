@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -1408,6 +1407,11 @@ public class Editor extends EditorBase {
 			name = listSg.get(listPl.indexOf(name));
 		}
 		
+		// TODO: review
+		if (name.equals("ortografía alternativa")) {
+			name = "grafía alternativa";
+		}
+		
 		if (!listSg.contains(name)) {
 			return null;
 		}
@@ -1458,12 +1462,16 @@ public class Editor extends EditorBase {
 				}
 			} else if (
 				StringUtils.containsAny(term, '{', '}') &&
-				term.matches("^\\{\\{l\\|[^\\}]+\\}\\}$")
+				term.matches("^\\{\\{l\\+?\\|[^\\}]+\\}\\}$")
 			) {
 				List<String> templates = ParseUtils.getTemplates("l", term);
 				
 				if (templates.isEmpty()) {
-					return null;
+					templates = ParseUtils.getTemplates("l+", term);
+					
+					if (templates.isEmpty()) {
+						return null;
+					}
 				}
 				
 				String template = templates.get(0);
@@ -1661,13 +1669,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "buscar";
+		String title = "çoyatl";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
