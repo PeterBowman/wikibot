@@ -547,6 +547,7 @@ public class Editor extends EditorBase {
 			String header = section.getHeader();
 			
 			header = StringUtils.strip(header, "=").trim();
+			
 			header = header.replaceAll("^(?:e|E)timolog(?:i|í)a ?(\\d)?$", "Etimología $1").trim();
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceAll("^(?:L|l)ocuciones$", "Locuciones");
@@ -555,6 +556,8 @@ public class Editor extends EditorBase {
 			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
 			header = header.replaceAll("^(?:V|v)(?:é|e)ase tambi(?:é|e)n$", "Véase también");
+			
+			header = header.replaceAll("^Proverbio$", "Refrán");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			LangSection langSection = section.getLangSectionParent();
