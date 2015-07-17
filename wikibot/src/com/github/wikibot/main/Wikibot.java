@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -790,6 +792,7 @@ public class Wikibot extends WMFWiki {
     	}
     	
     	System.out.printf("Reading from file: %s%n", matching[0].getName());
+    	ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     	
     	try (BufferedReader br = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(matching[0]))))) {
 			String line;
@@ -847,7 +850,7 @@ public class Wikibot extends WMFWiki {
 					}
 					
 					PageContainer page = new PageContainer(title, decode(text.toString()), timestampToCalendar(timestamp, true));
-					cons.accept(page);
+					executor.execute(() -> cons.accept(page));
 				} else if (!skipPage && isReadingText) {
 					text.append(line);
 					text.append("\n");
