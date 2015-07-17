@@ -789,6 +789,8 @@ public class Wikibot extends WMFWiki {
     		throw new FileNotFoundException("Dump not found: " + domain);
     	}
     	
+    	System.out.printf("Reading from file: %s%n", matching[0].getName());
+    	
     	try (BufferedReader br = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(matching[0]))))) {
 			String line;
 			String title = null;
