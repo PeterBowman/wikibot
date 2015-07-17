@@ -792,7 +792,7 @@ public class Wikibot extends WMFWiki {
     	}
     	
     	System.out.printf("Reading from file: %s%n", matching[0].getName());
-    	ExecutorService executor = Executors.newWorkStealingPool();
+    	ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
     	
     	try (BufferedReader br = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(matching[0]))))) {
 			String line;
