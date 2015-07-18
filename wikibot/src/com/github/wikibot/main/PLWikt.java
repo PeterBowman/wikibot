@@ -2,15 +2,25 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 import javax.security.auth.login.CredentialNotFoundException;
+import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
+import javax.xml.parsers.ParserConfigurationException;
 
+import org.xml.sax.SAXException;
+
+import com.github.wikibot.utils.Domains;
+import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public class PLWikt extends Wikibot {
 	private static final long serialVersionUID = -4033360410848180018L;
@@ -105,7 +115,23 @@ public class PLWikt extends Wikibot {
 		throttle(start);
 	}
 	
-	public void readXmlDump(Consumer<PageContainer> cons) throws IOException {
+	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, ParserConfigurationException, SAXException {
 		readXmlDump("plwiktionary", cons);
+	}
+	
+	public static void main(String[] args) throws FailedLoginException, IOException, ParserConfigurationException, SAXException {
+		//MutableInt slashes = new MutableInt(0);
+		//MutableInt punctors = new MutableInt(0);
+		List<String> list = Collections.synchronizedList(new ArrayList<String>(250));
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		
+		wb.readXmlDump(page -> {
+			if (page.getText().contains("(= [[")) {
+				list.add(page.getTitle());
+			}
+		});
+		
+		System.out.printf("%d matches found:%n%s%n", list.size(), String.join("\n", list));
+		//IOUtils.writeToFile(String.join("\n\n", list), "./data/plwikt.punctors.txt");
 	}
 }

@@ -2,17 +2,18 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import javax.security.auth.login.FailedLoginException;
+import javax.xml.parsers.ParserConfigurationException;
+
+import jdk.nashorn.internal.runtime.ParserException;
 
 import org.wikiutils.IOUtils;
-import org.wikiutils.ParseUtils;
+import org.xml.sax.SAXException;
 
+import com.github.wikibot.parsing.eswikt.Page;
 import com.github.wikibot.utils.PageContainer;
 
 public class ESWikt extends Wikibot {
@@ -25,11 +26,11 @@ public class ESWikt extends Wikibot {
 		super("es.wiktionary.org");
 	}
 	
-	public void readXmlDump(Consumer<PageContainer> cons) throws IOException {
+	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, ParserConfigurationException, SAXException {
 		readXmlDump("eswiktionary", cons);
 	}
 	
-	public static void main (String[] args) throws IOException, FailedLoginException {
+	/*public static void main (String[] args) throws IOException, FailedLoginException {
 		ESWikt wb = new ESWikt();
 		List<String> titles = new ArrayList<String>(1000);
 		//Pattern patt = Pattern.compile("\\{\\{ *?(?:ES|[^-]+-ES) *?\\|.*?(escritura\\d? *?=.+)\\}\\}");
@@ -68,5 +69,29 @@ public class ESWikt extends Wikibot {
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.size());
 		IOUtils.writeToFile(String.join("\n", titles), "./test.txt");
+	}*/
+	
+	public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
+		ESWikt wb = new ESWikt();
+		List<String> list = Collections.synchronizedList(new ArrayList<String>(500));
+		//List<String> list = new ArrayList<String>(500);
+		
+		wb.readXmlDump(page -> {
+			Page p;
+			
+			try {
+				p = Page.wrap(page);
+			} catch (ParserException e) {
+				System.out.printf("ParserException: %s%n", page.getTitle());
+				return;
+			}
+			
+			if (p.hasSectionWithHeader("Proverbio")) {
+				list.add(page.getTitle());
+			}
+		});
+		
+		System.out.printf("Total count: %d%n", list.size());
+		IOUtils.writeToFile(String.join("\n", list), "./data/eswikt.proverb-headers.txt");
 	}
 }
