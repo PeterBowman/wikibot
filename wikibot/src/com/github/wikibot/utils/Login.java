@@ -146,9 +146,9 @@ public class Login {
 		retrieveCredentials();
 		
 		if (
-			!credentials.isEmpty() &&
-			credentials.size() == Users.values().length &&
-			credentials.keySet().containsAll(Arrays.asList(Users.values()))
+			credentials.isEmpty() ||
+			credentials.size() != Users.values().length ||
+			!credentials.keySet().containsAll(Arrays.asList(Users.values()))
 		) {
 			System.out.printf("Credentials available: %s%n", credentials.keySet().toString());
 			
