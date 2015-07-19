@@ -609,10 +609,13 @@ public class Editor extends EditorBase {
 		
 		Page page = Page.store(title, original);
 		page.normalizeChildLevels();
-		Section references = page.getReferencesSection();
 		
 		for (Section section : page.getAllSections()) {
-			if (section.getTocLevel() != 1 || section instanceof LangSection || section == references) {
+			if (
+				section.getTocLevel() != 1 ||
+				section instanceof LangSection ||
+				section.getHeader().startsWith("Referencias")
+			) {
 				continue;
 			}
 			
@@ -623,7 +626,7 @@ public class Editor extends EditorBase {
 		
 		// TODO: reparse Page
 		page = Page.store(title, page.toString());
-		references = page.getReferencesSection();
+		Section references = page.getReferencesSection();
 		
 		if (references != null && references.getLevel() != 2) {
 			try {
@@ -1674,7 +1677,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "God tempers the wind to the shorn lamb";
+		String title = "fácil";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
