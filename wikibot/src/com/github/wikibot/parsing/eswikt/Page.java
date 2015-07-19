@@ -32,11 +32,17 @@ public final class Page extends PageBase<Section> {
 	private Section references;
 	private String trailingContent;
 	public static final String[] INTERWIKI_PREFIXES;
+	private static final Pattern P_INTERWIKI;
 	public static final Map<String, String> CODE_TO_LANG;
 	
 	static {
 		try {
 			INTERWIKI_PREFIXES = IOUtils.loadFromFile("./data/interwiki.txt", "", "UTF8");
+			List<String> excluded = new ArrayList<String>(Arrays.asList(INTERWIKI_PREFIXES));
+			// TODO: review per [[Especial:Diff/2709872]]
+			//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
+			String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
+			P_INTERWIKI = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -125,14 +131,10 @@ public final class Page extends PageBase<Section> {
 		}
 	}
 	
-	// TODO: move to parsing.Page
 	private void extractTrailingContent(Section lastSection) {
+		// TODO: move to parsing.Page
 		String content = lastSection.getIntro();
-		List<String> excluded = new ArrayList<String>(Arrays.asList(INTERWIKI_PREFIXES));
-		// TODO: review per [[Especial:Diff/2709872]]
-		//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
-		String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
-		Matcher m = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher("\n" + content);
+		Matcher m = P_INTERWIKI.matcher("\n" + content);
 		
 		if (!m.find()) {
 			return;
