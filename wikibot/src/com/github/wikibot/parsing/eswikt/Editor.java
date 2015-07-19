@@ -1605,7 +1605,7 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		formatted = formatted.replaceAll("\n{3,}", "\n\n");
-		formatted = formatted.replaceAll("\\. <ref(>| )", ".<ref$1");
+		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}) <ref(>| )", "$1<ref$2");
 		
 		checkDifferences(original, formatted, "strongWhitespaces", "espacios en blanco");
 	}
