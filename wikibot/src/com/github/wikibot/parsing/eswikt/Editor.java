@@ -112,6 +112,7 @@ public class Editor extends EditorBase {
 		normalizeSectionLevels();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
+		moveReferencesSection();
 		removePronGrafSection();
 		sortLangSections();
 		addMissingReferencesSection();
@@ -795,6 +796,29 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		
 		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
+	}
+	
+	public void moveReferencesSection() {
+		String original = this.text;
+		Page page = Page.store(title, original);
+		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
+		
+		if (allReferences.isEmpty() || allReferences.size() > 1) {
+			return;
+		}
+		
+		Section references = allReferences.get(0);
+		
+		if (references.getLevel() < 3 || references == page.getReferencesSection()) {
+			return;
+		}
+		
+		references.detach();
+		references.pushLevels(2 - references.getLevel());
+		page.setReferencesSection(references);
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "moveReferencesSection", "trasladando sección de referencias");
 	}
 
 	public void removePronGrafSection() {
