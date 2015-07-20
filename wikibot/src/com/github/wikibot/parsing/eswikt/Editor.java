@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -207,6 +208,7 @@ public class Editor extends EditorBase {
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(original);
 		StringBuffer sb = new StringBuffer();
 		String currentEtym = "";
+		String currentSectionLang = "";
 		int lastIndex = 0;
 		
 		while (m.find()) {
@@ -237,6 +239,10 @@ public class Editor extends EditorBase {
 				params.remove("núm");
 			}
 			
+			if (!currentSectionLang.equals(name) && !etym.equals("1")) {
+				etym = "";
+			}
+			
 			if (
 				!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
 				!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
@@ -247,7 +253,7 @@ public class Editor extends EditorBase {
 			}
 			
 			pre = pre.isEmpty() ? "" : "$1\n";
-			post = post.isEmpty() || post.matches("<!--.+?-->") ? "" : "\n$3";
+			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
 			
 			if (!etym.isEmpty() && !etym.equals("1")) {
 				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post));
@@ -271,6 +277,7 @@ public class Editor extends EditorBase {
 			
 			lastIndex = sb.length();
 			currentEtym = etym;
+			currentSectionLang = name;
 		}
 		
 		m.appendTail(sb);
@@ -1707,8 +1714,8 @@ public class Editor extends EditorBase {
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		text = wb.getPageText(title);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		//text = wb.getPageText(title);
+		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
