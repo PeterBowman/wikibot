@@ -98,7 +98,12 @@ public class Editor extends EditorBase {
 	}
 	
 	private void checkOldStructure() {
-		if (text.contains("{{ES") || text.contains("-ES}}") || text.contains("-ES|")) {
+		if (
+			text.contains("{{ES") || text.contains("-ES}}") || text.contains("-ES|") ||
+			text.contains("{{TRANS") || text.contains("{{TAXO}}") || text.contains("{{Chono-ES") ||
+			text.contains("{{Protopolinesio-ES") || text.contains("{{carácter oriental") ||
+			text.contains("{{Carácter oriental")
+		) {
 			isOldStructure = true;
 		} else {
 			isOldStructure = false;
@@ -189,17 +194,7 @@ public class Editor extends EditorBase {
 		String original = this.text;
 		Page page = Page.store(title, original);
 		
-		// TODO
-		if (!isOldStructure ||
-			original.contains("{{TRANS") ||
-			original.contains("{{TRANSLIT|") ||
-			original.contains("{{Chono-ES") ||
-			original.contains("{{Protopolinesio-ES") ||
-			original.contains("{{carácter oriental") ||
-			original.contains("{{Carácter oriental") ||
-			original.contains("{{TAXO}}") ||
-			page.hasSectionWithHeader("^(F|f)orma .+")
-		) {
+		if (!isOldStructure || page.hasSectionWithHeader("^(F|f)orma .+")) {
 			return;
 		}
 		
