@@ -1,4 +1,5 @@
 eclipse.preferences.version=1
+encoding//src/com/github/wikibot/main/Test.java=UTF-8
 encoding//src/com/github/wikibot/main/Wikibot.java=UTF-8
 encoding//src/com/github/wikibot/scripts/PurgeCategory.java=UTF-8
 encoding//src/com/github/wikibot/scripts/PurgeRecentChanges.java=UTF-8
