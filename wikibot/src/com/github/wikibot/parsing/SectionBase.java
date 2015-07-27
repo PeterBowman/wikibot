@@ -84,7 +84,11 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	private void buildHeaderFormatString(String header) {
-		headerFormat = header.replaceAll("^( *+).+?( *+)$", "%1\\$s$1%2\\$s$2%1\\$s");
+		if (header.trim().isEmpty()) {
+			headerFormat = "%1$s %1$s";
+		} else {
+			headerFormat = header.replaceAll("^( *+).+?( *+)$", "%1\\$s$1%2\\$s$2%1\\$s");
+		}
 	}
 	
 	protected void extractIntro() {

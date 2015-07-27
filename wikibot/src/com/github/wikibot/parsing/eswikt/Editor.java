@@ -1673,7 +1673,11 @@ public class Editor extends EditorBase {
 				section.setTrailingNewlines(1);
 			}
 			
-			section.setHeaderFormat("%1$s%2$s%1$s");
+			if (!section.getHeader().isEmpty()) {
+				section.setHeaderFormat("%1$s%2$s%1$s");
+			} else {
+				section.setHeaderFormat("%1$s %1$s");
+			}
 			
 			if ((section instanceof LangSection) && !sectionIntro.isEmpty() && section.getLeadingNewlines() == 1) {
 				section.setLeadingNewlines(0);
