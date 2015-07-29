@@ -16,6 +16,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1604,6 +1605,11 @@ public class Editor extends EditorBase {
 					String leng = params.get("leng");
 					boolean templateModified = false;
 					
+					if (target.equals("ampliable")) {
+						String param1 = params.remove("ParamWithoutName1");
+						leng = Optional.ofNullable(leng).orElse(param1);
+					}
+					
 					if (isSpanishSection) {
 						// TODO: is this necessary?
 						if (leng != null) {
@@ -1746,7 +1752,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "serpent";
+		String title = "fluit";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
