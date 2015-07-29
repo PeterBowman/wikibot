@@ -57,15 +57,15 @@ public class Editor extends EditorBase {
 		"grafía alternativa", "variantes", "parónimo", "diacrítico"
 	);
 	
-	private static final List<String> PRON_TMPLS_PL = Arrays.asList(
-		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", null, "parónimos", null
+	private static final List<String> PRON_TMPLS_ALIAS = Arrays.asList(
+		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", "variante", "parónimos", null
 	);
 	
 	private static final List<String> TERM_TMPLS = Arrays.asList(
 		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama", "derivado"
 	);
 	
-	private static final List<String> TERM_TMPLS_PL = Arrays.asList(
+	private static final List<String> TERM_TMPLS_ALIAS = Arrays.asList(
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
 	);
 	
@@ -1098,7 +1098,7 @@ public class Editor extends EditorBase {
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
 						PRON_TMPLS,
-						PRON_TMPLS_PL
+						PRON_TMPLS_ALIAS
 					);
 					
 					if (line == null) {
@@ -1442,13 +1442,13 @@ public class Editor extends EditorBase {
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
 						TERM_TMPLS,
-						TERM_TMPLS_PL)
+						TERM_TMPLS_ALIAS)
 					) != null) || (
 					(line = makeTmplLine(
 						m.group(1).trim().toLowerCase(),
 						m.group(2).trim(),
 						PRON_TMPLS,
-						PRON_TMPLS_PL)
+						PRON_TMPLS_ALIAS)
 					) != null))
 			) {
 				continue;
@@ -1749,7 +1749,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Orgel";
+		String title = "bagpipes";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
