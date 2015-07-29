@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -73,6 +72,8 @@ public class Editor extends EditorBase {
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
+	private static final List<String> STANDARD_HEADERS = new ArrayList<String>();
+	
 	private boolean isOldStructure;
 	
 	static {
@@ -85,6 +86,9 @@ public class Editor extends EditorBase {
 		);
 		
 		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}$", Pattern.CASE_INSENSITIVE);
+		
+		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
+		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 	}
 	
 	public Editor(Page page) {
@@ -115,10 +119,10 @@ public class Editor extends EditorBase {
 		removeComments();
 		transformToNewStructure();
 		normalizeSectionHeaders();
-		normalizeSectionLevels();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		moveReferencesSection();
+		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
 		addMissingReferencesSection();
@@ -602,106 +606,6 @@ public class Editor extends EditorBase {
 		checkDifferences(original, formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
 	
-	public void normalizeSectionLevels() {
-		// TODO: handle single- to multiple-etymology sections edits and vice versa
-		// TODO: satura
-		String original = this.text;
-		
-		if (isOldStructure) {
-			return;
-		}
-		
-		Page page = Page.store(title, original);
-		page.normalizeChildLevels();
-		
-		for (Section section : page.getAllSections()) {
-			if (
-				section.getTocLevel() != 1 ||
-				section instanceof LangSection ||
-				section.getHeader().startsWith("Referencias")
-			) {
-				continue;
-			}
-			
-			try {
-				section.pushLevels(1);
-			} catch (IllegalArgumentException e) {}
-		}
-		
-		// TODO: reparse Page
-		page = Page.store(title, page.toString());
-		Section references = page.getReferencesSection();
-		
-		if (references != null && references.getLevel() != 2) {
-			try {
-				references.pushLevels(2 - references.getLevel());
-			} catch (IllegalArgumentException e) {}
-		}
-		
-		List<Section> tempList = page.findSectionsWithHeader("^Etimología.*");
-		
-		for (Section etymologySection : tempList) {
-			int level = etymologySection.getLevel();
-			
-			if (level > 3) {
-				etymologySection.pushLevels(3 - level);
-			}
-		}
-		
-		page.normalizeChildLevels();
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
-			
-			if (etymologySections.isEmpty()) {
-				continue;
-			}
-			
-			if (etymologySections.size() == 1) {
-				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
-				
-				if (etymologyChildren != null) {
-					for (Section child : etymologyChildren) {
-						child.pushLevels(-1);
-					}
-				}
-				
-				pushStandardSections(langSection.getChildSections(), 3);
-			} else {
-				for (Section sibling : langSection.getChildSections()) {
-					if (etymologySections.contains(sibling)) {
-						continue;
-					}
-					
-					sibling.pushLevels(1);
-				}
-				
-				for (Section etymologySection : etymologySections) {
-					pushStandardSections(etymologySection.getChildSections(), 4);
-				}
-			}
-		}
-		
-		String formatted = page.toString();
-		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
-	}
-	
-	private void pushStandardSections(List<Section> sections, int level) {
-		// TODO: get rid of those null checks, find a better way
-		if (sections == null) {
-			return;
-		}
-		
-		final List<String> bottomList = Arrays.asList(
-			"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
-		);
-		
-		SectionBase.flattenSubSections(sections).stream()
-			.filter(s -> bottomList.contains(s.getHeader()))
-			.filter(s -> s.getLevel() > level)
-			.forEach(s -> s.pushLevels(level - s.getLevel()));
-	}
-
 	public void substituteReferencesTemplate() {
 		String original = this.text;
 		
@@ -775,8 +679,22 @@ public class Editor extends EditorBase {
 		
 		while (iterator.hasNext()) {
 			Section section = iterator.next();
+			List<Section> childSections = section.getChildSections();
+			List<String> subSectionHeaders;
 			
-			if (section.getChildSections() == null) {
+			if (childSections != null) {
+				List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
+				subSectionHeaders = flattenedSubSections.stream()
+					.map(SectionBase::getHeader)
+					.collect(Collectors.toList());
+			} else {
+				subSectionHeaders = new ArrayList<String>();
+			}
+			
+			if (
+				childSections == null ||
+				STANDARD_HEADERS.containsAll(subSectionHeaders)
+			) {
 				String content = section.getIntro();
 				content = content.replaceAll("(?s)<!--.*?-->", ""); 
 				content = content.replaceAll("<references *?/ *?>", "");
@@ -804,24 +722,142 @@ public class Editor extends EditorBase {
 	public void moveReferencesSection() {
 		String original = this.text;
 		Page page = Page.store(title, original);
+		
 		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
 		
-		if (allReferences.isEmpty() || allReferences.size() > 1) {
+		if (isOldStructure || allReferences.size() != 1) {
 			return;
 		}
 		
 		Section references = allReferences.get(0);
 		
-		if (references.getLevel() < 3 || references == page.getReferencesSection()) {
+		if (references == page.getReferencesSection()) {
 			return;
 		}
 		
-		references.detach();
-		references.pushLevels(2 - references.getLevel());
-		page.setReferencesSection(references);
+		List<Section> childSections = references.getChildSections();
+		
+		if (childSections != null) {
+			List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
+			List<String> subSectionHeaders = flattenedSubSections.stream()
+				.map(SectionBase::getHeader)
+				.collect(Collectors.toList());
+			
+			if (STANDARD_HEADERS.containsAll(subSectionHeaders)) {
+				references.detachOnlySelf();
+				references.setLevel(2);
+				page.setReferencesSection(references);
+			} else if (references.nextSiblingSection() != null) {
+				references.detach();
+				references.pushLevels(2 - references.getLevel());
+				page.setReferencesSection(references);
+			} else {
+				return;
+			}
+		} else {
+			references.detachOnlySelf();
+			references.setLevel(2);
+			page.setReferencesSection(references);
+		}
 		
 		String formatted = page.toString();
 		checkDifferences(original, formatted, "moveReferencesSection", "trasladando sección de referencias");
+	}
+
+	public void normalizeSectionLevels() {
+		// TODO: handle single- to multiple-etymology sections edits and vice versa
+		// TODO: satura
+		String original = this.text;
+		
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, original);
+		page.normalizeChildLevels();
+		
+		// TODO: traverse siblings of the first Section?
+		// TODO: don't push levels unless it will result in a LangSection child
+		for (Section section : page.getAllSections()) {
+			if (
+				section.getTocLevel() != 1 ||
+				section instanceof LangSection ||
+				section.getHeader().startsWith("Referencias")
+			) {
+				continue;
+			}
+			
+			try {
+				section.pushLevels(1);
+			} catch (IllegalArgumentException e) {}
+		}
+		
+		// TODO: reparse Page
+		page = Page.store(title, page.toString());
+		Section references = page.getReferencesSection();
+		
+		if (references != null && references.getLevel() != 2) {
+			try {
+				references.pushLevels(2 - references.getLevel());
+			} catch (IllegalArgumentException e) {}
+		}
+		
+		for (Section etymologySection : page.findSectionsWithHeader("^Etimología.*")) {
+			int level = etymologySection.getLevel();
+			
+			if (level > 3) {
+				etymologySection.pushLevels(3 - level);
+			}
+		}
+		
+		page.normalizeChildLevels();
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			}
+			
+			if (etymologySections.size() == 1) {
+				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
+				
+				if (etymologyChildren != null) {
+					for (Section child : etymologyChildren) {
+						child.pushLevels(-1);
+					}
+				}
+				
+				pushStandardSections(langSection.getChildSections(), 3);
+			} else {
+				for (Section sibling : langSection.getChildSections()) {
+					if (etymologySections.contains(sibling)) {
+						continue;
+					}
+					
+					sibling.pushLevels(1);
+				}
+				
+				for (Section etymologySection : etymologySections) {
+					pushStandardSections(etymologySection.getChildSections(), 4);
+				}
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
+	}
+
+	private void pushStandardSections(List<Section> sections, int level) {
+		// TODO: get rid of those null checks, find a better way
+		if (sections == null) {
+			return;
+		}
+		
+		SectionBase.flattenSubSections(sections).stream()
+			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getHeader()))
+			.filter(s -> s.getLevel() > level)
+			.forEach(s -> s.pushLevels(level - s.getLevel()));
 	}
 
 	public void removePronGrafSection() {
@@ -1710,13 +1746,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "a jack of all trades is master of none";
+		String title = "co-";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);

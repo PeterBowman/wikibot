@@ -375,7 +375,11 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public void pushLevels(int diff) {
-		if (diff < -5 || diff == 0 || diff > 5) {
+		if (diff == 0) {
+			return;
+		}
+		
+		if (diff < -5 || diff > 5) {
 			throw new IllegalArgumentException("Level diffs must be included either in [-5,-1] or [1,5]");
 		}
 		

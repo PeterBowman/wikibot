@@ -9,6 +9,14 @@ import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.SectionBase;
 
 public class Section extends SectionBase<Section> implements Comparable<Section> {
+	public static final List<String> HEAD_SECTIONS = Arrays.asList(
+		"Pronunciación y escritura", "Etimología"
+	);
+	
+	public static final List<String> BOTTOM_SECTIONS = Arrays.asList(
+		"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
+	);
+
 	Section() {
 		super(null);
 	}
@@ -66,27 +74,21 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 
 	@Override
 	public int compareTo(Section s) {
-		// TODO: remove pronunciation sections
-		final List<String> headList = Arrays.asList("Pronunciación y escritura", "Etimología");
-		final List<String> bottomList = Arrays.asList(
-			"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
-		);
-		
 		String targetHeader = s.getHeader();
 		
-		boolean selfInHeadList = headList.contains(header);
-		boolean selfInBottomList = bottomList.contains(header);
-		boolean targetInHeadList = headList.contains(targetHeader);
-		boolean targetInBottomList = bottomList.contains(targetHeader);
+		boolean selfInHeadList = HEAD_SECTIONS.contains(header);
+		boolean selfInBottomList = BOTTOM_SECTIONS.contains(header);
+		boolean targetInHeadList = HEAD_SECTIONS.contains(targetHeader);
+		boolean targetInBottomList = BOTTOM_SECTIONS.contains(targetHeader);
 		
 		if ((selfInHeadList && !targetInHeadList) || (!selfInBottomList && targetInBottomList)) {
 			return -1;
 		} else if ((!selfInHeadList && targetInHeadList) || (selfInBottomList && !targetInBottomList)) {
 			return 1;
 		} else if (selfInHeadList && targetInHeadList) {
-			return Integer.compare(headList.indexOf(header), headList.indexOf(targetHeader));
+			return Integer.compare(HEAD_SECTIONS.indexOf(header), HEAD_SECTIONS.indexOf(targetHeader));
 		} else if (selfInBottomList && targetInBottomList) {
-			return Integer.compare(bottomList.indexOf(header), bottomList.indexOf(targetHeader));
+			return Integer.compare(BOTTOM_SECTIONS.indexOf(header), BOTTOM_SECTIONS.indexOf(targetHeader));
 		} else {
 			return 0;
 		}
