@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -1514,46 +1513,40 @@ public class Editor extends EditorBase {
 				
 				if (!m2.matches() || StringUtils.containsAny(m2.group(3), '[', ']')) {
 					return null;
-				} else {
-					map.put(param, m2.group(1));
-					String trail = m2.group(3);
-					
-					if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
-						Matcher m3 = Pattern.compile("(.*?) \\(([^\\)]+)\\)").matcher(trail);
-						
-						if (!m3.matches()) {
-							return null;
-						} else {
-							trail = m3.group(1).trim();
-							map.put("nota" + i, m3.group(2));
-						}
-					}
-					
-					if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
-						map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
-					}
 				}
-			} else if (
-				StringUtils.containsAny(term, '{', '}') &&
-				term.matches("^\\{\\{l\\+?\\|[^\\}]+\\}\\}$")
-			) {
-				List<String> templates = ParseUtils.getTemplates("l", term);
 				
-				if (templates.isEmpty()) {
-					templates = ParseUtils.getTemplates("l+", term);
+				map.put(param, m2.group(1));
+				String trail = m2.group(3);
+				
+				if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
+					Matcher m3 = Pattern.compile("(.*?) \\(([^\\)]+)\\)").matcher(trail);
 					
-					if (templates.isEmpty()) {
+					if (!m3.matches()) {
 						return null;
+					} else {
+						trail = m3.group(1).trim();
+						map.put("nota" + i, m3.group(2));
 					}
 				}
 				
-				String template = templates.get(0);
+				if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
+					map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
+				}
+			} else if (StringUtils.containsAny(term, '{', '}')) {
+				Matcher m2 = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?").matcher(term);
 				
-				if (!term.replace(" ", "").replace(template.replace(" ", ""), "").isEmpty()) {
+				if (!m2.matches() || StringUtils.containsAny(m2.group(2), '[', ']')) {
 					return null;
 				}
 				
+				String template = m2.group(1);
+				String trail = m2.group(2);
+				
 				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				
+				if (!params.getOrDefault("templateName", "").matches("l\\+?")) {
+					return null;
+				}
 				
 				if (params.containsKey("glosa")) {
 					return null;
@@ -1571,6 +1564,10 @@ public class Editor extends EditorBase {
 				
 				if (params.containsKey("tr")) {
 					map.put("tr" + i, params.get("tr"));
+				}
+				
+				if (trail != null && !trail.isEmpty()) {
+					map.put("nota" + i, trail.trim());
 				}
 			} else {
 				return null;
@@ -1749,13 +1746,13 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "bagpipes";
+		String title = "serpent";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
 		
-		//text = wb.getPageText(title);
-		text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
+		text = wb.getPageText(title);
+		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		Editor editor = new Editor(page);
