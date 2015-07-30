@@ -444,7 +444,7 @@ public class Editor extends EditorBase {
 				
 				// Move etymology template to the newly created etymology section
 				
-				Pattern tempPatt = Pattern.compile("\n?((?:\\{\\{|:*?\\* *?'{0,3})(?:e|E)timología[^\n]+)", Pattern.DOTALL);
+				Pattern tempPatt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})(?:e|E)timología[^\n]+)");
 				String previousIntro = previousSection.getIntro();
 				Matcher m2 = tempPatt.matcher(previousIntro);
 				List<String> temp = new ArrayList<String>();
@@ -1750,7 +1750,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "violoncello";
+		String title = "anguila";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
