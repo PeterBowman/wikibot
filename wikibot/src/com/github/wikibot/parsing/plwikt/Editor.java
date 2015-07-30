@@ -31,8 +31,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void weakWhitespaces() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, text);
 		
 		for (Section s : page.getAllSections()) {
 			for (Field f : s.getAllFields()) {
@@ -48,12 +47,11 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("\n:([^ ])", "\n: $1");
 		formatted = formatted.replaceAll("\n\\*([^ ])", "\n* $1");
 		
-		checkDifferences(original, formatted, "weakWhitespaces", null);
+		checkDifferences(formatted, "weakWhitespaces", null);
 	}
 	
 	public void strongWhitespaces() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, text);
 		
 		for (Section s : page.getAllSections()) {
 			for (Field f : s.getAllFields()) {
@@ -85,20 +83,18 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "strongWhitespaces", "formatowanie odstępów");
+		checkDifferences(formatted, "strongWhitespaces", "formatowanie odstępów");
 	}
 	
 	public void linkToTemplate() {
-		String original = text;
-		Page page = Page.store(title, text);
-		
 		if (
-			!original.contains("[[związek zgody]]") &&
-			!original.contains("[[związek rządu]]")
+			!text.contains("[[związek zgody]]") &&
+			!text.contains("[[związek rządu]]")
 		) {
 			return;
 		}
 		
+		Page page = Page.store(title, text);
 		Set<String> log = new HashSet<String>();
 		
 		for (Section s : page.getAllSections()) {
@@ -147,20 +143,18 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "linkToTemplate", String.join(", ", log));
+		checkDifferences(formatted, "linkToTemplate", String.join(", ", log));
 	}
 	
 	public void sortSections() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, text);
 		page.sortSections();
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "sortSections", "sortowanie sekcji");
+		checkDifferences(formatted, "sortSections", "sortowanie sekcji");
 	}
 	
 	public void updateToc() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, text);
 		boolean hadToc = page.getIntro().contains("__TOC__");
 		page.updateToc();
 		boolean hasToc = page.getIntro().contains("__TOC__");
@@ -172,12 +166,11 @@ public class Editor extends EditorBase {
 		String log = hasToc ? "dodanie __TOC__" : "usunięcie __TOC__";
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "updateToc", log);
+		checkDifferences(formatted, "updateToc", log);
 	}
 	
 	public void notesToReferences() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, text);
 		
 		for (Section s : page.getAllSections()) {
 			Field examples = s.getField(FieldTypes.EXAMPLES);
@@ -212,18 +205,6 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "notesToReferences", "przeniesienie dopisków w przypisach");
-	}
-	
-	private void checkDifferences(String original, String formatted, String caller, String log) {
-		if (!formatted.equals(original)) {
-			logger.add(caller);
-			text = formatted;
-			
-			if (log != null) {
-				summ.add(log);
-				notifyModifications = true;
-			}
-		}
+		checkDifferences(formatted, "notesToReferences", "przeniesienie dopisków w przypisach");
 	}
 }

@@ -21,6 +21,7 @@ import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.EditorBase;
 import com.github.wikibot.parsing.plwikt.Editor;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -158,7 +159,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			Field definitions = p.getPolishSection().getField(FieldTypes.DEFINITIONS);
 			definitions.editContent(definitionsText, true);
 			
-			Editor editor = new Editor(p);
+			EditorBase editor = new Editor(p);
 			editor.check();
 			
 			String summary = editor.getSummary(summaryTemplate);

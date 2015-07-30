@@ -27,6 +27,7 @@ import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.EditorBase;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -82,7 +83,7 @@ public final class MaintenanceScript {
 		
 		for (PageContainer pc : pages) {
 			String title = pc.getTitle();
-			Editor editor = new Editor(pc);
+			EditorBase editor = new Editor(pc);
 			editor.check();
 			
 			if (editor.isModified()) {

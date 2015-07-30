@@ -138,8 +138,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void removeComments() {
-		String original = this.text;
-		String formatted = original;
+		String formatted = this.text;
 		
 		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .+?-->", "");
@@ -189,7 +188,7 @@ public class Editor extends EditorBase {
 		
 		formatted = Utils.sanitizeWhitespaces(formatted);
 		
-		checkDifferences(original, formatted, "removeComments", "eliminando comentarios");
+		checkDifferences(formatted, "removeComments", "eliminando comentarios");
 	}
 	
 	public void minorSanitizing() {
@@ -198,8 +197,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void transformToNewStructure() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		if (!isOldStructure || page.hasSectionWithHeader("^(F|f)orma .+")) {
 			return;
@@ -207,7 +205,7 @@ public class Editor extends EditorBase {
 		
 		// Process headers
 		
-		Matcher m = P_OLD_STRUCT_HEADER.matcher(original);
+		Matcher m = P_OLD_STRUCT_HEADER.matcher(this.text);
 		StringBuffer sb = new StringBuffer();
 		String currentEtym = "";
 		String currentSectionLang = "";
@@ -299,7 +297,7 @@ public class Editor extends EditorBase {
 		
 		String newText = sb.toString();
 		
-		if (newText.equals(original)) {
+		if (newText.equals(this.text)) {
 			return;
 		}
 		
@@ -542,12 +540,11 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		isOldStructure = false;
 		
-		checkDifferences(original, formatted, "transformToNewStructure", "conversión a la nueva estructura");
+		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
 	}
 	
 	public void normalizeSectionHeaders() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		for (Section section : page.getAllSections()) {
 			if (section instanceof LangSection) {
@@ -605,17 +602,15 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
+		checkDifferences(formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
 	
 	public void substituteReferencesTemplate() {
-		String original = this.text;
-		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		String template = "{{título referencias}}";
 		List<String> contents = new ArrayList<String>();
 		boolean found = false;
@@ -663,12 +658,11 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "substituteReferencesTemplate", "sustituyendo {{título referencias}}");
+		checkDifferences(formatted, "substituteReferencesTemplate", "sustituyendo {{título referencias}}");
 	}
 
 	public void duplicateReferencesSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		Section bottomReferences = page.getReferencesSection();
 		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
@@ -718,12 +712,11 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		checkDifferences(original, formatted, "duplicateReferencesSection", "más de una sección de referencias");
+		checkDifferences(formatted, "duplicateReferencesSection", "más de una sección de referencias");
 	}
 	
 	public void moveReferencesSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
 		
@@ -763,19 +756,18 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "moveReferencesSection", "trasladando sección de referencias");
+		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
 	}
 
 	public void normalizeSectionLevels() {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura
-		String original = this.text;
 		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		page.normalizeChildLevels();
 		
 		// TODO: traverse siblings of the first Section?
@@ -847,7 +839,7 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
+		checkDifferences(formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
 	}
 
 	private void pushStandardSections(List<Section> sections, int level) {
@@ -863,8 +855,7 @@ public class Editor extends EditorBase {
 	}
 
 	public void removePronGrafSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		List<Section> sections = page.findSectionsWithHeader("(P|p)ronunciaci(ó|o)n( y escritura)?");
 		
@@ -902,25 +893,22 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "removePronGrafSection", "eliminando título de pronunciación");
+		checkDifferences(formatted, "removePronGrafSection", "eliminando título de pronunciación");
 	}
 
 	public void sortLangSections() {
-		String original = this.text;
-		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		page.sortSections();
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "sortLangSections", "ordenando secciones de idioma");
+		checkDifferences(formatted, "sortLangSections", "ordenando secciones de idioma");
 	}
 
 	public void addMissingReferencesSection() {
-		String original = this.text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		Section references = page.getReferencesSection();
 		boolean onlyTag = false;
 		
@@ -950,17 +938,15 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		String summary = onlyTag ? "añadiendo <references>" : "añadiendo título de referencias y notas";
 		
-		checkDifferences(original, formatted, "addMissingReferencesSection", summary);
+		checkDifferences(formatted, "addMissingReferencesSection", summary);
 	}
 
 	public void sortSubSections() {
-		String original = this.text;
-		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
 		
 		for (LangSection langSection : list) {
@@ -968,17 +954,15 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "sortSubSections", "ordenando subsecciones");
+		checkDifferences(formatted, "sortSubSections", "ordenando subsecciones");
 	}
 	
 	public void removeInflectionTemplates() {
-		String original = this.text;
-		
-		if (isOldStructure || !original.contains("{{inflect.")) {
+		if (isOldStructure || !this.text.contains("{{inflect.")) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		for (Section section : page.getAllSections()) {
 			String intro = section.getIntro();
@@ -996,12 +980,11 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "removeInflectionTemplates", "eliminando plantillas de flexión");
+		checkDifferences(formatted, "removeInflectionTemplates", "eliminando plantillas de flexión");
 	}
 
 	public void normalizeTemplateNames() {
-		String original = this.text;
-		String formatted = original;
+		String formatted = this.text;
 		Map<String, String> map = new HashMap<String, String>();
 		
 		map.put("Pronunciación", "pronunciación");
@@ -1044,17 +1027,15 @@ public class Editor extends EditorBase {
 				.collect(Collectors.joining(", "));
 		}
 		
-		checkDifferences(original, formatted, "normalizeTemplateNames", summary);
+		checkDifferences(formatted, "normalizeTemplateNames", summary);
 	}
 
 	public void adaptPronunciationTemplates() {
-		String original = this.text;
-		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		Set<String> modified = new LinkedHashSet<String>();
 		
 		for (Section section : page.getAllSections()) {
@@ -1392,7 +1373,7 @@ public class Editor extends EditorBase {
 			? String.join(", ", modified) + " → {{pron-graf}}"
 			: "conversión a {{pron-graf}}";
 		
-		checkDifferences(original, formatted, "adaptPronunciationTemplates", summary);
+		checkDifferences(formatted, "adaptPronunciationTemplates", summary);
 	}
 	
 	private void makePronGrafParams(Map<String, String> sourceMap, Map<String, String> targetMap, String prefix) {
@@ -1425,9 +1406,8 @@ public class Editor extends EditorBase {
 	}
 	
 	public void convertToTemplate() {
-		String original = this.text;
 		Set<String> modified = new HashSet<String>();
-		String[] lines = original.split("\n", -1);
+		String[] lines = this.text.split("\n", -1);
 		
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -1464,7 +1444,7 @@ public class Editor extends EditorBase {
 		String formatted = String.join("\n", lines);
 		String summary = "conversión a plantilla: " + String.join(", ", modified);
 		
-		checkDifferences(original, formatted, "convertToTemplate", summary);
+		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
 	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
@@ -1580,13 +1560,12 @@ public class Editor extends EditorBase {
 		// TODO: ISO code as parameter without name
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
 		// TODO: {{ampliable}}, etc.
-		String original = this.text;
 		
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String langCode = langSection.getLangCode().toLowerCase();
@@ -1644,7 +1623,7 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(original, formatted, "lengTemplateParams", "parámetros \"leng=\"");
+		checkDifferences(formatted, "lengTemplateParams", "parámetros \"leng=\"");
 	}
 
 	public void deleteEmptySections() {
@@ -1652,8 +1631,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void strongWhitespaces() {
-		String original = text;
-		String initial = original;
+		String initial = this.text;
 		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
 		initial = initial.replaceAll(" ?&nbsp;", " ");
 		initial = initial.replaceAll("&nbsp; ?", " ");
@@ -1683,12 +1661,11 @@ public class Editor extends EditorBase {
 		// TODO: trim whitespaces inside <ref>
 		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}) <ref(>| )", "$1<ref$2");
 		
-		checkDifferences(original, formatted, "strongWhitespaces", "espacios en blanco");
+		checkDifferences(formatted, "strongWhitespaces", "espacios en blanco");
 	}
 
 	public void weakWhitespaces() {
-		String original = text;
-		Page page = Page.store(title, original);
+		Page page = Page.store(title, this.text);
 		
 		if (page.getLeadingNewlines() == 1) {
 			page.setLeadingNewlines(0);
@@ -1736,19 +1713,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
 		formatted = formatted.replace(" </ref>", "</ref>");
 		
-		checkDifferences(original, formatted, "weakWhitespaces", null);
-	}
-
-	private void checkDifferences(String original, String formatted, String caller, String log) {
-		if (!formatted.equals(original)) {
-			logger.add(caller);
-			text = formatted;
-			
-			if (log != null) {
-				summ.add(log);
-				notifyModifications = true;
-			}
-		}
+		checkDifferences(formatted, "weakWhitespaces", null);
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
@@ -1764,7 +1729,7 @@ public class Editor extends EditorBase {
 		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
-		Editor editor = new Editor(page);
+		EditorBase editor = new Editor(page);
 		editor.check();
 		
 		wb.edit(title, editor.getPageText(), editor.getSummary(), false, true, -2, null);

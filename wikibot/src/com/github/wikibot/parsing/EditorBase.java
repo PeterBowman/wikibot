@@ -58,6 +58,18 @@ public abstract class EditorBase {
 	
 	public abstract void check();
 	
+	protected void checkDifferences(String formatted, String caller, String log) {
+		if (!formatted.equals(text)) {
+			logger.add(caller);
+			text = formatted;
+			
+			if (log != null) {
+				summ.add(log);
+				notifyModifications = true;
+			}
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s || title=\"%s\"%n%s", logger, title, text);
