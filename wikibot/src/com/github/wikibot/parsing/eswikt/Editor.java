@@ -141,7 +141,7 @@ public class Editor extends EditorBase {
 		String original = this.text;
 		String formatted = original;
 		
-		formatted = formatted.replaceAll("<!-- *?-->", "");
+		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .+?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añádela en el Alfabeto Fonético Internacional.+?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.+?-->", "");
@@ -174,7 +174,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?otra sección opcional para .+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?¿flexión?: mira en .+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.+?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[ ˈ \\]\\}\\}.+?-->", "");
+		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->", "");
 		formatted = formatted.replaceAll("<!-- ?en general, no se indica la etimología .+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->", "");
@@ -183,6 +183,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- *?apellidos .+?-->", "");
 		formatted = formatted.replaceAll("<!-- *?antropónimos .+?-->", "");
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra, por ejemplo .+?-->", " "); // whitespace here is mandatory!
+		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		formatted = formatted.replaceAll("<!--\\s*$", "");
 		
