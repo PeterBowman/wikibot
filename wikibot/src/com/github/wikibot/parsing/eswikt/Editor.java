@@ -1653,7 +1653,11 @@ public class Editor extends EditorBase {
 	
 	public void strongWhitespaces() {
 		String original = text;
-		Page page = Page.store(title, original);
+		String initial = original;
+		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
+		initial = initial.replaceAll(" ?&nbsp;", " ");
+		initial = initial.replaceAll("&nbsp; ?", " ");
+		Page page = Page.store(title, initial);
 		
 		if (page.getLeadingNewlines() > 1) {
 			page.setLeadingNewlines(0);
@@ -1676,6 +1680,7 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		formatted = formatted.replaceAll("\n{3,}", "\n\n");
 		formatted = formatted.replaceAll("\n\n<!--", "\n<!--");
+		// TODO: trim whitespaces inside <ref>
 		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}) <ref(>| )", "$1<ref$2");
 		
 		checkDifferences(original, formatted, "strongWhitespaces", "espacios en blanco");
