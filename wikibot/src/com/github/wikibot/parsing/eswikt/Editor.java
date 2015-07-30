@@ -1153,7 +1153,8 @@ public class Editor extends EditorBase {
 						if (param1 != null && (
 							param1.isEmpty() || param1.equals("-") || param1.equals("[]") ||
 							param1.equals("//") || param1.equals("...") ||
-							param1.equals("[ ˈ ]") || param1.equals("[ˈ]")
+							param1.equals("[ ˈ ]") || param1.equals("[ˈ]") ||
+							param1.equals("&nbsp;")
 						)) {
 							param1 = null;
 						}
@@ -1753,7 +1754,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "fluit";
+		String title = "zambomba";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
