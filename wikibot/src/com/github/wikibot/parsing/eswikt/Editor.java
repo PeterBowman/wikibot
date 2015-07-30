@@ -1468,11 +1468,7 @@ public class Editor extends EditorBase {
 	}
 
 	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
-		name = StringUtils.strip(name, "'");
-		
-		if (name.endsWith(":")) {
-			name = name.substring(0, name.length() - 1).trim();
-		}
+		name = StringUtils.strip(name, "':");
 		
 		if (name.isEmpty()) {
 			return null;
@@ -1754,7 +1750,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "zambomba";
+		String title = "violoncello";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
