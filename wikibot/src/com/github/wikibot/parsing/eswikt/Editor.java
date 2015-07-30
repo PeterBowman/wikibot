@@ -1147,49 +1147,55 @@ public class Editor extends EditorBase {
 							
 							int count = 1;
 							
-							for (Entry<String, String> entry : params.entrySet()) {
-								String type = entry.getKey();
-								
+							for (String type : params.keySet()) {
 								if (!SPANISH_PRON_TMPL_PARAMS.contains(type)) {
 									continue;
 								}
 								
 								String num = (count != 1) ? Integer.toString(count) : "";
-								String pron = "", altpron = "";
+								String pron = "", altPron = "";
 								
 								if (Arrays.asList("s", "c").contains(type)) {
 									pron = "seseo";
-									altpron = type.equals("s") ? "Seseante" : "No seseante";
+									altPron = type.equals("s") ? "Seseante" : "No seseante";
 								} else if (Arrays.asList("ll", "y").contains(type)) {
 									pron = "yeísmo";
-									altpron = type.equals("y") ? "Yeísta" : "No yeísta";
+									altPron = type.equals("y") ? "Yeísta" : "No yeísta";
 								} else {
 									pron = "variaciones fonéticas";
 									
 									switch (type) {
 										case "ys":
-											altpron = "Yeísta, seseante";
+											altPron = "Yeísta, seseante";
 											break;
 										case "yc":
-											altpron = "Yeísta, no seseante";
+											altPron = "Yeísta, no seseante";
 											break;
 										case "lls":
-											altpron = "No yeísta, seseante";
+											altPron = "No yeísta, seseante";
 											break;
 										case "llc":
-											altpron = "No yeísta, no seseante";
+											altPron = "No yeísta, no seseante";
 											break;
 									}
 								}
 								
+								String ipa = params.get(type).replace("'", "ˈ");
 								newParams.put(num + "pron", pron);
-								newParams.put("alt" + num + "pron", altpron);
-								newParams.put(num + "fone", params.get(type));
+								newParams.put("alt" + num + "pron", altPron);
+								newParams.put(num + "fone", ipa);
 								
 								count++;
 							}
 						} else {
-							if (StringUtils.containsAny(param1, '(', ')', '{', '}', '<', '>')) {
+							if (
+								StringUtils.containsAny(param1, '{', '}', '<', '>') ||
+								(
+									StringUtils.containsAny(param1, '(', ')') &&
+									// only allow single characters inside parens
+									Pattern.compile("\\([^\\)]{2,}\\)").matcher(param1).find()
+								)
+							) {
 								editedLines.add(origLine);
 								continue linesLoop;
 							}
@@ -1448,7 +1454,7 @@ public class Editor extends EditorBase {
 	}
 
 	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
-		name = StringUtils.strip(name, "':");
+		name = StringUtils.strip(name, " ':");
 		
 		if (name.isEmpty()) {
 			return null;
@@ -1467,12 +1473,16 @@ public class Editor extends EditorBase {
 			return null;
 		}
 		
-		if (!StringUtils.containsAny(content, '[', ']', '{', '}')) {
+		// TODO: allow plain-text content (no link/template)
+		if (
+			!StringUtils.containsAny(content, '[', ']', '{', '}') ||
+			StringUtils.containsAny(content, '<', '>')
+		) {
 			return null;
 		}
 		
 		// http://stackoverflow.com/a/2787064
-		Pattern psep = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.*?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
+		Pattern psep = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 		Matcher msep = psep.matcher(content);
 		List<String> lterms = new ArrayList<String>();
 		
@@ -1659,7 +1669,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("\n{3,}", "\n\n");
 		formatted = formatted.replaceAll("\n\n<!--", "\n<!--");
 		// TODO: trim whitespaces inside <ref>
-		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}) <ref(>| )", "$1<ref$2");
+		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}|\\)) <ref(>| )", "$1<ref$2");
 		
 		checkDifferences(formatted, "strongWhitespaces", "espacios en blanco");
 	}
@@ -1720,7 +1730,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "anguila";
+		String title = "Texas";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
