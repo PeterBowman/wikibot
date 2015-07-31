@@ -183,6 +183,14 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	protected void extractIntro() {
+		String[] lines = intro.split("\n", -1);
+		
+		if (String.join("", lines).isEmpty()) {
+			intro = "";
+			trailingNewlines = lines.length;
+			return;
+		}
+		
 		while (intro.endsWith("\n")) {
 			trailingNewlines++;
 			intro = intro.substring(0, intro.length() - 1);
@@ -190,7 +198,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		
 		while (intro.startsWith("\n")) {
 			leadingNewlines++;
-			intro = intro.substring(1, intro.length());
+			intro = intro.substring(1);
 		}
 	}
 	
@@ -257,7 +265,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		sb.append(intro);
 		sb.append(StringUtils.repeat('\n', trailingNewlines));
 		
-		if (sb.length() != 0) {
+		if (!intro.isEmpty()) {
 			sb.append("\n");
 		}
 		

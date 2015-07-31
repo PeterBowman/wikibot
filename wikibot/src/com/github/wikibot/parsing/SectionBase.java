@@ -99,7 +99,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		
 		while (intro.startsWith("\n")) {
 			leadingNewlines++;
-			intro = intro.substring(1, intro.length());
+			intro = intro.substring(1);
 		}
 	}
 	

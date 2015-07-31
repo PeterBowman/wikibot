@@ -1683,6 +1683,10 @@ public class Editor extends EditorBase {
 		
 		String intro = page.getIntro();
 		
+		if (intro.isEmpty() && page.getTrailingNewlines() == 1) {
+			page.setTrailingNewlines(0);
+		}
+		
 		if (
 			!intro.isEmpty() && page.getTrailingNewlines() == 0 &&
 			!(
@@ -1697,12 +1701,15 @@ public class Editor extends EditorBase {
 			String sectionIntro = section.getIntro();
 			
 			if (
-				!sectionIntro.isEmpty() &&
-				!sectionIntro.contains("<!-- si vas a insertar una nueva sección") &&
-				!sectionIntro.endsWith("<br clear=\"all\">")
+				(
+					!sectionIntro.isEmpty() &&
+					!sectionIntro.endsWith("<br clear=\"all\">")
+				) ||
+				(
+					sectionIntro.isEmpty() &&
+					section.getTrailingNewlines() == 0
+				)
 			) {
-				section.setTrailingNewlines(1);
-			} else if (sectionIntro.isEmpty() && section.getTrailingNewlines() == 0) {
 				section.setTrailingNewlines(1);
 			}
 			
@@ -1712,7 +1719,11 @@ public class Editor extends EditorBase {
 				section.setHeaderFormat("%1$s %1$s");
 			}
 			
-			if ((section instanceof LangSection) && !sectionIntro.isEmpty() && section.getLeadingNewlines() == 1) {
+			if (
+				section instanceof LangSection &&
+				!sectionIntro.isEmpty() &&
+				section.getLeadingNewlines() == 1
+			) {
 				section.setLeadingNewlines(0);
 			}
 		}
@@ -1730,7 +1741,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Texas";
+		String title = "รู้จักมักคุ้น";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

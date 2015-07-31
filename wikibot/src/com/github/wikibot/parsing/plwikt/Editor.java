@@ -23,67 +23,11 @@ public class Editor extends EditorBase {
 	
 	@Override
 	public void check() {
-		weakWhitespaces();
-		strongWhitespaces();
 		linkToTemplate();
 		sortSections();
 		updateToc();
-	}
-	
-	public void weakWhitespaces() {
-		Page page = Page.store(title, text);
-		
-		for (Section s : page.getAllSections()) {
-			for (Field f : s.getAllFields()) {
-				f.setEolMark('\n');
-			}
-			// TODO: intro
-		}
-		
-		String formatted = page.toString();
-		
-		formatted = formatted.replaceAll("<references */ *>", "<references />");
-		formatted = formatted.replace("\n:(", "\n: (");
-		formatted = formatted.replaceAll("\n:([^ ])", "\n: $1");
-		formatted = formatted.replaceAll("\n\\*([^ ])", "\n* $1");
-		
-		checkDifferences(formatted, "weakWhitespaces", null);
-	}
-	
-	public void strongWhitespaces() {
-		Page page = Page.store(title, text);
-		
-		for (Section s : page.getAllSections()) {
-			for (Field f : s.getAllFields()) {
-				String content = f.getContent();
-				// TODO: inside templates? merge with previous line?
-				//content = content.replaceAll("\n +", "\n");
-				content = content.replaceAll("\n{2,}", "\n");
-				f.editContent(content);
-			}
-			
-			// TODO: translations
-			/*Field translations = s.getField(FieldTypes.TRANSLATIONS);
-			
-			if (translations != null) {
-				String translationsText = translations.getContent();
-				translationsText = translationsText.replace("", "");
-				translations.editContent(translationsText);
-			}*/
-			
-			s.setLeadingNewlines(0);
-			s.setTrailingNewlines(0);
-		}
-		
-		String intro = page.getIntro();
-		intro = intro.replaceAll("\n{2,}", "\n");
-		page.setIntro(intro);
-		page.setLeadingNewlines(0);
-		page.setTrailingNewlines(0);
-		
-		String formatted = page.toString();
-		
-		checkDifferences(formatted, "strongWhitespaces", "formatowanie odstępów");
+		strongWhitespaces();
+		weakWhitespaces();
 	}
 	
 	public void linkToTemplate() {
@@ -206,5 +150,61 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		
 		checkDifferences(formatted, "notesToReferences", "przeniesienie dopisków w przypisach");
+	}
+	
+	public void strongWhitespaces() {
+		Page page = Page.store(title, text);
+		
+		for (Section s : page.getAllSections()) {
+			for (Field f : s.getAllFields()) {
+				String content = f.getContent();
+				// TODO: inside templates? merge with previous line?
+				//content = content.replaceAll("\n +", "\n");
+				content = content.replaceAll("\n{2,}", "\n");
+				f.editContent(content);
+			}
+			
+			// TODO: translations
+			/*Field translations = s.getField(FieldTypes.TRANSLATIONS);
+			
+			if (translations != null) {
+				String translationsText = translations.getContent();
+				translationsText = translationsText.replace("", "");
+				translations.editContent(translationsText);
+			}*/
+			
+			s.setLeadingNewlines(0);
+			s.setTrailingNewlines(0);
+		}
+		
+		String intro = page.getIntro();
+		intro = intro.replaceAll("\n{2,}", "\n");
+		page.setIntro(intro);
+		page.setLeadingNewlines(0);
+		page.setTrailingNewlines(0);
+		
+		String formatted = page.toString();
+		
+		checkDifferences(formatted, "strongWhitespaces", "formatowanie odstępów");
+	}
+
+	public void weakWhitespaces() {
+		Page page = Page.store(title, text);
+		
+		for (Section s : page.getAllSections()) {
+			for (Field f : s.getAllFields()) {
+				f.setEolMark('\n');
+			}
+			// TODO: intro
+		}
+		
+		String formatted = page.toString();
+		
+		formatted = formatted.replaceAll("<references */ *>", "<references />");
+		formatted = formatted.replace("\n:(", "\n: (");
+		formatted = formatted.replaceAll("\n:([^ ])", "\n: $1");
+		formatted = formatted.replaceAll("\n\\*([^ ])", "\n* $1");
+		
+		checkDifferences(formatted, "weakWhitespaces", null);
 	}
 }
