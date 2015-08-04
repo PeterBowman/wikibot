@@ -34,6 +34,7 @@ import com.github.wikibot.utils.PageContainer;
 public class Wikibot extends WMFWiki {
 	public static final int MODULE_NAMESPACE = 828;
 	public static final int MODULE_TALK_NAMESPACE = 829;
+	public static final int TOPIC_NAMESPACE = 2600;
 	
 	public static final int HIDE_REDIRECT = 32;
 	public static final int RC_EDIT = 1;
