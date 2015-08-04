@@ -86,7 +86,7 @@ public class Editor extends EditorBase {
 			"falta", "revisión", "revisar"
 		);
 		
-		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}$", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*$", Pattern.CASE_INSENSITIVE);
 		
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
@@ -1741,7 +1741,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "รู้จักมักคุ้น";
+		String title = "tener";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
