@@ -133,6 +133,7 @@ public class Editor extends EditorBase {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		lengTemplateParams();
+		manageClearElements();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -1412,6 +1413,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void convertToTemplate() {
+		// TODO: add leng parameter
 		Set<String> modified = new HashSet<String>();
 		String[] lines = this.text.split("\n", -1);
 		
@@ -1640,7 +1642,60 @@ public class Editor extends EditorBase {
 		// TODO
 	}
 	
+	public void manageClearElements() {
+		String original = this.text;
+		// TODO: implement proper DOM parsing?
+		// TODO: ignore comment regions
+		original = original.replaceAll("<br +?clear *?= *?\"? *?all *?\"? *?>", "");
+		String templateName = "clear";
+		String template = String.format("{{%s}}", templateName);
+		String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
+		Page page = Page.store(title, original);
+		
+		for (Section section : page.getAllSections()) {
+			Section nextSection = section.nextSection();
+			
+			if (nextSection == null) {
+				continue;
+			}
+			
+			if (
+				StringUtils.startsWithAny(nextSection.getIntro(), arr) ||
+				(
+					nextSection.getHeader().matches("Etimología \\d+") &&
+					!nextSection.getHeader().equals("Etimología 1")
+				)
+			) {
+				List<String> templates = ParseUtils.getTemplates(templateName, section.getIntro());
+				String intro = section.getIntro();
+				
+				if (templates.size() == 1 && intro.endsWith(template)) {
+					continue;
+				}
+				
+				if (!templates.isEmpty()) {
+					intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "").trim();
+					section.setIntro(intro);
+				}
+				
+				intro += "\n\n" + template;
+				intro = intro.trim();
+				section.setIntro(intro);
+			} else {
+				String intro = section.getIntro();
+				intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "").trim();
+				section.setIntro(intro);
+			}
+		}
+		
+		String formatted = page.toString();
+		formatted = Utils.sanitizeWhitespaces(formatted);
+		
+		checkDifferences(formatted, "manageClearElements", "elementos \"clear\"");
+	}
+	
 	public void strongWhitespaces() {
+		// TODO: don't collide with removeComments() and manageClearElements() 
 		String initial = this.text;
 		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
 		initial = initial.replaceAll(" ?&nbsp;", " ");
@@ -1741,7 +1796,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "tener";
+		String title = "mouse";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
