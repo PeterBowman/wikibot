@@ -1649,6 +1649,7 @@ public class Editor extends EditorBase {
 		original = original.replaceAll("<br +?clear *?= *?\"? *?all *?\"? *?>", "");
 		String templateName = "clear";
 		String template = String.format("{{%s}}", templateName);
+		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
 		String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
 		Page page = Page.store(title, original);
 		
@@ -1788,6 +1789,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<references *?/ *?>", "<references />");
 		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
 		formatted = formatted.replace(" </ref>", "</ref>");
+		formatted = formatted.replaceAll("([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
 		
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
@@ -1796,7 +1798,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "mouse";
+		String title = "car";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
