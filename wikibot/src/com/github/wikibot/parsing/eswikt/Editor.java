@@ -75,6 +75,8 @@ public class Editor extends EditorBase {
 	
 	private static final List<String> STANDARD_HEADERS = new ArrayList<String>();
 	
+	private static final String TRANSLATIONS_TEMPLATE;
+	
 	private boolean isOldStructure;
 	
 	static {
@@ -90,6 +92,15 @@ public class Editor extends EditorBase {
 		
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
+		
+		List<String> translationsTemplate = Arrays.asList(
+			"{{trad-arriba}}",
+			"<!-- formato: {{t+|idioma|<acepción#>|palabra|género}} p. ej. {{t+|fr|1|chose|f}} -->",
+			"{{trad-centro}}",
+			"{{trad-abajo}}"
+		);
+		
+		TRANSLATIONS_TEMPLATE = String.join("\n", translationsTemplate);
 	}
 	
 	public Editor(Page page) {
@@ -126,7 +137,8 @@ public class Editor extends EditorBase {
 		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
-		addMissingReferencesSection();
+		addMissingSections();
+		//addMissingReferencesSection();
 		sortSubSections();
 		removeInflectionTemplates();
 		normalizeTemplateNames();
@@ -907,6 +919,105 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		checkDifferences(formatted, "sortLangSections", "ordenando secciones de idioma");
 	}
+	
+	public void addMissingSections() {
+		Page page = Page.store(title, this.text);
+		
+		if (isOldStructure || page.getAllSections().isEmpty()) {
+			return;
+		}
+		
+		Set<String> set = new LinkedHashSet<String>();
+		
+		// Etymology
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			if (
+				langSection.getChildSections() == null ||
+				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()
+			) {
+				continue;
+			}
+			
+			// TODO: review, catch special cases
+			Set<String> headers = langSection.getChildSections().stream()
+				.map(SectionBase::getHeader)
+				.collect(Collectors.toSet());
+			
+			headers.removeAll(STANDARD_HEADERS);
+			headers.removeIf(header -> header.startsWith("Forma "));
+			
+			if (headers.isEmpty()) {
+				continue;
+			}
+			
+			Section etymologySection = Section.create("Etimología", 3);
+			HashMap<String, String> params = new LinkedHashMap<String, String>();
+			params.put("templateName", "etimología");
+			
+			if (!langSection.getLangCode().equals("ES")) {
+				params.put("leng", langSection.getLangCode().toLowerCase());
+			}
+			
+			String template = ParseUtils.templateFromMap(params);
+			etymologySection.setIntro(template + ".");
+			langSection.prependSections(etymologySection);
+			set.add("etimología");
+		}
+		
+		// Translations
+		
+		LangSection spanishSection = page.getLangSection("es");
+		
+		if (spanishSection != null) {
+			List<Section> etymologySections = spanishSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.size() == 1) {
+				if (
+					etymologySections.get(0).getLevel() == 3 &&
+					spanishSection.findSubSectionsWithHeader("Traducciones").isEmpty()
+				) {
+					Section translationsSection = Section.create("Traducciones", 3);
+					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
+					spanishSection.appendSections(translationsSection);
+					set.add("traducciones");
+				}
+			} else if (etymologySections.size() > 1) {
+				for (Section etymologySection : etymologySections) {
+					if (
+						etymologySection.getLevel() == 3 &&
+						etymologySection.findSubSectionsWithHeader("Traducciones").isEmpty()
+					) {
+						Section translationsSection = Section.create("Traducciones", 4);
+						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
+						etymologySection.appendSections(translationsSection);
+						set.add("traducciones");
+					}
+				}
+			}
+		}
+		
+		// References
+		
+		if (page.getReferencesSection() == null) {
+			Section references = Section.create("Referencias y notas", 2);
+			references.setIntro("<references />");
+			page.setReferencesSection(references);
+			set.add("referencias y notas");
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		String summary = (set.size() == 1)
+			? "añadiendo sección: "
+			: "añadiendo secciones: ";
+		summary += String.join(", ", set);
+		
+		checkDifferences(formatted, "addMissingSections", summary);
+	}
 
 	public void addMissingReferencesSection() {
 		Page page = Page.store(title, this.text);
@@ -1682,7 +1793,8 @@ public class Editor extends EditorBase {
 				intro += "\n\n" + template;
 				intro = intro.trim();
 				section.setIntro(intro);
-			} else {
+			} else if (section.getIntro().contains("clear")) {
+				// TODO: sanitize templates, then change to "{{clear}}"
 				String intro = section.getIntro();
 				intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "").trim();
 				section.setIntro(intro);
