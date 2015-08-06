@@ -260,80 +260,113 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public void appendSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length != 0) {
-			for (T section : sections) {
-				if (section.level <= level) {
-					throw new UnsupportedOperationException("Invalid level of appended Sections: " + section.level + " (must be > " + level + ")");
-				}
+		if (sections.length == 0) {
+			return;
+		}
+		
+		for (T section : sections) {
+			if (section.level <= level) {
+				throw new UnsupportedOperationException("Invalid level of appended Sections: " + section.level + " (must be > " + level + ")");
+			}
+		}
+		
+		if (containingPage != null) {
+			List<T> flattened = flattenSubSections(Arrays.asList(sections));
+			
+			if (childSections != null) {
+				T lastChild = childSections.get(childSections.size() - 1);
+				int index = containingPage.sections.indexOf(lastChild);
+				containingPage.sections.addAll(index + 1, flattened);
+			} else {
+				int index = containingPage.sections.indexOf(this);
+				containingPage.sections.addAll(index + 1, flattened);
 			}
 			
-			if (containingPage != null) {
-				T nextSibling = nextSiblingSection();
-				
-				if (nextSibling != null) {
-					int index = containingPage.sections.indexOf(nextSibling);
-					containingPage.sections.addAll(index, flattenSubSections(Arrays.asList(sections)));
-				} else {
-					containingPage.sections.addAll(flattenSubSections(Arrays.asList(sections)));
-				}
-				
-				containingPage.buildSectionTree();
-			} else {
-				Collections.addAll(childSections, sections);
+			containingPage.buildSectionTree();
+		} else {
+			if (childSections == null) {
+				childSections = new ArrayList<T>();
 			}
+			
+			Collections.addAll(childSections, sections);
 		}
 	}
 	
 	public void prependSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length != 0) {
-			for (T section : sections) {
-				if (section.level <= level) {
-					throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be > " + level + ")");
-				}
+		if (sections.length == 0) {
+			return;
+		}
+		
+		for (T section : sections) {
+			if (section.level <= level) {
+				throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be > " + level + ")");
+			}
+		}
+		
+		if (containingPage != null) {
+			int index = containingPage.sections.indexOf(this);
+			List<T> flattened = flattenSubSections(Arrays.asList(sections));
+			containingPage.sections.addAll(index + 1, flattened);
+			containingPage.buildSectionTree();
+		} else {
+			if (childSections == null) {
+				childSections = new ArrayList<T>();
 			}
 			
-			if (containingPage != null) {
-				int index = containingPage.sections.indexOf(this);
-				containingPage.sections.addAll(index + 1, flattenSubSections(Arrays.asList(sections)));
-				containingPage.buildSectionTree();
-			} else {
-				childSections.addAll(0, Arrays.asList(sections));
-			}
+			childSections.addAll(0, Arrays.asList(sections));
 		}
 	}
 	
 	public void insertSectionsAfter(@SuppressWarnings("unchecked") T... sections) {
+		// TODO: don't throw if parentSection is non null
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot insert Sections with no containing Page");
 		}
 		
-		if (sections.length != 0) {
-			for (T section : sections) {
-				if (section.level != level) {
-					throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be == " + level + ")");
-				}
+		if (sections.length == 0) {
+			return;
+		}
+		
+		for (T section : sections) {
+			if (section.level != level) {
+				throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be == " + level + ")");
 			}
-			
-			int index = siblingSections.indexOf(this);
-			siblingSections.addAll(index + 1, Arrays.asList(sections));
+		}
+		
+		int index = siblingSections.indexOf(this);
+		siblingSections.addAll(index + 1, Arrays.asList(sections));
+		
+		if (parentSection != null) {
+			parentSection.propagateTree();
+		} else {
+			containingPage.sections = flattenSubSections(siblingSections);
 			containingPage.buildSectionTree();
 		}
 	}
 	
 	public void insertSectionsBefore(@SuppressWarnings("unchecked") T... sections) {
+		// TODO: don't throw if parentSection is non null
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot insert Sections with no containing Page");
 		}
 		
-		if (sections.length != 0) {
-			for (T section : sections) {
-				if (section.level != level) {
-					throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be == " + level + ")");
-				}
+		if (sections.length == 0) {
+			return;
+		}
+		
+		for (T section : sections) {
+			if (section.level != level) {
+				throw new UnsupportedOperationException("Invalid level of prepended Sections: " + section.level + " (must be == " + level + ")");
 			}
-			
-			int index = siblingSections.indexOf(this);
-			siblingSections.addAll(index, Arrays.asList(sections));
+		}
+		
+		int index = siblingSections.indexOf(this);
+		siblingSections.addAll(index, Arrays.asList(sections));
+
+		if (parentSection != null) {
+			parentSection.propagateTree();
+		} else {
+			containingPage.sections = flattenSubSections(siblingSections);
 			containingPage.buildSectionTree();
 		}
 	}
@@ -392,7 +425,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 			
 			if (diff > 0) {
 				int highestLevel = subSections.stream()
-					.map(section -> section.getLevel())
+					.map(SectionBase::getLevel)
 					.max(Integer::max)
 					.get();
 				
@@ -435,13 +468,13 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		
 		if (section.childSections != null) {
 			section.propagateTree();
+		} else {
+			containingPage.buildSectionTree();
 		}
-		
-		containingPage.buildSectionTree();
 	}
 	
 	protected void propagateTree() {
-		if (childSections == null) {
+		if (containingPage == null || childSections == null) {
 			return;
 		}
 		

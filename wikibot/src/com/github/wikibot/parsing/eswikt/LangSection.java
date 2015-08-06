@@ -173,10 +173,7 @@ public class LangSection extends Section {
 		
 		if (etymologySections.size() == 1) {
 			Collections.sort(childSections);
-			
-			if (containingPage != null) {
-				propagateTree();
-			}
+			propagateTree();
 		} else {
 			for (Section etymologySection : etymologySections.toArray(new Section[etymologySections.size()])) {
 				etymologySection.sortSections();

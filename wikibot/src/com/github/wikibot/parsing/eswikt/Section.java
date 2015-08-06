@@ -66,10 +66,7 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 		}
 		
 		Collections.sort(childSections);
-		
-		if (containingPage != null) {
-			propagateTree();
-		}
+		propagateTree();
 	}
 
 	@Override
