@@ -149,6 +149,7 @@ public class Editor extends EditorBase {
 		removeInflectionTemplates();
 		adaptPronunciationTemplates();
 		convertToTemplate();
+		moveElements();
 		addMissingElements();
 		langTemplateParams();
 		manageClearElements();
@@ -1136,6 +1137,7 @@ public class Editor extends EditorBase {
 			}
 			
 			String template = ParseUtils.templateFromMap(params);
+			// TODO: check its presence in moveElements()?
 			etymologySection.setIntro(template + ".");
 			langSection.prependSections(etymologySection);
 			set.add("etimología");
@@ -1851,7 +1853,43 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "langTemplateParams", "parámetros \"leng=\"");
 	}
 
+	public void moveElements() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		Set<String> set = new LinkedHashSet<String>();
+		
+		// TODO: {{desambiguación}}
+		// TODO: {{homófono}}, {{transliteración}}... (invoke this method
+		// before adaptPronunciationTemplates, but after convertToTemplate)
+		
+		// {{pron-graf}}, {{etimología}}
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.size() == 1) {
+				
+			} else if (etymologySections.size() > 1) {
+				
+			}
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		String summary = String.format("reubicando %s", String.join(", ", set));
+		
+		checkDifferences(formatted, "moveElements", summary);
+	}
+	
 	public void addMissingElements() {
+		// TODO: make this work with moveElements()
+		
 		if (isOldStructure) {
 			return;
 		}
