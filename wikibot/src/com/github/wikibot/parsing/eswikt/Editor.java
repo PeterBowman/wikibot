@@ -88,7 +88,7 @@ public class Editor extends EditorBase {
 			"falta", "revisión", "revisar"
 		);
 		
-		P_AMBOX_TMPLS = Pattern.compile("^ *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*$", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 		
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
@@ -138,12 +138,12 @@ public class Editor extends EditorBase {
 		removePronGrafSection();
 		sortLangSections();
 		addMissingSections();
-		//addMissingReferencesSection();
 		sortSubSections();
 		removeInflectionTemplates();
 		normalizeTemplateNames();
 		adaptPronunciationTemplates();
 		convertToTemplate();
+		addMissingElements();
 		lengTemplateParams();
 		manageClearElements();
 		strongWhitespaces();
@@ -1018,41 +1018,7 @@ public class Editor extends EditorBase {
 		
 		checkDifferences(formatted, "addMissingSections", summary);
 	}
-
-	public void addMissingReferencesSection() {
-		Page page = Page.store(title, this.text);
-		Section references = page.getReferencesSection();
-		boolean onlyTag = false;
-		
-		if (
-			isOldStructure || page.getAllSections().isEmpty() ||
-			(references == null && page.hasSectionWithHeader(".*?Referencias.*"))
-		) {
-			return;
-		}
-		
-		if (references == null) {
-			references = Section.create("Referencias y notas", 2);
-			references.setIntro("<references />");
-			page.setReferencesSection(references);
-		} else {
-			String intro = references.getIntro();
-			
-			// TODO: check other elements (templates, manually introduced references...)
-			if (!intro.isEmpty()) {
-				return;
-			}
-			
-			references.setIntro("<references />");
-			onlyTag = true;
-		}
-		
-		String formatted = page.toString();
-		String summary = onlyTag ? "añadiendo <references>" : "añadiendo título de referencias y notas";
-		
-		checkDifferences(formatted, "addMissingReferencesSection", summary);
-	}
-
+	
 	public void sortSubSections() {
 		if (isOldStructure) {
 			return;
@@ -1747,6 +1713,108 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "lengTemplateParams", "parámetros \"leng=\"");
+	}
+
+	public void addMissingElements() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		Set<String> set = new LinkedHashSet<String>();
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			String langCode = langSection.getLangCode().toLowerCase();
+			
+			if (etymologySections.size() == 1) {
+				Section etymologySection = etymologySections.get(0);
+				String langSectionIntro = langSection.getIntro();
+				String etymologyIntro = etymologySection.getIntro();
+				
+				if (ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty()) {
+					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
+					langSection.setIntro(langSectionIntro);
+					set.add("{{pron-graf}}");
+				}
+				
+				if (
+					ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
+					ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
+				) {
+					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
+					etymologySection.setIntro(etymologyIntro);
+					set.add("{{etimología}}");
+				}
+			} else if (etymologySections.size() > 1) {
+				for (Section etymologySection : etymologySections) {
+					String etymologyIntro = etymologySection.getIntro();
+					
+					if (
+						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
+						ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
+					) {
+						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
+						etymologySection.setIntro(etymologyIntro);
+						set.add("{{etimología}}");
+					}
+					
+					if (
+						ParseUtils.getTemplates("pron-graf", langSection.getIntro()).isEmpty() &&
+						ParseUtils.getTemplates("pron-graf", etymologyIntro).isEmpty()
+					) {
+						etymologyIntro = insertTemplate(etymologyIntro, langCode, "pron-graf", "{{%s}}");
+						etymologySection.setIntro(etymologyIntro);
+						set.add("{{pron-graf}}");
+					}
+				}
+			}
+		}
+		
+		Section references = page.getReferencesSection();
+		
+		// TODO: check other elements (templates, manually introduced references...)
+		if (references != null && references.getIntro().isEmpty()) {
+			references.setIntro("<references />");
+			set.add("<references>");
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		String summary = String.format("añadiendo %s", String.join(", ", set));
+		
+		checkDifferences(formatted, "addMissingElements", summary);
+	}
+	
+	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
+		Matcher m = P_AMBOX_TMPLS.matcher(content);
+		StringBuffer sb = new StringBuffer();
+		boolean hadMatch = false;
+		
+		while (m.find()) {
+			m.appendReplacement(sb, m.group());
+			hadMatch = true;
+		}
+		
+		sb.append("\n");
+		String lengParam = "";
+		
+		if (!langCode.equals("es")) {
+			lengParam = String.format("|leng=%s", langCode);
+		}
+		
+		sb.append(String.format(templateFormat, templateName + lengParam));
+		
+		if (!hadMatch) {
+			sb.append("\n");
+		}
+		
+		m.appendTail(sb);
+		
+		return sb.toString().trim();
 	}
 
 	public void deleteEmptySections() {
