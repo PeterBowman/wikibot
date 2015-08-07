@@ -144,7 +144,7 @@ public class Editor extends EditorBase {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
-		lengTemplateParams();
+		langTemplateParams();
 		manageClearElements();
 		strongWhitespaces();
 		weakWhitespaces();
@@ -1359,7 +1359,7 @@ public class Editor extends EditorBase {
 							(
 								params.containsKey("ParamWithoutName2") &&
 								!params.get("ParamWithoutName2").isEmpty() &&
-								!params.get("ParamWithoutName2").matches("(?i)audio.?")
+								!StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio")
 							)
 						) {
 							editedLines.add(origLine);
@@ -1645,7 +1645,7 @@ public class Editor extends EditorBase {
 		return ParseUtils.templateFromMap(map);
 	}
 
-	public void lengTemplateParams() {
+	public void langTemplateParams() {
 		// TODO: ISO code as parameter without name
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
 		// TODO: {{ampliable}}, etc.
@@ -1712,7 +1712,7 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(formatted, "lengTemplateParams", "parámetros \"leng=\"");
+		checkDifferences(formatted, "langTemplateParams", "parámetros \"leng=\"");
 	}
 
 	public void addMissingElements() {
@@ -1978,7 +1978,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "car";
+		String title = "wada";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
