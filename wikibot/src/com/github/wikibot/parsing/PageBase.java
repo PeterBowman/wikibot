@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -123,12 +124,16 @@ public abstract class PageBase<T extends SectionBase<T>> {
 			.anyMatch(section -> section.getHeader().matches(regex));
 	}
 	
-	public List<T> findSectionsWithHeader(String regex) {
+	public List<T> filterSections(Predicate<T> predicate) {
 		return sections.stream()
-			.filter(section -> section.getHeader().matches(regex))
+			.filter(predicate)
 			.collect(Collectors.toList());
 	}
 	
+	public List<T> findSectionsWithHeader(String regex) {
+		return filterSections(section -> section.getHeader().matches(regex));
+	}
+
 	public void sortSections(Comparator<T> comparator) {
 		Collections.sort(sections, comparator);
 	}

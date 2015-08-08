@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -443,14 +444,18 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		setLevel(level + diff);
 	}
 	
-	public List<T> findSubSectionsWithHeader(String regex) {
+	public List<T> filterSubSections(Predicate<T> predicate) {
 		if (childSections != null) {
 			return flattenSubSections(childSections).stream()
-				.filter(section -> section.getHeader().matches(regex))
+				.filter(predicate)
 				.collect(Collectors.toList());
 		} else {
 			return new ArrayList<T>();
 		}
+	}
+	
+	public List<T> findSubSectionsWithHeader(String regex) {
+		return filterSubSections(section -> section.getHeader().matches(regex));
 	}
 	
 	public void replaceWith(T section) {
