@@ -105,15 +105,15 @@ public class Editor extends EditorBase {
 	
 	public Editor(Page page) {
 		super(page.getTitle(), page.toString());
-		checkOldStructure();
+		checkOldStructure(text);
 	}
 	
 	public Editor(PageContainer pc) {
 		super(pc.getTitle(), pc.getText());
-		checkOldStructure();
+		checkOldStructure(text);
 	}
 	
-	private void checkOldStructure() {
+	private void checkOldStructure(String text) {
 		if (
 			text.contains("{{ES") || text.contains("-ES}}") || text.contains("-ES|") ||
 			text.contains("{{TRANS") || text.contains("{{TAXO}}") || text.contains("{{Chono-ES") ||
@@ -129,6 +129,7 @@ public class Editor extends EditorBase {
 	@Override
 	public void check() {
 		removeComments();
+		normalizeTemplateNames();
 		transformToNewStructure();
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
@@ -140,7 +141,6 @@ public class Editor extends EditorBase {
 		addMissingSections();
 		sortSubSections();
 		removeInflectionTemplates();
-		normalizeTemplateNames();
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
@@ -209,6 +209,165 @@ public class Editor extends EditorBase {
 		// TODO: trailing period after {{etimología}}
 	}
 	
+	public void normalizeTemplateNames() {
+		String formatted = this.text;
+		Map<String, String> map = new HashMap<String, String>(100);
+		
+		// TODO: expand per [[Especial:TodasLasRedirecciones]]
+		// TODO: delete obsolete templates
+		
+		map.put("Pronunciación", "pronunciación");
+		map.put("Etimología", "etimología");
+		map.put("etimologia", "etimología");
+		map.put("Desambiguación", "desambiguación");
+		map.put("grafías alternativas", "grafía alternativa");
+		//map.put("ucf", "plm");
+		map.put("Anagramas", "anagrama");
+		map.put("Parónimos", "parónimo");
+		
+		map.put("DRAE1914", "DLC1914");
+		map.put("DUE", "MaríaMoliner");
+		map.put("Moliner", "MaríaMoliner");
+		map.put("NDLC1866", "Labernia1866");
+		map.put("dlc1914", "DLC1914");
+		map.put("dme1831", "DME1831");
+		map.put("dme1864", "DME1864");
+		map.put("dp2002", "DP2002");
+		map.put("drae1914", "DLC1914");
+		
+		map.put("aka", "ak");
+		map.put("allentiac", "qbt");
+		map.put("arg", "an");
+		map.put("aus-dar", "0hk");
+		map.put("ava", "av");
+		map.put("ave", "ae");
+		map.put("bak", "ba");
+		map.put("bam", "bm");
+		map.put("bat-smg", "sgs");
+		map.put("be-x-old", "be");
+		map.put("bod", "bo");
+		map.put("ces", "cs");
+		map.put("cha", "ch");
+		map.put("che", "ce");
+		map.put("chu", "cu");
+		map.put("chv", "cv");
+		map.put("cor", "kw");
+		map.put("cos", "co");
+		map.put("cre", "cr");
+		map.put("cym", "cy");
+		map.put("div", "dv");
+		map.put("ewe", "ee");
+		map.put("fas", "fa");
+		map.put("fiu-vro", "vro");
+		map.put("ful", "ff");
+		map.put("gkm", "qgk");
+		map.put("gla", "gd");
+		map.put("gle", "ga");
+		map.put("glv", "gv");
+		map.put("her", "hz");
+		map.put("hmo", "ho");
+		map.put("hrv", "hr");
+		map.put("hye", "hy");
+		map.put("ind", "id");
+		map.put("jav", "jv");
+		map.put("kal", "kl");
+		map.put("kat", "ka");
+		map.put("lzh", "zh-classical");
+		map.put("mah", "mh");
+		map.put("mlt", "mt");
+		map.put("mri", "mi");
+		map.put("nb", "no");
+		map.put("nrm", "nrf");
+		map.put("oji", "oj");
+		map.put("ood", "nai");
+		map.put("protoindoeuropeo", "ine");
+		map.put("prv", "oc");
+		map.put("roa-oca", "oca");
+		map.put("roa-rup", "rup");
+		map.put("roa-tara", "roa-tar");
+		map.put("roh", "rm");
+		map.put("sna", "sn");
+		map.put("srd", "sc");
+		map.put("srp", "sr");
+		map.put("ssw", "ss");
+		map.put("tsz", "pua");
+		map.put("yue", "zh-yue");
+		map.put("zh-cn", "zh");
+		map.put("zh-min-nan", "nan");
+		map.put("zh-wuu", "wuu");
+		
+		map.put("AR", "AR-ES");
+		map.put("CA", "CA-ES");
+		map.put("CHN", "CMN-ES");
+		map.put("EN", "EN-ES");
+		map.put("EU", "EU-ES");
+		map.put("FR", "FR-ES");
+		map.put("GL", "GL-ES");
+		map.put("IT", "IT-ES");
+		map.put("LA", "LA-ES");
+		map.put("MN", "MN-ES");
+		map.put("PL", "PL-ES");
+		map.put("PT", "PT-ES");
+		map.put("QU", "QU-ES");
+		
+		map.put("Allentiac-ES", "QBT-ES");
+		map.put("BAT-SMG-ES", "SGS-ES");
+		map.put("CYM-ES", "CY-ES");
+		map.put("FIU-VRO-ES", "VRO-ES");
+		map.put("FRS-ES", "STQ-ES");
+		map.put("LZH-ES", "ZH-CLASSICAL-ES");
+		map.put("MYA-ES", "MY-ES");
+		map.put("NLD-ES", "NL-ES");
+		map.put("OFR-ES", "FRO-ES");
+		map.put("PROTOPOLINESIO-ES", "Protopolinesio-ES");
+		map.put("PRV-ES", "OC-ES");
+		map.put("TGL-ES", "TL-ES");
+		map.put("TOG-ES", "TO-ES");
+		map.put("TSZ-ES", "PUA-ES");
+		map.put("YUE-ES", "ZH-YUE-ES");
+		map.put("ZH-ES", "CMN-ES");
+		
+		map.put("Indoeuropeo", "INE-ES");
+		map.put("castellanoantiguo", "OSP-ES");
+		map.put("Aymará-Español", "AY-ES");
+		map.put("Guaraní-Español", "GN-ES");
+		map.put("Náhuatl-Español", "NAH-ES");
+		map.put("Quechua-Español", "QU-ES");
+		
+		List<String> found = new ArrayList<String>();
+		
+		for (Entry<String, String> entry : map.entrySet()) {
+			String target = entry.getKey();
+			String replacement = entry.getValue();
+			StringBuffer sb = new StringBuffer();
+			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|.*?)?\\}\\}", Pattern.DOTALL);
+			Matcher m = patt.matcher(formatted);
+			
+			while (m.find()) {
+				m.appendReplacement(sb, "{{" + replacement + "$1}}");
+			}
+			
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				formatted = sb.toString();
+				found.add(target);
+			}
+		}
+		
+		if (found.isEmpty()) {
+			return;
+		}
+		
+		// Must check again due to {{XX}} -> {{XX-ES}} replacements
+		checkOldStructure(formatted);
+		
+		String summary = found.stream()
+			.map(target -> String.format("{{%s}} → {{%s}}", target, map.get(target)))
+			.collect(Collectors.joining(", "));
+		
+		checkDifferences(formatted, "normalizeTemplateNames", summary);
+	}
+
 	public void transformToNewStructure() {
 		Page page = Page.store(title, this.text);
 		
@@ -923,6 +1082,7 @@ public class Editor extends EditorBase {
 	public void addMissingSections() {
 		Page page = Page.store(title, this.text);
 		
+		// TODO: prevent adding translation sections in flexive form entries
 		if (isOldStructure || page.getAllSections().isEmpty()) {
 			return;
 		}
@@ -1059,53 +1219,6 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "removeInflectionTemplates", "eliminando plantillas de flexión");
-	}
-
-	public void normalizeTemplateNames() {
-		String formatted = this.text;
-		Map<String, String> map = new HashMap<String, String>();
-		
-		map.put("Pronunciación", "pronunciación");
-		map.put("Etimología", "etimología");
-		map.put("Desambiguación", "desambiguación");
-		map.put("grafías alternativas", "grafía alternativa");
-		
-		List<String> found = new ArrayList<String>();
-		
-		for (Entry<String, String> entry : map.entrySet()) {
-			String target = entry.getKey();
-			String replacement = entry.getValue();
-			StringBuffer sb = new StringBuffer();
-			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|.*?)?\\}\\}", Pattern.DOTALL);
-			Matcher m = patt.matcher(formatted);
-			
-			while (m.find()) {
-				m.appendReplacement(sb, "{{" + replacement + "$1}}");
-			}
-			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				formatted = sb.toString();
-				found.add(target);
-			}
-		}
-		
-		if (found.isEmpty()) {
-			return;
-		}
-		
-		found.remove("Pronunciación");
-		found.remove("grafías alternativas");
-		
-		String summary = null;
-		
-		if (!found.isEmpty()) {
-			summary = found.stream()
-				.map(target -> String.format("{{%s}} → {{%s}}", target, map.get(target)))
-				.collect(Collectors.joining(", "));
-		}
-		
-		checkDifferences(formatted, "normalizeTemplateNames", summary);
 	}
 
 	public void adaptPronunciationTemplates() {
@@ -1978,7 +2091,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "wada";
+		String title = "cachimbo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
