@@ -340,7 +340,7 @@ public class Editor extends EditorBase {
 			String target = entry.getKey();
 			String replacement = entry.getValue();
 			StringBuffer sb = new StringBuffer();
-			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|.*?)?\\}\\}", Pattern.DOTALL);
+			Pattern patt = Pattern.compile("\\{\\{ *?" + target + "( *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 			Matcher m = patt.matcher(formatted);
 			
 			while (m.find()) {
