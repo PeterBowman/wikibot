@@ -158,14 +158,15 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		
 		m.appendTail(sb);
 		sections.add(sb.toString());
-		
 		intro = sections.get(0);
 		
-		if (intro.endsWith("\n")) {
-			intro = intro.substring(0, intro.length() - 1);
+		if (!intro.isEmpty()) {
+			if (intro.endsWith("\n")) {
+				intro = intro.substring(0, intro.length() - 1);
+			}
+			
+			extractIntro();
 		}
-		
-		extractIntro();
 		
 		for (int i = 1; i < sections.size(); i++) {
 			String sectionText = sections.get(i);
