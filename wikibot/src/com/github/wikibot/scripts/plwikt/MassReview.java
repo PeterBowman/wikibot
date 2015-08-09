@@ -3,9 +3,11 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -30,40 +32,17 @@ public final class MassReview {
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
 		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		wb.setThrottle(5000);
 		
-		TsvParserSettings settings = new TsvParserSettings();
-		settings.setHeaderExtractionEnabled(true);
-		TsvParser parser = new TsvParser(settings);
+		List<String[]> list = extractList();
+		String lastReviewed = findLastModifiedEntry(list);
 		
-		List<String[]> list;
-		
-		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), "UTF-8"))) {
-			list = parser.parseAll(reader);
-		}
-		
-		System.out.printf("Total elements: %d%n", list.size());
-		
-		File f = new File(F_LAST);
-		String lastReviewed = "";
-		
-		if (f.exists()) {
-			String lastEntry = IOUtils.loadFromFile(F_LAST, "", "UTF8")[0];
-			List<String[]> temp = new ArrayList<String[]>(list);
-			int index = list.stream()
-				.filter(arr -> arr[0].equals(lastEntry))
-				.findFirst()
-				.map(temp::indexOf)
-				.get();
-			lastReviewed = list.get(index)[0];
-			list = list.subList(index + 1, list.size());
-		}
-		
-		System.out.printf("Remaining: %d%n", list.size());
+		// [[Special:PermaLink/revid#Anchor]]
+		String summary = (args.length > 0) ? args[0] : "";
+		System.out.printf("Summary: %s%n", summary);
 		
 		ListIterator<String[]> iterator = list.listIterator();
 		List<String> errors = new ArrayList<String>();
-		String comment = "[[Specjalna:Niezmienny link/4711423#Masowe oznaczanie importu]]";
-		wb.setThrottle(5000);
 		
 		while (iterator.hasNext()) {
 			String[] arr = iterator.next();
@@ -78,7 +57,7 @@ public final class MassReview {
 					continue;
 				}
 				
-				wb.review(rev, comment);
+				wb.review(rev, summary);
 				lastReviewed = title;
 			} catch (IOException e1) {
 				System.out.println(e1.getMessage());
@@ -96,9 +75,49 @@ public final class MassReview {
 		}
 		
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
+		System.out.printf("Last reviewed: %s%n", lastReviewed);
+		
 		IOUtils.writeToFile(String.join("\n", errors), F_ERRORS);
 		IOUtils.writeToFile(lastReviewed, F_LAST);
 		
 		wb.logout();
+	}
+
+	private static List<String[]> extractList() throws IOException, UnsupportedEncodingException, FileNotFoundException {
+		TsvParserSettings settings = new TsvParserSettings();
+		settings.setHeaderExtractionEnabled(true);
+		TsvParser parser = new TsvParser(settings);
+		
+		List<String[]> list;
+		
+		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), "UTF-8"))) {
+			list = parser.parseAll(reader);
+		}
+		
+		System.out.printf("Total elements: %d%n", list.size());
+		return list;
+	}
+
+	private static String findLastModifiedEntry(List<String[]> list) throws FileNotFoundException {
+		File f = new File(F_LAST);
+		String lastReviewed = "";
+		
+		if (f.exists()) {
+			String[] lines = IOUtils.loadFromFile(F_LAST, "", "UTF8");
+			
+			if (lines.length > 0) {
+				String lastEntry = lines[0];
+				int index = list.stream()
+					.filter(arr -> arr[0].equals(lastEntry))
+					.findFirst()
+					.map(list::indexOf)
+					.get();
+				lastReviewed = list.get(index)[0];
+				list.removeAll(list.subList(0, index + 1));
+			}
+		}
+		
+		System.out.printf("Remaining: %d%n", list.size());
+		return lastReviewed;
 	}
 }
