@@ -38,6 +38,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
+	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|.+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
@@ -114,11 +115,15 @@ public class Editor extends EditorBase {
 	}
 	
 	private void checkOldStructure(String text) {
+		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		Matcher m = P_XX_ES_TEMPLATE.matcher(text);
+		
 		if (
-			text.contains("{{ES") || text.contains("-ES}}") || text.contains("-ES|") ||
-			text.contains("{{TRANS") || text.contains("{{TAXO}}") || text.contains("{{Chono-ES") ||
-			text.contains("{{Protopolinesio-ES") || text.contains("{{carácter oriental") ||
-			text.contains("{{Carácter oriental")
+			m.find() ||
+			!ParseUtils.getTemplates("ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
+			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
+			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
 		) {
 			isOldStructure = true;
 		} else {
@@ -340,7 +345,7 @@ public class Editor extends EditorBase {
 			String target = entry.getKey();
 			String replacement = entry.getValue();
 			StringBuffer sb = new StringBuffer();
-			Pattern patt = Pattern.compile("\\{\\{ *?" + target + "( *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
+			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 			Matcher m = patt.matcher(formatted);
 			
 			while (m.find()) {
@@ -383,12 +388,20 @@ public class Editor extends EditorBase {
 		String currentSectionLang = "";
 		int lastIndex = 0;
 		
+		// TODO: review RegExp (two {{XX-ES}} templates on the same line)
+		
 		while (m.find()) {
 			String pre = m.group(1);
 			String template = m.group(2);
 			String post = m.group(3);
 			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
 			String name = params.get("templateName");
+			
+			if (name.equals("lengua") || name.equals("translit")) {
+				m.appendReplacement(sb, m.group());
+				continue;
+			}
+			
 			String altGraf = params.getOrDefault("ParamWithoutName1", "");
 			
 			if (name.equals("TRANSLIT")) {
@@ -1604,6 +1617,7 @@ public class Editor extends EditorBase {
 	
 	public void convertToTemplate() {
 		// TODO: add leng parameter
+		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		Set<String> modified = new HashSet<String>();
 		String[] lines = this.text.split("\n", -1);
 		
@@ -2091,7 +2105,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "cachimbo";
+		String title = "a";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
