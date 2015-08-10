@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -374,123 +375,37 @@ public class Editor extends EditorBase {
 	}
 
 	public void transformToNewStructure() {
-		Page page = Page.store(title, this.text);
+		String formatted = this.text;
+		Page page = Page.store(title, formatted);
 		
 		if (!isOldStructure || page.hasSectionWithHeader("^(F|f)orma .+")) {
 			return;
 		}
 		
+		// Remove {{transic}} template
+		
+		formatted = formatted.replaceAll("\\{\\{ *?transic *?\\}\\}\n?", "");
+		
 		// Process headers
 		
-		Matcher m = P_OLD_STRUCT_HEADER.matcher(this.text);
+		Matcher m = P_OLD_STRUCT_HEADER.matcher(formatted);
 		StringBuffer sb = new StringBuffer();
-		String currentEtym = "";
 		String currentSectionLang = "";
-		int lastIndex = 0;
-		
-		// TODO: review RegExp (two {{XX-ES}} templates on the same line)
 		
 		while (m.find()) {
-			String pre = m.group(1);
-			String template = m.group(2);
-			String post = m.group(3);
-			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-			String name = params.get("templateName");
-			
-			if (name.equals("lengua") || name.equals("translit")) {
-				m.appendReplacement(sb, m.group());
-				continue;
-			}
-			
-			String altGraf = params.getOrDefault("ParamWithoutName1", "");
-			
-			if (name.equals("TRANSLIT")) {
-				params.put("templateName", "translit");
-				name = params.get("ParamWithoutName2");
-			} else {
-				name = name.replace("-ES", "");
-				params.put("templateName", "lengua");
-				params.put("ParamWithoutName1", name);
-			}
-			
-			String etym = "";
-			etym = params.getOrDefault("ParamWithoutName2", etym);
-			etym = params.getOrDefault("num", etym);
-			etym = params.getOrDefault("núm", etym);
-			
-			if (!etym.isEmpty()) {
-				params.remove("ParamWithoutName2");
-				params.remove("num");
-				params.remove("núm");
-			}
-			
-			if (!currentSectionLang.equals(name) && !etym.equals("1")) {
-				etym = "";
-			}
-			
-			if (
-				!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
-				!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
-			) {
-				params.put("alt", altGraf);
-			} else {
-				altGraf = "";
-			}
-			
-			pre = pre.isEmpty() ? "" : "$1\n";
-			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
-			
-			if (!etym.isEmpty() && !etym.equals("1")) {
-				m.appendReplacement(sb, String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post));
-			} else {
-				String newTemplate = ParseUtils.templateFromMap(params);
-				m.appendReplacement(sb, String.format("%s=%s=%s", pre, newTemplate, post));
-			}
-			
-			if (lastIndex != 0) {
-				String added = sb.substring(lastIndex);
-				int headerIndex = added.indexOf("\n=");
-				
-				if (headerIndex != -1) {
-					String etymHeader = currentEtym.isEmpty()
-						? "==Etimología=="
-						: String.format("==Etimología %s==", currentEtym);
-					String replacement = added.substring(0, headerIndex) + "\n" + etymHeader + added.substring(headerIndex);
-					sb.replace(lastIndex, sb.length(), replacement);
-				}
-			}
-			
-			lastIndex = sb.length();
-			currentEtym = etym;
-			currentSectionLang = name;
+			currentSectionLang = findOldStructureMatch(m, sb, currentSectionLang);
 		}
 		
 		m.appendTail(sb);
+		formatted = sb.toString();
 		
-		if (lastIndex != 0) {
-			String added = sb.substring(lastIndex);
-			int headerIndex = added.indexOf("\n=");
-			
-			if (headerIndex != -1) {
-				String etymHeader = currentEtym.isEmpty()
-					? "==Etimología=="
-					: String.format("==Etimología %s==", currentEtym);
-				String replacement = added.substring(0, headerIndex) + "\n" + etymHeader + added.substring(headerIndex);
-				sb.replace(lastIndex, sb.length(), replacement);
-			}
-		}
-		
-		String newText = sb.toString();
-		
-		if (newText.equals(this.text)) {
+		if (formatted.equals(this.text)) {
 			return;
 		}
 		
-		newText = newText.replaceAll("=+? *?<small>(Referencias.*?)</small> *?=+", "=$1=");
-		newText = newText.replaceAll("=+? *?(Referencias.*?) *?=+", "=$1=");
-		newText = newText.replaceAll("\\{\\{transic\\}\\}\n?", "");
+		page = Page.store(page.getTitle(), formatted);
 		
-		page = Page.store(page.getTitle(), newText);
+		// Push down old-structure sections
 		
 		for (Section section : page.getAllSections()) {
 			if (section.getLangSectionParent() == null) {
@@ -498,203 +413,106 @@ public class Editor extends EditorBase {
 			}
 		}
 		
+		// References section(s)
+		
+		for (Section section : page.findSectionsWithHeader("(<small *?>)? *?Referencias.*?(<small *?/ *?>)?")) {
+			section.setHeader("Referencias y notas");
+			section.setLevel(2);
+		}
+		
 		// TODO: add a method to reparse all Sections?
 		page = Page.store(page.getTitle(), page.toString());
 		
-		// Rearrange etymology sections
+		// Process "alt" parameters
 		
-		for (Section section : page.getAllSections()) {
-			if (!section.getHeader().matches("^Etimología.*")) {
+		for (LangSection langSection : page.getAllLangSections()) {
+			Map<String, String> params = langSection.getTemplateParams();
+			String alt = params.getOrDefault("alt", "");
+			
+			if (alt.isEmpty()) {
 				continue;
 			}
 			
-			Section previousSection = section.previousSection();
-			String alt = "";
+			if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+				extractAltParameter(langSection, alt);
+			}
+		}
+		
+		for (Section section : page.filterSections(s -> s.getHeader().startsWith("ETYM"))) {
+			String header = section.getHeader();
+			String alt = header.replaceFirst(".+alt-(.*)", "$1");
 			
-			// Extract alt parameter
-			
-			if (previousSection.getHeader().startsWith("ETYM")) {
-				String previousHeader = previousSection.getHeader(); 
-				alt = previousHeader.substring(previousHeader.indexOf(" alt-") + " alt-".length());
-			} else if (
-				previousSection instanceof LangSection && (
-					((LangSection) previousSection).getTemplateType().equals("lengua") ||
-					((LangSection) previousSection).getTemplateType().equals("translit")
-				)
-			) {
-				Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
-				alt = prevHeaderTmplParams.getOrDefault("alt", "");
+			if (alt.isEmpty()) {
+				continue;
 			}
 			
-			// Apply or dismiss "alt" parameter
-			// TODO: handle etymology for compounds and {{pron-graf}} for "alt" parameters
+			if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+				extractAltParameter(section, alt);
+			} else {
+				insertAltComment(section, alt);
+			}
+		}
+		
+		// Add or process pre-transform etymology sections
+		
+		Predicate<Section> pred = s -> s instanceof LangSection || s.getHeader().startsWith("ETYM");
+		
+		for (Section section : page.filterSections(pred)) {
+			Section nextSibling = section.nextSiblingSection();
+			boolean isSingleEtym = section instanceof LangSection && (
+				nextSibling == null || 
+				!nextSibling.getHeader().startsWith("ETYM")
+			);
 			
-			if (!alt.isEmpty()) {
-				if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
-					List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", previousSection.getIntro());
-					
-					if (pronLaTmpls.size() == 1) {
-						String pronLaTmpl = pronLaTmpls.get(0);
-						HashMap<String, String> pronLaParams = ParseUtils.getTemplateParametersWithValue(pronLaTmpl);
-						
-						if (!pronLaParams.containsKey("alt")) {
-							pronLaParams.put("alt", alt);
-							String previousIntro = previousSection.getIntro();
-							previousIntro = previousIntro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
-							previousSection.setIntro(previousIntro);
-						}
-					} else if (
-						ParseUtils.getTemplates("diacrítico", previousSection.getIntro()).isEmpty() &&
-						!previousSection.getIntro().contains("Diacrítico:")
-					) {
-						HashMap<String, String> altGrafParams = new LinkedHashMap<String, String>();
-						altGrafParams.put("templateName", "diacrítico");
-						altGrafParams.put("ParamWithoutName1", alt);
-						String altGrafTmpl = ParseUtils.templateFromMap(altGrafParams) + ".";
-						String previousIntro = previousSection.getIntro();
-						previousIntro = previousIntro + "\n" + altGrafTmpl;
-						previousIntro = previousIntro.trim();
-						previousSection.setIntro(previousIntro);
-					} else {
-						return;
-					}
-					
-					if (previousSection instanceof LangSection) {
-						Map<String, String> prevHeaderTmplParams = ((LangSection) previousSection).getTemplateParams();
-						prevHeaderTmplParams.remove("alt");
-						((LangSection) previousSection).setTemplateParams(prevHeaderTmplParams);
-					}
-				} else if (!(previousSection instanceof LangSection)) {
-					return;
+			List<Section> etymologySections = section.findSubSectionsWithHeader("(E|e)timolog(í|i)a.*");
+			
+			if (etymologySections.isEmpty()) {
+				Section etymologySection = Section.create("Etimología", 3);
+				etymologySection.setTrailingNewlines(1);
+				
+				if (isSingleEtym) {
+					singleEtym(section, etymologySection);
+				} else {
+					multipleEtym(section, etymologySection);
 				}
-			}
-			
-			LangSection langSectionParent = section.getLangSectionParent();
-			Section nextParentSiblingSection = (langSectionParent != null) ? langSectionParent.nextSiblingSection() : null;
-			
-			// Move contents to the new etymology sections
-			// TODO: review, catch special cases
-			
-			if (
-				section.getHeader().matches("^Etimología \\d+$") &&
-				(
-					previousSection.getHeader().startsWith("ETYM") ||
-					nextParentSiblingSection.getHeader().startsWith("ETYM")
+				
+				section.prependSections(etymologySection);
+				
+				if (!(section instanceof LangSection)) {
+					section.detachOnlySelf();
+				}
+			} else if (
+				etymologySections.size() == 1 &&
+				etymologySections.get(0) == section.nextSection() && !(
+					section.getIntro().contains("etimología") &&
+					etymologySections.get(0).getIntro().contains("etimología")
 				)
 			) {
-				if (!previousSection.getIntro().isEmpty()) {
-					section.setIntro(previousSection.getIntro());
-					
-					if (previousSection instanceof LangSection) {
-						previousSection.setIntro("");
-						previousSection.setTrailingNewlines(1);
-					} else {
-						previousSection.detachOnlySelf();
-					}
-					
-					// Search for the etymology template and move it to the last line
-					
-					String[] lines = section.getIntro().split("\n");
-					
-					if (lines.length > 1) {
-						int lineNumber = 0;
-						boolean found = false;
-						
-						for (; lineNumber < lines.length; lineNumber++) {
-							String line = lines[lineNumber];
-							
-							if (
-								line.matches(".*?\\{\\{(e|E)timología.+") ||
-								line.matches(":*?\\* *?'{0,3}(E|e)timolog(í|i)a:'{0,3}.+")
-							) {
-								found = true;
-								break;
-							}
-						}
-						
-						if (found && lineNumber != lines.length - 1) {
-							String line = lines[lineNumber];
-							lines[lineNumber] = null;
-							List<String> list = Stream.of(lines).filter(Objects::nonNull).collect(Collectors.toList());
-							list.add(line);
-							section.setIntro(String.join("\n", list));
-						}
-					}
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setHeader("Etimología");
+				etymologySection.setLevel(3);
+				
+				if (isSingleEtym) {
+					singleEtym(section, etymologySection);	
+				} else {
+					multipleEtym(section, etymologySection);
+				}
+				
+				if (!(section instanceof LangSection)) {
+					section.detachOnlySelf();
 				}
 			} else {
-				// In case there is one single "Etimología 1" section in the current LangSection parent
-				section.setHeader("Etimología");
-				
-				// Move etymology template to the newly created etymology section
-				
-				Pattern tempPatt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})(?:e|E)timología[^\n]+)");
-				String previousIntro = previousSection.getIntro();
-				Matcher m2 = tempPatt.matcher(previousIntro);
-				List<String> temp = new ArrayList<String>();
-				
-				while (m2.find()) {
-					temp.add(m2.group(1).trim());
-					previousIntro = previousIntro.substring(0, m2.start()) + previousIntro.substring(m2.end());
-					m2 = tempPatt.matcher(previousIntro);
-				}
-				
-				if (!temp.isEmpty()) {
-					previousSection.setIntro(previousIntro);
-					section.setIntro(String.join("\n\n", temp));
-				}
+				insertStructureComment(page);
+				return;
 			}
-			
-			// TODO: move to new task
-			
-			if (section.getIntro().isEmpty()) {
-				HashMap<String, String> params = new LinkedHashMap<String, String>();
-				params.put("templateName", "etimología");
-				String langCode = langSectionParent.getLangCode().toLowerCase();
-				
-				if (!langCode.equals("es")) {
-					params.put("leng", langCode);
-				}
-				
-				String etymologyTemplate = ParseUtils.templateFromMap(params) + ".";
-				String newIntro = "";
-				
-				if (section.getHeader().matches("^Etimología \\d+$")) {
-					params = new LinkedHashMap<String, String>();
-					params.put("templateName", "pron-graf");
-					
-					if (!langCode.equals("es")) {
-						params.put("leng", langCode);
-					}
-					
-					newIntro = ParseUtils.templateFromMap(params);
-					newIntro += "\n";
-				}
-				
-				newIntro += etymologyTemplate;
-				section.setIntro(newIntro);
-			}
-			
-			if (section.getHeader().matches("^Etimología$") && previousSection.getIntro().isEmpty()) {
-				HashMap<String, String> params = new LinkedHashMap<String, String>();
-				params.put("templateName", "pron-graf");
-				String langCode = langSectionParent.getLangCode().toLowerCase();
-				
-				if (!langCode.equals("es")) {
-					params.put("leng", langCode);
-				}
-				
-				previousSection.setIntro(ParseUtils.templateFromMap(params));
-			}
-			
-			section.setTrailingNewlines(1);
 		}
 		
 		page.normalizeChildLevels();
 		
-		// Check section levels
+		// Check section levels and header numbers
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimolog(i|í)a.*");
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
 			
 			if (etymologySections.isEmpty()) {
 				continue;
@@ -702,7 +520,7 @@ public class Editor extends EditorBase {
 			
 			if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);
-				Collection<Section> etymologyChildren = etymologySection.getChildSections();
+				List<Section> etymologyChildren = etymologySection.getChildSections();
 				
 				if (etymologyChildren == null) {
 					continue;
@@ -711,21 +529,201 @@ public class Editor extends EditorBase {
 				for (Section child : etymologyChildren) {
 					child.pushLevels(-1);
 				}
+				
+				etymologySection.setHeader("Etimología");
 			} else {
 				for (Section sibling : langSection.getChildSections()) {
-					if (etymologySections.contains(sibling)) {
-						continue;
+					if (!etymologySections.contains(sibling)) {
+						sibling.pushLevels(1);
 					}
-					
-					sibling.pushLevels(1);
+				}
+				
+				for (int i = 1; i < etymologySections.size(); i++) {
+					Section etymologySection = etymologySections.get(i - 1);
+					String header = String.format("Etimología %d", i);
+					etymologySection.setHeader(header);
 				}
 			}
 		}
 		
-		String formatted = page.toString();
+		formatted = page.toString();
 		isOldStructure = false;
 		
 		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
+	}
+
+	private String findOldStructureMatch(Matcher m, StringBuffer sb, String currentSectionLang) {
+		String pre = m.group(1);
+		String template = m.group(2);
+		String post = m.group(3);
+		
+		HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+		String name = params.get("templateName");
+		
+		if (name.equals("lengua") || name.equals("translit")) {
+			m.appendReplacement(sb, m.group());
+			return params.get("ParamWithoutName1");
+		}
+		
+		String altGraf = params.getOrDefault("ParamWithoutName1", "");
+		
+		if (name.equals("TRANSLIT")) {
+			params.put("templateName", "translit");
+			name = params.get("ParamWithoutName2");
+		} else {
+			name = name.replace("-ES", "");
+			params.put("templateName", "lengua");
+			params.put("ParamWithoutName1", name);
+		}
+		
+		String etym = "";
+		etym = params.getOrDefault("ParamWithoutName2", etym);
+		etym = params.getOrDefault("num", etym);
+		etym = params.getOrDefault("núm", etym);
+		
+		if (!etym.isEmpty()) {
+			params.remove("ParamWithoutName2");
+			params.remove("num");
+			params.remove("núm");
+		}
+		
+		if (!currentSectionLang.equals(name) && !etym.equals("1")) {
+			etym = "";
+		}
+		
+		if (
+			!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
+			!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
+		) {
+			params.put("alt", altGraf);
+		} else {
+			altGraf = "";
+		}
+		
+		pre = pre.isEmpty() ? "" : "$1\n";
+		post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
+		
+		if (!etym.isEmpty() && !etym.equals("1")) {
+			String replacement = String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post);
+			m.appendReplacement(sb, replacement);
+		} else {
+			String newTemplate = ParseUtils.templateFromMap(params);
+			String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
+			m.appendReplacement(sb, replacement);
+		}
+		
+		return name;
+	}
+
+	private void extractAltParameter(Section section, String alt) {
+		String intro = section.getIntro();
+		List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", intro);
+		
+		if (pronLaTmpls.size() == 1) {
+			String pronLaTmpl = pronLaTmpls.get(0);
+			HashMap<String, String> pronLaParams = ParseUtils.getTemplateParametersWithValue(pronLaTmpl);
+			
+			if (!pronLaParams.containsKey("alt")) {
+				pronLaParams.put("alt", alt);
+				intro = intro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
+				section.setIntro(intro);
+			}
+		} else if (
+			ParseUtils.getTemplates("diacrítico", intro).isEmpty() &&
+			!intro.contains("Diacrítico:")
+		) {
+			HashMap<String, String> params = new LinkedHashMap<String, String>();
+			params.put("templateName", "diacrítico");
+			params.put("ParamWithoutName1", alt);
+			String template = ParseUtils.templateFromMap(params);
+			section.setIntro(intro + "\n" + template + ".");
+		} else {
+			insertAltComment(section, alt);
+		}
+		
+		if (section instanceof LangSection) {
+			Map<String, String> params = ((LangSection) section).getTemplateParams();
+			params.remove("alt");
+			((LangSection) section).setTemplateParams(params);
+		}
+	}
+
+	private void insertAltComment(Section section, String alt) {
+		String comment = String.format("<!-- NO EDITAR: alt=%s -->", alt);
+		section.setIntro(comment + "\n" + section.getIntro());
+	}
+
+	private void insertStructureComment(Page page) {
+		String pageIntro = page.getIntro();
+		pageIntro += "\n{{estructura}}";
+		page.setIntro(pageIntro);
+		checkDifferences(page.toString(), "transformToNewStructure", "{{estructura}}");
+	}
+
+	private void singleEtym(Section topSection, Section etymologySection) {
+		// Move etymology template to the etymology section
+		
+		Pattern patt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})(?:e|E)timología[^\n]+)");
+		String topIntro = topSection.getIntro();
+		Matcher m = patt.matcher(topIntro);
+		List<String> temp = new ArrayList<String>();
+		
+		while (m.find()) {
+			temp.add(m.group(1).trim());
+			topIntro = topIntro.substring(0, m.start()) + topIntro.substring(m.end());
+			m = patt.matcher(topIntro);
+		}
+		
+		if (!temp.isEmpty()) {
+			topSection.setIntro(topIntro);
+			String etymologyIntro = etymologySection.getIntro();
+			etymologyIntro += String.join("\n\n", temp);
+			etymologySection.setIntro(etymologyIntro);
+		}
+	}
+
+	private void multipleEtym(Section topSection, Section etymologySection) {
+		String etymologyIntro = etymologySection.getIntro();
+		etymologyIntro += topSection.getIntro() + "\n" + etymologyIntro;
+		etymologySection.setIntro(etymologyIntro);
+		
+		if (topSection instanceof LangSection) {
+			topSection.setIntro("");
+			topSection.setTrailingNewlines(1);
+		}
+		
+		// Search for the etymology template and move it to the last line
+		
+		String[] lines = etymologyIntro.split("\n");
+		
+		if (lines.length < 2) {
+			return;
+		}
+		
+		int lineNumber = 0;
+		boolean found = false;
+		
+		for (; lineNumber < lines.length; lineNumber++) {
+			String line = lines[lineNumber];
+			
+			if (
+				line.matches(".*?\\{\\{(e|E)timología.+") ||
+				line.matches(":*?\\* *?'{0,3}(E|e)timolog(í|i)a:'{0,3}.+")
+			) {
+				found = true;
+				break;
+			}
+		}
+		
+		if (found && lineNumber != lines.length - 1) {
+			String line = lines[lineNumber];
+			lines[lineNumber] = null;
+			List<String> list = Stream.of(lines)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+			list.add(line);
+			etymologySection.setIntro(String.join("\n", list));
+		}
 	}
 	
 	public void normalizeSectionHeaders() {
@@ -1125,6 +1123,8 @@ public class Editor extends EditorBase {
 			}
 			
 			Section etymologySection = Section.create("Etimología", 3);
+			etymologySection.setTrailingNewlines(1);
+			
 			HashMap<String, String> params = new LinkedHashMap<String, String>();
 			params.put("templateName", "etimología");
 			
@@ -1156,6 +1156,7 @@ public class Editor extends EditorBase {
 				) {
 					Section translationsSection = Section.create("Traducciones", 3);
 					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
+					translationsSection.setTrailingNewlines(1);
 					spanishSection.appendSections(translationsSection);
 					set.add("traducciones");
 				}
@@ -1167,6 +1168,7 @@ public class Editor extends EditorBase {
 					) {
 						Section translationsSection = Section.create("Traducciones", 4);
 						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
+						translationsSection.setTrailingNewlines(1);
 						etymologySection.appendSections(translationsSection);
 						set.add("traducciones");
 					}
@@ -1882,6 +1884,8 @@ public class Editor extends EditorBase {
 					String etymologyIntro = etymologySection.getIntro();
 					
 					if (
+						ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
+						ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
 						ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
 					) {
