@@ -1142,7 +1142,11 @@ public class Editor extends EditorBase {
 		
 		LangSection spanishSection = page.getLangSection("es");
 		
-		if (spanishSection != null) {
+		if (
+			spanishSection != null &&
+			// TODO: discuss with the community
+			ParseUtils.getTemplates("apellido", spanishSection.toString()).isEmpty()
+		) {
 			List<Section> etymologySections = spanishSection.findSubSectionsWithHeader("Etimología.*");
 			
 			if (etymologySections.size() == 1) {
