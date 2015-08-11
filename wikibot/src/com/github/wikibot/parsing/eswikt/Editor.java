@@ -186,9 +186,9 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?\\{\\{etimología\\|IDIOMA.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?posiblemente desees incluir una imagen.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país.+?-->", "");
-		formatted = formatted.replaceAll("<!-- ?puedes también incluir .+?-->", "");
+		formatted = formatted.replaceAll("(?s)<!-- ?puedes también incluir locuciones.+?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Incluir la plantilla de conjugación aquí.+?-->", "");
-		formatted = formatted.replaceAll("<!-- ?otra sección opcional para .+?-->", "");
+		formatted = formatted.replaceAll("(?s)<!-- ?otra sección opcional para enlaces externos.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?¿flexión?: mira en .+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.+?-->", "");
