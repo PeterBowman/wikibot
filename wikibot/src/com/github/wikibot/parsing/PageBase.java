@@ -120,7 +120,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public boolean hasSectionWithHeader(String regex) {
-		return sections.parallelStream()
+		return sections.stream()
 			.anyMatch(section -> section.getHeader().matches(regex));
 	}
 	
@@ -151,7 +151,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		while (m.find()) {
 			if (
 				!ignoredRanges.isEmpty() &&
-				ignoredRanges.parallelStream().anyMatch(range -> range.contains(m.start()))
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
 			) {
 				continue;
 			}

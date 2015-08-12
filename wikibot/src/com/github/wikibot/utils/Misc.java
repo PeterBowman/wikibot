@@ -249,9 +249,9 @@ public final class Misc {
 	}
 	
 	public static PageContainer retrievePage(Collection<PageContainer> pages, String title) {
-		return pages.parallelStream()
+		return pages.stream()
 			.filter(page -> page.getTitle().equals(title))
-			.findAny()
+			.findFirst()
 			.orElse(null);
 	}
 
