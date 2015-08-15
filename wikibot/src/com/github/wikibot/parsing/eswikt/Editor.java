@@ -1093,8 +1093,11 @@ public class Editor extends EditorBase {
 	public void addMissingSections() {
 		Page page = Page.store(title, this.text);
 		
-		// TODO: prevent adding translation sections in flexive form entries
-		if (isOldStructure || page.getAllSections().isEmpty()) {
+		if (
+			isOldStructure || page.getAllSections().isEmpty() ||
+			// TODO: review
+			!page.findSectionsWithHeader("(?i)^(Forma|\\{\\{forma) .+").isEmpty()
+		) {
 			return;
 		}
 		
@@ -1116,7 +1119,7 @@ public class Editor extends EditorBase {
 				.collect(Collectors.toSet());
 			
 			headers.removeAll(STANDARD_HEADERS);
-			headers.removeIf(header -> header.startsWith("Forma "));
+			headers.removeIf(header -> header.matches("(?i)^(Forma|\\{\\{forma) .+"));
 			
 			if (headers.isEmpty()) {
 				continue;
@@ -1226,7 +1229,7 @@ public class Editor extends EditorBase {
 			
 			if (
 				section.getLangSectionParent() == null ||
-				!section.getHeader().startsWith("Forma ") || 
+				!section.getHeader().matches("(?i)^(Forma|\\{\\{forma) .+") || 
 				!intro.contains("{{inflect.")
 			) {
 				continue;
