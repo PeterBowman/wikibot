@@ -833,7 +833,7 @@ public class Editor extends EditorBase {
 					contents.add(content);
 				}
 				
-				intro = intro.substring(0, index).trim();
+				intro = intro.substring(0, index);
 				section.setIntro(intro);
 			}
 		}
@@ -1253,7 +1253,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			intro = intro.replace("\\{\\{inflect\\..+?\\}\\}", "").trim();
+			intro = intro.replace("\\{\\{inflect\\..+?\\}\\}", "");
 			section.setIntro(intro);
 		}
 		
@@ -2015,17 +2015,16 @@ public class Editor extends EditorBase {
 				}
 				
 				if (!templates.isEmpty()) {
-					intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "").trim();
+					intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "");
 					section.setIntro(intro);
 				}
 				
 				intro += "\n\n" + template;
-				intro = intro.trim();
 				section.setIntro(intro);
 			} else if (section.getIntro().contains("clear")) {
 				// TODO: sanitize templates, then change to "{{clear}}"
 				String intro = section.getIntro();
-				intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "").trim();
+				intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "");
 				section.setIntro(intro);
 			}
 		}
