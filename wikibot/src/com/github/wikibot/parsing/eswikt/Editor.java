@@ -1868,13 +1868,18 @@ public class Editor extends EditorBase {
 				String langSectionIntro = langSection.getIntro();
 				String etymologyIntro = etymologySection.getIntro();
 				
-				if (ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty()) {
+				if (
+					ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty() &&
+					ParseUtils.getTemplates("pron-graf", etymologyIntro).isEmpty()
+				) {
 					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
 					langSection.setIntro(langSectionIntro);
 					set.add("{{pron-graf}}");
 				}
 				
 				if (
+					ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
+					ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
 					ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
 				) {
