@@ -2017,8 +2017,8 @@ public class Editor extends EditorBase {
 		// TODO: don't collide with removeComments() and manageClearElements() 
 		String initial = this.text;
 		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
-		initial = initial.replaceAll(" ?&nbsp;", " ");
-		initial = initial.replaceAll("&nbsp; ?", " ");
+		initial = initial.replaceAll(" &nbsp;", " ");
+		initial = initial.replaceAll("&nbsp; ", " ");
 		Page page = Page.store(title, initial);
 		
 		if (page.getLeadingNewlines() > 1) {
