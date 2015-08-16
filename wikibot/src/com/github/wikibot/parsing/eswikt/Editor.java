@@ -135,6 +135,7 @@ public class Editor extends EditorBase {
 	@Override
 	public void check() {
 		removeComments();
+		minorSanitizing();
 		normalizeTemplateNames();
 		transformToNewStructure();
 		normalizeSectionHeaders();
@@ -213,6 +214,23 @@ public class Editor extends EditorBase {
 	public void minorSanitizing() {
 		// TODO: perrichines (comment close tag)
 		// TODO: trailing period after {{etimología}}
+		
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			String langCode = langSection.getLangCode();
+			String upperCase = langCode.toUpperCase();
+			
+			if (!upperCase.equals(langCode)) {
+				langSection.setLangCode(upperCase);
+			}
+		}
+		
+		checkDifferences(page.toString(), "minorSanitizing", null);
 	}
 	
 	public void normalizeTemplateNames() {
