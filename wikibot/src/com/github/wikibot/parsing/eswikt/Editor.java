@@ -245,9 +245,16 @@ public class Editor extends EditorBase {
 		map.put("Pronunciación", "pronunciación");
 		map.put("Etimología", "etimología");
 		map.put("etimologia", "etimología");
+		map.put("etyl", "etimología");
 		map.put("Desambiguación", "desambiguación");
+		map.put("Desambiguacion", "desambiguación");
+		map.put("desambiguacion", "desambiguación");
+		map.put("desamb", "desambiguación");
+		map.put("Desambig", "desambiguación");
+		map.put("Notadesambiguación", "desambiguación");
+		map.put("Desambiguado", "desambiguación");
 		map.put("grafías alternativas", "grafía alternativa");
-		//map.put("ucf", "plm");
+		map.put("ucf", "plm");
 		map.put("Anagramas", "anagrama");
 		map.put("Parónimos", "parónimo");
 		
