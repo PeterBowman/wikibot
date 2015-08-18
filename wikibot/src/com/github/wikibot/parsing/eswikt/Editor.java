@@ -2039,7 +2039,7 @@ public class Editor extends EditorBase {
 	
 	private String removeBrTags(String text) {
 		Matcher m = P_BR_TAGS.matcher(text);
-		List<Range<Integer>> ignoredRanges = Utils.getIgnoredRanges(text);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {

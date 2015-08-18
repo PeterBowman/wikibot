@@ -143,7 +143,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	protected void extractSections(String text, Function<String, T> func, Pattern pSection) {
-		List<Range<Integer>> ignoredRanges = Utils.getIgnoredRanges(text);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		Matcher m = pSection.matcher(text);
 		StringBuffer sb = new StringBuffer(1000);
 		List<String> sections = new ArrayList<String>();
