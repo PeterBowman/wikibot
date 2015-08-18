@@ -41,6 +41,7 @@ import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
 	private static final Pattern P_LINE_JOINER = Pattern.compile("(?<!\n)\n(?!\\[\\[ *?(?:File|Image|Archivo|Imagen):.+?\\]\\])(<ref\b|[^\n<:;\\*\\{\\}\\|])", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
@@ -216,15 +217,14 @@ public class Editor extends EditorBase {
 	}
 	
 	public void joinLines() {
-		// TODO: join line breaks inside templates, too?
-		String initial = this.text;
+		String formatted = this.text;
 		
-		Range<Integer>[] refs = Utils.findRanges(initial, Pattern.compile("<ref(?: |>).+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref(?: |>).+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(initial);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		
-		Matcher m = P_LINE_JOINER.matcher(initial);
-		StringBuffer sb = new StringBuffer(initial.length());
+		Matcher m = P_LINE_JOINER.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
 			if (
@@ -246,7 +246,45 @@ public class Editor extends EditorBase {
 		}
 		
 		m.appendTail(sb);
-		checkDifferences(sb.toString(), "joinLines", "uniendo líneas");
+		formatted = sb.toString();
+		sb = new StringBuffer(formatted.length());
+		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m2 = P_TEMPLATE.matcher(formatted);
+		
+		while (m2.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m2.start()))
+			) {
+				continue;
+			}
+			
+			String template = m2.group();
+			String[] lines = template.split("\n");
+			
+			if (lines.length == 1) {
+				m2.appendReplacement(sb, template);
+				continue;
+			}
+			
+			if (lines[0].startsWith("{{")) {
+				String[] temp = Arrays.copyOfRange(lines, 1, lines.length);
+				temp[0] = lines[0].trim() + temp[0].trim();
+				template = String.join("\n", temp);
+				lines = temp;
+			}
+			
+			if (lines.length == 2 && lines[1].trim().equals("}}")) {
+				template = lines[0].trim() + lines[1].trim();
+			}
+			
+			m2.appendReplacement(sb, template);
+		}
+		
+		m2.appendTail(sb);
+		formatted = sb.toString();
+		
+		checkDifferences(formatted, "joinLines", "uniendo líneas");
 	}
 	
 	public void minorSanitizing() {
@@ -2223,6 +2261,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
 		formatted = formatted.replace(" </ref>", "</ref>");
 		formatted = formatted.replaceAll("([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
+		formatted = formatted.replaceAll("\n *?\\}\\}", "\n}}");
 		
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
@@ -2231,7 +2270,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "fotuto";
+		String title = "magua";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
