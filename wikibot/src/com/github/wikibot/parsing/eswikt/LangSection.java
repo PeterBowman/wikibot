@@ -62,12 +62,24 @@ public class LangSection extends Section {
 	}
 	
 	public String getLangCode() {
-		return langCode.toUpperCase();
+		return langCode;
+	}
+	
+	public String getLangCode(boolean upperCase) {
+		if (upperCase) {
+			return getLangCode().toUpperCase();
+		} else {
+			return getLangCode().toLowerCase();
+		}
+	}
+	
+	public boolean langCodeEqualsTo(String langCode) {
+		return getLangCode().equalsIgnoreCase(langCode);
 	}
 
 	public void setLangCode(String langCode) {
-		this.langCode = langCode.toUpperCase();
-		this.langName = Page.CODE_TO_LANG.getOrDefault(this.langCode, "");
+		this.langCode = langCode;
+		this.langName = Page.CODE_TO_LANG.getOrDefault(getLangCode(true), "");
 		updateHeader();
 	}
 	

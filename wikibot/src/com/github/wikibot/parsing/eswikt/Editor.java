@@ -1151,8 +1151,8 @@ public class Editor extends EditorBase {
 			HashMap<String, String> params = new LinkedHashMap<String, String>();
 			params.put("templateName", "etimología");
 			
-			if (!langSection.getLangCode().equals("ES")) {
-				params.put("leng", langSection.getLangCode().toLowerCase());
+			if (!langSection.langCodeEqualsTo("es")) {
+				params.put("leng", langSection.getLangCode(false));
 			}
 			
 			String template = ParseUtils.templateFromMap(params);
@@ -1374,7 +1374,7 @@ public class Editor extends EditorBase {
 						}
 						
 						if (param1 == null) {
-							if (!langSection.getLangCode().equalsIgnoreCase("es")) {
+							if (!langSection.langCodeEqualsTo("es")) {
 								break;
 							}
 							
@@ -1573,8 +1573,8 @@ public class Editor extends EditorBase {
 			HashMap<String, String> newMap = new LinkedHashMap<String, String>();
 			newMap.put("templateName", "pron-graf");
 			
-			if (!langSection.getLangCode().equalsIgnoreCase("es")) {
-				newMap.put("leng", langSection.getLangCode().toLowerCase());
+			if (!langSection.langCodeEqualsTo("es")) {
+				newMap.put("leng", langSection.getLangCode(false));
 			}
 			
 			Map<String, String> langTemplateParams = langSection.getTemplateParams();
@@ -1813,7 +1813,7 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, this.text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			String langCode = langSection.getLangCode().toLowerCase();
+			String langCode = langSection.getLangCode(false);
 			boolean isSpanishSection = langCode.equals("es");
 			String content = langSection.toString();
 			boolean sectionModified = false;
@@ -1881,7 +1881,7 @@ public class Editor extends EditorBase {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
-			String langCode = langSection.getLangCode().toLowerCase();
+			String langCode = langSection.getLangCode(false);
 			
 			if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);
@@ -2188,7 +2188,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Madrid";
+		String title = "aceite";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

@@ -212,7 +212,7 @@ public final class Page extends PageBase<Section> {
 	public LangSection getLangSection(String langCode) {
 		LangSection out = langSections
 			.stream()
-			.filter(section -> section.getLangCode().equals(langCode.toUpperCase()))
+			.filter(section -> section.langCodeEqualsTo(langCode))
 			.findFirst()
 			.orElse(null);
 		
@@ -234,7 +234,7 @@ public final class Page extends PageBase<Section> {
 	}
 
 	public boolean addLangSection(LangSection langSection) {
-		if (getLangSection(langSection.getLangCode()) != null) {
+		if (hasLangSection(langSection.getLangCode())) {
 			return false;
 		}
 		
@@ -260,7 +260,7 @@ public final class Page extends PageBase<Section> {
 	public boolean hasLangSection(String langCode) {
 		return langSections
 			.stream()
-			.anyMatch(section -> section.getLangCode().equals(langCode.toUpperCase()));
+			.anyMatch(section -> section.langCodeEqualsTo(langCode));
 	}
 	
 	@Override
