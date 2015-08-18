@@ -40,6 +40,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
+	private static final Pattern P_LINE_JOINER = Pattern.compile("(?<!\n)\n(?!\\[\\[ *?(?:File|Image|Archivo|Imagen):.+?\\]\\])(<ref\b|[^\n<:;\\*\\{\\}\\|])", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
@@ -137,6 +138,7 @@ public class Editor extends EditorBase {
 	@Override
 	public void check() {
 		removeComments();
+		joinLines();
 		minorSanitizing();
 		normalizeTemplateNames();
 		transformToNewStructure();
@@ -211,6 +213,40 @@ public class Editor extends EditorBase {
 		formatted = Utils.sanitizeWhitespaces(formatted);
 		
 		checkDifferences(formatted, "removeComments", "eliminando comentarios");
+	}
+	
+	public void joinLines() {
+		// TODO: join line breaks inside templates, too?
+		String initial = this.text;
+		
+		Range<Integer>[] refs = Utils.findRanges(initial, Pattern.compile("<ref(?: |>).+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(initial);
+		
+		Matcher m = P_LINE_JOINER.matcher(initial);
+		StringBuffer sb = new StringBuffer(initial.length());
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			if (
+				!refRanges.isEmpty() &&
+				refRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				String replacement = m.group(1).replaceFirst("^ +", "");
+				m.appendReplacement(sb, " " + replacement);
+			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
+				m.appendReplacement(sb, " $1");
+			}
+		}
+		
+		m.appendTail(sb);
+		checkDifferences(sb.toString(), "joinLines", "uniendo líneas");
 	}
 	
 	public void minorSanitizing() {
@@ -2195,7 +2231,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "aceite";
+		String title = "fotuto";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
