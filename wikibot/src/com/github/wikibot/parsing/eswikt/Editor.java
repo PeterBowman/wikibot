@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
@@ -46,6 +47,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
 	private static final Pattern P_IMAGES = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
+	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?\"? *?all *?\"? *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -1983,21 +1985,19 @@ public class Editor extends EditorBase {
 	}
 	
 	public void manageClearElements() {
-		String original = this.text;
-		// TODO: implement proper DOM parsing?
-		// TODO: ignore comment regions
-		original = original.replaceAll("<br +?clear *?= *?\"? *?all *?\"? *?>", "");
-		String templateName = "clear";
-		String template = String.format("{{%s}}", templateName);
+		String initial = removeBrTags(this.text);
+		Page page = Page.store(title, initial);
+		
+		final String templateName = "clear";
+		final String template = String.format("{{%s}}", templateName);
 		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
-		String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
-		Page page = Page.store(title, original);
+		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
 		
 		for (Section section : page.getAllSections()) {
 			Section nextSection = section.nextSection();
 			
 			if (nextSection == null) {
-				continue;
+				break;
 			}
 			
 			if (
@@ -2015,28 +2015,78 @@ public class Editor extends EditorBase {
 				}
 				
 				if (!templates.isEmpty()) {
-					intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "");
-					section.setIntro(intro);
+					intro = removeClearTemplates(templateName, section);
 				}
 				
 				intro += "\n\n" + template;
 				section.setIntro(intro);
-			} else if (section.getIntro().contains("clear")) {
-				// TODO: sanitize templates, then change to "{{clear}}"
-				String intro = section.getIntro();
-				intro = intro.replaceAll("\\{\\{ *?" + templateName + " *?\\}\\}", "");
-				section.setIntro(intro);
+			} else if (section.getIntro().contains(templateName)) {
+				// TODO: sanitize templates, then use variable "template" instead
+				removeClearTemplates(templateName, section);
 			}
 		}
 		
 		String formatted = page.toString();
-		formatted = Utils.sanitizeWhitespaces(formatted);
-		
 		checkDifferences(formatted, "manageClearElements", "elementos \"clear\"");
 	}
 	
+	private String removeBrTags(String text) {
+		Matcher m = P_BR_TAGS.matcher(text);
+		List<Range<Integer>> ignoredRanges = Utils.getIgnoredRanges(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			String pre = m.group(1);
+			String post = m.group(2);
+			
+			StringBuilder buff = new StringBuilder(pre.length() + post.length());
+			
+			if (pre.trim().isEmpty() && post.trim().isEmpty()) {
+				if (!pre.isEmpty()) {
+					buff.append('\n');
+					
+					if (!post.isEmpty()) {
+						buff.append('\n');
+					}
+				}
+				
+				m.appendReplacement(sb, buff.toString());
+			} else {
+				post = post.replaceFirst("^ *", "");
+				
+				if (!pre.trim().isEmpty() && !post.trim().isEmpty()) {
+					buff.append(pre);
+					buff.append('\n').append('\n');
+					buff.append(post);
+				} else {
+					buff.append(pre);
+					buff.append(post);
+				}
+				
+				m.appendReplacement(sb, buff.toString());
+			}
+		}
+		
+		m.appendTail(sb);
+		return sb.toString();
+	}
+	
+	private String removeClearTemplates(final String templateName, Section section) {
+		String intro = section.getIntro();
+		intro = intro.replaceAll("\n?\\{\\{ *?" + templateName + " *?\\}\\}\n?", "\n\n");
+		section.setIntro(intro);
+		return intro;
+	}
+	
 	public void strongWhitespaces() {
-		// TODO: don't collide with removeComments() and manageClearElements() 
+		// TODO: don't collide with removeComments() 
 		String initial = this.text;
 		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
 		initial = initial.replaceAll(" &nbsp;", " ");
