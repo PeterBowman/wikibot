@@ -40,14 +40,14 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
-	private static final Pattern P_LINE_JOINER = Pattern.compile("(?<!\n)\n(?!\\[\\[ *?(?:File|Image|Archivo|Imagen):.+?\\]\\])(<ref\b|[^\n<:;\\*\\{\\}\\|])", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
-	private static final Pattern P_IMAGES = Pattern.compile(" *?\\[\\[ *?(File|Image|Archivo|Imagen) *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
 	
@@ -86,6 +86,18 @@ public class Editor extends EditorBase {
 	private boolean isOldStructure;
 	
 	static {
+		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
+		
+		final List<String> lineJoinerIgnoreList = new ArrayList<String>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
+		lineJoinerIgnoreList.addAll(fileNsAliases);
+		lineJoinerIgnoreList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
+		
+		String lineJoinerIgnoreString = String.join("|", lineJoinerIgnoreList);
+		
+		// TODO: limited look-behind group length (" *?" -> " ?")
+		// TODO: review <ref> tags
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|\\}\\}|\\[\\[ ?(?:" + lineJoinerIgnoreString + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + lineJoinerIgnoreString + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|])", Pattern.CASE_INSENSITIVE);
+		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
 		// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
@@ -95,6 +107,8 @@ public class Editor extends EditorBase {
 		);
 		
 		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		
+		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
 		
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
@@ -241,6 +255,13 @@ public class Editor extends EditorBase {
 				String replacement = m.group(1).replaceFirst("^ +", "");
 				m.appendReplacement(sb, " " + replacement);
 			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
+				String substring = formatted.substring(0, m.start());
+				int lastNewlineIndex = substring.lastIndexOf("\n");
+				
+				if (lastNewlineIndex != -1 && substring.charAt(lastNewlineIndex + 1) == ' ') {
+					continue;
+				}
+				
 				m.appendReplacement(sb, " $1");
 			}
 		}
@@ -2270,7 +2291,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "magua";
+		String title = "salvaje";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
