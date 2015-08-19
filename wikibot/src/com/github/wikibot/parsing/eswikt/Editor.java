@@ -41,6 +41,8 @@ import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
 	private static final Pattern P_LINE_JOINER;
+	private static final Pattern P_TMPL_SPLIT_LEFT;
+	private static final Pattern P_TMPL_SPLIT_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
@@ -75,6 +77,12 @@ public class Editor extends EditorBase {
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
 	);
 	
+	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
+	private static final List<String> AMBOX_TMPLS = Arrays.asList(
+		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
+		"falta", "revisión", "revisar"
+	);
+	
 	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
@@ -100,18 +108,34 @@ public class Editor extends EditorBase {
 		// TODO: review <ref> tags and headers ("=" signs)
 		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + lineJoinerIgnoreString + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + lineJoinerIgnoreString + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
 		
+		final List<String> tempListLS = Arrays.asList(
+			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
+		);
+		final List<String> leftSideSplitTemplates = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
+		leftSideSplitTemplates.addAll(PRON_TMPLS);
+		leftSideSplitTemplates.addAll(TERM_TMPLS);
+		leftSideSplitTemplates.addAll(tempListLS);
+		
+		P_TMPL_SPLIT_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitTemplates) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
+		
+		final List<String> tempListBS = Arrays.asList(
+			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
+			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
+			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
+			"título referencias", "tit ref", "pron-graf", "imagen"
+		);
+		final List<String> bothSidesSplitTemplates = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
+		bothSidesSplitTemplates.addAll(AMBOX_TMPLS);
+		bothSidesSplitTemplates.addAll(tempListBS);
+		
+		P_TMPL_SPLIT_BOTH = Pattern.compile("(\n?) *?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitTemplates) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *?(\n?)", Pattern.DOTALL);
+		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
-		// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
-		final List<String> amboxTemplates = Arrays.asList(
-			"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
-			"falta", "revisión", "revisar"
-		);
-		
-		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", amboxTemplates) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
-		
+		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+
 		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
-		
+
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 		
@@ -158,6 +182,7 @@ public class Editor extends EditorBase {
 		joinLines();
 		minorSanitizing();
 		normalizeTemplateNames();
+		splitLines();
 		transformToNewStructure();
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
@@ -496,6 +521,68 @@ public class Editor extends EditorBase {
 			.collect(Collectors.joining(", "));
 		
 		checkDifferences(formatted, "normalizeTemplateNames", summary);
+	}
+	
+	public void splitLines() {
+		// TODO: split file and interwiki links
+		
+		String formatted = this.text;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_TMPL_SPLIT_LEFT.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, "\n$1");
+		}
+		
+		m.appendTail(sb);
+		formatted = sb.toString();
+		sb = new StringBuffer(formatted.length());
+		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m2 = P_TMPL_SPLIT_BOTH.matcher(formatted);
+		
+		while (m2.find()) {
+			String pre = m2.group(1);
+			String template = m2.group(2);
+			String post = m2.group(3);
+			boolean atStringStart = (m2.start(1) == 0);
+			boolean atStringEnd = (m2.end(3) == formatted.length());
+			
+			if (
+				(pre.equals("\n") || atStringStart) &&
+				(post.equals("\n") || atStringEnd)
+			) {
+				continue;
+			} else {
+				String replacement = "";
+				
+				if (!atStringStart && (
+					sb.length() == 0 || sb.charAt(sb.length() - 1) != '\n'
+				)) {
+					replacement += "\n";
+				}
+				
+				replacement += template;
+				
+				if (!atStringEnd) {
+					replacement += "\n";
+				}
+				
+				m2.appendReplacement(sb, replacement);
+			}
+		}
+		
+		m2.appendTail(sb);
+		formatted = sb.toString();
+		
+		checkDifferences(formatted, "splitLines", "dividiendo líneas");
 	}
 
 	public void transformToNewStructure() {
@@ -2293,7 +2380,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "féretro";
+		String title = "Madrid";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
