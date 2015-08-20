@@ -97,8 +97,8 @@ public class Editor extends EditorBase {
 		String lineJoinerIgnoreString = String.join("|", lineJoinerIgnoreList);
 		
 		// TODO: limited look-behind group length (" *?" -> " ?")
-		// TODO: review <ref> tags
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|\\}\\}|\\[\\[ ?(?:" + lineJoinerIgnoreString + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + lineJoinerIgnoreString + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|])", Pattern.CASE_INSENSITIVE);
+		// TODO: review <ref> tags and headers ("=" signs)
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + lineJoinerIgnoreString + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + lineJoinerIgnoreString + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
@@ -2293,7 +2293,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "salvaje";
+		String title = "féretro";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
