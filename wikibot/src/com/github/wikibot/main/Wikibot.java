@@ -44,6 +44,8 @@ public class Wikibot extends WMFWiki {
 	public static final int RC_EDIT = 1;
 	public static final int RC_NEW = 2;
 	public static final int RC_LOG = 4;
+	public static final int RC_EXTERNAL = 8;
+	public static final int RC_CATEGORIZE = 16;
 	
 	// serial version
     private static final long serialVersionUID = -8745212681497644126L;
@@ -397,6 +399,14 @@ public class Wikibot extends WMFWiki {
         	
         	if ((rctypes & RC_LOG) == RC_LOG) {
             	sb_url.append("log%7C");
+        	}
+        	
+        	if ((rctypes & RC_EXTERNAL) == RC_EXTERNAL) {
+            	sb_url.append("external%7C");
+        	}
+        	
+        	if ((rctypes & RC_CATEGORIZE) == RC_CATEGORIZE) {
+            	sb_url.append("categorize%7C");
         	}
         	
         	// chop off last |
