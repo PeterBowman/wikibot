@@ -217,7 +217,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .+?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añádela en el Alfabeto Fonético Internacional.+?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.+?-->", "");
-		formatted = formatted.replaceAll("<!-- ?A(ñ|n)ádela con el siguiente patrón.+?-->", "");
+		formatted = formatted.replaceAll("<!-- ?A[ñn]ádela con el siguiente patrón.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?Añade la etimología con el siguiente patrón.+?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .+?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .+?-->", "");
@@ -234,8 +234,8 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?\\{\\{relacionado(\\|leng=xx)?\\|<1>\\|<2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ejemplo\\|<oración.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ejemplo\\}\\} ?-->", "");
-		formatted = formatted.replaceAll("<!-- ?aquí pones una explicaci(ó|o)n .+?-->", "");
-		formatted = formatted.replaceAll("<!-- ?aquí escribes una explicaci(ó|o)n .+?-->", "");
+		formatted = formatted.replaceAll("<!-- ?aquí pones una explicaci[óo]n .+?-->", "");
+		formatted = formatted.replaceAll("<!-- ?aquí escribes una explicaci[óo]n .+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?si tienes información adicional.+?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Puedes también incluir las siguientes secciones.+?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{etimología\\|IDIOMA.+?-->", "");
@@ -598,7 +598,7 @@ public class Editor extends EditorBase {
 		String formatted = this.text;
 		Page page = Page.store(title, formatted);
 		
-		if (!isOldStructure || page.hasSectionWithHeader("^(F|f)orma .+")) {
+		if (!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+")) {
 			return;
 		}
 		
@@ -635,7 +635,7 @@ public class Editor extends EditorBase {
 		
 		// References section(s)
 		
-		for (Section section : page.findSectionsWithHeader("(<small *?>)? *?Referencias.*?(<small *?/ *?>)?")) {
+		for (Section section : page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?")) {
 			section.setHeader("Referencias y notas");
 			section.setLevel(2);
 		}
@@ -684,7 +684,7 @@ public class Editor extends EditorBase {
 				!nextSibling.getHeader().startsWith("ETYM")
 			);
 			
-			List<Section> etymologySections = section.findSubSectionsWithHeader("(E|e)timolog(í|i)a.*");
+			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
 			if (etymologySections.isEmpty()) {
 				Section etymologySection = Section.create("Etimología", 3);
@@ -883,7 +883,7 @@ public class Editor extends EditorBase {
 	private void singleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
-		Pattern patt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})(?:e|E)timología[^\n]+)");
+		Pattern patt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
 		String topIntro = topSection.getIntro();
 		Matcher m = patt.matcher(topIntro);
 		List<String> temp = new ArrayList<String>();
@@ -927,8 +927,8 @@ public class Editor extends EditorBase {
 			String line = lines[lineNumber];
 			
 			if (
-				line.matches(".*?\\{\\{(e|E)timología.+") ||
-				line.matches(":*?\\* *?'{0,3}(E|e)timolog(í|i)a:'{0,3}.+")
+				line.matches(".*?\\{\\{[eE]timología.+") ||
+				line.matches(":*?\\* *?'{0,3}[eE]timolog[íi]a:'{0,3}.+")
 			) {
 				found = true;
 				break;
@@ -958,14 +958,14 @@ public class Editor extends EditorBase {
 			
 			header = StringUtils.strip(header, "=").trim();
 			
-			header = header.replaceAll("^(?:e|E)timolog(?:i|í)a ?(\\d)?$", "Etimología $1").trim();
+			header = header.replaceAll("^[Ee]timolog[íi]a ?(\\d)?$", "Etimología $1").trim();
 			// TODO: don't confuse with {{locución}}, {{refrán}}
-			header = header.replaceAll("^(?:L|l)ocuciones$", "Locuciones");
-			header = header.replaceAll("^(?:(?:R|r)efranes|(?:D|d)ichos?)$", "Refranes");
-			header = header.replaceAll("^(?:c|C)onjugaci(?:ó|o)n$", "Conjugación");
-			header = header.replaceAll("^(?:I|i)nformaci(?:ó|o)n (?:adicional|avanzada)$", "Información adicional");
-			header = header.replaceAll("^(?:V|v)er tambi(?:é|e)n$", "Véase también");
-			header = header.replaceAll("^(?:V|v)(?:é|e)ase tambi(?:é|e)n$", "Véase también");
+			header = header.replaceAll("^[Ll]ocuciones$", "Locuciones");
+			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)$", "Refranes");
+			header = header.replaceAll("^[Cc]onjugaci[óo]n$", "Conjugación");
+			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)$", "Información adicional");
+			header = header.replaceAll("^[Vv]er tambi[ée]n$", "Véase también");
+			header = header.replaceAll("^[Vv][ée]ase tambi[ée]n$", "Véase también");
 			
 			header = header.replaceAll("^Proverbio$", "Refrán");
 			
@@ -974,14 +974,14 @@ public class Editor extends EditorBase {
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
-					header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(es)?$", "Traducciones");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducciones");
 				} else {
-					header = header.replaceAll("^(?:T|t)raducci(?:ó|o)n(es)?$", "Traducción");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducción");
 				}
 			}
 			
 			if (!isOldStructure) {
-				header = header.replaceAll("^(?:<small> *?)?(?:R|r)eferencias?.*?$", "Referencias y notas");
+				header = header.replaceAll("^(?:<small> *?)?[Rr]eferencias?.*?$", "Referencias y notas");
 			}
 			
 			section.setHeader(header);
@@ -1068,7 +1068,7 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, this.text);
 		
 		Section bottomReferences = page.getReferencesSection();
-		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
+		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() < 2) {
 			return;
@@ -1121,7 +1121,7 @@ public class Editor extends EditorBase {
 	public void moveReferencesSection() {
 		Page page = Page.store(title, this.text);
 		
-		List<Section> allReferences = page.findSectionsWithHeader("^(R|r)eferencias.*");
+		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() != 1) {
 			return;
@@ -1260,7 +1260,7 @@ public class Editor extends EditorBase {
 	public void removePronGrafSection() {
 		Page page = Page.store(title, this.text);
 		
-		List<Section> sections = page.findSectionsWithHeader("(P|p)ronunciaci(ó|o)n( y escritura)?");
+		List<Section> sections = page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?");
 		
 		if (isOldStructure || sections.isEmpty()) {
 			return;
@@ -1525,7 +1525,7 @@ public class Editor extends EditorBase {
 				}
 				
 				line = line.replaceFirst(
-					"\\{\\{(?:P|p)ronunciación(?:\\|leng=[^\\|]*?)?\\|(.+?)\\}\\} (?:o|ó) \\{\\{AFI\\|(.+?)\\}\\}\\.?",
+					"\\{\\{[Pp]ronunciación(?:\\|leng=[^\\|]*?)?\\|(.+?)\\}\\} [oó] \\{\\{AFI\\|(.+?)\\}\\}\\.?",
 					"{{pronunciación|$1 o $2}}"
 				);
 				m = P_ADAPT_PRON_TMPL.matcher(line);
@@ -1647,7 +1647,7 @@ public class Editor extends EditorBase {
 							
 							if (param1.matches("\\[.+\\]")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("\\] *?(o|,) *?\\[");
+								String[] alts = param1.split("\\] *?[o,] *?\\[");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -1663,7 +1663,7 @@ public class Editor extends EditorBase {
 								}
 							} else if (param1.matches("/.+/")) {
 								param1 = param1.substring(1, param1.length() - 1).trim();
-								String[] alts = param1.split("/ *?(o|,) *?/");
+								String[] alts = param1.split("/ *?[o,] *?/");
 								
 								if (alts.length > 1) {
 									for (int i = 1; i <= alts.length; i++) {
@@ -2337,7 +2337,7 @@ public class Editor extends EditorBase {
 			!intro.isEmpty() && page.getTrailingNewlines() == 0 &&
 			!(
 				intro.split("\n").length == 1 &&
-				intro.matches("^\\{\\{(d|D)esambiguación\\|?\\}\\}.*")
+				intro.matches("^\\{\\{[Dd]esambiguación\\|?\\}\\}.*")
 			)
 		) {
 			page.setTrailingNewlines(1);
