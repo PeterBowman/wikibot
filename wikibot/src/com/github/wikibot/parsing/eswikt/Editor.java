@@ -41,8 +41,8 @@ import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
 	private static final Pattern P_LINE_JOINER;
-	private static final Pattern P_TMPL_SPLIT_LEFT;
-	private static final Pattern P_TMPL_SPLIT_BOTH;
+	private static final Pattern P_LINE_SPLITTER_LEFT;
+	private static final Pattern P_LINE_SPLITTER_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
@@ -95,28 +95,30 @@ public class Editor extends EditorBase {
 	
 	static {
 		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
+		
 		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
 		
-		final List<String> lineJoinerIgnoreList = new ArrayList<String>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
-		lineJoinerIgnoreList.addAll(fileNsAliases);
-		lineJoinerIgnoreList.addAll(categoryNsAliases);
-		lineJoinerIgnoreList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
+		final List<String> specialLinksList = new ArrayList<String>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
+		specialLinksList.addAll(fileNsAliases);
+		specialLinksList.addAll(categoryNsAliases);
+		specialLinksList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
 		
-		String lineJoinerIgnoreString = String.join("|", lineJoinerIgnoreList);
+		String specialLinksGroup = String.join("|", specialLinksList);
 		
 		// TODO: limited look-behind group length (" *?" -> " ?")
 		// TODO: review <ref> tags and headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + lineJoinerIgnoreString + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + lineJoinerIgnoreString + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + specialLinksGroup + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
 		);
-		final List<String> leftSideSplitTemplates = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
-		leftSideSplitTemplates.addAll(PRON_TMPLS);
-		leftSideSplitTemplates.addAll(TERM_TMPLS);
-		leftSideSplitTemplates.addAll(tempListLS);
 		
-		P_TMPL_SPLIT_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitTemplates) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
+		final List<String> leftSideSplitterList = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
+		leftSideSplitterList.addAll(PRON_TMPLS);
+		leftSideSplitterList.addAll(TERM_TMPLS);
+		leftSideSplitterList.addAll(tempListLS);
+		
+		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
 		final List<String> tempListBS = Arrays.asList(
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
@@ -124,11 +126,12 @@ public class Editor extends EditorBase {
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
 			"título referencias", "tit ref", "pron-graf", "imagen"
 		);
-		final List<String> bothSidesSplitTemplates = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
-		bothSidesSplitTemplates.addAll(AMBOX_TMPLS);
-		bothSidesSplitTemplates.addAll(tempListBS);
 		
-		P_TMPL_SPLIT_BOTH = Pattern.compile("(\n?) *?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitTemplates) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *?(\n?)", Pattern.DOTALL);
+		final List<String> bothSidesSplitterList = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
+		bothSidesSplitterList.addAll(AMBOX_TMPLS);
+		bothSidesSplitterList.addAll(tempListBS);
+		
+		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *?(\n?)", Pattern.DOTALL);
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
@@ -528,7 +531,7 @@ public class Editor extends EditorBase {
 		
 		String formatted = this.text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m = P_TMPL_SPLIT_LEFT.matcher(formatted);
+		Matcher m = P_LINE_SPLITTER_LEFT.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
@@ -546,11 +549,11 @@ public class Editor extends EditorBase {
 		formatted = sb.toString();
 		sb = new StringBuffer(formatted.length());
 		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m2 = P_TMPL_SPLIT_BOTH.matcher(formatted);
+		Matcher m2 = P_LINE_SPLITTER_BOTH.matcher(formatted);
 		
 		while (m2.find()) {
 			String pre = m2.group(1);
-			String template = m2.group(2);
+			String target = m2.group(2);
 			String post = m2.group(3);
 			boolean atStringStart = (m2.start(1) == 0);
 			boolean atStringEnd = (m2.end(3) == formatted.length());
@@ -569,7 +572,7 @@ public class Editor extends EditorBase {
 					replacement += "\n";
 				}
 				
-				replacement += template;
+				replacement += target;
 				
 				if (!atStringEnd) {
 					replacement += "\n";
