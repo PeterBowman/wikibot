@@ -105,9 +105,12 @@ public class Editor extends EditorBase {
 		
 		String specialLinksGroup = String.join("|", specialLinksList);
 		
-		// TODO: limited look-behind group length (" *?" -> " ?")
+		/* TODO: limited look-behind group length
+		 *  multiple whitespaces are treated as single ws (" *?" -> " ?")
+		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
+		 */
 		// TODO: review <ref> tags and headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + specialLinksGroup + "):.{1,300}\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__)(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
@@ -132,7 +135,7 @@ public class Editor extends EditorBase {
 		bothSidesSplitterList.addAll(AMBOX_TMPLS);
 		bothSidesSplitterList.addAll(tempListBS);
 		
-		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *?(\n?)", Pattern.DOTALL);
+		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\[\\[ *?(?i:" + specialLinksGroup + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
@@ -551,6 +554,7 @@ public class Editor extends EditorBase {
 		sb = new StringBuffer(formatted.length());
 		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m2 = P_LINE_SPLITTER_BOTH.matcher(formatted);
+		int lastTrailingPos = -1;
 		
 		while (m2.find()) {
 			String pre = m2.group(1);
@@ -560,16 +564,15 @@ public class Editor extends EditorBase {
 			boolean atStringEnd = (m2.end(3) == formatted.length());
 			
 			if (
-				(pre.equals("\n") || atStringStart) &&
-				(post.equals("\n") || atStringEnd)
+				!(atStringStart || pre.equals("\n")) ||
+				!(atStringEnd || post.equals("\n"))
 			) {
-				continue;
-			} else {
 				StringBuilder replacement = new StringBuilder(target.length() + 2);
 				
-				if (!atStringStart && (
-					sb.length() == 0 || sb.charAt(sb.length() - 1) != '\n'
-				)) {
+				if (
+					!atStringStart &&
+					m2.start() != lastTrailingPos
+				) {
 					replacement.append('\n');
 				}
 				
@@ -581,6 +584,8 @@ public class Editor extends EditorBase {
 				
 				m2.appendReplacement(sb, replacement.toString());
 			}
+			
+			lastTrailingPos = m2.end();
 		}
 		
 		m2.appendTail(sb);
@@ -2384,7 +2389,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "jump";
+		String title = "alfombra";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
