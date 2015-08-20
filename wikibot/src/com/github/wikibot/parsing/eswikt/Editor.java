@@ -87,9 +87,11 @@ public class Editor extends EditorBase {
 	
 	static {
 		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
+		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
 		
 		final List<String> lineJoinerIgnoreList = new ArrayList<String>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
 		lineJoinerIgnoreList.addAll(fileNsAliases);
+		lineJoinerIgnoreList.addAll(categoryNsAliases);
 		lineJoinerIgnoreList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
 		
 		String lineJoinerIgnoreString = String.join("|", lineJoinerIgnoreList);
