@@ -290,7 +290,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			if (lines[0].startsWith("{{")) {
+			if (lines[0].trim().equals("{{")) {
 				String[] temp = Arrays.copyOfRange(lines, 1, lines.length);
 				temp[0] = lines[0].trim() + temp[0].trim();
 				template = String.join("\n", temp);
