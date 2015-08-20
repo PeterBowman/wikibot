@@ -117,6 +117,7 @@ public class Editor extends EditorBase {
 		leftSideSplitterList.addAll(PRON_TMPLS);
 		leftSideSplitterList.addAll(TERM_TMPLS);
 		leftSideSplitterList.addAll(tempListLS);
+		leftSideSplitterList.remove("audio");
 		
 		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
@@ -564,21 +565,21 @@ public class Editor extends EditorBase {
 			) {
 				continue;
 			} else {
-				String replacement = "";
+				StringBuilder replacement = new StringBuilder(target.length() + 2);
 				
 				if (!atStringStart && (
 					sb.length() == 0 || sb.charAt(sb.length() - 1) != '\n'
 				)) {
-					replacement += "\n";
+					replacement.append('\n');
 				}
 				
-				replacement += target;
+				replacement.append(target);
 				
 				if (!atStringEnd) {
-					replacement += "\n";
+					replacement.append('\n');
 				}
 				
-				m2.appendReplacement(sb, replacement);
+				m2.appendReplacement(sb, replacement.toString());
 			}
 		}
 		
@@ -2383,7 +2384,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Madrid";
+		String title = "jump";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
