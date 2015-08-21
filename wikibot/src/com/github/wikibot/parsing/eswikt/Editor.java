@@ -501,11 +501,19 @@ public class Editor extends EditorBase {
 		for (Entry<String, String> entry : map.entrySet()) {
 			String target = entry.getKey();
 			String replacement = entry.getValue();
-			StringBuffer sb = new StringBuffer();
+			StringBuffer sb = new StringBuffer(formatted.length() + 10);
 			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 			Matcher m = patt.matcher(formatted);
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 			
 			while (m.find()) {
+				if (
+					!ignoredRanges.isEmpty() &&
+					ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+				) {
+					continue;
+				}
+				
 				m.appendReplacement(sb, "{{" + replacement + "$1}}");
 			}
 			
