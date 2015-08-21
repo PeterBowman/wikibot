@@ -722,7 +722,7 @@ public class Editor extends EditorBase {
 					section.detachOnlySelf();
 				}
 			} else {
-				insertStructureComment(page);
+				insertStructureTemplate(page);
 				return;
 			}
 		}
@@ -873,9 +873,15 @@ public class Editor extends EditorBase {
 		section.setIntro(comment + "\n" + section.getIntro());
 	}
 
-	private void insertStructureComment(Page page) {
+	private void insertStructureTemplate(Page page) {
+		String templateName = "estructura";
+		
+		if (!ParseUtils.getTemplates(templateName, this.text).isEmpty()) {
+			return;
+		}
+		
 		String pageIntro = page.getIntro();
-		pageIntro += "\n{{estructura}}";
+		pageIntro += String.format("\n{{%s}}", templateName);
 		page.setIntro(pageIntro);
 		checkDifferences(page.toString(), "transformToNewStructure", "{{estructura}}");
 	}
