@@ -825,7 +825,7 @@ public class Editor extends EditorBase {
 			m.appendReplacement(sb, replacement);
 		} else {
 			String newTemplate = ParseUtils.templateFromMap(params);
-			String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
+			String replacement = String.format("%s= %s =%s", pre, newTemplate, post);
 			m.appendReplacement(sb, replacement);
 		}
 		
@@ -2379,7 +2379,7 @@ public class Editor extends EditorBase {
 			}
 			
 			if (!section.getHeader().isEmpty()) {
-				section.setHeaderFormat("%1$s%2$s%1$s");
+				section.setHeaderFormat("%1$s %2$s %1$s");
 			} else {
 				section.setHeaderFormat("%1$s %1$s");
 			}

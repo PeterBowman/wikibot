@@ -42,7 +42,6 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 		
 		section.setLevel(level);
 		section.setHeader(header);
-		section.setHeaderFormat("%1$s%2$s%1$s");
 		
 		return section;
 	}
