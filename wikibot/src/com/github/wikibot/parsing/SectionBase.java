@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.ParseUtils;
 
 public abstract class SectionBase<T extends SectionBase<T>> {
 	protected String header;
@@ -22,6 +21,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	protected int leadingNewlines;
 	protected int trailingNewlines;
 	protected String headerFormat;
+	private String headerTrailingComments;
 	protected T parentSection;
 	protected List<T> siblingSections;
 	protected List<T> childSections;
@@ -36,6 +36,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		leadingNewlines = 0;
 		trailingNewlines = 0;
 		headerFormat = "%1$s %2$s %1$s";
+		headerTrailingComments = "";
 		parentSection = null;
 		siblingSections = null;
 		childSections = null;
@@ -64,16 +65,17 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	private void parseHeader(String header) {
+		// TODO: catch "=" inside comment regions; review PageBase.P_SECTION
 		int i = 6;
-		header = ParseUtils.removeCommentsAndNoWikiText(header);
 		
 		for (; i >= 1; --i) {
-			String re = String.format("^={%1$d}(.+)={%1$d}\\s*$", i);
+			String re = String.format("^={%1$d}(.+)={%1$d}((?:<!--.*?-->|\\s*)*)$", i);
 			Matcher m = Pattern.compile(re).matcher(header);
 			
 			if (m.matches()) {
 				this.header = m.group(1).trim();
 				this.level = i;
+				this.headerTrailingComments = m.group(2);
 				buildHeaderFormatString(m.group(1));
 				break;
 			}
@@ -534,6 +536,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	public String toString() {
 		StringBuilder sb = new StringBuilder(1500);
 		sb.append(String.format(headerFormat, StringUtils.repeat('=', level), header));
+		sb.append(headerTrailingComments);
 
 		if (!intro.isEmpty()) {
 			sb.append("\n");
