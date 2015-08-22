@@ -187,7 +187,7 @@ public class Editor extends EditorBase {
 	public void check() {
 		removeComments();
 		joinLines();
-		minorSanitizing();
+		//minorSanitizing();
 		normalizeTemplateNames();
 		splitLines();
 		transformToNewStructure();
@@ -204,6 +204,7 @@ public class Editor extends EditorBase {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
+		checkLangHeaderCodeCase();
 		langTemplateParams();
 		manageClearElements();
 		strongWhitespaces();
@@ -346,22 +347,7 @@ public class Editor extends EditorBase {
 		// TODO: perrichines (comment close tag)
 		// TODO: trailing period after {{etimología}}
 		
-		if (isOldStructure) {
-			return;
-		}
 		
-		Page page = Page.store(title, this.text);
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			String langCode = langSection.getLangCode();
-			String upperCase = langCode.toUpperCase();
-			
-			if (!upperCase.equals(langCode)) {
-				langSection.setLangCode(upperCase);
-			}
-		}
-		
-		checkDifferences(page.toString(), "minorSanitizing", null);
 	}
 	
 	public void normalizeTemplateNames() {
@@ -396,6 +382,9 @@ public class Editor extends EditorBase {
 		map.put("dme1864", "DME1864");
 		map.put("dp2002", "DP2002");
 		map.put("drae1914", "DLC1914");
+		
+		// TODO: these are not transcluded, analyze "leng" params instead
+		// TODO: move to langTemplateParams()
 		
 		map.put("aka", "ak");
 		map.put("allentiac", "qbt");
@@ -1366,7 +1355,7 @@ public class Editor extends EditorBase {
 			params.put("templateName", "etimología");
 			
 			if (!langSection.langCodeEqualsTo("es")) {
-				params.put("leng", langSection.getLangCode(false));
+				params.put("leng", langSection.getLangCode());
 			}
 			
 			String template = ParseUtils.templateFromMap(params);
@@ -1788,7 +1777,7 @@ public class Editor extends EditorBase {
 			newMap.put("templateName", "pron-graf");
 			
 			if (!langSection.langCodeEqualsTo("es")) {
-				newMap.put("leng", langSection.getLangCode(false));
+				newMap.put("leng", langSection.getLangCode());
 			}
 			
 			Map<String, String> langTemplateParams = langSection.getTemplateParams();
@@ -2014,7 +2003,25 @@ public class Editor extends EditorBase {
 		
 		return ParseUtils.templateFromMap(map);
 	}
-
+	
+	public void checkLangHeaderCodeCase() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			String langCode = langSection.getLangCode(false);
+			
+			if (!langCode.equals(langSection.getLangCode(true))) {
+				langSection.setLangCode(langCode.toLowerCase());
+			}
+		}
+		
+		checkDifferences(page.toString(), "langCodesCase", null);
+	}
+	
 	public void langTemplateParams() {
 		// TODO: ISO code as parameter without name
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
@@ -2027,8 +2034,6 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, this.text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			String langCode = langSection.getLangCode(false);
-			boolean isSpanishSection = langCode.equals("es");
 			String content = langSection.toString();
 			boolean sectionModified = false;
 			
@@ -2046,7 +2051,7 @@ public class Editor extends EditorBase {
 						leng = Optional.ofNullable(leng).orElse(param1);
 					}
 					
-					if (isSpanishSection) {
+					if (langSection.langCodeEqualsTo("es")) {
 						// TODO: is this necessary?
 						if (leng != null) {
 							params.remove("leng");
@@ -2057,11 +2062,11 @@ public class Editor extends EditorBase {
 						Map<String, String> tempMap = (Map<String, String>) params.clone();
 						params.clear();
 						params.put("templateName", tempMap.remove("templateName"));
-						params.put("leng", langCode);
+						params.put("leng", langSection.getLangCode());
 						params.putAll(tempMap);
 						templateModified = true;
-					} else if (!leng.equals(langCode)) {
-						params.put("leng", langCode);
+					} else if (!langSection.langCodeEqualsTo(leng)) {
+						params.put("leng", langSection.getLangCode());
 						templateModified = true;
 					}
 					
@@ -2082,7 +2087,7 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(formatted, "langTemplateParams", "parámetros \"leng=\"");
+		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
 	}
 
 	public void addMissingElements() {
@@ -2095,7 +2100,7 @@ public class Editor extends EditorBase {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
-			String langCode = langSection.getLangCode(false);
+			String langCode = langSection.getLangCode();
 			
 			if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);

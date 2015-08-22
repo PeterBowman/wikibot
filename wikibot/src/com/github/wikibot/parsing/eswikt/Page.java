@@ -51,7 +51,7 @@ public final class Page extends PageBase<Section> {
 			CODE_TO_LANG = Stream.of(IOUtils.loadFromFile("./data/eswikt.langs.txt", "", "UTF8"))
 				.map(line -> line.split("\\s"))
 				.collect(Collectors.toMap(
-					arr -> arr[0].toUpperCase(),
+					arr -> arr[0], // lower case!
 					arr -> arr[1],
 					(arr1, arr2) -> arr1,
 					LinkedHashMap::new
