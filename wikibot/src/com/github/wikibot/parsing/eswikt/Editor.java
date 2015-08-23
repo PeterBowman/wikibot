@@ -744,7 +744,7 @@ public class Editor extends EditorBase {
 					}
 				}
 				
-				for (int i = 1; i < etymologySections.size(); i++) {
+				for (int i = 1; i <= etymologySections.size(); i++) {
 					Section etymologySection = etymologySections.get(i - 1);
 					String header = String.format("Etimología %d", i);
 					etymologySection.setHeader(header);
