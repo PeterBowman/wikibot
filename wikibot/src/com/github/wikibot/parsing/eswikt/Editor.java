@@ -788,7 +788,7 @@ public class Editor extends EditorBase {
 			params.put("templateName", "translit");
 			name = params.get("ParamWithoutName2");
 		} else {
-			name = name.replace("-ES", "");
+			name = name.replace("-ES", "").toLowerCase();
 			params.put("templateName", "lengua");
 			params.put("ParamWithoutName1", name);
 		}
