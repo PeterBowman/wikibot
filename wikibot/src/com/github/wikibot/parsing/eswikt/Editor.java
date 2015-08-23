@@ -45,7 +45,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_LINE_SPLITTER_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
-	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
@@ -592,29 +592,15 @@ public class Editor extends EditorBase {
 	}
 
 	public void transformToNewStructure() {
-		String formatted = this.text;
-		Page page = Page.store(title, formatted);
+		Page page = Page.store(title, this.text);
 		
 		if (!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+")) {
 			return;
 		}
 		
-		// Remove {{transic}} template
+		// Process header templates
 		
-		formatted = formatted.replaceAll("\\{\\{ *?transic *?\\}\\}\n?", "");
-		
-		// Process headers
-		
-		Matcher m = P_OLD_STRUCT_HEADER.matcher(formatted);
-		StringBuffer sb = new StringBuffer();
-		String currentSectionLang = "";
-		
-		while (m.find()) {
-			currentSectionLang = findOldStructureMatch(m, sb, currentSectionLang);
-		}
-		
-		m.appendTail(sb);
-		formatted = sb.toString();
+		String formatted = replaceOldStructureTemplates(this.text);
 		
 		if (formatted.equals(this.text)) {
 			return;
@@ -655,7 +641,7 @@ public class Editor extends EditorBase {
 			}
 		}
 		
-		for (Section section : page.filterSections(s -> s.getHeader().startsWith("ETYM"))) {
+		for (Section section : page.filterSections(s -> s.getHeader().startsWith("ETYM "))) {
 			String header = section.getHeader();
 			String alt = header.replaceFirst(".+alt-(.*)", "$1");
 			
@@ -672,13 +658,13 @@ public class Editor extends EditorBase {
 		
 		// Add or process pre-transform etymology sections
 		
-		Predicate<Section> pred = s -> s instanceof LangSection || s.getHeader().startsWith("ETYM");
+		Predicate<Section> pred = s -> s instanceof LangSection || s.getHeader().startsWith("ETYM ");
 		
 		for (Section section : page.filterSections(pred)) {
 			Section nextSibling = section.nextSiblingSection();
 			boolean isSingleEtym = section instanceof LangSection && (
 				nextSibling == null || 
-				!nextSibling.getHeader().startsWith("ETYM")
+				!nextSibling.getHeader().startsWith("ETYM ")
 			);
 			
 			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
@@ -698,6 +684,9 @@ public class Editor extends EditorBase {
 				if (!(section instanceof LangSection)) {
 					section.detachOnlySelf();
 				}
+			} else if (section instanceof LangSection) {
+				// TODO: review next condition
+				continue;
 			} else if (
 				etymologySections.size() == 1 &&
 				etymologySections.get(0) == section.nextSection() && !(
@@ -769,67 +758,65 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
 	}
 
-	private String findOldStructureMatch(Matcher m, StringBuffer sb, String currentSectionLang) {
-		String pre = m.group(1);
-		String template = m.group(2);
-		String post = m.group(3);
+	private String replaceOldStructureTemplates(String text) {
+		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
+		StringBuffer sb = new StringBuffer();
+		String currentSectionLang = "";
 		
-		HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-		String name = params.get("templateName");
-		
-		if (name.equals("lengua") || name.equals("translit")) {
-			m.appendReplacement(sb, m.group());
-			return params.get("ParamWithoutName1");
+		while (m.find()) {
+			String pre = m.group(1);
+			String template = m.group(2);
+			String post = m.group(3);
+			
+			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+			String name = params.get("templateName");
+			
+			if (name.equals("lengua") || name.equals("translit")) {
+				m.appendReplacement(sb, m.group());
+				currentSectionLang = params.get("ParamWithoutName1").toLowerCase();
+				continue;
+			}
+			
+			String altGraf = params.getOrDefault("ParamWithoutName1", "");
+			
+			if (name.equals("TRANSLIT")) {
+				name = params.get("ParamWithoutName2");
+				params.put("templateName", "translit");
+			} else {
+				name = name.replace("-ES", "").toLowerCase();
+				params.put("templateName", "lengua");
+				params.put("ParamWithoutName1", name);
+				params.remove("ParamWithoutName2");
+				params.remove("num");
+				params.remove("núm");
+			}
+			
+			if (
+				!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
+				!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
+			) {
+				params.put("alt", altGraf);
+			} else {
+				altGraf = "";
+			}
+			
+			pre = pre.isEmpty() ? "" : "$1\n";
+			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
+			
+			if (currentSectionLang.equals(name)) {
+				String replacement = String.format("%s=ETYM alt-%s=%s", pre, altGraf, post);
+				m.appendReplacement(sb, replacement);
+			} else {
+				String newTemplate = ParseUtils.templateFromMap(params);
+				String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
+				m.appendReplacement(sb, replacement);
+			}
+			
+			currentSectionLang = name;
 		}
 		
-		String altGraf = params.getOrDefault("ParamWithoutName1", "");
-		
-		if (name.equals("TRANSLIT")) {
-			params.put("templateName", "translit");
-			name = params.get("ParamWithoutName2");
-		} else {
-			name = name.replace("-ES", "").toLowerCase();
-			params.put("templateName", "lengua");
-			params.put("ParamWithoutName1", name);
-		}
-		
-		String etym = "";
-		etym = params.getOrDefault("ParamWithoutName2", etym);
-		etym = params.getOrDefault("num", etym);
-		etym = params.getOrDefault("núm", etym);
-		
-		if (!etym.isEmpty()) {
-			params.remove("ParamWithoutName2");
-			params.remove("num");
-			params.remove("núm");
-		}
-		
-		if (!currentSectionLang.equals(name) && !etym.equals("1")) {
-			etym = "";
-		}
-		
-		if (
-			!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
-			!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
-		) {
-			params.put("alt", altGraf);
-		} else {
-			altGraf = "";
-		}
-		
-		pre = pre.isEmpty() ? "" : "$1\n";
-		post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
-		
-		if (!etym.isEmpty() && !etym.equals("1")) {
-			String replacement = String.format("%s=ETYM%s alt-%s=%s", pre, etym, altGraf, post);
-			m.appendReplacement(sb, replacement);
-		} else {
-			String newTemplate = ParseUtils.templateFromMap(params);
-			String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
-			m.appendReplacement(sb, replacement);
-		}
-		
-		return name;
+		m.appendTail(sb);
+		return sb.toString();
 	}
 
 	private void extractAltParameter(Section section, String alt) {
@@ -2019,7 +2006,7 @@ public class Editor extends EditorBase {
 			}
 		}
 		
-		checkDifferences(page.toString(), "langCodesCase", null);
+		checkDifferences(page.toString(), "checkLangHeaderCodeCase", null);
 	}
 	
 	public void langTemplateParams() {
@@ -2408,7 +2395,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "alfombra";
+		String title = "colita";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
