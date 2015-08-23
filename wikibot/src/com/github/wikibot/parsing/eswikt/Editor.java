@@ -1637,6 +1637,7 @@ public class Editor extends EditorBase {
 							}
 							
 							param1 = param1.replace("'", "ˈ");
+							param1 = param1.replaceFirst(" *?, *$", "");
 							
 							if (param1.startsWith("[") && !param1.endsWith("]")) {
 								param1 += "]";
@@ -1658,7 +1659,7 @@ public class Editor extends EditorBase {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fone" + num, param);
 									}
-								} else if (StringUtils.containsAny(param1, '[', ']')) {
+								} else if (StringUtils.containsAny(param1, '[', ']', '/')) {
 									editedLines.add(origLine);
 									continue linesLoop;
 								} else {
@@ -1674,7 +1675,7 @@ public class Editor extends EditorBase {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fono" + num, param);
 									}
-								} else if (param1.contains("/")) {
+								} else if (StringUtils.containsAny(param1, '[', ']', '/')) {
 									editedLines.add(origLine);
 									continue linesLoop;
 								} else {
@@ -2408,7 +2409,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "alfombra";
+		String title = "frutilla";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
