@@ -44,7 +44,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_LINE_SPLITTER_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
-	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|\\w+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
@@ -177,6 +177,7 @@ public class Editor extends EditorBase {
 		if (
 			m.find() ||
 			!ParseUtils.getTemplates("ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
 			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
 			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
@@ -594,7 +595,10 @@ public class Editor extends EditorBase {
 	public void transformToNewStructure() {
 		Page page = Page.store(title, this.text);
 		
-		if (!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+")) {
+		if (
+			!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+") ||
+			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty()
+		) {
 			return;
 		}
 		
@@ -2403,7 +2407,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "limb";
+		String title = "adom";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
