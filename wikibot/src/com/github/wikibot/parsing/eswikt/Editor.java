@@ -661,22 +661,27 @@ public class Editor extends EditorBase {
 		Predicate<Section> pred = s -> s instanceof LangSection || s.getHeader().startsWith("ETYM ");
 		
 		for (Section section : page.filterSections(pred)) {
-			Section nextSibling = section.nextSiblingSection();
-			boolean isSingleEtym = section instanceof LangSection && (
-				nextSibling == null || 
-				!nextSibling.getHeader().startsWith("ETYM ")
-			);
-			
 			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
-			if (etymologySections.isEmpty()) {
+			if (
+				etymologySections.isEmpty() ||
+				hasAdditionalEtymSections(section.nextSection(), etymologySections)
+			) {
+				Section nextSibling = section.nextSiblingSection();
 				Section etymologySection = Section.create("Etimología", 3);
 				etymologySection.setTrailingNewlines(1);
 				
-				if (isSingleEtym) {
-					singleEtym(section, etymologySection);
+				if (
+					etymologySections.isEmpty() &&
+					section instanceof LangSection &&
+					(
+						nextSibling == null || 
+						!nextSibling.getHeader().startsWith("ETYM ")
+					)
+				) {
+					processIfSingleEtym(section, etymologySection);
 				} else {
-					multipleEtym(section, etymologySection);
+					processIfMultipleEtym(section, etymologySection);
 				}
 				
 				section.prependSections(etymologySection);
@@ -684,32 +689,21 @@ public class Editor extends EditorBase {
 				if (!(section instanceof LangSection)) {
 					section.detachOnlySelf();
 				}
-			} else if (section instanceof LangSection) {
-				// TODO: review next condition
-				continue;
 			} else if (
-				etymologySections.size() == 1 &&
-				etymologySections.get(0) == section.nextSection() && !(
-					section.getIntro().contains("etimología") &&
-					etymologySections.get(0).getIntro().contains("etimología")
-				)
+				section instanceof LangSection &&
+				!etymologySections.get(0).getHeader().matches("[Ee]timolog[íi]a( 1)?")
 			) {
-				Section etymologySection = etymologySections.get(0);
-				etymologySection.setHeader("Etimología");
-				etymologySection.setLevel(3);
-				
-				if (isSingleEtym) {
-					singleEtym(section, etymologySection);	
-				} else {
-					multipleEtym(section, etymologySection);
-				}
-				
-				if (!(section instanceof LangSection)) {
-					section.detachOnlySelf();
-				}
-			} else {
 				insertStructureTemplate(page);
 				return;
+			} else {
+				if (section instanceof LangSection) {
+					continue;
+				}
+				
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setLevel(3);
+				processIfMultipleEtym(section, etymologySection);
+				section.detachOnlySelf();
 			}
 		}
 		
@@ -718,7 +712,7 @@ public class Editor extends EditorBase {
 		// Check section levels and header numbers
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
 			if (etymologySections.isEmpty()) {
 				continue;
@@ -756,6 +750,20 @@ public class Editor extends EditorBase {
 		isOldStructure = false;
 		
 		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
+	}
+
+	private boolean hasAdditionalEtymSections(Section nextSection, List<Section> etymologySections) {
+		if (etymologySections.isEmpty() || nextSection == null) {
+			return false;
+		}
+		
+		Section etymologySection = etymologySections.get(0);
+		
+		return (
+			etymologySection != nextSection &&
+			!etymologySection.getHeader().matches("[Ee]timolog[íi]a( 1)?") &&
+			!nextSection.getHeader().matches("^[Pp]ronunciaci[óo]n.*")
+		);
 	}
 
 	private String replaceOldStructureTemplates(String text) {
@@ -870,7 +878,7 @@ public class Editor extends EditorBase {
 		checkDifferences(page.toString(), "transformToNewStructure", "{{estructura}}");
 	}
 
-	private void singleEtym(Section topSection, Section etymologySection) {
+	private void processIfSingleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
 		Pattern patt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
@@ -892,9 +900,9 @@ public class Editor extends EditorBase {
 		}
 	}
 
-	private void multipleEtym(Section topSection, Section etymologySection) {
+	private void processIfMultipleEtym(Section topSection, Section etymologySection) {
 		String etymologyIntro = etymologySection.getIntro();
-		etymologyIntro += topSection.getIntro() + "\n" + etymologyIntro;
+		etymologyIntro = topSection.getIntro() + "\n" + etymologyIntro;
 		etymologySection.setIntro(etymologyIntro);
 		
 		if (topSection instanceof LangSection) {
@@ -2395,7 +2403,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "colita";
+		String title = "limb";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
