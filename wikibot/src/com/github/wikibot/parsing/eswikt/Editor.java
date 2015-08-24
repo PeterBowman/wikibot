@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +51,11 @@ public class Editor extends EditorBase {
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_ETYM_LINE = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
+	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
+	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
+	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
+	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -257,7 +261,6 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- *?antropónimos .+?-->", "");
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra, por ejemplo .+?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
-		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		formatted = formatted.replaceAll("<!--\\s*$", "");
 		
 		formatted = Utils.sanitizeWhitespaces(formatted);
@@ -345,14 +348,13 @@ public class Editor extends EditorBase {
 	
 	public void minorSanitizing() {
 		// TODO: perrichines (comment close tag)
-		// TODO: trailing period after {{etimología}}
-		
-		
+		// TODO: trailing period after {{etimología}} and {{pron-graf}}
+		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 	}
 	
 	public void normalizeTemplateNames() {
 		String formatted = this.text;
-		Map<String, String> map = new HashMap<String, String>(100);
+		Map<String, String> map = new HashMap<String, String>(150, 1);
 		
 		// TODO: expand per [[Especial:TodasLasRedirecciones]]
 		// TODO: delete obsolete templates
@@ -528,8 +530,6 @@ public class Editor extends EditorBase {
 	}
 	
 	public void splitLines() {
-		// TODO: split file and interwiki links
-		
 		String formatted = this.text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_LINE_SPLITTER_LEFT.matcher(formatted);
@@ -768,7 +768,7 @@ public class Editor extends EditorBase {
 
 	private String replaceOldStructureTemplates(String text) {
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
-		StringBuffer sb = new StringBuffer();
+		StringBuffer sb = new StringBuffer(text.length() + 10);
 		String currentSectionLang = "";
 		
 		while (m.find()) {
@@ -881,15 +881,14 @@ public class Editor extends EditorBase {
 	private void processIfSingleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
-		Pattern patt = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
 		String topIntro = topSection.getIntro();
-		Matcher m = patt.matcher(topIntro);
+		Matcher m = P_ETYM_LINE.matcher(topIntro);
 		List<String> temp = new ArrayList<String>();
 		
 		while (m.find()) {
 			temp.add(m.group(1).trim());
 			topIntro = topIntro.substring(0, m.start()) + topIntro.substring(m.end());
-			m = patt.matcher(topIntro);
+			m = P_ETYM_LINE.matcher(topIntro);
 		}
 		
 		if (!temp.isEmpty()) {
@@ -955,7 +954,6 @@ public class Editor extends EditorBase {
 			String header = section.getHeader();
 			
 			header = StringUtils.strip(header, "=").trim();
-			
 			header = header.replaceAll("^[Ee]timolog[íi]a ?(\\d)?$", "Etimología $1").trim();
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceAll("^[Ll]ocuciones$", "Locuciones");
@@ -964,7 +962,6 @@ public class Editor extends EditorBase {
 			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)$", "Información adicional");
 			header = header.replaceAll("^[Vv]er tambi[ée]n$", "Véase también");
 			header = header.replaceAll("^[Vv][ée]ase tambi[ée]n$", "Véase también");
-			
 			header = header.replaceAll("^Proverbio$", "Refrán");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
@@ -1002,7 +999,6 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		
 		checkDifferences(formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
 	
@@ -1112,7 +1108,6 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		
 		checkDifferences(formatted, "duplicateReferencesSection", "más de una sección de referencias");
 	}
 	
@@ -1215,7 +1210,7 @@ public class Editor extends EditorBase {
 			}
 			
 			if (etymologySections.size() == 1) {
-				Collection<Section> etymologyChildren = etymologySections.get(0).getChildSections();
+				List<Section> etymologyChildren = etymologySections.get(0).getChildSections();
 				
 				if (etymologyChildren != null) {
 					for (Section child : etymologyChildren) {
@@ -1257,7 +1252,6 @@ public class Editor extends EditorBase {
 
 	public void removePronGrafSection() {
 		Page page = Page.store(title, this.text);
-		
 		List<Section> sections = page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?");
 		
 		if (isOldStructure || sections.isEmpty()) {
@@ -1282,7 +1276,9 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String newIntro = Stream.of(String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n"))
+			String[] lines = String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n");
+			
+			String newIntro = Stream.of(lines)
 				.sorted((line1, line2) -> -Boolean.compare(
 					line1.matches(P_AMBOX_TMPLS.toString()),
 					line2.matches(P_AMBOX_TMPLS.toString())
@@ -1470,7 +1466,10 @@ public class Editor extends EditorBase {
 		Set<String> modified = new LinkedHashSet<String>();
 		
 		for (Section section : page.getAllSections()) {
-			if (!(section instanceof LangSection) && !section.getHeader().matches("Etimología \\d+")) {
+			if (
+				!(section instanceof LangSection) &&
+				!section.getHeader().matches("Etimología \\d+")
+			) {
 				continue;
 			}
 			
@@ -1478,7 +1477,10 @@ public class Editor extends EditorBase {
 			String content = section.getIntro();
 			content = content.replaceAll("\n{2,}", "\n");
 			
-			if (langSection == null || content.isEmpty() || content.contains("pron-graf")) {
+			if (
+				langSection == null || content.isEmpty() ||
+				content.contains("pron-graf")
+			) {
 				continue;
 			}
 			
@@ -1916,8 +1918,7 @@ public class Editor extends EditorBase {
 		}
 		
 		// http://stackoverflow.com/a/2787064
-		Pattern psep = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
-		Matcher msep = psep.matcher(content);
+		Matcher msep = P_LIST_ARGS.matcher(content);
 		List<String> lterms = new ArrayList<String>();
 		
 		while (msep.find()) {
@@ -1932,7 +1933,7 @@ public class Editor extends EditorBase {
 			String param = "ParamWithoutName" + i;
 			
 			if (StringUtils.containsAny(term, '[', ']')) {
-				Matcher m2 = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)").matcher(term);
+				Matcher m2 = P_LINK.matcher(term);
 				
 				if (!m2.matches() || StringUtils.containsAny(m2.group(3), '[', ']')) {
 					return null;
@@ -1942,7 +1943,7 @@ public class Editor extends EditorBase {
 				String trail = m2.group(3);
 				
 				if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
-					Matcher m3 = Pattern.compile("(.*?) \\(([^\\)]+)\\)").matcher(trail);
+					Matcher m3 = P_PARENS.matcher(trail);
 					
 					if (!m3.matches()) {
 						return null;
@@ -1956,7 +1957,7 @@ public class Editor extends EditorBase {
 					map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
 				}
 			} else if (StringUtils.containsAny(term, '{', '}')) {
-				Matcher m2 = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?").matcher(term);
+				Matcher m2 = P_LINK_TMPLS.matcher(term);
 				
 				if (!m2.matches() || StringUtils.containsAny(m2.group(2), '[', ']')) {
 					return null;
@@ -2000,92 +2001,6 @@ public class Editor extends EditorBase {
 		return ParseUtils.templateFromMap(map);
 	}
 	
-	public void checkLangHeaderCodeCase() {
-		if (isOldStructure) {
-			return;
-		}
-		
-		Page page = Page.store(title, this.text);
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			String langCode = langSection.getLangCode(false);
-			
-			if (!langCode.equals(langSection.getLangCode(true))) {
-				langSection.setLangCode(langCode.toLowerCase());
-			}
-		}
-		
-		checkDifferences(page.toString(), "checkLangHeaderCodeCase", null);
-	}
-	
-	public void langTemplateParams() {
-		// TODO: ISO code as parameter without name
-		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
-		// TODO: {{ampliable}}, etc.
-		
-		if (isOldStructure) {
-			return;
-		}
-		
-		Page page = Page.store(title, this.text);
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			String content = langSection.toString();
-			boolean sectionModified = false;
-			
-			for (String target : LENG_PARAM_TMPLS) {
-				List<String> templates = ParseUtils.getTemplates(target, content);
-				int index = 0;
-				
-				for (String template : templates) {
-					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-					String leng = params.get("leng");
-					boolean templateModified = false;
-					
-					if (target.equals("ampliable")) {
-						String param1 = params.remove("ParamWithoutName1");
-						leng = Optional.ofNullable(leng).orElse(param1);
-					}
-					
-					if (langSection.langCodeEqualsTo("es")) {
-						// TODO: is this necessary?
-						if (leng != null) {
-							params.remove("leng");
-							templateModified = true;
-						}
-					} else if (leng == null) {
-						@SuppressWarnings("unchecked")
-						Map<String, String> tempMap = (Map<String, String>) params.clone();
-						params.clear();
-						params.put("templateName", tempMap.remove("templateName"));
-						params.put("leng", langSection.getLangCode());
-						params.putAll(tempMap);
-						templateModified = true;
-					} else if (!langSection.langCodeEqualsTo(leng)) {
-						params.put("leng", langSection.getLangCode());
-						templateModified = true;
-					}
-					
-					index = content.indexOf(template, index);
-					
-					if (templateModified) {
-						String newTemplate = ParseUtils.templateFromMap(params);
-						content = content.substring(0, index) + newTemplate + content.substring(index + template.length());
-						sectionModified = true;
-					}
-				}
-			}
-			
-			if (sectionModified) {
-				LangSection newLangSection = LangSection.parse(content);
-				langSection.replaceWith(newLangSection);
-			}
-		}
-		
-		String formatted = page.toString();
-		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
-	}
-
 	public void addMissingElements() {
 		if (isOldStructure) {
 			return;
@@ -2167,9 +2082,94 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "addMissingElements", summary);
 	}
 	
+	public void checkLangHeaderCodeCase() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			String langCode = langSection.getLangCode(false);
+			
+			if (!langCode.equals(langSection.getLangCode(true))) {
+				langSection.setLangCode(langCode.toLowerCase());
+			}
+		}
+		
+		checkDifferences(page.toString(), "checkLangHeaderCodeCase", null);
+	}
+	
+	public void langTemplateParams() {
+		// TODO: lang code as unnamed parameter ({{sustantivo}})
+		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
+		
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			String content = langSection.toString();
+			boolean sectionModified = false;
+			
+			for (String target : LENG_PARAM_TMPLS) {
+				List<String> templates = ParseUtils.getTemplates(target, content);
+				int index = 0;
+				
+				for (String template : templates) {
+					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+					String leng = params.get("leng");
+					boolean templateModified = false;
+					
+					if (target.equals("ampliable")) {
+						String param1 = params.remove("ParamWithoutName1");
+						leng = Optional.ofNullable(leng).orElse(param1);
+					}
+					
+					if (langSection.langCodeEqualsTo("es")) {
+						// TODO: is this necessary?
+						if (leng != null) {
+							params.remove("leng");
+							templateModified = true;
+						}
+					} else if (leng == null) {
+						@SuppressWarnings("unchecked")
+						Map<String, String> tempMap = (Map<String, String>) params.clone();
+						params.clear();
+						params.put("templateName", tempMap.remove("templateName"));
+						params.put("leng", langSection.getLangCode());
+						params.putAll(tempMap);
+						templateModified = true;
+					} else if (!langSection.langCodeEqualsTo(leng)) {
+						params.put("leng", langSection.getLangCode());
+						templateModified = true;
+					}
+					
+					index = content.indexOf(template, index);
+					
+					if (templateModified) {
+						String newTemplate = ParseUtils.templateFromMap(params);
+						content = content.substring(0, index) + newTemplate + content.substring(index + template.length());
+						sectionModified = true;
+					}
+				}
+			}
+			
+			if (sectionModified) {
+				LangSection newLangSection = LangSection.parse(content);
+				langSection.replaceWith(newLangSection);
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
+	}
+	
 	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
 		Matcher m = P_AMBOX_TMPLS.matcher(content);
-		StringBuffer sb = new StringBuffer();
+		StringBuffer sb = new StringBuffer(content.length());
 		boolean hadMatch = false;
 		
 		while (m.find()) {
@@ -2191,7 +2191,6 @@ public class Editor extends EditorBase {
 		}
 		
 		m.appendTail(sb);
-		
 		return sb.toString().trim();
 	}
 
