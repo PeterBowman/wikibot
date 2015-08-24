@@ -109,8 +109,8 @@ public class Editor extends EditorBase {
 		 *  multiple whitespaces are treated as single ws (" *?" -> " ?")
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
-		// TODO: review <ref> tags and headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref\b|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
+		// TODO: review headers ("=" signs)
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref[ >]|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
