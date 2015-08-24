@@ -177,7 +177,6 @@ public class Editor extends EditorBase {
 		if (
 			m.find() ||
 			!ParseUtils.getTemplates("ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
 			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
 			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
@@ -473,7 +472,8 @@ public class Editor extends EditorBase {
 		map.put("MYA-ES", "MY-ES");
 		map.put("NLD-ES", "NL-ES");
 		map.put("OFR-ES", "FRO-ES");
-		map.put("PROTOPOLINESIO-ES", "Protopolinesio-ES");
+		map.put("PROTOPOLINESIO-ES", "POZ-POL-ES");
+		map.put("Protopolinesio-ES", "POZ-POL-ES");
 		map.put("PRV-ES", "OC-ES");
 		map.put("TGL-ES", "TL-ES");
 		map.put("TOG-ES", "TO-ES");
@@ -597,7 +597,10 @@ public class Editor extends EditorBase {
 		
 		if (
 			!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+") ||
-			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty()
+			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty() ||
+			!ParseUtils.getTemplates("Chono-ES", this.text).isEmpty() ||
+			!ParseUtils.getTemplates("INE-ES", this.text).isEmpty() ||
+			!ParseUtils.getTemplates("POZ-POL-ES", this.text).isEmpty()
 		) {
 			return;
 		}
