@@ -28,6 +28,7 @@ public final class ScheduledEditor {
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	private static final int BATCH = 500;
 	private static final int SLEEP_MINS = 5;
+	private static final int THREAD_CHECK_SECS = 5;
 	private static ESWikt wb;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
@@ -151,9 +152,10 @@ public final class ScheduledEditor {
 	
 	private static boolean processPage(PageContainer pc) {
 		EditorBase editor = new Editor(pc);
+		Thread thread = new Thread(editor::check);
 		
 		try {
-			editor.check();
+			monitorThread(thread);
 		} catch (Throwable t) {
 			logError("eswikt.Editor error", pc.getTitle(), t);
 			return true;
@@ -172,6 +174,27 @@ public final class ScheduledEditor {
 		}
 		
 		return true;
+	}
+	
+	private static void monitorThread(Thread thread) {
+		// TODO: make this work, catch exceptions thrown by 'thread'
+		/*thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				re = new RuntimeException(e.getMessage());
+			}
+		});*/
+		
+		long endMs = System.currentTimeMillis() + THREAD_CHECK_SECS * 1000;
+		thread.start();
+		
+		// 'thread' will remain suspended (= true) if an exception is thrown
+		while (thread.isAlive()) {
+			if (System.currentTimeMillis() > endMs) {
+				thread.interrupt();
+				throw new RuntimeException("Thread timeout");
+			}
+		}
 	}
 	
 	private static void editEntry(PageContainer pc, EditorBase editor) throws Throwable {
