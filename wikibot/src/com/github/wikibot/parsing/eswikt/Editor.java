@@ -1434,7 +1434,7 @@ public class Editor extends EditorBase {
 		
 		// References
 		
-		if (page.getReferencesSection() == null) {
+		if (page.findSectionsWithHeader("Referencias y notas").isEmpty()) {
 			Section references = Section.create("Referencias y notas", 2);
 			references.setIntro("<references />");
 			page.setReferencesSection(references);
@@ -2442,7 +2442,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Abigail";
+		String title = "Alonso";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
