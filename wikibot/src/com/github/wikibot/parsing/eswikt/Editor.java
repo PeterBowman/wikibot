@@ -271,7 +271,7 @@ public class Editor extends EditorBase {
 	public void joinLines() {
 		String formatted = this.text;
 		
-		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref(?: |>).+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		
@@ -291,7 +291,7 @@ public class Editor extends EditorBase {
 				refRanges.stream().anyMatch(range -> range.contains(m.start()))
 			) {
 				String replacement = m.group(1).replaceFirst("^ +", "");
-				m.appendReplacement(sb, " " + replacement);
+				m.appendReplacement(sb, " " + Matcher.quoteReplacement(replacement));
 			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
 				String substring = formatted.substring(0, m.start());
 				int lastNewlineIndex = substring.lastIndexOf("\n");
@@ -322,7 +322,7 @@ public class Editor extends EditorBase {
 			String[] lines = template.split("\n");
 			
 			if (lines.length == 1) {
-				m2.appendReplacement(sb, template);
+				m2.appendReplacement(sb, Matcher.quoteReplacement(template));
 				continue;
 			}
 			
@@ -337,7 +337,7 @@ public class Editor extends EditorBase {
 				template = lines[0].trim() + lines[1].trim();
 			}
 			
-			m2.appendReplacement(sb, template);
+			m2.appendReplacement(sb, Matcher.quoteReplacement(template));
 		}
 		
 		m2.appendTail(sb);
@@ -580,7 +580,7 @@ public class Editor extends EditorBase {
 					replacement.append('\n');
 				}
 				
-				m2.appendReplacement(sb, replacement.toString());
+				m2.appendReplacement(sb, Matcher.quoteReplacement(replacement.toString()));
 			}
 			
 			lastTrailingPos = m2.end();
@@ -787,7 +787,7 @@ public class Editor extends EditorBase {
 			String name = params.get("templateName");
 			
 			if (name.equals("lengua") || name.equals("translit")) {
-				m.appendReplacement(sb, m.group());
+				m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
 				currentSectionLang = params.get("ParamWithoutName1").toLowerCase();
 				continue;
 			}
@@ -2180,7 +2180,7 @@ public class Editor extends EditorBase {
 		boolean hadMatch = false;
 		
 		while (m.find()) {
-			m.appendReplacement(sb, m.group());
+			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
 			hadMatch = true;
 		}
 		
@@ -2278,7 +2278,7 @@ public class Editor extends EditorBase {
 					}
 				}
 				
-				m.appendReplacement(sb, buff.toString());
+				m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
 			} else {
 				post = post.replaceFirst("^ *", "");
 				
@@ -2291,7 +2291,7 @@ public class Editor extends EditorBase {
 					buff.append(post);
 				}
 				
-				m.appendReplacement(sb, buff.toString());
+				m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
 			}
 		}
 		
@@ -2410,7 +2410,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "adom";
+		String title = "-s";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
