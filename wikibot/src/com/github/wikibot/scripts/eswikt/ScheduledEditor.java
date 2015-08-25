@@ -78,8 +78,8 @@ public final class ScheduledEditor {
 				e.printStackTrace();
 				sleep();
 				continue;
-			} catch (Exception e2) {
-				e2.printStackTrace();
+			} catch (Throwable t) {
+				t.printStackTrace();
 				return;
 			}
 			
@@ -154,19 +154,19 @@ public final class ScheduledEditor {
 		
 		try {
 			editor.check();
-		} catch (Exception e) {
-			logError("eswikt.Editor error", pc.getTitle(), e);
+		} catch (Throwable t) {
+			logError("eswikt.Editor error", pc.getTitle(), t);
 			return true;
 		}
 		
 		if (editor.isModified()) {
 			try {
 				editEntry(pc, editor);
-			} catch (CredentialException e1) {
-				logError("Permission denied", pc.getTitle(), e1);
+			} catch (CredentialException e) {
+				logError("Permission denied", pc.getTitle(), e);
 				return true;
-			} catch (Exception e2) {
-				logError("Edit error", pc.getTitle(), e2);
+			} catch (Throwable t) {
+				logError("Edit error", pc.getTitle(), t);
 				return false;
 			}
 		}
@@ -174,16 +174,16 @@ public final class ScheduledEditor {
 		return true;
 	}
 	
-	private static void editEntry(PageContainer pc, EditorBase editor) throws Exception {
+	private static void editEntry(PageContainer pc, EditorBase editor) throws Throwable {
 		try {
 			wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 			System.out.println(editor.getLogs());
-		} catch (IOException e1) {
+		} catch (IOException e) {
 			sleep();
 			editEntry(pc, editor);
 			return;
-		} catch (Exception e2) {
-			throw e2;
+		} catch (Throwable t) {
+			throw t;
 		}
 	}
 	
@@ -195,9 +195,9 @@ public final class ScheduledEditor {
 		} catch (InterruptedException e2) {}
 	}
 	
-	private static void logError(String errorType, String entry, Exception ex) {
+	private static void logError(String errorType, String entry, Throwable t) {
 		System.out.printf("%s in %s%n", errorType, entry);
-		ex.printStackTrace();
+		t.printStackTrace();
 		String[] lines;
 		
 		try {

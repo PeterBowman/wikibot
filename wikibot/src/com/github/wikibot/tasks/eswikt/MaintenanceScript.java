@@ -84,14 +84,21 @@ public final class MaintenanceScript {
 		for (PageContainer pc : pages) {
 			String title = pc.getTitle();
 			EditorBase editor = new Editor(pc);
-			editor.check();
+			
+			try {
+				editor.check();
+			} catch (Throwable t) {
+				t.printStackTrace();
+				errors.add(title);
+				continue;
+			}
 			
 			if (editor.isModified()) {
 				try {
 					wb.edit(title, editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 					System.out.println(editor.getLogs());
-				} catch (Exception e) {
-					e.printStackTrace();
+				} catch (Throwable t) {
+					t.printStackTrace();
 					errors.add(title);
 				}
 			}

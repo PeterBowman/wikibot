@@ -190,6 +190,10 @@ public class Editor extends EditorBase {
 	
 	@Override
 	public void check() {
+		if (!failsafeCheck()) {
+			throw new Error("eswikt.Editor.failsafeCheck");
+		}
+		
 		removeComments();
 		joinLines();
 		//minorSanitizing();
@@ -214,6 +218,29 @@ public class Editor extends EditorBase {
 		manageClearElements();
 		strongWhitespaces();
 		weakWhitespaces();
+	}
+	
+	private boolean failsafeCheck() {
+		Page page = Page.store(title, this.text);
+		
+		if (unpairedCurlyBrackets(page.getIntro())) {
+			return false;
+		}
+		
+		for (Section section : page.getAllSections()) {
+			if (unpairedCurlyBrackets(section.toString())) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	private boolean unpairedCurlyBrackets(String text) {
+		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		int left = StringUtils.countMatches(text, "{{");
+		int right = StringUtils.countMatches(text, "}}");
+		return left != right;
 	}
 	
 	public void removeComments() {
@@ -2415,7 +2442,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "adam";
+		String title = "Abigail";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
