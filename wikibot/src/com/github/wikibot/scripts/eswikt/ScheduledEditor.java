@@ -141,7 +141,7 @@ public final class ScheduledEditor {
 			return false;
 		}
 		
-		return !p.hasSectionWithHeader("^[Ff]orma .*");
+		return !p.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
 	private static void processPage(PageContainer pc) {
