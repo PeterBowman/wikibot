@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
 import org.wikiutils.IOUtils;
@@ -26,6 +27,7 @@ public final class ScheduledEditor {
 	private static final String LAST_ENTRY = LOCATION + "last.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	private static final int BATCH = 500;
+	private static final int SLEEP_MINS = 5;
 	private static ESWikt wb;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
@@ -61,7 +63,7 @@ public final class ScheduledEditor {
 		
 		Stream.of(pages)
 			.filter(ScheduledEditor::filterPages)
-			.forEach(ScheduledEditor::processPage);
+			.allMatch(ScheduledEditor::processPage);
 	}
 	
 	private static void processAllpages() {
@@ -85,10 +87,14 @@ public final class ScheduledEditor {
 				break;
 			}
 			
-			Stream.of(pages)
+			boolean result = Stream.of(pages)
 				.limit(pages.length - 1)
 				.filter(ScheduledEditor::filterPages)
-				.forEach(ScheduledEditor::processPage);
+				.allMatch(ScheduledEditor::processPage);
+			
+			if (!result) {
+				return;
+			}
 			
 			lastEntry = pages[pages.length - 1].getTitle();
 			saveLastEntry(lastEntry);
@@ -136,59 +142,62 @@ public final class ScheduledEditor {
 		try {
 			p = Page.wrap(pc);
 		} catch (Exception e) {
-			logError("Page wrap error", pc.getTitle());
-			e.printStackTrace();
+			logError("Page wrap error", pc.getTitle(), e);
 			return false;
 		}
 		
 		return !p.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
-	private static void processPage(PageContainer pc) {
+	private static boolean processPage(PageContainer pc) {
 		EditorBase editor = new Editor(pc);
 		
 		try {
 			editor.check();
 		} catch (Exception e) {
-			logError("eswikt.Editor error", pc.getTitle());
-			e.printStackTrace();
-			return;
+			logError("eswikt.Editor error", pc.getTitle(), e);
+			return true;
 		}
 		
 		if (editor.isModified()) {
 			try {
 				editEntry(pc, editor);
-			} catch (Exception e) {
-				logError("Edit error", pc.getTitle());
-				return;
+			} catch (CredentialException e1) {
+				logError("Permission denied", pc.getTitle(), e1);
+				return true;
+			} catch (Exception e2) {
+				logError("Edit error", pc.getTitle(), e2);
+				return false;
 			}
-			
-			System.out.println(editor.getLogs());
 		}
+		
+		return true;
 	}
 	
 	private static void editEntry(PageContainer pc, EditorBase editor) throws Exception {
 		try {
 			wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
+			System.out.println(editor.getLogs());
 		} catch (IOException e1) {
-			e1.printStackTrace();
 			sleep();
 			editEntry(pc, editor);
 			return;
 		} catch (Exception e2) {
-			e2.printStackTrace();
 			throw e2;
 		}
 	}
 	
 	private static void sleep() {
+		System.out.printf("Sleeping... (%d minutes)%n", SLEEP_MINS);
+		
 		try {
-			Thread.sleep(1000 * 60 * 5);
+			Thread.sleep(1000 * 60 * SLEEP_MINS);
 		} catch (InterruptedException e2) {}
 	}
 	
-	private static void logError(String errorType, String entry) {
+	private static void logError(String errorType, String entry, Exception ex) {
 		System.out.printf("%s in %s%n", errorType, entry);
+		ex.printStackTrace();
 		String[] lines;
 		
 		try {
