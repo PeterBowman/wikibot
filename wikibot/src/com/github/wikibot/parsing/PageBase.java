@@ -149,10 +149,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		List<String> sections = new ArrayList<String>();
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			

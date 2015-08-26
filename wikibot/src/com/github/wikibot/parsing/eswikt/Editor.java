@@ -313,17 +313,11 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
-			if (
-				!refRanges.isEmpty() &&
-				refRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(refRanges, m.start())) {
 				String replacement = m.group(1).replaceFirst("^ +", "");
 				m.appendReplacement(sb, " " + Matcher.quoteReplacement(replacement));
 			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
@@ -345,10 +339,7 @@ public class Editor extends EditorBase {
 		Matcher m2 = P_TEMPLATE.matcher(formatted);
 		
 		while (m2.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m2.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m2.start())) {
 				continue;
 			}
 			
@@ -534,10 +525,7 @@ public class Editor extends EditorBase {
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 			
 			while (m.find()) {
-				if (
-					!ignoredRanges.isEmpty() &&
-					ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-				) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
 					continue;
 				}
 				
@@ -572,10 +560,7 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
@@ -809,16 +794,13 @@ public class Editor extends EditorBase {
 	}
 
 	private String replaceOldStructureTemplates(String text) {
-		List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(text);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length() + 10);
 		String currentSectionLang = "";
 		
 		while (m.find()) {
-			if (
-				!ignoredRegions.isEmpty() &&
-				ignoredRegions.stream().anyMatch(range -> range.contains(m.start(2)))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
 				continue;
 			}
 			
@@ -932,17 +914,12 @@ public class Editor extends EditorBase {
 		// Move etymology template to the etymology section
 		
 		String topIntro = topSection.getIntro();
-		List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(topIntro);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(topIntro);
 		Matcher m = P_ETYM_LINE.matcher(topIntro);
 		List<String> temp = new ArrayList<String>();
 		
 		while (m.find()) {
-			int start = m.start();
-			
-			if (
-				!ignoredRegions.isEmpty() &&
-				ignoredRegions.stream().anyMatch(range -> range.contains(start))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
@@ -985,10 +962,7 @@ public class Editor extends EditorBase {
 		for (; lineNumber < lines.length; lineNumber++) {
 			String line = lines[lineNumber];
 			
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(index.intValue()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
 				index.add(line.length() + 1);
 				continue;
 			}
@@ -1093,13 +1067,10 @@ public class Editor extends EditorBase {
 			Pattern patt = Pattern.compile("\\{\\{ *?" + templateName + " *?\\}\\}");
 			Matcher m = patt.matcher(intro);
 			StringBuffer sb = new StringBuffer(intro.length());
-			List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(intro);
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 			
 			while (m.find()) {
-				if (
-					!ignoredRegions.isEmpty() &&
-					ignoredRegions.stream().anyMatch(range -> range.contains(m.start()))
-				) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
 					continue;
 				}
 				
@@ -1569,15 +1540,12 @@ public class Editor extends EditorBase {
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
 			List<String> amboxTemplates = new ArrayList<String>();
-			List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(content);
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
 			MutableInt index = new MutableInt(0);
 			
 			linesLoop:
 			for (String line : content.split("\n")) {
-				if (
-					!ignoredRegions.isEmpty() &&
-					ignoredRegions.stream().anyMatch(range -> range.contains(index.intValue()))
-				) {
+				if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
 					index.add(line.length() + 1);
 					editedLines.add(line);
 					continue;
@@ -1954,10 +1922,7 @@ public class Editor extends EditorBase {
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(index.intValue()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
 				index.add(lines[i].length() + 1);
 				continue;
 			}
@@ -2232,10 +2197,7 @@ public class Editor extends EditorBase {
 				boolean templateModified = false;
 				
 				while (m.find()) {
-					if (
-						!ignoredRanges.isEmpty() &&
-						ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-					) {
+					if (Utils.containedInRanges(ignoredRanges, m.start())) {
 						continue;
 					}
 					
@@ -2376,10 +2338,7 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
@@ -2425,10 +2384,7 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(intro.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			

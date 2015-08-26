@@ -113,4 +113,18 @@ public final class Utils {
 			}
 		}
 	}
+	
+	public static boolean containedInRanges(List<Range<Integer>> ignoredRanges, int index) {
+		if (ignoredRanges.isEmpty()) {
+			return false;
+		}
+		
+		for (Range<Integer> range : ignoredRanges) {
+			if (range.contains(index)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 }
