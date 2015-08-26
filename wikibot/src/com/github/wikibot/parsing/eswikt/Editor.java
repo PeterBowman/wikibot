@@ -1528,9 +1528,22 @@ public class Editor extends EditorBase {
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
 			List<String> amboxTemplates = new ArrayList<String>();
+			List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(content);
+			MutableInt index = new MutableInt(0);
 			
 			linesLoop:
 			for (String line : content.split("\n")) {
+				if (
+					!ignoredRegions.isEmpty() &&
+					ignoredRegions.stream().anyMatch(range -> range.contains(index.intValue()))
+				) {
+					index.add(line.length() + 1);
+					editedLines.add(line);
+					continue;
+				}
+				
+				index.add(line.length() + 1);
+				
 				if (
 					line.contains("{{etimología") ||
 					P_IMAGES.matcher(line).matches() ||
