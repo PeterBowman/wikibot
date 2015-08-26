@@ -2358,6 +2358,14 @@ public class Editor extends EditorBase {
 			page.setTrailingNewlines(1);
 		}
 		
+		if (
+			page.getTrailingNewlines() == 1 &&
+			!page.getIntro().isEmpty() &&
+			ParseUtils.removeCommentsAndNoWikiText(page.getIntro()).isEmpty()
+		) {
+			page.setTrailingNewlines(0);
+		}
+		
 		for (Section section : page.getAllSections()) {
 			if (section.getLeadingNewlines() > 1) {
 				section.setLeadingNewlines(1);
@@ -2392,6 +2400,7 @@ public class Editor extends EditorBase {
 		
 		if (
 			!intro.isEmpty() && page.getTrailingNewlines() == 0 &&
+			!ParseUtils.removeCommentsAndNoWikiText(intro).isEmpty() &&
 			!(
 				intro.split("\n").length == 1 &&
 				intro.matches("^\\{\\{[Dd]esambiguación\\|?\\}\\}.*")
