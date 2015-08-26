@@ -57,6 +57,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
+	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -2257,8 +2258,6 @@ public class Editor extends EditorBase {
 		String initial = removeBrTags(this.text);
 		Page page = Page.store(title, initial);
 		
-		final String templateName = "clear";
-		final String template = String.format("{{%s}}", templateName);
 		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
 		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
 		
@@ -2269,29 +2268,32 @@ public class Editor extends EditorBase {
 				break;
 			}
 			
+			String sectionIntro = section.getIntro();
+			String sanitizedNextSectionIntro = ParseUtils.removeCommentsAndNoWikiText(nextSection.getIntro());
+			
 			if (
-				StringUtils.startsWithAny(nextSection.getIntro(), arr) ||
+				StringUtils.startsWithAny(sanitizedNextSectionIntro, arr) ||
 				(
 					nextSection.getHeader().matches("Etimología \\d+") &&
 					!nextSection.getHeader().equals("Etimología 1")
 				)
 			) {
-				List<String> templates = ParseUtils.getTemplates(templateName, section.getIntro());
-				String intro = section.getIntro();
+				List<String> templates = ParseUtils.getTemplates("clear", sectionIntro);
+				String sanitizedSectionIntro = ParseUtils.removeCommentsAndNoWikiText(sectionIntro);
 				
-				if (templates.size() == 1 && intro.endsWith(template)) {
+				if (templates.size() == 1 && sanitizedSectionIntro.endsWith("{{clear}}")) {
 					continue;
 				}
 				
 				if (!templates.isEmpty()) {
-					intro = removeClearTemplates(templateName, section);
+					sectionIntro = removeClearTemplates(section);
 				}
 				
-				intro += "\n\n" + template;
-				section.setIntro(intro);
-			} else if (section.getIntro().contains(templateName)) {
+				sectionIntro += "\n\n{{clear}}";
+				section.setIntro(sectionIntro);
+			} else if (sectionIntro.contains("clear")) {
 				// TODO: sanitize templates, then use variable "template" instead
-				removeClearTemplates(templateName, section);
+				removeClearTemplates(section);
 			}
 		}
 		
@@ -2347,10 +2349,27 @@ public class Editor extends EditorBase {
 		return sb.toString();
 	}
 	
-	private String removeClearTemplates(final String templateName, Section section) {
+	private String removeClearTemplates(Section section) {
 		String intro = section.getIntro();
-		intro = intro.replaceAll("\n?\\{\\{ *?" + templateName + " *?\\}\\}\n?", "\n\n");
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+		Matcher m = P_CLEAR_TMPLS.matcher(intro);
+		StringBuffer sb = new StringBuffer(intro.length());
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, "\n\n");
+		}
+		
+		m.appendTail(sb);
+		intro = sb.toString();
 		section.setIntro(intro);
+		
 		return intro;
 	}
 	
