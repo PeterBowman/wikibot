@@ -2125,6 +2125,33 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "addMissingElements", summary);
 	}
 	
+	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
+		Matcher m = P_AMBOX_TMPLS.matcher(content);
+		StringBuffer sb = new StringBuffer(content.length());
+		boolean hadMatch = false;
+		
+		while (m.find()) {
+			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
+			hadMatch = true;
+		}
+		
+		sb.append("\n");
+		String lengParam = "";
+		
+		if (!langCode.equals("es")) {
+			lengParam = String.format("|leng=%s", langCode);
+		}
+		
+		sb.append(String.format(templateFormat, templateName + lengParam));
+		
+		if (!hadMatch) {
+			sb.append("\n");
+		}
+		
+		m.appendTail(sb);
+		return sb.toString().trim();
+	}
+	
 	public void checkLangHeaderCodeCase() {
 		if (isOldStructure) {
 			return;
@@ -2210,33 +2237,6 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
 	}
 	
-	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
-		Matcher m = P_AMBOX_TMPLS.matcher(content);
-		StringBuffer sb = new StringBuffer(content.length());
-		boolean hadMatch = false;
-		
-		while (m.find()) {
-			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
-			hadMatch = true;
-		}
-		
-		sb.append("\n");
-		String lengParam = "";
-		
-		if (!langCode.equals("es")) {
-			lengParam = String.format("|leng=%s", langCode);
-		}
-		
-		sb.append(String.format(templateFormat, templateName + lengParam));
-		
-		if (!hadMatch) {
-			sb.append("\n");
-		}
-		
-		m.appendTail(sb);
-		return sb.toString().trim();
-	}
-
 	public void deleteEmptySections() {
 		// TODO
 	}
