@@ -27,6 +27,7 @@ import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -1892,9 +1893,21 @@ public class Editor extends EditorBase {
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		Set<String> modified = new HashSet<String>();
 		String[] lines = this.text.split("\n", -1);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(this.text);
+		MutableInt index = new MutableInt(0);
 		
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
+			
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(index.intValue()))
+			) {
+				index.add(lines[i].length() + 1);
+				continue;
+			}
+			
+			index.add(lines[i].length() + 1);
 			
 			if (line.isEmpty()) {
 				continue;
