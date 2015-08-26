@@ -1754,7 +1754,10 @@ public class Editor extends EditorBase {
 							(
 								params.containsKey("ParamWithoutName2") &&
 								!params.get("ParamWithoutName2").isEmpty() &&
-								!StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio")
+								!(
+									StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio") ||
+									params.get("ParamWithoutName2").equalsIgnoreCase(title)
+								)
 							)
 						) {
 							editedLines.add(origLine);
@@ -2442,7 +2445,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Alonso";
+		String title = "Algieria";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
