@@ -916,7 +916,7 @@ public class Editor extends EditorBase {
 	}
 
 	private void insertStructureTemplate(Page page) {
-		String templateName = "estructura";
+		final String templateName = "estructura";
 		
 		if (!ParseUtils.getTemplates(templateName, this.text).isEmpty()) {
 			return;
@@ -932,10 +932,20 @@ public class Editor extends EditorBase {
 		// Move etymology template to the etymology section
 		
 		String topIntro = topSection.getIntro();
+		List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(topIntro);
 		Matcher m = P_ETYM_LINE.matcher(topIntro);
 		List<String> temp = new ArrayList<String>();
 		
 		while (m.find()) {
+			int start = m.start();
+			
+			if (
+				!ignoredRegions.isEmpty() &&
+				ignoredRegions.stream().anyMatch(range -> range.contains(start))
+			) {
+				continue;
+			}
+			
 			temp.add(m.group(1).trim());
 			topIntro = topIntro.substring(0, m.start()) + topIntro.substring(m.end());
 			m = P_ETYM_LINE.matcher(topIntro);
@@ -967,11 +977,23 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(etymologyIntro);
 		int lineNumber = 0;
+		MutableInt index = new MutableInt(0);
 		boolean found = false;
 		
 		for (; lineNumber < lines.length; lineNumber++) {
 			String line = lines[lineNumber];
+			
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(index.intValue()))
+			) {
+				index.add(line.length() + 1);
+				continue;
+			}
+			
+			index.add(line.length() + 1);
 			
 			if (
 				line.matches(".*?\\{\\{[eE]timología.+") ||
@@ -2524,7 +2546,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Algieria";
+		String title = "Aliante";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
