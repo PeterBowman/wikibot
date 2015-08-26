@@ -1057,7 +1057,7 @@ public class Editor extends EditorBase {
 		while (iterator.hasPrevious()) {
 			Section section = iterator.previous();
 			String intro = section.getIntro();
-			intro = intro.replace("{{tit ref}}", String.format("{{%s}}", template));
+			intro = intro.replace("{{tit ref}}", template);
 			int index = intro.indexOf(template);
 			
 			if (index != -1) {
