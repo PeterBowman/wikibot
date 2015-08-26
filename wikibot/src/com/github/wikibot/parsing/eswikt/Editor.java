@@ -809,11 +809,19 @@ public class Editor extends EditorBase {
 	}
 
 	private String replaceOldStructureTemplates(String text) {
+		List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(text);
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length() + 10);
 		String currentSectionLang = "";
 		
 		while (m.find()) {
+			if (
+				!ignoredRegions.isEmpty() &&
+				ignoredRegions.stream().anyMatch(range -> range.contains(m.start(2)))
+			) {
+				continue;
+			}
+			
 			String pre = m.group(1);
 			String template = m.group(2);
 			String post = m.group(3);
