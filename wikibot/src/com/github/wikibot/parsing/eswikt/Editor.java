@@ -97,6 +97,8 @@ public class Editor extends EditorBase {
 	
 	private boolean isOldStructure;
 	
+	private boolean hasFlexiveFormHeaders;
+	
 	static {
 		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
 		
@@ -186,6 +188,9 @@ public class Editor extends EditorBase {
 		} else {
 			isOldStructure = false;
 		}
+		
+		Page page = Page.store(title, this.text);
+		hasFlexiveFormHeaders = page.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
 	@Override
@@ -252,7 +257,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?A[ñn]ádela con el siguiente patrón.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?Añade la etimología con el siguiente patrón.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?y/o femenino\\|es\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o intransitivo\\|es\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .*?-->", "");
@@ -628,7 +633,7 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, this.text);
 		
 		if (
-			!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+") ||
+			!isOldStructure || hasFlexiveFormHeaders ||
 			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty() ||
 			!ParseUtils.getTemplates("Chono-ES", this.text).isEmpty() ||
 			!ParseUtils.getTemplates("INE-ES", this.text).isEmpty() ||
@@ -1198,7 +1203,7 @@ public class Editor extends EditorBase {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura
 		
-		if (isOldStructure) {
+		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
 		}
 		
@@ -1347,9 +1352,8 @@ public class Editor extends EditorBase {
 		Page page = Page.store(title, this.text);
 		
 		if (
-			isOldStructure || page.getAllSections().isEmpty() ||
-			// TODO: review
-			!page.findSectionsWithHeader("(?i)^(Forma|\\{\\{forma) .+").isEmpty()
+			isOldStructure || hasFlexiveFormHeaders ||
+			page.getAllSections().isEmpty()
 		) {
 			return;
 		}
@@ -1455,7 +1459,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void sortSubSections() {
-		if (isOldStructure) {
+		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
 		}
 		
@@ -1476,15 +1480,12 @@ public class Editor extends EditorBase {
 		}
 		
 		Page page = Page.store(title, this.text);
+		List<Section> flexiveFormSections = page.findSectionsWithHeader("^([Ff]orma|\\{\\{forma) .+");
 		
-		for (Section section : page.getAllSections()) {
+		for (Section section : flexiveFormSections) {
 			String intro = section.getIntro();
 			
-			if (
-				section.getLangSectionParent() == null ||
-				!section.getHeader().matches("(?i)^(Forma|\\{\\{forma) .+") || 
-				!intro.contains("{{inflect.")
-			) {
+			if (!intro.contains("{{inflect.")) {
 				continue;
 			}
 			
@@ -2445,7 +2446,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Algieria";
+		String title = "fallo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
