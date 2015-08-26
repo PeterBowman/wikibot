@@ -127,4 +127,25 @@ public final class Utils {
 		
 		return false;
 	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
+		List<Range<Integer>> ignoredRanges = getStandardIgnoredRanges(text);
+		return replaceWithIgnoredranges(text, regex, replacement, ignoredRanges);
+	}
+	
+	public static String replaceWithIgnoredranges(String text, String regex, String replacement, List<Range<Integer>> ignoredRanges) {
+		Matcher m = Pattern.compile(regex).matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			if (containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, replacement);
+		}
+		
+		m.appendTail(sb);
+		return sb.toString();
+	}
 }

@@ -1502,7 +1502,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			intro = intro.replace("\\{\\{inflect\\..+?\\}\\}", "");
+			intro = Utils.replaceWithStandardIgnoredRanges(intro, "\\{\\{inflect\\..+?\\}\\}", "");
 			section.setIntro(intro);
 		}
 		
@@ -1528,7 +1528,7 @@ public class Editor extends EditorBase {
 			
 			LangSection langSection = section.getLangSectionParent();
 			String content = section.getIntro();
-			content = content.replaceAll("\n{2,}", "\n");
+			content = Utils.replaceWithStandardIgnoredRanges(content, "\n{2,}", "\n");
 			
 			if (
 				langSection == null || content.isEmpty() ||
@@ -2401,9 +2401,11 @@ public class Editor extends EditorBase {
 	public void strongWhitespaces() {
 		// TODO: don't collide with removeComments() 
 		String initial = this.text;
-		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
-		initial = initial.replaceAll(" &nbsp;", " ");
-		initial = initial.replaceAll("&nbsp; ", " ");
+		
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, "( |&nbsp;)*\n", "\n");
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, " &nbsp;", " ");
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, "&nbsp; ", " ");
+		
 		Page page = Page.store(title, initial);
 		
 		if (page.getLeadingNewlines() > 1) {
@@ -2425,10 +2427,11 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		formatted = formatted.replaceAll("\n{3,}", "\n\n");
-		formatted = formatted.replaceAll("\n\n<!--", "\n<!--");
+		
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n{3,}", "\n\n");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n\n<!--", "\n<!--");
 		// TODO: trim whitespaces inside <ref>
-		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}|\\)) <ref(>| )", "$1<ref$2");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(\\.|\\]\\]|\\}\\}|\\)) <ref(>| )", "$1<ref$2");
 		
 		checkDifferences(formatted, "strongWhitespaces", "espacios en blanco");
 	}
@@ -2489,11 +2492,12 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		formatted = formatted.replaceAll("<references *?/ *?>", "<references />");
-		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
-		formatted = formatted.replace(" </ref>", "</ref>");
-		formatted = formatted.replaceAll("([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
-		formatted = formatted.replaceAll("\n *?\\}\\}", "\n}}");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "<references *?/ *?>", "<references />");
+		// TODO: might be a strong whitespace
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?m)^ +?(\\{\\{.+)", "$1");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, " </ref>", "</ref>");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "([^\n])\n{0,1}\\{\\{clear\\}\\}", "<references />$1\n\n{{clear}}");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n *?\\}\\}", "\n}}");
 		
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
