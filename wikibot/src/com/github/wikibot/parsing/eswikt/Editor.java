@@ -134,7 +134,7 @@ public class Editor extends EditorBase {
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
-			"título referencias", "tit ref", "pron-graf", "imagen"
+			"título referencias", "pron-graf", "imagen"
 		);
 		
 		final List<String> bothSidesSplitterList = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
@@ -408,6 +408,7 @@ public class Editor extends EditorBase {
 		map.put("ucf", "plm");
 		map.put("Anagramas", "anagrama");
 		map.put("Parónimos", "parónimo");
+		map.put("tit ref", "título referencias");
 		
 		map.put("DRAE1914", "DLC1914");
 		map.put("DUE", "MaríaMoliner");
@@ -1049,7 +1050,7 @@ public class Editor extends EditorBase {
 		}
 		
 		Page page = Page.store(title, this.text);
-		String template = "{{título referencias}}";
+		final String templateName = "título referencias";
 		List<String> contents = new ArrayList<String>();
 		boolean found = false;
 		
@@ -1059,19 +1060,29 @@ public class Editor extends EditorBase {
 		while (iterator.hasPrevious()) {
 			Section section = iterator.previous();
 			String intro = section.getIntro();
-			intro = intro.replace("{{tit ref}}", String.format("{{%s}}", template));
-			int index = intro.indexOf(template);
+			Pattern patt = Pattern.compile("\\{\\{ *?" + templateName + " *?\\}\\}");
+			Matcher m = patt.matcher(intro);
+			StringBuffer sb = new StringBuffer(intro.length());
+			List<Range<Integer>> ignoredRegions = Utils.getStandardIgnoredRanges(intro);
 			
-			if (index != -1) {
+			while (m.find()) {
+				if (
+					!ignoredRegions.isEmpty() &&
+					ignoredRegions.stream().anyMatch(range -> range.contains(m.start()))
+				) {
+					continue;
+				}
+				
 				found = true;
-				String content = intro.substring(index + template.length()).trim();
+				String content = intro.substring(m.end()).trim();
 				
 				if (!content.isEmpty()) {
 					contents.add(content);
 				}
 				
-				intro = intro.substring(0, index);
-				section.setIntro(intro);
+				m.appendReplacement(sb, "");
+				section.setIntro(sb.toString());
+				break;
 			}
 		}
 		
