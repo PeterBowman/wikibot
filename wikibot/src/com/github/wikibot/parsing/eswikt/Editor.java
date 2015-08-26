@@ -2170,16 +2170,26 @@ public class Editor extends EditorBase {
 			String content = langSection.toString();
 			boolean sectionModified = false;
 			
-			for (String target : LENG_PARAM_TMPLS) {
-				List<String> templates = ParseUtils.getTemplates(target, content);
-				int index = 0;
+			for (String template : LENG_PARAM_TMPLS) {
+				Pattern patt = Pattern.compile("\\{\\{ *?" + template + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
+				Matcher m = patt.matcher(content);
+				StringBuffer sb = new StringBuffer(content.length() + 20);
+				List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
+				boolean templateModified = false;
 				
-				for (String template : templates) {
-					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-					String leng = params.get("leng");
-					boolean templateModified = false;
+				while (m.find()) {
+					if (
+						!ignoredRanges.isEmpty() &&
+						ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+					) {
+						continue;
+					}
 					
-					if (target.equals("ampliable")) {
+					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
+					String leng = params.get("leng");
+					boolean occurrenceModified = false;
+					
+					if (template.equals("ampliable")) {
 						String param1 = params.remove("ParamWithoutName1");
 						leng = Optional.ofNullable(leng).orElse(param1);
 					}
@@ -2188,7 +2198,7 @@ public class Editor extends EditorBase {
 						// TODO: is this necessary?
 						if (leng != null) {
 							params.remove("leng");
-							templateModified = true;
+							occurrenceModified = true;
 						}
 					} else if (leng == null) {
 						@SuppressWarnings("unchecked")
@@ -2197,19 +2207,24 @@ public class Editor extends EditorBase {
 						params.put("templateName", tempMap.remove("templateName"));
 						params.put("leng", langSection.getLangCode());
 						params.putAll(tempMap);
-						templateModified = true;
+						occurrenceModified = true;
 					} else if (!langSection.langCodeEqualsTo(leng)) {
 						params.put("leng", langSection.getLangCode());
+						occurrenceModified = true;
+					}
+					
+					if (occurrenceModified) {
+						String newTemplate = ParseUtils.templateFromMap(params);
+						newTemplate = Matcher.quoteReplacement(newTemplate);
+						m.appendReplacement(sb, newTemplate);
 						templateModified = true;
 					}
-					
-					index = content.indexOf(template, index);
-					
-					if (templateModified) {
-						String newTemplate = ParseUtils.templateFromMap(params);
-						content = content.substring(0, index) + newTemplate + content.substring(index + template.length());
-						sectionModified = true;
-					}
+				}
+				
+				if (templateModified) {
+					m.appendTail(sb);
+					content = sb.toString();
+					sectionModified = true;
 				}
 			}
 			
