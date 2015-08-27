@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -52,7 +51,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_ETYM_LINE = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
+	private static final Pattern P_ETYM_TMPL = Pattern.compile("\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
@@ -915,7 +914,8 @@ public class Editor extends EditorBase {
 		
 		String topIntro = topSection.getIntro();
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(topIntro);
-		Matcher m = P_ETYM_LINE.matcher(topIntro);
+		Matcher m = P_ETYM_TMPL.matcher(topIntro);
+		StringBuffer sb = new StringBuffer(topIntro.length());
 		List<String> temp = new ArrayList<String>();
 		
 		while (m.find()) {
@@ -923,15 +923,16 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			temp.add(m.group(1).trim());
-			topIntro = topIntro.substring(0, m.start()) + topIntro.substring(m.end());
-			m = P_ETYM_LINE.matcher(topIntro);
+			String template = m.group();
+			temp.add(template);
+			m.appendReplacement(sb, "");
 		}
 		
 		if (!temp.isEmpty()) {
-			topSection.setIntro(topIntro);
+			m.appendTail(sb);
+			topSection.setIntro(sb.toString());
 			String etymologyIntro = etymologySection.getIntro();
-			etymologyIntro += String.join("\n\n", temp);
+			etymologyIntro += "\n" + String.join("\n\n", temp);
 			etymologySection.setIntro(etymologyIntro);
 		}
 	}
@@ -955,37 +956,25 @@ public class Editor extends EditorBase {
 		}
 		
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(etymologyIntro);
-		int lineNumber = 0;
-		MutableInt index = new MutableInt(0);
-		boolean found = false;
+		Matcher m = P_ETYM_TMPL.matcher(etymologyIntro);
+		StringBuffer sb = new StringBuffer(etymologyIntro.length());
+		List<String> temp = new ArrayList<String>();
 		
-		for (; lineNumber < lines.length; lineNumber++) {
-			String line = lines[lineNumber];
-			
-			if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
-				index.add(line.length() + 1);
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
-			index.add(line.length() + 1);
-			
-			if (
-				line.matches(".*?\\{\\{[eE]timología.+") ||
-				line.matches(":*?\\* *?'{0,3}[eE]timolog[íi]a:'{0,3}.+")
-			) {
-				found = true;
-				break;
-			}
+			String template = m.group();
+			temp.add(template);
+			m.appendReplacement(sb, "");
 		}
 		
-		if (found && lineNumber != lines.length - 1) {
-			String line = lines[lineNumber];
-			lines[lineNumber] = null;
-			List<String> list = Stream.of(lines)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-			list.add(line);
-			etymologySection.setIntro(String.join("\n", list));
+		if (!temp.isEmpty()) {
+			m.appendTail(sb);
+			etymologyIntro = sb.toString().trim();
+			etymologyIntro += "\n" + String.join("\n\n", temp);
+			etymologySection.setIntro(etymologyIntro);
 		}
 	}
 	
