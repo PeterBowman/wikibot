@@ -2244,11 +2244,16 @@ public class Editor extends EditorBase {
 	}
 	
 	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
 		Matcher m = P_AMBOX_TMPLS.matcher(content);
 		StringBuffer sb = new StringBuffer(content.length());
 		boolean hadMatch = false;
 		
 		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
 			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
 			hadMatch = true;
 		}
