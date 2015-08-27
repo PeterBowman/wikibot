@@ -228,12 +228,18 @@ public class Editor extends EditorBase {
 	private boolean failsafeCheck() {
 		Page page = Page.store(title, this.text);
 		
-		if (unpairedCurlyBrackets(page.getIntro())) {
+		if (
+			unpairedCurlyBrackets(page.getIntro()) ||
+			unpairedSquareBrackets(page.getIntro())
+		) {
 			return false;
 		}
 		
 		for (Section section : page.getAllSections()) {
-			if (unpairedCurlyBrackets(section.toString())) {
+			if (
+				unpairedCurlyBrackets(section.toString()) ||
+				unpairedSquareBrackets(section.toString())
+			) {
 				return false;
 			}
 		}
@@ -245,6 +251,13 @@ public class Editor extends EditorBase {
 		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		int left = StringUtils.countMatches(text, "{{");
 		int right = StringUtils.countMatches(text, "}}");
+		return left != right;
+	}
+	
+	private boolean unpairedSquareBrackets(String text) {
+		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		int left = StringUtils.countMatches(text, "[[");
+		int right = StringUtils.countMatches(text, "]]");
 		return left != right;
 	}
 	
