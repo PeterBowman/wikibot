@@ -159,7 +159,7 @@ public class Editor extends EditorBase {
 		
 		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
-		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
 		STANDARD_HEADERS = new ArrayList<String>(Section.HEAD_SECTIONS.size() + Section.BOTTOM_SECTIONS.size());
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
@@ -216,9 +216,9 @@ public class Editor extends EditorBase {
 		removeTemplatePrefixes();
 		sanitizeTemplates();
 		joinLines();
-		//minorSanitizing();
 		normalizeTemplateNames();
 		splitLines();
+		minorSanitizing();
 		transformToNewStructure();
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
@@ -467,7 +467,7 @@ public class Editor extends EditorBase {
 		formatted = sb.toString();
 		
 		String summary = makeSummary
-			? "\\n[:;*#]{{ → \\n{{"
+			? "\"\\n[:;*#]{{\" → \"\\n{{\""
 			: null;
 		
 		checkDifferences(formatted, "sanitizeTemplates", summary);
@@ -511,12 +511,6 @@ public class Editor extends EditorBase {
 		formatted = sb.toString();
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
-	}
-	
-	public void minorSanitizing() {
-		// TODO: perrichines (comment close tag)
-		// TODO: trailing period after {{etimología}} and {{pron-graf}}
-		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 	}
 	
 	public void normalizeTemplateNames() {
@@ -753,7 +747,72 @@ public class Editor extends EditorBase {
 		
 		checkDifferences(formatted, "splitLines", "dividiendo líneas");
 	}
-
+	
+	public void minorSanitizing() {
+		// TODO: perrichines (comment close tag)
+		// TODO: trailing period after {{etimología}} and {{pron-graf}}
+		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
+		
+		String formatted = this.text;
+		final String preferredFileNSAlias = "Archivo";
+		Set<String> setFileAlias = new HashSet<String>();
+		Set<String> summarySet = new LinkedHashSet<String>();
+		
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_IMAGES.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			String file = m.group();
+			String alias = m.group(1);
+			
+			if (!alias.equals(preferredFileNSAlias)) {
+				setFileAlias.add(alias + ":");
+			}
+			
+			file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
+				+ preferredFileNSAlias
+				+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(file));
+		}
+		
+		if (!setFileAlias.isEmpty()) {
+			m.appendTail(sb);
+			formatted = sb.toString();
+			String temp = String.format("%s → %s", String.join(", ", setFileAlias), preferredFileNSAlias);
+			summarySet.add(temp);
+		}
+		
+		String temp = formatted;
+		
+		// TODO: detect comment tags
+		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
+		
+		temp = Utils.replaceWithStandardIgnoredRanges(temp, "(?<=[^\n])\n+?[:;*#]+\n", "\n\n");
+		temp = Utils.replaceWithStandardIgnoredRanges(temp, "^\n*?[:;*#]+\n", "");
+		
+		if (!temp.equals(formatted)) {
+			summarySet.add("\"\\n[:;*#]\\n\" → \"\\n\\n\"");
+			formatted = temp;
+		}
+		
+		String summary = null;
+		
+		if (!summarySet.isEmpty()) {
+			summary = String.join(", ", summarySet);
+		}
+		
+		checkDifferences(formatted, "minorSanitizing", summary);
+	}
+	
 	public void transformToNewStructure() {
 		Page page = Page.store(title, text);
 		
