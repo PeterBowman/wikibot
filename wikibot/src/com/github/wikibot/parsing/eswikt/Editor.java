@@ -47,7 +47,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?):*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
@@ -1562,8 +1562,7 @@ public class Editor extends EditorBase {
 				
 				if (m.matches()) {
 					line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
+						m,
 						PRON_TMPLS,
 						PRON_TMPLS_ALIAS
 					);
@@ -1904,64 +1903,54 @@ public class Editor extends EditorBase {
 		// TODO: add leng parameter
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		Set<String> modified = new HashSet<String>();
-		String[] lines = this.text.split("\n", -1);
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(this.text);
-		MutableInt index = new MutableInt(0);
+		Matcher m = P_TMPL_LINE.matcher(this.text);
+		StringBuffer sb = new StringBuffer(this.text.length());
 		
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
-			
-			if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
-				index.add(lines[i].length() + 1);
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
 				continue;
 			}
 			
-			index.add(lines[i].length() + 1);
+			String line = Optional
+				.ofNullable(makeTmplLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
+				.orElse(makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
 			
-			if (line.isEmpty()) {
+			if (line == null) {
 				continue;
 			}
 			
-			Matcher m = P_TMPL_LINE.matcher(line);
+			line = Utils.replaceWithStandardIgnoredRanges(
+				line,
+				Pattern.quote("{{derivado|"),
+				Pattern.quote("{{derivad|")
+			);
 			
-			if (
-				!m.matches() || !((
-					(line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
-						TERM_TMPLS,
-						TERM_TMPLS_ALIAS)
-					) != null) || (
-					(line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
-						PRON_TMPLS,
-						PRON_TMPLS_ALIAS)
-					) != null))
-			) {
-				continue;
-			}
-			
-			line = line.replace("{{derivado|", "{{derivad|");
-			lines[i] = line + ".";
-			modified.add(m.group(1).trim());
+			m.appendReplacement(sb, Matcher.quoteReplacement(line));
+			modified.add(m.group(2).trim());
 		}
 		
-		String formatted = String.join("\n", lines);
+		m.appendTail(sb);
+		String formatted = sb.toString();
 		String summary = "conversión a plantilla: " + String.join(", ", modified);
 		
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
-	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
-		name = StringUtils.strip(name, " ':");
+	private String makeTmplLine(Matcher m, List<String> templates, List<String> aliases) {
+		String leadingComments = m.group(1).trim();
+		String name = m.group(2).trim().toLowerCase();
+		String content = m.group(3).trim();
+		String trailingComments = m.group(4).trim();
 		
-		if (name.isEmpty()) {
+		if (name.isEmpty() || content.isEmpty()) {
 			return null;
 		}
 		
-		if (listPl.contains(name)) {
-			name = listSg.get(listPl.indexOf(name));
+		name = StringUtils.strip(name, " ':");
+		
+		if (aliases.contains(name)) {
+			name = templates.get(aliases.indexOf(name));
 		}
 		
 		// TODO: review
@@ -1969,7 +1958,7 @@ public class Editor extends EditorBase {
 			name = "grafía alternativa";
 		}
 		
-		if (!listSg.contains(name)) {
+		if (!templates.contains(name)) {
 			return null;
 		}
 		
@@ -2062,7 +2051,12 @@ public class Editor extends EditorBase {
 			}
 		}
 		
-		return ParseUtils.templateFromMap(map);
+		leadingComments = leadingComments.replaceAll(" *?(<!--.*?-->) *", "$1");
+		
+		return leadingComments +
+			(!leadingComments.isEmpty() ? "\n" : "") +
+			ParseUtils.templateFromMap(map) + "." +
+			trailingComments;
 	}
 	
 	public void addMissingElements() {
