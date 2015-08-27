@@ -21,6 +21,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	protected int leadingNewlines;
 	protected int trailingNewlines;
 	protected String headerFormat;
+	private String headerLeadingComments;
 	private String headerTrailingComments;
 	protected T parentSection;
 	protected List<T> siblingSections;
@@ -36,6 +37,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		leadingNewlines = 0;
 		trailingNewlines = 0;
 		headerFormat = "%1$s %2$s %1$s";
+		headerLeadingComments = "";
 		headerTrailingComments = "";
 		parentSection = null;
 		siblingSections = null;
@@ -69,14 +71,15 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		int i = 6;
 		
 		for (; i >= 1; --i) {
-			String re = String.format("^={%1$d}(.+)={%1$d}((?:<!--.*?-->|\\s*)*)$", i);
+			String re = String.format("^((?:<!--.*?-->)*+)={%1$d}(.+)={%1$d}((?:<!--.*?-->|\\s*)*)$", i);
 			Matcher m = Pattern.compile(re).matcher(header);
 			
 			if (m.matches()) {
-				this.header = m.group(1).trim();
+				this.headerLeadingComments = m.group(1);
+				this.header = m.group(2).trim();
 				this.level = i;
-				this.headerTrailingComments = m.group(2);
-				buildHeaderFormatString(m.group(1));
+				this.headerTrailingComments = m.group(3);
+				buildHeaderFormatString(m.group(2));
 				break;
 			}
 		}
@@ -535,6 +538,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(1500);
+		sb.append(headerLeadingComments);
 		sb.append(String.format(headerFormat, StringUtils.repeat('=', level), header));
 		sb.append(headerTrailingComments);
 

@@ -24,7 +24,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	protected List<T> sections;
 	protected int leadingNewlines;
 	protected int trailingNewlines;
-	private static final Pattern P_SECTION = Pattern.compile("^(?=={1,6}.+?={1,6}\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
+	private static final Pattern P_SECTION = Pattern.compile("^(?=(?:<!--.*?-->)*+(={1,6}.+?={1,6})\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
 	
 	public PageBase(String title) {
 		this.title = Objects.requireNonNull(title);
@@ -151,7 +151,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		while (m.find()) {
 			if (
 				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start(1)))
 			) {
 				continue;
 			}
