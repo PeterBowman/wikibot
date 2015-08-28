@@ -146,7 +146,7 @@ public class Editor extends EditorBase {
 		
 		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
-		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
+		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
@@ -947,13 +947,11 @@ public class Editor extends EditorBase {
 			topSection.setTrailingNewlines(1);
 		}
 		
-		// Search for the etymology template and move it to the last line
-		
-		String[] lines = etymologyIntro.split("\n");
-		
-		if (lines.length < 2) {
+		if (etymologyIntro.split("\n").length < 2) {
 			return;
 		}
+		
+		// Search for the etymology template and move it to the last line
 		
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(etymologyIntro);
 		Matcher m = P_ETYM_TMPL.matcher(etymologyIntro);
@@ -1521,7 +1519,8 @@ public class Editor extends EditorBase {
 			
 			if (
 				langSection == null || content.isEmpty() ||
-				content.contains("pron-graf")
+				// TODO: review
+				!ParseUtils.getTemplates("pron-graf", content).isEmpty()
 			) {
 				continue;
 			}
@@ -1561,17 +1560,13 @@ public class Editor extends EditorBase {
 				String origLine = line;
 				
 				if (m.matches()) {
-					line = makeTmplLine(
-						m,
-						PRON_TMPLS,
-						PRON_TMPLS_ALIAS
-					);
+					line = makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
 					
 					if (line == null) {
 						editedLines.add(origLine);
 						continue;
 					} else {
-						templateFromText = m.group(1).trim();
+						templateFromText = m.group(2).trim();
 					}
 				}
 				
