@@ -6,9 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -145,10 +148,14 @@ public class Login {
 	public static void main(String[] args) throws FileNotFoundException, IOException, FailedLoginException {
 		retrieveCredentials();
 		
+		List<String> storedUsernames = Stream.of(Users.values())
+			.map(Users::getUsername)
+			.collect(Collectors.toList());
+		
 		if (
 			credentials.isEmpty() ||
 			credentials.size() != Users.values().length ||
-			!credentials.keySet().containsAll(Arrays.asList(Users.values()))
+			!credentials.keySet().containsAll(storedUsernames)
 		) {
 			System.out.printf("Credentials available: %s%n", credentials.keySet().toString());
 			
