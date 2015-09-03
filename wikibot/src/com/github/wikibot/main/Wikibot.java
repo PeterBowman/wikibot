@@ -194,7 +194,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private PageContainer[] getGeneratedContent(String url, int limit) throws IOException {
-		List<PageContainer> list = new ArrayList<PageContainer>(limit);
+		List<PageContainer> list = new ArrayList<PageContainer>(slowmax);
 		
 		String cont = "continue=";
 		String line;
