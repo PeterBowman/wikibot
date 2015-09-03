@@ -189,6 +189,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		return parentSection;
 	}
 	
+	public PageBase<T> getContainingPage() {
+		return containingPage;
+	}
+	
 	public List<T> getSiblingSections() {
 		return Objects.nonNull(siblingSections)
 			? Collections.unmodifiableList(new ArrayList<T>(siblingSections))
