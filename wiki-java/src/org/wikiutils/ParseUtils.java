@@ -640,9 +640,9 @@ public class ParseUtils
                 int index = template.indexOf("|");
                 String templateName;
                 if (index == -1)
-                        templateName = template.substring(2, template.length() - 2);
+                        templateName = template.substring(2, template.length() - 2).trim();
                 else
-                        templateName = template.substring(2, index);
+                        templateName = template.substring(2, index).trim();
                 LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
                 map.put("templateName", templateName);
                 ArrayList<String> al = getTemplateParameters(template);
