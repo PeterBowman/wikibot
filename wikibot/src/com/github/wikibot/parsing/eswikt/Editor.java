@@ -1144,7 +1144,6 @@ public class Editor extends EditorBase {
 	
 	public void moveReferencesSection() {
 		Page page = Page.store(title, this.text);
-		
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() != 1) {
@@ -1157,30 +1156,8 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		List<Section> childSections = references.getChildSections();
-		
-		if (childSections != null) {
-			List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-			List<String> subSectionHeaders = flattenedSubSections.stream()
-				.map(SectionBase::getHeader)
-				.collect(Collectors.toList());
-			
-			if (STANDARD_HEADERS.containsAll(subSectionHeaders)) {
-				references.detachOnlySelf();
-				references.setLevel(2);
-				page.setReferencesSection(references);
-			} else if (references.nextSiblingSection() != null) {
-				references.detach();
-				references.pushLevels(2 - references.getLevel());
-				page.setReferencesSection(references);
-			} else {
-				return;
-			}
-		} else {
-			references.detachOnlySelf();
-			references.setLevel(2);
-			page.setReferencesSection(references);
-		}
+		references.detachOnlySelf();
+		page.setReferencesSection(references);
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
