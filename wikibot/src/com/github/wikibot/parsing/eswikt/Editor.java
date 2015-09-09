@@ -209,6 +209,7 @@ public class Editor extends EditorBase {
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		moveReferencesSection();
+		normalizeEtymologyHeaders();
 		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
@@ -1040,22 +1041,6 @@ public class Editor extends EditorBase {
 			section.setHeader(header);
 		}
 		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
-			
-			if (etymologySections.isEmpty()) {
-				continue;
-			} else if (etymologySections.size() == 1) {
-				Section etymologySection = etymologySections.get(0);
-				etymologySection.setHeader("Etimología");
-			} else {
-				for (int i = 0; i < etymologySections.size(); i++) {
-					Section etymologySection = etymologySections.get(i);
-					etymologySection.setHeader(String.format("Etimología %d", i + 1));
-				}
-			}
-		}
-		
 		String formatted = page.toString();
 		checkDifferences(formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
@@ -1200,7 +1185,31 @@ public class Editor extends EditorBase {
 		String formatted = page.toString();
 		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
 	}
-
+	
+	public void normalizeEtymologyHeaders() {
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			} else if (etymologySections.size() == 1) {
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setHeader("Etimología");
+			} else {
+				for (int i = 0; i < etymologySections.size(); i++) {
+					Section etymologySection = etymologySections.get(i);
+					String header = String.format("Etimología %d", i + 1);
+					etymologySection.setHeader(header);
+				}
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "normalizeEtymologyHeaders", "normalizando encabezamientos de etimología");
+	}
+	
 	public void normalizeSectionLevels() {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura
