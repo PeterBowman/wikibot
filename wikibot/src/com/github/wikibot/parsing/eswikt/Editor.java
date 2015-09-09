@@ -1118,44 +1118,32 @@ public class Editor extends EditorBase {
 
 	public void duplicateReferencesSection() {
 		Page page = Page.store(title, this.text);
-		
-		Section bottomReferences = page.getReferencesSection();
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() < 2) {
 			return;
 		}
 		
+		Section bottomReferences = page.getReferencesSection();
 		Iterator<Section> iterator = allReferences.iterator();
 		
 		while (iterator.hasNext()) {
 			Section section = iterator.next();
-			List<Section> childSections = section.getChildSections();
-			List<String> subSectionHeaders;
 			
-			if (childSections != null) {
-				List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-				subSectionHeaders = flattenedSubSections.stream()
-					.map(SectionBase::getHeader)
-					.collect(Collectors.toList());
-			} else {
-				subSectionHeaders = new ArrayList<String>();
+			if (section == bottomReferences) {
+				continue;
 			}
 			
-			if (
-				childSections == null ||
-				STANDARD_HEADERS.containsAll(subSectionHeaders)
-			) {
-				String content = section.getIntro();
-				content = content.replaceAll("(?s)<!--.*?-->", ""); 
-				content = content.replaceAll("<references *?/ *?>", "");
-				content = content.trim();
-				
-				// TODO: handle non-empty sections, too
-				if (content.isEmpty()) {
-					section.detachOnlySelf();
-					iterator.remove();
-				}
+			String content = section.getIntro();
+			
+			content = content.replaceAll("(?s)<!--.*?-->", ""); 
+			content = content.replaceAll("<references *?/ *?>", "");
+			content = content.trim();
+			
+			// TODO: combine non-empty sections?
+			if (content.isEmpty()) {
+				section.detachOnlySelf();
+				iterator.remove();
 			}
 		}
 		
@@ -2469,7 +2457,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "anciano";
+		String title = "airón";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
