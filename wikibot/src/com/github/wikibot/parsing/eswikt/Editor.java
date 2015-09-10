@@ -121,7 +121,7 @@ public class Editor extends EditorBase {
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
 		// TODO: review headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref[ >]|[^\n<:;\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE);
+		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
