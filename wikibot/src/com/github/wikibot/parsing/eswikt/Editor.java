@@ -215,6 +215,7 @@ public class Editor extends EditorBase {
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		moveReferencesSection();
+		normalizeEtymologyHeaders();
 		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
@@ -1081,22 +1082,6 @@ public class Editor extends EditorBase {
 			section.setHeader(header);
 		}
 		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
-			
-			if (etymologySections.isEmpty()) {
-				continue;
-			} else if (etymologySections.size() == 1) {
-				Section etymologySection = etymologySections.get(0);
-				etymologySection.setHeader("Etimología");
-			} else {
-				for (int i = 0; i < etymologySections.size(); i++) {
-					Section etymologySection = etymologySections.get(i);
-					etymologySection.setHeader(String.format("Etimología %d", i + 1));
-				}
-			}
-		}
-		
 		String formatted = page.toString();
 		checkDifferences(formatted, "normalizeSectionHeaders", "normalizando títulos de encabezamiento");
 	}
@@ -1159,44 +1144,32 @@ public class Editor extends EditorBase {
 
 	public void duplicateReferencesSection() {
 		Page page = Page.store(title, this.text);
-		
-		Section bottomReferences = page.getReferencesSection();
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() < 2) {
 			return;
 		}
 		
+		Section bottomReferences = page.getReferencesSection();
 		Iterator<Section> iterator = allReferences.iterator();
 		
 		while (iterator.hasNext()) {
 			Section section = iterator.next();
-			List<Section> childSections = section.getChildSections();
-			List<String> subSectionHeaders;
 			
-			if (childSections != null) {
-				List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-				subSectionHeaders = flattenedSubSections.stream()
-					.map(SectionBase::getHeader)
-					.collect(Collectors.toList());
-			} else {
-				subSectionHeaders = new ArrayList<String>();
+			if (section == bottomReferences) {
+				continue;
 			}
 			
-			if (
-				childSections == null ||
-				STANDARD_HEADERS.containsAll(subSectionHeaders)
-			) {
-				String content = section.getIntro();
-				content = content.replaceAll("(?s)<!--.*?-->", ""); 
-				content = content.replaceAll("<references *?/ *?>", "");
-				content = content.trim();
-				
-				// TODO: handle non-empty sections, too
-				if (content.isEmpty()) {
-					section.detachOnlySelf();
-					iterator.remove();
-				}
+			String content = section.getIntro();
+			
+			content = content.replaceAll("(?s)<!--.*?-->", ""); 
+			content = content.replaceAll("<references *?/ *?>", "");
+			content = content.trim();
+			
+			// TODO: combine non-empty sections?
+			if (content.isEmpty()) {
+				section.detachOnlySelf();
+				iterator.remove();
 			}
 		}
 		
@@ -1212,7 +1185,6 @@ public class Editor extends EditorBase {
 	
 	public void moveReferencesSection() {
 		Page page = Page.store(title, this.text);
-		
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() != 1) {
@@ -1225,35 +1197,37 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		List<Section> childSections = references.getChildSections();
-		
-		if (childSections != null) {
-			List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-			List<String> subSectionHeaders = flattenedSubSections.stream()
-				.map(SectionBase::getHeader)
-				.collect(Collectors.toList());
-			
-			if (STANDARD_HEADERS.containsAll(subSectionHeaders)) {
-				references.detachOnlySelf();
-				references.setLevel(2);
-				page.setReferencesSection(references);
-			} else if (references.nextSiblingSection() != null) {
-				references.detach();
-				references.pushLevels(2 - references.getLevel());
-				page.setReferencesSection(references);
-			} else {
-				return;
-			}
-		} else {
-			references.detachOnlySelf();
-			references.setLevel(2);
-			page.setReferencesSection(references);
-		}
+		references.detachOnlySelf();
+		page.setReferencesSection(references);
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
 	}
-
+	
+	public void normalizeEtymologyHeaders() {
+		Page page = Page.store(title, this.text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			} else if (etymologySections.size() == 1) {
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setHeader("Etimología");
+			} else {
+				for (int i = 0; i < etymologySections.size(); i++) {
+					Section etymologySection = etymologySections.get(i);
+					String header = String.format("Etimología %d", i + 1);
+					etymologySection.setHeader(header);
+				}
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "normalizeEtymologyHeaders", "normalizando encabezamientos de etimología");
+	}
+	
 	public void normalizeSectionLevels() {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura
@@ -2510,7 +2484,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "anciano";
+		String title = "airón";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
