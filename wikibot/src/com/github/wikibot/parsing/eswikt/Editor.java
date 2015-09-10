@@ -39,6 +39,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
+	private static final Pattern P_PREFIXED_TEMPLATE;
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
@@ -100,6 +101,10 @@ public class Editor extends EditorBase {
 	private boolean hasFlexiveFormHeaders;
 	
 	static {
+		final List<String> templateNsAliases = Arrays.asList("Template", "Plantilla", "msg");
+		
+		P_PREFIXED_TEMPLATE = Pattern.compile("\\{\\{([ :]*?(?:" + String.join("|", templateNsAliases) + ") *?: *).+?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		
 		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
 		
 		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
@@ -200,6 +205,7 @@ public class Editor extends EditorBase {
 		}
 		
 		removeComments();
+		removeTemplatePrefixes();
 		joinLines();
 		//minorSanitizing();
 		normalizeTemplateNames();
@@ -317,6 +323,41 @@ public class Editor extends EditorBase {
 		formatted = Utils.sanitizeWhitespaces(formatted);
 		
 		checkDifferences(formatted, "removeComments", "eliminando comentarios");
+	}
+	
+	public void removeTemplatePrefixes() {
+		String formatted = this.text;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_PREFIXED_TEMPLATE.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		Set<String> set = new HashSet<String>();
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			String template = m.group();
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			template = template.substring(0, startOffset) + template.substring(endOffset);
+			
+			set.add(m.group(1).trim());
+			m.appendReplacement(sb, Matcher.quoteReplacement(template));
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		m.appendTail(sb);
+		formatted = sb.toString();
+		String summary = String.format("eliminando %s", String.join(", ", set));
+		
+		checkDifferences(formatted, "removeTemplatePrefixes", summary);
 	}
 	
 	public void joinLines() {
