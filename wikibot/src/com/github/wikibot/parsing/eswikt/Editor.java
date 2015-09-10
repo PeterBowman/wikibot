@@ -43,7 +43,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
-	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
+	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
@@ -206,6 +206,7 @@ public class Editor extends EditorBase {
 		
 		removeComments();
 		removeTemplatePrefixes();
+		sanitizeTemplates();
 		joinLines();
 		//minorSanitizing();
 		normalizeTemplateNames();
@@ -359,6 +360,49 @@ public class Editor extends EditorBase {
 		String summary = String.format("eliminando %s", String.join(", ", set));
 		
 		checkDifferences(formatted, "removeTemplatePrefixes", summary);
+	}
+	
+	public void sanitizeTemplates() {
+		String formatted = this.text;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_TEMPLATE.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		
+		while (m.find()) {
+			if (
+				!ignoredRanges.isEmpty() &&
+				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
+			) {
+				continue;
+			}
+			
+			String template = m.group();
+			String templateName = m.group(1);
+			
+			if (!templateName.equals(templateName.trim())) {
+				int startOffset = m.start(1) - m.start();
+				int endOffset = startOffset + templateName.length();
+				template = template.substring(0, startOffset) + templateName.trim() +
+					template.substring(endOffset);
+			}
+			
+			m.appendReplacement(sb, "");
+			
+			while (sb.length() > 0) {
+				if (sb.charAt(sb.length() - 1) == ' ') {
+					sb.deleteCharAt(sb.length() - 1);
+				} else {
+					break;
+				}
+			}
+			
+			sb.append(template);
+		}
+		
+		m.appendTail(sb);
+		formatted = sb.toString();
+		
+		checkDifferences(formatted, "sanitizeTemplates", null);
 	}
 	
 	public void joinLines() {
@@ -2309,8 +2353,7 @@ public class Editor extends EditorBase {
 				
 				intro += "\n\n" + template;
 				section.setIntro(intro);
-			} else if (section.getIntro().contains(templateName)) {
-				// TODO: sanitize templates, then use variable "template" instead
+			} else if (section.getIntro().contains(template)) {
 				removeClearTemplates(templateName, section);
 			}
 		}
