@@ -386,11 +386,15 @@ public class Editor extends EditorBase {
 				String replacement = m.group(1).replaceFirst("^ +", "");
 				m.appendReplacement(sb, " " + Matcher.quoteReplacement(replacement));
 			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
-				String substring = formatted.substring(0, m.start());
-				int lastNewlineIndex = substring.lastIndexOf("\n");
+				int lastNewlineIndex = formatted.substring(0, m.start()).lastIndexOf("\n");
 				
-				if (lastNewlineIndex != -1 && substring.charAt(lastNewlineIndex + 1) == ' ') {
-					continue;
+				if (lastNewlineIndex != -1) {
+					String previousLine = formatted.substring(lastNewlineIndex + 1, m.start());
+					final String[] arr = {" ", ":", ";", "*", "#"};
+					
+					if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
+						continue;
+					}
 				}
 				
 				m.appendReplacement(sb, " $1");
