@@ -861,7 +861,7 @@ public class Editor extends EditorBase {
 		
 		return (
 			etymologySection != nextSection &&
-			!etymologySection.getHeader().matches("[Ee]timolog[íi]a( 1)?") &&
+			!etymologySection.getStrippedHeader().matches("[Ee]timolog[íi]a( 1)?") &&
 			!nextSection.getHeader().matches("^[Pp]ronunciaci[óo]n.*")
 		);
 	}
@@ -1054,24 +1054,23 @@ public class Editor extends EditorBase {
 			String header = section.getHeader();
 			
 			header = StringUtils.strip(header, "=").trim();
-			header = header.replaceAll("^[Ee]timolog[íi]a ?(\\d)?$", "Etimología $1").trim();
+			header = header.replaceAll("^[Ee]timolog[íi]a", "Etimología");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
-			header = header.replaceAll("^[Ll]ocuciones$", "Locuciones");
-			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)$", "Refranes");
-			header = header.replaceAll("^[Cc]onjugaci[óo]n$", "Conjugación");
-			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)$", "Información adicional");
-			header = header.replaceAll("^[Vv]er tambi[ée]n$", "Véase también");
-			header = header.replaceAll("^[Vv][ée]ase tambi[ée]n$", "Véase también");
-			header = header.replaceAll("^Proverbio$", "Refrán");
+			header = header.replaceAll("^[Ll]ocuciones", "Locuciones");
+			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)", "Refranes");
+			header = header.replaceAll("^[Cc]onjugaci[óo]n\\b", "Conjugación");
+			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)", "Información adicional");
+			header = header.replaceAll("^(?:[Vv]er|[Vv][ée]ase) tambi[ée]n", "Véase también");
+			header = header.replaceAll("^Proverbio\\b", "Refrán");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			LangSection langSection = section.getLangSectionParent();
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducciones");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducciones");
 				} else {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducción");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducción");
 				}
 			}
 			
@@ -1318,7 +1317,7 @@ public class Editor extends EditorBase {
 		}
 		
 		SectionBase.flattenSubSections(sections).stream()
-			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getHeader()))
+			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getStrippedHeader()))
 			.filter(s -> s.getLevel() > level)
 			.forEach(s -> s.pushLevels(level - s.getLevel()));
 	}
@@ -1401,7 +1400,7 @@ public class Editor extends EditorBase {
 			
 			// TODO: review, catch special cases
 			Set<String> headers = langSection.getChildSections().stream()
-				.map(SectionBase::getHeader)
+				.map(SectionBase::getStrippedHeader)
 				.collect(Collectors.toSet());
 			
 			headers.removeAll(STANDARD_HEADERS);
@@ -1537,7 +1536,7 @@ public class Editor extends EditorBase {
 		for (Section section : page.getAllSections()) {
 			if (
 				!(section instanceof LangSection) &&
-				!section.getHeader().matches("Etimología \\d+")
+				!section.getStrippedHeader().matches("Etimología \\d+")
 			) {
 				continue;
 			}
@@ -2289,8 +2288,8 @@ public class Editor extends EditorBase {
 			if (
 				StringUtils.startsWithAny(nextSection.getIntro(), arr) ||
 				(
-					nextSection.getHeader().matches("Etimología \\d+") &&
-					!nextSection.getHeader().equals("Etimología 1")
+					nextSection.getStrippedHeader().matches("Etimología \\d+") &&
+					!nextSection.getStrippedHeader().equals("Etimología 1")
 				)
 			) {
 				List<String> templates = ParseUtils.getTemplates(templateName, section.getIntro());

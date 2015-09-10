@@ -29,6 +29,8 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	protected PageBase<T> containingPage;
 	private UUID uuid;
 	
+	private static final Pattern P_HEADER_REFS = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)");
+	
 	protected SectionBase(String text) {
 		header = "";
 		intro = "";
@@ -111,6 +113,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	
 	public String getHeader() {
 		return header;
+	}
+	
+	public String getStrippedHeader() {
+		return stripHeaderReferences(header);
 	}
 	
 	public void setHeader(String header) {
@@ -464,7 +470,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public List<T> findSubSectionsWithHeader(String regex) {
-		return filterSubSections(section -> section.getHeader().matches(regex));
+		return filterSubSections(section -> section.getStrippedHeader().matches(regex));
 	}
 	
 	public void replaceWith(T section) {
@@ -516,6 +522,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		}
 		
 		return list;
+	}
+	
+	public static String stripHeaderReferences(String header) {
+		return P_HEADER_REFS.matcher(header).replaceAll("").trim();
 	}
 	
 	@Override

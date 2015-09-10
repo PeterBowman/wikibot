@@ -71,7 +71,8 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 
 	@Override
 	public int compareTo(Section s) {
-		String targetHeader = s.getHeader();
+		String header = getStrippedHeader();
+		String targetHeader = s.getStrippedHeader();
 		
 		boolean selfInHeadList = HEAD_SECTIONS.contains(header);
 		boolean selfInBottomList = BOTTOM_SECTIONS.contains(header);

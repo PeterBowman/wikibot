@@ -121,7 +121,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	
 	public boolean hasSectionWithHeader(String regex) {
 		return sections.stream()
-			.anyMatch(section -> section.getHeader().matches(regex));
+			.anyMatch(section -> section.getStrippedHeader().matches(regex));
 	}
 	
 	public List<T> filterSections(Predicate<T> predicate) {
@@ -131,7 +131,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public List<T> findSectionsWithHeader(String regex) {
-		return filterSections(section -> section.getHeader().matches(regex));
+		return filterSections(section -> section.getStrippedHeader().matches(regex));
 	}
 
 	public void sortSections(Comparator<T> comparator) {
