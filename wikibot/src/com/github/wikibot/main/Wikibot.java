@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -790,21 +789,22 @@ public class Wikibot extends WMFWiki {
     	return list.toArray(new String[list.size()]);
     }
     
-    public void readXmlDump(String domain, Consumer<PageContainer> cons) throws IOException, ParserConfigurationException, SAXException {
-    	File[] matching = dumpsPath.listFiles(new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.startsWith(domain);
-			}
-		});
+    public void readXmlDump(String domain, Consumer<PageContainer> cons) throws IOException, SAXException {
+    	File[] matching = dumpsPath.listFiles((dir, name) -> name.startsWith(domain));
     	
     	if (matching.length == 0) {
-    		throw new FileNotFoundException("Dump not found: " + domain);
+    		throw new FileNotFoundException("Dump file not found: " + domain);
     	}
     	
     	System.out.printf("Reading from file: %s%n", matching[0].getName());
     	
     	SAXParserFactory factory = SAXParserFactory.newInstance();
-    	SAXParser saxParser = factory.newSAXParser();
+    	SAXParser saxParser = null;
+    	
+		try {
+			saxParser = factory.newSAXParser();
+		} catch (ParserConfigurationException e) {}
+		
         SaxConcurrentPageHandler handler = new SaxConcurrentPageHandler(cons);
         XMLReader xmlReader = saxParser.getXMLReader();
         xmlReader.setContentHandler(handler);
@@ -889,16 +889,21 @@ public class Wikibot extends WMFWiki {
 					return;
 				}
 			} else {
-				if (qName.equals("title")) {
-					acceptTitle = true;
-				} else if (qName.equals("ns")) {
-					acceptNs = true;
-				} else if (qName.equals("timestamp")) {
-					acceptTimestamp = true;
-				} else if (qName.equals("text")) {
-					acceptText = true;
-				} else {
-					return;
+				switch (qName) {
+					case "title":
+						acceptTitle = true;
+						break;
+					case "ns":
+						acceptNs = true;
+						break;
+					case "timestamp":
+						acceptTimestamp = true;
+						break;
+					case "text":
+						acceptText = true;
+						break;
+					default:
+						return;
 				}
 				
 				sb = new StringBuilder(2000);

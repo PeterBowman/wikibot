@@ -6,13 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.xml.parsers.ParserConfigurationException;
-
-import jdk.nashorn.internal.runtime.ParserException;
-
-import org.wikiutils.IOUtils;
 import org.xml.sax.SAXException;
 
+import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.eswikt.Page;
 import com.github.wikibot.utils.PageContainer;
 
@@ -26,62 +22,20 @@ public class ESWikt extends Wikibot {
 		super("es.wiktionary.org");
 	}
 	
-	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, ParserConfigurationException, SAXException {
+	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, SAXException {
 		readXmlDump("eswiktionary", cons);
 	}
 	
-	/*public static void main (String[] args) throws IOException, FailedLoginException {
-		ESWikt wb = new ESWikt();
-		List<String> titles = new ArrayList<String>(1000);
-		//Pattern patt = Pattern.compile("\\{\\{ *?(?:ES|[^-]+-ES) *?\\|.*?(escritura\\d? *?=.+)\\}\\}");
-		Pattern patt = Pattern.compile("^ *?\\{\\{ *?(?:.*?-)?ES *?(?:\\|[^\n]*)?\\}\\} *$", Pattern.MULTILINE);
-		
-		wb.readXmlDump(page -> {
-			Matcher m = patt.matcher(page.getText());
-			boolean found = false;
-			String title = page.getTitle();
-			
-			while (m.find()) {
-				String template = m.group().trim();
-				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-				String param1 = params.get("ParamWithoutName1");
-				
-				if (param1 == null || param1.isEmpty()) {
-					continue;
-				}
-				
-				if (param1.contains("[[")) {
-					return;
-				}
-				
-				param1 = param1.replace("ʼ", "'");
-				
-				if (!param1.equals("{{PAGENAME}}") && !param1.equals(title.replace("ʼ", "'"))) {
-					found = true;
-					break;
-				}
-			}
-			
-			if (found) {
-				titles.add(title);
-			}
-		});
-		
-		System.out.printf("Tamaño de la lista: %d%n", titles.size());
-		IOUtils.writeToFile(String.join("\n", titles), "./test.txt");
-	}*/
-	
-	public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
+	public static void main(String[] args) throws IOException, SAXException {
 		ESWikt wb = new ESWikt();
 		List<String> list = Collections.synchronizedList(new ArrayList<String>(500));
-		//List<String> list = new ArrayList<String>(500);
 		
 		wb.readXmlDump(page -> {
 			Page p;
 			
 			try {
 				p = Page.wrap(page);
-			} catch (ParserException e) {
+			} catch (ParsingException e) {
 				System.out.printf("ParserException: %s%n", page.getTitle());
 				return;
 			}
@@ -92,6 +46,6 @@ public class ESWikt extends Wikibot {
 		});
 		
 		System.out.printf("Total count: %d%n", list.size());
-		IOUtils.writeToFile(String.join("\n", list), "./data/eswikt.proverb-headers.txt");
+		//IOUtils.writeToFile(String.join("\n", list), "./data/eswikt.proverb-headers.txt");
 	}
 }

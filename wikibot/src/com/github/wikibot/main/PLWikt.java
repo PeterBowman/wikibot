@@ -13,7 +13,6 @@ import java.util.stream.IntStream;
 import javax.security.auth.login.CredentialNotFoundException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
@@ -115,13 +114,11 @@ public class PLWikt extends Wikibot {
 		throttle(start);
 	}
 	
-	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, ParserConfigurationException, SAXException {
+	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, SAXException {
 		readXmlDump("plwiktionary", cons);
 	}
 	
-	public static void main(String[] args) throws FailedLoginException, IOException, ParserConfigurationException, SAXException {
-		//MutableInt slashes = new MutableInt(0);
-		//MutableInt punctors = new MutableInt(0);
+	public static void main(String[] args) throws FailedLoginException, IOException, SAXException {
 		List<String> list = Collections.synchronizedList(new ArrayList<String>(250));
 		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 		
