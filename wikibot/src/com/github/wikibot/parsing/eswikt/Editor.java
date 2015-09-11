@@ -39,6 +39,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class Editor extends EditorBase {
+	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_PREFIXED_TEMPLATE;
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
@@ -233,7 +234,13 @@ public class Editor extends EditorBase {
 	}
 	
 	private boolean failsafeCheck() {
-		Page page = Page.store(title, this.text);
+		String text = ParseUtils.removeCommentsAndNoWikiText(this.text);
+		
+		if (getMaximumTemplateDepth(text) > 2) {
+			return false;
+		}
+		
+		Page page = Page.store(title, text);
 		
 		if (
 			unpairedCurlyBrackets(page.getIntro()) ||
@@ -244,8 +251,8 @@ public class Editor extends EditorBase {
 		
 		for (Section section : page.getAllSections()) {
 			if (
-				unpairedCurlyBrackets(section.toString()) ||
-				unpairedSquareBrackets(section.toString())
+				unpairedCurlyBrackets(section.getIntro()) ||
+				unpairedSquareBrackets(section.getIntro())
 			) {
 				return false;
 			}
@@ -255,17 +262,55 @@ public class Editor extends EditorBase {
 	}
 	
 	private boolean unpairedCurlyBrackets(String text) {
-		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		int left = StringUtils.countMatches(text, "{{");
 		int right = StringUtils.countMatches(text, "}}");
+		
 		return left != right;
 	}
 	
 	private boolean unpairedSquareBrackets(String text) {
-		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		int left = StringUtils.countMatches(text, "[[");
 		int right = StringUtils.countMatches(text, "]]");
+		
 		return left != right;
+	}
+	
+	private int getMaximumTemplateDepth(String text) {
+		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
+		extractTemplateRanges(text, ranges);
+		
+		Range<Integer> previousRange = null;
+		int currentDepth = 1;
+		int maxDepth = 0;
+		
+		for (Range<Integer> range : ranges) {
+			if (previousRange != null && range.containsRange(previousRange)) {
+				currentDepth++;
+			} else {
+				currentDepth = 1;
+			}
+			
+			previousRange = range;
+			maxDepth = Math.max(currentDepth, maxDepth);
+		}
+		
+		return maxDepth;
+	}
+	
+	private static void extractTemplateRanges(String text, List<Range<Integer>> ranges) {
+		Matcher m = P_TMPL_DEPTH.matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			ranges.add(Range.between(m.start(), m.end()));
+			String replacement = StringUtils.repeat('-', m.group().length());
+			m.appendReplacement(sb, replacement);
+		}
+		
+		if (sb.length() != 0) {
+			m.appendTail(sb);
+			extractTemplateRanges(sb.toString(), ranges);
+		}
 	}
 	
 	public void removeComments() {
