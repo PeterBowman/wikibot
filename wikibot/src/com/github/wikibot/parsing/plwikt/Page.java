@@ -17,7 +17,7 @@ import com.github.wikibot.utils.Users;
 
 public final class Page extends PageBase<Section> implements Serializable {
 	private static final long serialVersionUID = 4112162751333437538L;
-	private static final Pattern P_SECTION = Pattern.compile("^(?===.+?\\(\\{\\{.+?\\}\\}\\) *?==\\s*$)", Pattern.MULTILINE);
+	private static final Pattern P_SECTION = Pattern.compile("^(?=(==.+?\\(\\{\\{.+?\\}\\}\\) *?==)\\s*$)", Pattern.MULTILINE);
 	
 	private Page(String title, String text) {
 		super(title);

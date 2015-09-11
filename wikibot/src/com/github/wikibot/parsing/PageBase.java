@@ -24,7 +24,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	protected List<T> sections;
 	protected int leadingNewlines;
 	protected int trailingNewlines;
-	private static final Pattern P_SECTION = Pattern.compile("^(?=={1,6}.+?={1,6}\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
+	private static final Pattern P_SECTION = Pattern.compile("^(?=(?:<!--.*?-->)*+(={1,6}.+?={1,6})\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
 	
 	public PageBase(String title) {
 		this.title = Objects.requireNonNull(title);
@@ -121,7 +121,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	
 	public boolean hasSectionWithHeader(String regex) {
 		return sections.stream()
-			.anyMatch(section -> section.getHeader().matches(regex));
+			.anyMatch(section -> section.getStrippedHeader().matches(regex));
 	}
 	
 	public List<T> filterSections(Predicate<T> predicate) {
@@ -131,7 +131,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public List<T> findSectionsWithHeader(String regex) {
-		return filterSections(section -> section.getHeader().matches(regex));
+		return filterSections(section -> section.getStrippedHeader().matches(regex));
 	}
 
 	public void sortSections(Comparator<T> comparator) {
@@ -149,7 +149,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		List<String> sections = new ArrayList<String>();
 		
 		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(1))) {
 				continue;
 			}
 			

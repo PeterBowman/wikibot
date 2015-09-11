@@ -239,9 +239,13 @@ public final class Misc {
 	}
 	
 	public static void sortList(List<String> coll, String lang) {
+		Collections.sort(coll, getCollator(lang));
+	}
+	
+	public static Collator getCollator(String lang) {
 		Collator collator = Collator.getInstance(new Locale(lang));
 		collator.setStrength(Collator.SECONDARY);
-		Collections.sort(coll, collator);
+		return collator;
 	}
 	
 	public static PageContainer retrievePage(PageContainer[] pages, String title) {

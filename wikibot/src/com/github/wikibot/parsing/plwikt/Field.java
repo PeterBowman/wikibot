@@ -135,6 +135,10 @@ public class Field implements Comparable<Field> {
 		this.eolMark = eolMark;
 	}
 	
+	public Section getContainingSection() {
+		return containingSection;
+	}
+	
 	@Override
 	public int hashCode() {
 		return 0;
