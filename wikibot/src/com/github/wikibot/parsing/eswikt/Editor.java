@@ -433,12 +433,9 @@ public class Editor extends EditorBase {
 			
 			m.appendReplacement(sb, "");
 			
-			while (sb.length() > 0) {
-				if (sb.charAt(sb.length() - 1) == ' ') {
-					sb.deleteCharAt(sb.length() - 1);
-				} else {
-					break;
-				}
+			if (sb.toString().matches(".*\n *$")) {
+				int lastNewlineIndex = sb.lastIndexOf("\n");
+				sb.delete(lastNewlineIndex + 1, sb.length());
 			}
 			
 			sb.append(template);
@@ -2574,7 +2571,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "airón";
+		String title = "mieux";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
