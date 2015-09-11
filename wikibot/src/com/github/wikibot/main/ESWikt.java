@@ -2,17 +2,14 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import javax.security.auth.login.FailedLoginException;
+import org.xml.sax.SAXException;
 
-import org.wikiutils.IOUtils;
-import org.wikiutils.ParseUtils;
-
+import com.github.wikibot.parsing.ParsingException;
+import com.github.wikibot.parsing.eswikt.Page;
 import com.github.wikibot.utils.PageContainer;
 
 public class ESWikt extends Wikibot {
@@ -25,48 +22,30 @@ public class ESWikt extends Wikibot {
 		super("es.wiktionary.org");
 	}
 	
-	public void readXmlDump(Consumer<PageContainer> cons) throws IOException {
+	public void readXmlDump(Consumer<PageContainer> cons) throws IOException, SAXException {
 		readXmlDump("eswiktionary", cons);
 	}
 	
-	public static void main (String[] args) throws IOException, FailedLoginException {
+	public static void main(String[] args) throws IOException, SAXException {
 		ESWikt wb = new ESWikt();
-		List<String> titles = new ArrayList<String>(1000);
-		//Pattern patt = Pattern.compile("\\{\\{ *?(?:ES|[^-]+-ES) *?\\|.*?(escritura\\d? *?=.+)\\}\\}");
-		Pattern patt = Pattern.compile("^ *?\\{\\{ *?(?:.*?-)?ES *?(?:\\|[^\n]*)?\\}\\} *$", Pattern.MULTILINE);
+		List<String> list = Collections.synchronizedList(new ArrayList<String>(500));
 		
 		wb.readXmlDump(page -> {
-			Matcher m = patt.matcher(page.getText());
-			boolean found = false;
-			String title = page.getTitle();
+			Page p;
 			
-			while (m.find()) {
-				String template = m.group().trim();
-				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-				String param1 = params.get("ParamWithoutName1");
-				
-				if (param1 == null || param1.isEmpty()) {
-					continue;
-				}
-				
-				if (param1.contains("[[")) {
-					return;
-				}
-				
-				param1 = param1.replace("ʼ", "'");
-				
-				if (!param1.equals("{{PAGENAME}}") && !param1.equals(title.replace("ʼ", "'"))) {
-					found = true;
-					break;
-				}
+			try {
+				p = Page.wrap(page);
+			} catch (ParsingException e) {
+				System.out.printf("ParserException: %s%n", page.getTitle());
+				return;
 			}
 			
-			if (found) {
-				titles.add(title);
+			if (p.hasSectionWithHeader("Proverbio")) {
+				list.add(page.getTitle());
 			}
 		});
 		
-		System.out.printf("Tamaño de la lista: %d%n", titles.size());
-		IOUtils.writeToFile(String.join("\n", titles), "./test.txt");
+		System.out.printf("Total count: %d%n", list.size());
+		//IOUtils.writeToFile(String.join("\n", list), "./data/eswikt.proverb-headers.txt");
 	}
 }

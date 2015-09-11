@@ -1,12 +1,12 @@
 package com.github.wikibot.main;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -26,8 +26,17 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.wikipedia.WMFWiki;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
 
 import com.github.wikibot.utils.PageContainer;
 
@@ -822,85 +831,29 @@ public class Wikibot extends WMFWiki {
     	return list.toArray(new String[list.size()]);
     }
     
-    public void readXmlDump(String domain, Consumer<PageContainer> cons) throws IOException {
-    	File[] matching = dumpsPath.listFiles(new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.startsWith(domain);
-			}
-		});
+    public void readXmlDump(String domain, Consumer<PageContainer> cons) throws IOException, SAXException {
+    	File[] matching = dumpsPath.listFiles((dir, name) -> name.startsWith(domain));
     	
     	if (matching.length == 0) {
-    		throw new FileNotFoundException("Dump not found: " + domain);
+    		throw new FileNotFoundException("Dump file not found: " + domain);
     	}
     	
     	System.out.printf("Reading from file: %s%n", matching[0].getName());
-    	ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
     	
-    	try (BufferedReader br = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(matching[0]))))) {
-			String line;
-			String title = null;
-			StringBuilder text = null;
-			String timestamp = null;
-			boolean isReadingText = false;
-			boolean skipPage = false;
-			boolean forceParsing = false;
-			
-			while ((line = br.readLine()) != null) {
-				if (line.contains("<page>")) {
-					title = null;
-					text = null;
-					timestamp = null;
-					skipPage = false;
-				} else if (line.contains("<title>")) {
-					int a = line.indexOf("<title>") + "<title>".length();
-					int b = line.indexOf("</title>", a);
-					title = decode(line.substring(a, b));
-				} else if (line.contains("<ns>")) {
-					int a = line.indexOf("<ns>") + "<ns>".length();
-					int b = line.indexOf("</ns>", a);
-					String ns = line.substring(a, b);
-					
-					if (!ns.equals("0")) {
-						skipPage = true;
-					}
-				} else if (!skipPage && line.contains("<timestamp>")) {
-					int a = line.indexOf("<timestamp>") + "<timestamp>".length();
-					int b = line.indexOf("</timestamp>", a);
-					timestamp = line.substring(a, b);
-				} else if (!skipPage && line.contains("<text ")) {
-					isReadingText = true;
-					text = new StringBuilder();
-					int a = line.indexOf(">") + 1;
-					
-					if (line.contains("</text>")) {
-						int b = line.indexOf("</text>", a);
-						text.append(line.substring(a, b));
-						isReadingText = false;
-						forceParsing = true;
-					} else {
-						text.append(line.substring(a));
-						text.append("\n");
-					}
-				} else if (!skipPage && (forceParsing || line.contains("</text>"))) {
-					isReadingText = false;
-					
-					if (!forceParsing) {
-						int a = line.indexOf("</text>");
-						text.append(line.substring(0, a));
-					} else {
-						forceParsing = false;
-					}
-					
-					PageContainer page = new PageContainer(title, decode(text.toString()), timestampToCalendar(timestamp, true));
-					executor.execute(() -> cons.accept(page));
-				} else if (!skipPage && isReadingText) {
-					text.append(line);
-					text.append("\n");
-				}
-			}
+    	SAXParserFactory factory = SAXParserFactory.newInstance();
+    	SAXParser saxParser = null;
+    	
+		try {
+			saxParser = factory.newSAXParser();
+		} catch (ParserConfigurationException e) {}
+		
+        SaxConcurrentPageHandler handler = new SaxConcurrentPageHandler(cons);
+        XMLReader xmlReader = saxParser.getXMLReader();
+        xmlReader.setContentHandler(handler);
+    	
+    	try (Reader reader = new InputStreamReader(new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(matching[0]))))) {
+    		xmlReader.parse(new InputSource(reader));
 		}
-    	
-    	executor.shutdown();
     }
     
 	/**
@@ -951,4 +904,115 @@ public class Wikibot extends WMFWiki {
 			}
     	} while (cont != null);
     }
+
+	class SaxConcurrentPageHandler extends DefaultHandler {
+		private Consumer<PageContainer> cons;
+		private ExecutorService executor;
+		private SaxConcurrentPageHandler.Page page;
+		private boolean acceptTitle;
+		private boolean acceptNs;
+		private boolean acceptTimestamp;
+		private boolean acceptText;
+		private StringBuilder sb;
+		
+		public SaxConcurrentPageHandler(Consumer<PageContainer> cons) {
+			this.cons = cons;
+		}
+		
+		public void startDocument() throws SAXException {
+			executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+		}
+		
+		public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
+			if (page == null) {
+				if (qName.equals("page")) {
+					page = new SaxConcurrentPageHandler.Page();
+				} else {
+					return;
+				}
+			} else {
+				switch (qName) {
+					case "title":
+						acceptTitle = true;
+						break;
+					case "ns":
+						acceptNs = true;
+						break;
+					case "timestamp":
+						acceptTimestamp = true;
+						break;
+					case "text":
+						acceptText = true;
+						break;
+					default:
+						return;
+				}
+				
+				sb = new StringBuilder(2000);
+			}
+		}
+		
+		public void characters(char[] ch, int start, int length) throws SAXException {
+			if (page == null) {
+				return;
+			}
+			
+			if (acceptTitle || acceptNs || acceptTimestamp || acceptText) {
+				sb.append(ch, start, length);
+			} else {
+				return;
+			}
+		}
+		
+		public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
+			if (page == null) {
+				return;
+			} else {
+				if (qName.equals("title") && acceptTitle) {
+					page.title = sb.toString();
+					acceptTitle = false;
+				} else if (qName.equals("ns") && acceptNs) {
+					String ns = sb.toString();
+					acceptNs = false;
+					
+					if (!ns.equals("0")) {
+						page = null;
+						return;
+					}
+				} else if (qName.equals("timestamp") && acceptTimestamp) {
+					page.timestamp = sb.toString();
+					acceptTimestamp = false;
+				} else if (qName.equals("text") && acceptText) {
+					page.text = sb.toString();
+					acceptText = false;
+				} else if (qName.equals("page")) {
+					executor.execute(makeCallback(page));
+					page = null;
+				} else {
+					return;
+				}
+			}
+		}
+		
+		public void endDocument() throws SAXException {
+			executor.shutdown();
+		}
+		
+		private Runnable makeCallback(SaxConcurrentPageHandler.Page page) {
+			return () -> {
+				PageContainer pc = new PageContainer(
+					decode(page.title),
+					decode(page.text),
+					timestampToCalendar(page.timestamp, true)
+				);
+				cons.accept(pc);
+			};
+		}
+		
+		class Page {
+			String title;
+			String timestamp;
+			String text;
+		}
+	}
 }
