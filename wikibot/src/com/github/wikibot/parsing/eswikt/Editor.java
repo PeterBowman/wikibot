@@ -423,17 +423,23 @@ public class Editor extends EditorBase {
 			
 			String template = m.group();
 			String templateName = m.group(1);
+			templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
 			
-			if (!templateName.equals(templateName.trim())) {
-				int startOffset = m.start(1) - m.start();
-				int endOffset = startOffset + templateName.length();
-				template = template.substring(0, startOffset) + templateName.trim() +
-					template.substring(endOffset);
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			template = template.substring(0, startOffset) + templateName +
+				template.substring(endOffset);
+			
+			String[] lines = template.split("\n");
+			
+			if (lines.length == 2 && lines[1].trim().equals("}}")) {
+				template = lines[0].trim() + lines[1].trim();
 			}
 			
 			m.appendReplacement(sb, "");
 			
-			if (sb.toString().matches(".*\n *$")) {
+			if (sb.toString().matches("^(?s:.*\n)? *$")) {
 				int lastNewlineIndex = sb.lastIndexOf("\n");
 				sb.delete(lastNewlineIndex + 1, sb.length());
 			}
@@ -488,42 +494,6 @@ public class Editor extends EditorBase {
 		}
 		
 		m.appendTail(sb);
-		formatted = sb.toString();
-		sb = new StringBuffer(formatted.length());
-		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m2 = P_TEMPLATE.matcher(formatted);
-		
-		while (m2.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m2.start()))
-			) {
-				continue;
-			}
-			
-			String template = m2.group();
-			String[] lines = template.split("\n");
-			
-			if (lines.length == 1) {
-				m2.appendReplacement(sb, Matcher.quoteReplacement(template));
-				continue;
-			}
-			
-			if (lines[0].trim().equals("{{")) {
-				String[] temp = Arrays.copyOfRange(lines, 1, lines.length);
-				temp[0] = lines[0].trim() + temp[0].trim();
-				template = String.join("\n", temp);
-				lines = temp;
-			}
-			
-			if (lines.length == 2 && lines[1].trim().equals("}}")) {
-				template = lines[0].trim() + lines[1].trim();
-			}
-			
-			m2.appendReplacement(sb, Matcher.quoteReplacement(template));
-		}
-		
-		m2.appendTail(sb);
 		formatted = sb.toString();
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
@@ -2571,7 +2541,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "mieux";
+		String title = "pire";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
