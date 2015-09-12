@@ -202,7 +202,7 @@ public class Editor extends EditorBase {
 			isOldStructure = false;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		hasFlexiveFormHeaders = page.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
@@ -322,7 +322,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void removeComments() {
-		String formatted = this.text;
+		String formatted = text;
 		
 		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .*?-->", "");
@@ -380,7 +380,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void removeTemplatePrefixes() {
-		String formatted = this.text;
+		String formatted = text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_PREFIXED_TEMPLATE.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
@@ -412,7 +412,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void sanitizeTemplates() {
-		String formatted = this.text;
+		String formatted = text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_TEMPLATE.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
@@ -473,7 +473,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void joinLines() {
-		String formatted = this.text;
+		String formatted = text;
 		
 		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
@@ -519,7 +519,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeTemplateNames() {
-		String formatted = this.text;
+		String formatted = text;
 		Map<String, String> map = new HashMap<String, String>(150, 1);
 		
 		// TODO: expand per [[Especial:TodasLasRedirecciones]]
@@ -695,7 +695,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void splitLines() {
-		String formatted = this.text;
+		String formatted = text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_LINE_SPLITTER_LEFT.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
@@ -754,23 +754,23 @@ public class Editor extends EditorBase {
 	}
 
 	public void transformToNewStructure() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (
 			!isOldStructure || hasFlexiveFormHeaders ||
-			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("INE-ES", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("POZ-POL-ES", this.text).isEmpty()
+			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
+			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
 		) {
 			return;
 		}
 		
 		// Process header templates
 		
-		String formatted = replaceOldStructureTemplates(this.text);
+		String formatted = replaceOldStructureTemplates(text);
 		
-		if (formatted.equals(this.text)) {
+		if (formatted.equals(text)) {
 			return;
 		}
 		
@@ -1041,7 +1041,7 @@ public class Editor extends EditorBase {
 	private void insertStructureTemplate(Page page) {
 		final String templateName = "estructura";
 		
-		if (!ParseUtils.getTemplates(templateName, this.text).isEmpty()) {
+		if (!ParseUtils.getTemplates(templateName, text).isEmpty()) {
 			return;
 		}
 		
@@ -1119,7 +1119,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeSectionHeaders() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (Section section : page.getAllSections()) {
 			if (section instanceof LangSection) {
@@ -1165,7 +1165,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		final String templateName = "título referencias";
 		List<String> contents = new ArrayList<String>();
 		boolean found = false;
@@ -1224,7 +1224,7 @@ public class Editor extends EditorBase {
 	}
 
 	public void duplicateReferencesSection() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() < 2) {
@@ -1265,7 +1265,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void moveReferencesSection() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() != 1) {
@@ -1286,7 +1286,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void normalizeEtymologyHeaders() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
@@ -1317,7 +1317,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		page.normalizeChildLevels();
 		
 		// TODO: traverse siblings of the first Section?
@@ -1405,7 +1405,7 @@ public class Editor extends EditorBase {
 	}
 
 	public void removePronGrafSection() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<Section> sections = page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?");
 		
 		if (isOldStructure || sections.isEmpty()) {
@@ -1452,14 +1452,14 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		page.sortSections();
 		String formatted = page.toString();
 		checkDifferences(formatted, "sortLangSections", "ordenando secciones de idioma");
 	}
 	
 	public void addMissingSections() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (
 			isOldStructure || hasFlexiveFormHeaders ||
@@ -1573,7 +1573,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
 		
 		for (LangSection langSection : list) {
@@ -1585,11 +1585,11 @@ public class Editor extends EditorBase {
 	}
 	
 	public void removeInflectionTemplates() {
-		if (isOldStructure || !this.text.contains("{{inflect.")) {
+		if (isOldStructure || !text.contains("{{inflect.")) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<Section> flexiveFormSections = page.findSectionsWithHeader("^([Ff]orma|\\{\\{forma) .+");
 		
 		for (Section section : flexiveFormSections) {
@@ -1612,7 +1612,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		Set<String> modified = new LinkedHashSet<String>();
 		
 		for (Section section : page.getAllSections()) {
@@ -2014,9 +2014,9 @@ public class Editor extends EditorBase {
 		// TODO: add leng parameter
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		Set<String> modified = new HashSet<String>();
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(this.text);
-		Matcher m = P_TMPL_LINE.matcher(this.text);
-		StringBuffer sb = new StringBuffer(this.text.length());
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
+		Matcher m = P_TMPL_LINE.matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {
 			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
@@ -2175,7 +2175,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		Set<String> set = new LinkedHashSet<String>();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
@@ -2288,7 +2288,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String langCode = langSection.getLangCode(false);
@@ -2309,7 +2309,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String content = langSection.toString();
@@ -2385,7 +2385,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void manageClearElements() {
-		String initial = removeBrTags(this.text);
+		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
 		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
@@ -2498,7 +2498,7 @@ public class Editor extends EditorBase {
 	
 	public void strongWhitespaces() {
 		// TODO: don't collide with removeComments() 
-		String initial = this.text;
+		String initial = text;
 		
 		initial = Utils.replaceWithStandardIgnoredRanges(initial, "( |&nbsp;)*\n", "\n");
 		initial = Utils.replaceWithStandardIgnoredRanges(initial, " &nbsp;", " ");
@@ -2543,7 +2543,7 @@ public class Editor extends EditorBase {
 	}
 
 	public void weakWhitespaces() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (page.getLeadingNewlines() == 1) {
 			page.setLeadingNewlines(0);
