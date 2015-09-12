@@ -150,7 +150,7 @@ public class Editor extends EditorBase {
 		
 		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)+\\s*)$");
 		
 		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
@@ -1897,6 +1897,12 @@ public class Editor extends EditorBase {
 					modified.add(templateFromText);
 				} else {
 					modified.add(String.format("{{%s}}", templateName));
+				}
+				
+				String trailingComments = m.group(2).trim();
+				
+				if (!trailingComments.isEmpty()) {
+					editedLines.add(trailingComments);
 				}
 			}
 			
