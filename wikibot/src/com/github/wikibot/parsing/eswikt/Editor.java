@@ -53,7 +53,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_ETYM_TMPL = Pattern.compile("\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
+	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\})", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
@@ -135,7 +135,7 @@ public class Editor extends EditorBase {
 		leftSideSplitterList.addAll(tempListLS);
 		leftSideSplitterList.remove("audio");
 		
-		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
+		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n[ :;*#]{0,5})(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
 		final List<String> tempListBS = Arrays.asList(
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
@@ -148,13 +148,13 @@ public class Editor extends EditorBase {
 		bothSidesSplitterList.addAll(AMBOX_TMPLS);
 		bothSidesSplitterList.addAll(tempListBS);
 		
-		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
+		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?)[ :;*#]*?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
 		
-		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
-		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
@@ -406,6 +406,8 @@ public class Editor extends EditorBase {
 	}
 	
 	public void sanitizeTemplates() {
+		// TODO: remove leading block character? (\n[:;*#]{{sinónimo}})
+		
 		String formatted = this.text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_TEMPLATE.matcher(formatted);
@@ -957,7 +959,7 @@ public class Editor extends EditorBase {
 				altGraf = "";
 			}
 			
-			pre = pre.isEmpty() ? "" : "$1\n";
+			pre = (pre.isEmpty() || pre.matches("[:;*#]+")) ? "" : "$1\n";
 			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
 			
 			if (currentSectionLang.equals(name)) {
@@ -1041,7 +1043,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group();
+			String template = m.group(1);
 			temp.add(template);
 			m.appendReplacement(sb, "");
 		}
@@ -1081,7 +1083,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group();
+			String template = m.group(1);
 			temp.add(template);
 			m.appendReplacement(sb, "");
 		}
