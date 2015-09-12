@@ -53,7 +53,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_ETYM_TMPL = Pattern.compile("\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}[^\n]*", Pattern.DOTALL);
+	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}[^\n]*)", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
@@ -94,12 +94,13 @@ public class Editor extends EditorBase {
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
-	private static final List<String> STANDARD_HEADERS = new ArrayList<String>();
+	private static final List<String> LS_SPLITTER_LIST;
+	private static final List<String> BS_SPLITTER_LIST;
+	private static final List<String> STANDARD_HEADERS;
 	
 	private static final String TRANSLATIONS_TEMPLATE;
 	
 	private boolean isOldStructure;
-	
 	private boolean hasFlexiveFormHeaders;
 	
 	static {
@@ -126,16 +127,20 @@ public class Editor extends EditorBase {
 		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE);
 		
 		final List<String> tempListLS = Arrays.asList(
-			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
+			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
 		);
 		
-		final List<String> leftSideSplitterList = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
-		leftSideSplitterList.addAll(PRON_TMPLS);
-		leftSideSplitterList.addAll(TERM_TMPLS);
-		leftSideSplitterList.addAll(tempListLS);
-		leftSideSplitterList.remove("audio");
+		LS_SPLITTER_LIST = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
+		LS_SPLITTER_LIST.addAll(PRON_TMPLS);
+		LS_SPLITTER_LIST.addAll(TERM_TMPLS);
+		LS_SPLITTER_LIST.addAll(tempListLS);
+		LS_SPLITTER_LIST.remove("audio");
 		
-		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
+		String tempListLSGroup = LS_SPLITTER_LIST.stream()
+			.map(Pattern::quote)
+			.collect(Collectors.joining("|"));
+		
+		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n[ :;*#]{0,5})(\\{\\{ *?(?:" + tempListLSGroup + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
 		final List<String> tempListBS = Arrays.asList(
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
@@ -144,18 +149,19 @@ public class Editor extends EditorBase {
 			"título referencias", "pron-graf", "imagen"
 		);
 		
-		final List<String> bothSidesSplitterList = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
-		bothSidesSplitterList.addAll(AMBOX_TMPLS);
-		bothSidesSplitterList.addAll(tempListBS);
+		BS_SPLITTER_LIST = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
+		BS_SPLITTER_LIST.addAll(AMBOX_TMPLS);
+		BS_SPLITTER_LIST.addAll(tempListBS);
 		
-		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
+		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?)[ :;*#]*?(\\{\\{ *?(?:" + String.join("\n", BS_SPLITTER_LIST) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)+\\s*)$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)+\\s*)$");
 		
-		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
-		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
+		STANDARD_HEADERS = new ArrayList<String>(Section.HEAD_SECTIONS.size() + Section.BOTTOM_SECTIONS.size());
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 		
@@ -410,6 +416,7 @@ public class Editor extends EditorBase {
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_TEMPLATE.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
+		boolean makeSummary = false;
 		
 		while (m.find()) {
 			if (Utils.containedInRanges(ignoredRanges, m.start())) {
@@ -433,10 +440,23 @@ public class Editor extends EditorBase {
 			}
 			
 			m.appendReplacement(sb, "");
+			templateName = templateName.trim();
 			
-			if (sb.toString().matches("^(?s:.*\n)? *$")) {
+			if (
+				(
+					templateName.startsWith("inflect.") ||
+					LS_SPLITTER_LIST.contains(templateName) ||
+					BS_SPLITTER_LIST.contains(templateName)
+				) &&
+				sb.toString().matches("^(?s:.*\n)?[ :;*#]*$")
+			) {
 				int lastNewlineIndex = sb.lastIndexOf("\n");
+				String toBeDeleted = sb.substring(lastNewlineIndex) + 1;
 				sb.delete(lastNewlineIndex + 1, sb.length());
+				
+				if (!toBeDeleted.trim().isEmpty()) {
+					makeSummary = true;
+				}
 			}
 			
 			sb.append(template);
@@ -445,7 +465,11 @@ public class Editor extends EditorBase {
 		m.appendTail(sb);
 		formatted = sb.toString();
 		
-		checkDifferences(formatted, "sanitizeTemplates", null);
+		String summary = makeSummary
+			? "\\n[:;*#]{{ → \\n{{"
+			: null;
+		
+		checkDifferences(formatted, "sanitizeTemplates", summary);
 	}
 	
 	public void joinLines() {
@@ -957,7 +981,7 @@ public class Editor extends EditorBase {
 				altGraf = "";
 			}
 			
-			pre = pre.isEmpty() ? "" : "$1\n";
+			pre = (pre.isEmpty() || pre.matches("[:;*#]+")) ? "" : "$1\n";
 			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
 			
 			if (currentSectionLang.equals(name)) {
@@ -1041,7 +1065,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group();
+			String template = m.group(1);
 			temp.add(template);
 			m.appendReplacement(sb, "");
 		}
@@ -1081,7 +1105,7 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group();
+			String template = m.group(1);
 			temp.add(template);
 			m.appendReplacement(sb, "");
 		}
@@ -2587,7 +2611,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Aliante";
+		String title = "Adriana";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
