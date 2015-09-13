@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
 import org.wikipedia.Wiki.Revision;
@@ -38,6 +40,7 @@ public final class MaintenanceScript {
 	private static final String LOCATION = "./data/tasks.eswikt/MaintenanceScript/";
 	private static final String LAST_DATE = LOCATION + "last_date.txt";
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
+	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
@@ -79,39 +82,34 @@ public final class MaintenanceScript {
 			.sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.getTitle()), titles.indexOf(pc2.getTitle())))
 			.toArray(PageContainer[]::new);
 		
-		List<String> errors = new ArrayList<String>();
-		
 		for (PageContainer pc : pages) {
-			String title = pc.getTitle();
 			EditorBase editor = new Editor(pc);
 			
 			try {
 				editor.check();
 			} catch (Throwable t) {
-				t.printStackTrace();
-				errors.add(title);
+				logError("eswikt.Editor error", pc.getTitle(), t);
 				continue;
 			}
 			
 			if (editor.isModified()) {
 				try {
-					wb.edit(title, editor.getPageText(), editor.getSummary(), pc.getTimestamp());
+					wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 					System.out.println(editor.getLogs());
+				} catch (CredentialException e) {
+					logError("Permission denied", pc.getTitle(), e);
+					continue;
 				} catch (Throwable t) {
-					t.printStackTrace();
-					errors.add(title);
+					logError("Edit error", pc.getTitle(), t);
+					continue;
 				}
 			}
-		}
-		
-		if (!errors.isEmpty()) {
-			System.out.printf("%d errors in: %s%n", errors.size(), errors.toString());
 		}
 		
 		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 		IOUtils.writeToFile(dateFormat.format(gapCal.getTime()), LAST_DATE);
 		
-		Login.saveSession(wb);
+		wb.logout();
 	}
 	
 	private static String extractTimestamp() throws FileNotFoundException {
@@ -133,6 +131,25 @@ public final class MaintenanceScript {
 		}
 		
 		return startTimestamp;
+	}
+
+	private static void logError(String errorType, String entry, Throwable t) {
+		System.out.printf("%s in %s%n", errorType, entry);
+		t.printStackTrace();
+		String[] lines;
+		
+		try {
+			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
+		} catch (FileNotFoundException e) {
+			lines = new String[]{};
+		}
+		
+		List<String> list = new ArrayList<String>(Arrays.asList(lines));
+		list.add(entry);
+		
+		try {
+			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+		} catch (IOException e) {}
 	}
 }
 
