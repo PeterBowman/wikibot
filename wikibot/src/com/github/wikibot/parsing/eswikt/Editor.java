@@ -443,18 +443,19 @@ public class Editor extends EditorBase {
 			templateName = templateName.trim();
 			
 			if (
-				(
-					templateName.startsWith("inflect.") ||
-					LS_SPLITTER_LIST.contains(templateName) ||
-					BS_SPLITTER_LIST.contains(templateName)
-				) &&
-				sb.toString().matches("^(?s:.*\n)?[ :;*#]*$")
+				templateName.startsWith("inflect.") ||
+				LS_SPLITTER_LIST.contains(templateName) ||
+				BS_SPLITTER_LIST.contains(templateName)
 			) {
-				int lastNewlineIndex = sb.lastIndexOf("\n");
-				String toBeDeleted = sb.substring(lastNewlineIndex) + 1;
-				sb.delete(lastNewlineIndex + 1, sb.length());
+				String sbCopy = sb.toString();
 				
-				if (!toBeDeleted.trim().isEmpty()) {
+				while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
+					sb.deleteCharAt(sb.length() - 1);
+				}
+				
+				String deletedString = sbCopy.substring(sb.length());
+				
+				if (!deletedString.trim().isEmpty()) {
 					makeSummary = true;
 				}
 			}
