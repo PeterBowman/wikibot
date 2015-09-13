@@ -2,6 +2,7 @@ package com.github.wikibot.scripts.eswikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,7 +47,8 @@ public final class ScheduledEditor {
 						return;
 					}
 					
-					processCategorymembers(args[1]);
+					String decoded = URLDecoder.decode(args[1], "UTF8");
+					processCategorymembers(decoded);
 					break;
 				case "-a":
 					processAllpages();
