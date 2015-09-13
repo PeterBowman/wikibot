@@ -54,7 +54,7 @@ public class Editor extends EditorBase {
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}[^\n]*)", Pattern.DOTALL);
+	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
@@ -1127,8 +1127,9 @@ public class Editor extends EditorBase {
 			}
 			
 			String line = m.group(1);
+			String trailingText = m.group(2);
 			
-			if (!analyzeEtymLine(line)) {
+			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
 				continue;
 			}
 			
@@ -1172,8 +1173,9 @@ public class Editor extends EditorBase {
 			}
 			
 			String line = m.group(1);
+			String trailingText = m.group(2);
 			
-			if (!analyzeEtymLine(line)) {
+			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
 				continue;
 			}
 			
@@ -1200,7 +1202,7 @@ public class Editor extends EditorBase {
 			String close = delimiters[1];
 			int start = text.lastIndexOf(open);
 			
-			return start != -1 && text.substring(start).indexOf(close) == -1;
+			return start == -1 || text.substring(start).indexOf(close) != -1;
 		};
 		
 		if (!biFunc.apply(line, new String[]{"<!--", "-->"})) {
@@ -2714,7 +2716,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Aliante";
+		String title = "alln";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
