@@ -788,7 +788,7 @@ public class Editor extends EditorBase {
 		if (!setFileAlias.isEmpty()) {
 			m.appendTail(sb);
 			formatted = sb.toString();
-			String temp = String.format("%s → %s", String.join(", ", setFileAlias), preferredFileNSAlias);
+			String temp = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
 			summarySet.add(temp);
 		}
 		
@@ -2716,7 +2716,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "alln";
+		String title = "afrikáans";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
