@@ -155,7 +155,7 @@ public class Editor extends EditorBase {
 		
 		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?)[ :;*#]*?(\\{\\{ *?(?:" + String.join("\n", BS_SPLITTER_LIST) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)+\\s*)$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)*\\s*)$");
 		
 		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
