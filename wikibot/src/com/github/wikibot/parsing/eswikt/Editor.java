@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1125,8 +1126,13 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group(1);
-			temp.add(template);
+			String line = m.group(1);
+			
+			if (!analyzeEtymLine(line)) {
+				continue;
+			}
+			
+			temp.add(line);
 			m.appendReplacement(sb, "");
 		}
 		
@@ -1165,8 +1171,13 @@ public class Editor extends EditorBase {
 				continue;
 			}
 			
-			String template = m.group(1);
-			temp.add(template);
+			String line = m.group(1);
+			
+			if (!analyzeEtymLine(line)) {
+				continue;
+			}
+			
+			temp.add(line);
 			m.appendReplacement(sb, "");
 		}
 		
@@ -1176,6 +1187,37 @@ public class Editor extends EditorBase {
 			etymologyIntro += "\n" + String.join("\n\n", temp);
 			etymologySection.setIntro(etymologyIntro);
 		}
+	}
+	
+	private boolean analyzeEtymLine(String line) {
+		// TODO: review
+		
+		final String[] arr1 = {"{{", "{|", "[", "<ref"};
+		final String[] arr2 = {"}}", "|}", "]", "</ref"};
+		
+		BiFunction<String, String[], Boolean> biFunc = (text, delimiters) -> {
+			String open = delimiters[0];
+			String close = delimiters[1];
+			int start = text.lastIndexOf(open);
+			
+			return start != -1 && text.substring(start).indexOf(close) == -1;
+		};
+		
+		if (!biFunc.apply(line, new String[]{"<!--", "-->"})) {
+			return false;
+		}
+		
+		line = ParseUtils.removeCommentsAndNoWikiText(line);
+		
+		for (int i = 0; i < arr1.length; i++) {
+			String[] delimiters = {arr1[i], arr2[i]};
+			
+			if (!biFunc.apply(line, delimiters)) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	public void normalizeSectionHeaders() {
@@ -2276,6 +2318,7 @@ public class Editor extends EditorBase {
 						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
 						ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
 					) {
+						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 						etymologySection.setIntro(etymologyIntro);
 						set.add("{{etimología}}");
@@ -2671,7 +2714,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Adriana";
+		String title = "Aliante";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
