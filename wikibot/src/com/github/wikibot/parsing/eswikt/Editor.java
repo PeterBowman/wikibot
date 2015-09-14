@@ -2378,6 +2378,19 @@ public class Editor extends EditorBase {
 			lengParam = String.format("|leng=%s", langCode);
 		}
 		
+		// TODO: ugly workaround, just insert {{etimología}} at the end
+		
+		if (templateName.equals("etimología")) {
+			m.appendTail(sb);
+			
+			if (sb.charAt(sb.length() -1 ) != '\n') {
+				sb.append("\n");
+			}
+			
+			sb.append(String.format(templateFormat, templateName + lengParam));
+			return sb.toString().trim();
+		}
+		
 		sb.append(String.format(templateFormat, templateName + lengParam));
 		
 		if (!hadMatch) {
