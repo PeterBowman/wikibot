@@ -370,6 +370,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?antropónimos .*?-->", "");
+		formatted = formatted.replaceAll("<!-- *?apéndice .*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra, por ejemplo .*?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra \\(es=español\\): .*?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
