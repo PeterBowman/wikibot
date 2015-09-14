@@ -713,6 +713,10 @@ public class Editor extends EditorBase {
 		int lastTrailingPos = -1;
 		
 		while (m2.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m2.start(1))) {
+				continue;
+			}
+			
 			String pre = m2.group(1);
 			String target = m2.group(2);
 			String post = m2.group(3);
