@@ -2125,6 +2125,7 @@ public class Editor extends EditorBase {
 	public void convertToTemplate() {
 		// TODO: add leng parameter
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
+		
 		Set<String> modified = new HashSet<String>();
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		Matcher m = P_TMPL_LINE.matcher(text);
@@ -2146,7 +2147,7 @@ public class Editor extends EditorBase {
 			line = Utils.replaceWithStandardIgnoredRanges(
 				line,
 				Pattern.quote("{{derivado|"),
-				Pattern.quote("{{derivad|")
+				"{{derivad|"
 			);
 			
 			m.appendReplacement(sb, Matcher.quoteReplacement(line));
@@ -2737,7 +2738,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "ni fu ni fa";
+		String title = "Cristo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
