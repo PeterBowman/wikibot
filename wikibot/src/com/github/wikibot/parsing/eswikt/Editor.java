@@ -334,7 +334,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o femenino=== ?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?o intransitivo\\|es\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?o intransitivo.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
