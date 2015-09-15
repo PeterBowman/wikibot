@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -98,22 +99,64 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public void normalizeChildLevels() {
-		for (int selfIndex = 1; selfIndex < sections.size(); selfIndex++) {
-			T currentSection = sections.get(selfIndex);
-			int currentLevel = currentSection.getLevel();
+		if (sections.isEmpty()) {
+			return;
+		}
+		
+		int tocLevel = 1;
+		
+		BiConsumer<List<T>, Integer> cons = (sections, level) ->
+			sections.stream().forEach(s -> s.setLevel(level));
+		
+		while (true) {
+			List<T> list = new ArrayList<T>();
 			
-			for (int prevIndex = selfIndex - 1; prevIndex > -1; prevIndex--) {
-				T previousSection = sections.get(prevIndex);
-				int previousLevel = previousSection.getLevel();
-				
-				if (currentLevel > previousLevel) {
-					if (currentLevel > previousLevel + 1) {
-						currentSection.setLevel(previousLevel + 1);
-					}
-					
-					break;
+			for (T section : sections) {
+				if (
+					section.getTocLevel() == tocLevel &&
+					(
+						list.isEmpty() ||
+						!list.get(list.size() - 1).equals(section.getSiblingSections())
+					)
+				) {
+					list.add(section);
 				}
 			}
+			
+			if (list.isEmpty()) {
+				break;
+			}
+			
+			for (T section : list) {
+				List<T> siblings = section.getSiblingSections();
+				T parent = section.getParentSection();
+				
+				int minLevel = siblings.stream()
+					.map(SectionBase::getLevel)
+					.min(Integer::min)
+					.get();
+				
+				int maxLevel = siblings.stream()
+					.map(SectionBase::getLevel)
+					.max(Integer::max)
+					.get();
+				
+				if (
+					minLevel != maxLevel ||
+					(parent != null && minLevel > parent.getLevel() + 1)
+				) {
+					if (parent != null) {
+						int parentLevel = parent.getLevel();
+						cons.accept(siblings, parentLevel + 1);
+					} else {
+						siblings = new ArrayList<T>(section.siblingSections);
+						siblings.remove(siblings.size() - 1);
+						cons.accept(siblings, minLevel + 1);
+					}
+				}
+			}
+			
+			tocLevel++;
 		}
 		
 		buildSectionTree();
