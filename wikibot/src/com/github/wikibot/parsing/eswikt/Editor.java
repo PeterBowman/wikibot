@@ -1524,6 +1524,9 @@ public class Editor extends EditorBase {
 		for (Section section : sections) {
 			Section parentSection = section.getParentSection();
 			
+			// TODO: pull up child sections or place before normalizeSectionLevels()
+			// https://es.wiktionary.org/w/index.php?title=ni_fu_ni_fa&oldid=2899086
+			
 			if (parentSection == null || section.getChildSections() != null) {
 				continue;
 			}
