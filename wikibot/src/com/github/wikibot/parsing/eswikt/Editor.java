@@ -328,6 +328,7 @@ public class Editor extends AbstractEditor {
 		
 		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?(en|EN) para inglés,.*?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añádela en el Alfabeto Fonético Internacional.*?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?A[ñn]ádela con el siguiente patrón.*?-->", "");
@@ -341,6 +342,7 @@ public class Editor extends AbstractEditor {
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
 		formatted = formatted.replaceAll("<!-- ?(; )?si pertenece a un campo semántico .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?(;2: )?si hay más acepciones.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?si hay más que una acepción,.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->", "");
