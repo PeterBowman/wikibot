@@ -749,7 +749,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		m2.appendTail(sb);
-		formatted = sb.toString();
+		formatted = Utils.sanitizeWhitespaces(sb.toString());
 		
 		checkDifferences(formatted, "splitLines", "dividiendo líneas");
 	}
@@ -2738,7 +2738,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Cristo";
+		String title = "concha";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
