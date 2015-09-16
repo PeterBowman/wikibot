@@ -1567,7 +1567,7 @@ public class Editor extends AbstractEditor {
 	}
 
 	public void sortLangSections() {
-		if (isOldStructure) {
+		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
 		}
 		
@@ -2745,7 +2745,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "vector";
+		String title = "abusivo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
