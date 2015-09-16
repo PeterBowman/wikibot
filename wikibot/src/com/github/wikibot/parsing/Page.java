@@ -6,7 +6,7 @@ import java.io.Serializable;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.utils.PageContainer;
 
-public class Page extends PageBase<Section> implements Serializable {
+public class Page extends AbstractPage<Section> implements Serializable {
 	private static final long serialVersionUID = 4466484557279321889L;
 	
 	public Page(String title, String text) {

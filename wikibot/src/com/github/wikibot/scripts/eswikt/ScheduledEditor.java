@@ -15,7 +15,7 @@ import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.parsing.EditorBase;
+import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.Page;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
@@ -152,7 +152,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static boolean processPage(PageContainer pc) {
-		EditorBase editor = new Editor(pc);
+		AbstractEditor editor = new Editor(pc);
 		
 		try {
 			editor.check();
@@ -176,7 +176,7 @@ public final class ScheduledEditor {
 		return true;
 	}
 	
-	private static void editEntry(PageContainer pc, EditorBase editor) throws Throwable {
+	private static void editEntry(PageContainer pc, AbstractEditor editor) throws Throwable {
 		try {
 			wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 			System.out.println(editor.getLogs());

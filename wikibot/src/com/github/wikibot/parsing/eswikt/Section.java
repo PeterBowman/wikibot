@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.github.wikibot.parsing.ParsingException;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractSection;
 
-public class Section extends SectionBase<Section> implements Comparable<Section> {
+public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	public static final List<String> HEAD_SECTIONS = Arrays.asList(
 		"Pronunciación y escritura", "Etimología"
 	);

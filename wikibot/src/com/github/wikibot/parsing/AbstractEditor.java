@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class EditorBase {
+public abstract class AbstractEditor {
 	protected String text;
 	protected String title;
 	protected Summary summ;
@@ -17,7 +17,7 @@ public abstract class EditorBase {
 	
 	private static final Pattern p_linker = Pattern.compile("\\[\\[\\s*?(:?)\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
 	
-	protected EditorBase(String title, String text) {
+	protected AbstractEditor(String title, String text) {
 		this.summ = new Summary();
 		this.notifyModifications = false;
 		this.logger = new ArrayList<String>();

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 
-public abstract class PageBase<T extends SectionBase<T>> {
+public abstract class AbstractPage<T extends AbstractSection<T>> {
 	protected String title;
 	protected String intro;
 	protected List<T> sections;
@@ -27,7 +27,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	protected int trailingNewlines;
 	private static final Pattern P_SECTION = Pattern.compile("^(?=(?:<!--.*?-->)*+(={1,6}.+?={1,6})\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
 	
-	public PageBase(String title) {
+	public AbstractPage(String title) {
 		this.title = Objects.requireNonNull(title);
 		this.title = this.title.trim();
 		this.intro = "";
@@ -132,12 +132,12 @@ public abstract class PageBase<T extends SectionBase<T>> {
 				T parent = section.getParentSection();
 				
 				int minLevel = siblings.stream()
-					.map(SectionBase::getLevel)
+					.map(AbstractSection::getLevel)
 					.min(Integer::min)
 					.get();
 				
 				int maxLevel = siblings.stream()
-					.map(SectionBase::getLevel)
+					.map(AbstractSection::getLevel)
 					.max(Integer::max)
 					.get();
 				

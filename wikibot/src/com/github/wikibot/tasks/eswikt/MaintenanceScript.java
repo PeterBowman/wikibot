@@ -29,7 +29,7 @@ import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.EditorBase;
+import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -83,7 +83,7 @@ public final class MaintenanceScript {
 			.toArray(PageContainer[]::new);
 		
 		for (PageContainer pc : pages) {
-			EditorBase editor = new Editor(pc);
+			AbstractEditor editor = new Editor(pc);
 			
 			try {
 				editor.check();

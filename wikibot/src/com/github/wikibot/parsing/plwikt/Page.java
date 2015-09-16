@@ -8,14 +8,14 @@ import java.util.regex.Pattern;
 import javax.security.auth.login.FailedLoginException;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.PageBase;
+import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public final class Page extends PageBase<Section> implements Serializable {
+public final class Page extends AbstractPage<Section> implements Serializable {
 	private static final long serialVersionUID = 4112162751333437538L;
 	private static final Pattern P_SECTION = Pattern.compile("^(?=(==.+?\\(\\{\\{.+?\\}\\}\\) *?==)\\s*$)", Pattern.MULTILINE);
 	

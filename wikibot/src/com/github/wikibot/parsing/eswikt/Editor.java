@@ -31,15 +31,15 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.parsing.EditorBase;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractEditor;
+import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public class Editor extends EditorBase {
+public class Editor extends AbstractEditor {
 	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_PREFIXED_TEMPLATE;
 	private static final Pattern P_LINE_JOINER;
@@ -1507,7 +1507,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		SectionBase.flattenSubSections(sections).stream()
+		AbstractSection.flattenSubSections(sections).stream()
 			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getStrippedHeader()))
 			.filter(s -> s.getLevel() > level)
 			.forEach(s -> s.pushLevels(level - s.getLevel()));
@@ -1594,7 +1594,7 @@ public class Editor extends EditorBase {
 			
 			// TODO: review, catch special cases
 			Set<String> headers = langSection.getChildSections().stream()
-				.map(SectionBase::getStrippedHeader)
+				.map(AbstractSection::getStrippedHeader)
 				.collect(Collectors.toSet());
 			
 			headers.removeAll(STANDARD_HEADERS);
@@ -2747,7 +2747,7 @@ public class Editor extends EditorBase {
 		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
-		EditorBase editor = new Editor(page);
+		AbstractEditor editor = new Editor(page);
 		editor.check();
 		
 		wb.edit(title, editor.getPageText(), editor.getSummary(), false, true, -2, null);

@@ -3,7 +3,7 @@ package com.github.wikibot.parsing;
 import com.github.wikibot.parsing.eswikt.Page;
 import com.github.wikibot.utils.PageContainer;
 
-public class Editor extends EditorBase {
+public class Editor extends AbstractEditor {
 
 	public Editor(Page page) {
 		super(page.getTitle(), page.toString());
