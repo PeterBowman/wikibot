@@ -1396,6 +1396,10 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void normalizeEtymologyHeaders() {
+		if (isOldStructure) {
+			return;
+		}
+		
 		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
@@ -1421,7 +1425,7 @@ public class Editor extends AbstractEditor {
 	
 	public void normalizeSectionLevels() {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
-		// TODO: satura
+		// TODO: satura, aplomo
 		
 		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
