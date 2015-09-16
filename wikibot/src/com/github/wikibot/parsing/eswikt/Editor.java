@@ -655,6 +655,8 @@ public class Editor extends AbstractEditor {
 		map.put("Náhuatl-Español", "NAH-ES");
 		map.put("Quechua-Español", "QU-ES");
 		
+		map.put("Caracter oriental", "Carácter oriental");
+		
 		List<String> found = new ArrayList<String>();
 		
 		for (Entry<String, String> entry : map.entrySet()) {
