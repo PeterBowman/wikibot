@@ -829,6 +829,7 @@ public class Editor extends AbstractEditor {
 			!isOldStructure || hasFlexiveFormHeaders ||
 			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
+			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
 			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
 			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
 			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
