@@ -5,10 +5,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.github.wikibot.parsing.EditorBase;
+import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.utils.PageContainer;
 
-public class Editor extends EditorBase {
+public class Editor extends AbstractEditor {
 	private static final Pattern pLinkToTemplateZw = Pattern.compile("(\\(?\\[\\[(związek zgody|związek rządu)\\]\\]\\)?).+?\\{\\{odmiana-");
 	private static final Pattern pNotesToReferencesExternal = Pattern.compile(" \\((\\[[^\\[\\]]+\\])\\)", Pattern.MULTILINE);
 	private static final Pattern pNotesToReferencesInterwiki = Pattern.compile(" \\((\\[[^\\[\\]]+\\])\\)", Pattern.MULTILINE);

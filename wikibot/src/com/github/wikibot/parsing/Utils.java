@@ -15,6 +15,13 @@ import org.apache.commons.lang3.Range;
 public final class Utils {
 	private Utils() {}
 	
+	public static String sanitizeWhitespaces(String text) {
+		text = text.replace("\t", " ");
+		text = text.replaceAll("[ ]{2,}", " ");
+		text = text.replace(" \n", "\n");
+		return text;
+	}
+
 	@SuppressWarnings("unchecked")
 	public static Range<Integer>[] findRanges(String text, String start, String end) {
 		int startPos = text.indexOf(start);
@@ -51,27 +58,46 @@ public final class Utils {
 		
 		return list.toArray(new Range[list.size()]);
 	}
-
-	public static String sanitizeWhitespaces(String text) {
-		text = text.replace("\t", " ");
-		text = text.replaceAll("[ ]{2,}", " ");
-		text = text.replace(" \n", "\n");
-		return text;
+	
+	public static List<Range<Integer>> getStandardIgnoredRanges(String text) {
+		final int patternOptions = Pattern.DOTALL | Pattern.CASE_INSENSITIVE;
+		Range<Integer>[] comments = findRanges(text, "<!--", "-->");
+		// TODO: use DOM parsing?
+		Range<Integer>[] nowikis = findRanges(text, Pattern.compile("<nowiki(?: |>).+?</nowiki *?>", patternOptions));
+		Range<Integer>[] pres = findRanges(text, Pattern.compile("<pre(?: |>).+?</pre *?>", patternOptions));
+		Range<Integer>[] codes = findRanges(text, Pattern.compile("<code(?: |>).+?</code *?>", patternOptions));
+		
+		return getIgnoredRanges(comments, nowikis, pres, codes);
+	}
+	
+	@SafeVarargs
+	public static List<Range<Integer>> getIgnoredRanges(Range<Integer>[]... ranges) {
+		if (ranges.length == 0) {
+			return null;
+		}
+		
+		if (ranges.length == 1) {
+			List<Range<Integer>> temp = Arrays.asList(ranges[0]);
+			return new ArrayList<Range<Integer>>(temp);
+		} else {
+			List<Range<Integer>> list = sortIgnoredRanges(ranges);
+			combineIgnoredRanges(list);
+			return list;
+		}
 	}
 
-	public static List<Range<Integer>> getIgnoredRanges(String text) {
-		Range<Integer>[] comments = findRanges(text, "<!--", "-->");
-		Range<Integer>[] nowikis = findRanges(text, "<nowiki>", "</nowiki>");
-		Range<Integer>[] pres = findRanges(text, Pattern.compile("<pre(?: |>).+?</pre>", Pattern.DOTALL));
-		Range<Integer>[] codes = findRanges(text, Pattern.compile("<code(?: |>).+?</code>", Pattern.DOTALL));
-		
-		List<Range<Integer>> ranges = Arrays.asList(comments, nowikis, pres, codes)
-			.stream()
+	@SafeVarargs
+	private static List<Range<Integer>> sortIgnoredRanges(Range<Integer>[]... ranges) {
+		List<Range<Integer>> list = Arrays.asList(ranges).stream()
 			.filter(Objects::nonNull)
-			.flatMap(array -> Stream.of(array))
+			.flatMap(Stream::of)
 			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
 			.collect(Collectors.toList());
-		
+					
+		return list;
+	}
+
+	private static void combineIgnoredRanges(List<Range<Integer>> ranges) {
 		ListIterator<Range<Integer>> iterator = ranges.listIterator(ranges.size());
 		
 		while (iterator.hasPrevious()) {
@@ -86,7 +112,40 @@ public final class Utils {
 				}
 			}
 		}
+	}
+	
+	public static boolean containedInRanges(List<Range<Integer>> ignoredRanges, int index) {
+		if (ignoredRanges.isEmpty()) {
+			return false;
+		}
 		
-		return ranges;
+		for (Range<Integer> range : ignoredRanges) {
+			if (range.contains(index)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
+		List<Range<Integer>> ignoredRanges = getStandardIgnoredRanges(text);
+		return replaceWithIgnoredranges(text, regex, replacement, ignoredRanges);
+	}
+	
+	public static String replaceWithIgnoredranges(String text, String regex, String replacement, List<Range<Integer>> ignoredRanges) {
+		Matcher m = Pattern.compile(regex).matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			if (containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, replacement);
+		}
+		
+		m.appendTail(sb);
+		return sb.toString();
 	}
 }

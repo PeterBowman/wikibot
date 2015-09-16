@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.github.wikibot.parsing.ParsingException;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractSection;
 
-public class Section extends SectionBase<Section> implements Comparable<Section> {
+public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	public static final List<String> HEAD_SECTIONS = Arrays.asList(
 		"Pronunciación y escritura", "Etimología"
 	);
@@ -42,7 +42,6 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 		
 		section.setLevel(level);
 		section.setHeader(header);
-		section.setHeaderFormat("%1$s%2$s%1$s");
 		
 		return section;
 	}
@@ -72,7 +71,8 @@ public class Section extends SectionBase<Section> implements Comparable<Section>
 
 	@Override
 	public int compareTo(Section s) {
-		String targetHeader = s.getHeader();
+		String header = getStrippedHeader();
+		String targetHeader = s.getStrippedHeader();
 		
 		boolean selfInHeadList = HEAD_SECTIONS.contains(header);
 		boolean selfInBottomList = BOTTOM_SECTIONS.contains(header);

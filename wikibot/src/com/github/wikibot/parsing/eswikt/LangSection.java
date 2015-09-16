@@ -61,12 +61,24 @@ public class LangSection extends Section {
 		return section;
 	}
 	
+	public String getLangCode(boolean ignoreCase) {
+		if (ignoreCase) {
+			return langCode.toLowerCase();
+		} else {
+			return langCode;
+		}
+	}
+	
 	public String getLangCode() {
-		return langCode.toUpperCase();
+		return getLangCode(true);
+	}
+	
+	public boolean langCodeEqualsTo(String langCode) {
+		return this.langCode.equalsIgnoreCase(langCode);
 	}
 
 	public void setLangCode(String langCode) {
-		this.langCode = langCode.toUpperCase();
+		this.langCode = langCode.toLowerCase();
 		this.langName = Page.CODE_TO_LANG.getOrDefault(this.langCode, "");
 		updateHeader();
 	}
@@ -123,7 +135,7 @@ public class LangSection extends Section {
 		
 		templateType = m.group(1);
 		langCode = m.group(2);
-		langName = Page.CODE_TO_LANG.getOrDefault(langCode.toUpperCase(), "");
+		langName = Page.CODE_TO_LANG.getOrDefault(langCode.toLowerCase(), "");
 		String paramString = m.group(3);
 		
 		if (paramString != null) {
@@ -186,6 +198,10 @@ public class LangSection extends Section {
 		LangSection ls = (LangSection) s;
 		String targetTemplate = ls.getTemplateType();
 		String targetLang = ls.getLangName();
+		
+		if (langName.equals(targetLang)) {
+			return 0;
+		}
 		
 		if (langName.equals("español")) {
 			return -1;

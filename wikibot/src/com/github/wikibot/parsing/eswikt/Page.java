@@ -18,16 +18,16 @@ import javax.security.auth.login.FailedLoginException;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.PageBase;
+import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.ParsingException;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public final class Page extends PageBase<Section> {
+public final class Page extends AbstractPage<Section> {
 	private List<LangSection> langSections;
 	private Section references;
 	private String trailingContent;
@@ -51,7 +51,7 @@ public final class Page extends PageBase<Section> {
 			CODE_TO_LANG = Stream.of(IOUtils.loadFromFile("./data/eswikt.langs.txt", "", "UTF8"))
 				.map(line -> line.split("\\s"))
 				.collect(Collectors.toMap(
-					arr -> arr[0].toUpperCase(),
+					arr -> arr[0], // lower case!
 					arr -> arr[1],
 					(arr1, arr2) -> arr1,
 					LinkedHashMap::new
@@ -200,7 +200,7 @@ public final class Page extends PageBase<Section> {
 		}
 		
 		Collections.sort(langSections);
-		sections = new ArrayList<Section>(SectionBase.flattenSubSections(langSections));
+		sections = new ArrayList<Section>(AbstractSection.flattenSubSections(langSections));
 		
 		if (!nonLangSections.isEmpty()) {
 			appendSections(nonLangSections.toArray(new Section[nonLangSections.size()]));
@@ -212,7 +212,7 @@ public final class Page extends PageBase<Section> {
 	public LangSection getLangSection(String langCode) {
 		LangSection out = langSections
 			.stream()
-			.filter(section -> section.getLangCode().equals(langCode.toUpperCase()))
+			.filter(section -> section.langCodeEqualsTo(langCode))
 			.findFirst()
 			.orElse(null);
 		
@@ -234,7 +234,7 @@ public final class Page extends PageBase<Section> {
 	}
 
 	public boolean addLangSection(LangSection langSection) {
-		if (getLangSection(langSection.getLangCode()) != null) {
+		if (hasLangSection(langSection.getLangCode())) {
 			return false;
 		}
 		
@@ -260,7 +260,7 @@ public final class Page extends PageBase<Section> {
 	public boolean hasLangSection(String langCode) {
 		return langSections
 			.stream()
-			.anyMatch(section -> section.getLangCode().equals(langCode.toUpperCase()));
+			.anyMatch(section -> section.langCodeEqualsTo(langCode));
 	}
 	
 	@Override

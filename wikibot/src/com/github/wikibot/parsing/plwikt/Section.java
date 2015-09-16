@@ -18,9 +18,9 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.wikibot.parsing.ParsingException;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractSection;
 
-public class Section extends SectionBase<Section> implements Comparable<Section> {
+public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	private List<Field> fields;
 	private String lang;
 	private String langShort;
