@@ -69,12 +69,13 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> PRON_TMPLS = Arrays.asList(
-		"pronunciación", "pron.la",  "audio", "transliteración", "homófono",
-		"grafía alternativa", "variantes", "parónimo", "diacrítico"
+		"pronunciación", "pron.la",  "audio", "transliteración", "homófono", "grafía alternativa",
+		"variantes", "parónimo", "diacrítico", "ortografía alternativa"
 	);
 	
 	private static final List<String> PRON_TMPLS_ALIAS = Arrays.asList(
-		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", "variante", "parónimos", null
+		null, null, null, "transliteraciones", "homófonos", "grafías alternativas",
+		"variante", "parónimos", null, "ortografías alternativas"
 	);
 	
 	private static final List<String> TERM_TMPLS = Arrays.asList(
@@ -2738,7 +2739,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "concha";
+		String title = "vector";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
