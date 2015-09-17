@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -41,6 +42,9 @@ public final class MaintenanceScript {
 	private static final String LAST_DATE = LOCATION + "last_date.txt";
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
+	
+	private static final int THREAD_CHECK_SECS = 5;
+	private static RuntimeException threadExecutionException;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
@@ -84,11 +88,15 @@ public final class MaintenanceScript {
 		
 		for (PageContainer pc : pages) {
 			AbstractEditor editor = new Editor(pc);
+			Thread thread = new Thread(editor::check);
 			
 			try {
-				editor.check();
+				monitorThread(thread);
+			} catch (TimeoutException e) {
+				logError("Editor.check() timeout", pc.getTitle(), e);
+				System.exit(0);
 			} catch (Throwable t) {
-				logError("eswikt.Editor error", pc.getTitle(), t);
+				logError("Editor.check() error", pc.getTitle(), t);
 				continue;
 			}
 			
@@ -150,6 +158,34 @@ public final class MaintenanceScript {
 		try {
 			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
 		} catch (IOException e) {}
+	}
+	
+	private static void monitorThread(Thread thread) throws TimeoutException {
+		thread.setUncaughtExceptionHandler(new MonitoredThreadExceptionHandler());
+		thread.start();
+		
+		final long endMs = System.currentTimeMillis() + THREAD_CHECK_SECS * 1000;
+		
+		while (thread.isAlive()) {
+			if (threadExecutionException != null) {
+				throw threadExecutionException;
+			}
+			
+			if (System.currentTimeMillis() > endMs) {
+				throw new TimeoutException("Thread timeout");
+			}
+		}
+	}
+	
+	private static class MonitoredThreadExceptionHandler implements Thread.UncaughtExceptionHandler {
+		MonitoredThreadExceptionHandler() {
+			threadExecutionException = null;
+		}
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			threadExecutionException = new RuntimeException(e.getMessage());
+		}
 	}
 }
 
