@@ -210,8 +210,10 @@ public class Editor extends AbstractEditor {
 	
 	@Override
 	public void check() {
-		if (!failsafeCheck()) {
-			throw new Error("eswikt.Editor.failsafeCheck");
+		try {
+			failsafeCheck();
+		} catch (Error e) {
+			throw e;
 		}
 		
 		removeComments();
@@ -243,11 +245,11 @@ public class Editor extends AbstractEditor {
 		weakWhitespaces();
 	}
 	
-	private boolean failsafeCheck() {
+	private void failsafeCheck() {
 		String strippedText = ParseUtils.removeCommentsAndNoWikiText(this.text);
 		
 		if (getMaximumTemplateDepth(strippedText) > 2) {
-			return false;
+			throw new Error("Maximum template depth > 2");
 		}
 		
 		Page page = Page.store(title, text);
@@ -256,7 +258,7 @@ public class Editor extends AbstractEditor {
 			unpairedCurlyBrackets(page.getIntro()) ||
 			unpairedSquareBrackets(page.getIntro())
 		) {
-			return false;
+			throw new Error("Unpaired brackets in Page intro");
 		}
 		
 		for (Section section : page.getAllSections()) {
@@ -264,11 +266,10 @@ public class Editor extends AbstractEditor {
 				unpairedCurlyBrackets(section.getIntro()) ||
 				unpairedSquareBrackets(section.getIntro())
 			) {
-				return false;
+				int index = page.getAllSections().indexOf(section) + 1;
+				throw new Error("Unpaired brackets in Section intro (#" + index + ")");
 			}
 		}
-		
-		return true;
 	}
 	
 	private boolean unpairedCurlyBrackets(String text) {
