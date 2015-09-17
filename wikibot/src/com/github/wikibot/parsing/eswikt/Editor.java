@@ -244,9 +244,9 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private boolean failsafeCheck() {
-		String text = ParseUtils.removeCommentsAndNoWikiText(this.text);
+		String strippedText = ParseUtils.removeCommentsAndNoWikiText(this.text);
 		
-		if (getMaximumTemplateDepth(text) > 2) {
+		if (getMaximumTemplateDepth(strippedText) > 2) {
 			return false;
 		}
 		
@@ -2748,7 +2748,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "abusivo";
+		String title = "República Federal de Alemania";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
