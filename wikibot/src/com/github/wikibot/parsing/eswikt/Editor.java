@@ -210,13 +210,14 @@ public class Editor extends AbstractEditor {
 	
 	@Override
 	public void check() {
+		removeComments();
+		
 		try {
 			failsafeCheck();
 		} catch (Error e) {
 			throw e;
 		}
 		
-		removeComments();
 		removeTemplatePrefixes();
 		sanitizeTemplates();
 		joinLines();
@@ -254,20 +255,25 @@ public class Editor extends AbstractEditor {
 		
 		Page page = Page.store(title, text);
 		
-		if (
-			unpairedCurlyBrackets(page.getIntro()) ||
-			unpairedSquareBrackets(page.getIntro())
-		) {
-			throw new Error("Unpaired brackets in Page intro");
+		if (unpairedCurlyBrackets(page.getIntro())) {
+			throw new Error("Unpaired curly brackets in Page intro");
 		}
 		
-		for (Section section : page.getAllSections()) {
-			if (
-				unpairedCurlyBrackets(section.getIntro()) ||
-				unpairedSquareBrackets(section.getIntro())
-			) {
-				int index = page.getAllSections().indexOf(section) + 1;
-				throw new Error("Unpaired brackets in Section intro (#" + index + ")");
+		if (unpairedSquareBrackets(page.getIntro())) {
+			throw new Error("Unpaired square brackets in Page intro");
+		}
+		
+		List<Section> sections = page.getAllSections();
+		
+		for (int index = 0; index < sections.size(); index++) {
+			Section section = sections.get(index);
+			
+			if (unpairedCurlyBrackets(section.getIntro())) {
+				throw new Error("Unpaired curly brackets in Section intro (#" + index + ")");
+			}
+			
+			if (unpairedSquareBrackets(section.getIntro())) {
+				throw new Error("Unpaired square brackets in Section intro (#" + index + ")");
 			}
 		}
 	}
@@ -344,7 +350,7 @@ public class Editor extends AbstractEditor {
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
 		formatted = formatted.replaceAll("<!-- ?(; )?si pertenece a un campo semántico .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?(;2: )?si hay más acepciones.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?si hay más que una acepción,.*?-->", "");
+		formatted = formatted.replaceAll("(;2: ?)?<!-- ?si hay más que una acepción,.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->", "");
@@ -380,6 +386,7 @@ public class Editor extends AbstractEditor {
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra \\(es=español\\): .*?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
 		formatted = formatted.replaceAll("<!--\\s*$", "");
+		formatted = formatted.replaceAll("\\* ?\\[\\[\\]\\] ?<!-- ?(primera|segunda) locución ?-->", "");
 		
 		formatted = Utils.sanitizeWhitespaces(formatted);
 		
@@ -2746,7 +2753,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "ballena";
+		String title = "Roman";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
