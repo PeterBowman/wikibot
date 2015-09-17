@@ -1348,20 +1348,16 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Section bottomReferences = page.getReferencesSection();
 		Iterator<Section> iterator = allReferences.iterator();
 		
 		while (iterator.hasNext()) {
 			Section section = iterator.next();
-			
-			if (section == bottomReferences) {
-				continue;
-			}
-			
 			String content = section.getIntro();
 			
-			content = content.replaceAll("(?s)<!--.*?-->", ""); 
+			content = ParseUtils.removeCommentsAndNoWikiText(content); 
 			content = content.replaceAll("<references *?/ *?>", "");
+			// TODO: review transclusions of {{listaref}}
+			//content = content.replaceAll("\\{\\{ *?listaref *?\\}\\}", "");
 			content = content.trim();
 			
 			// TODO: combine non-empty sections?
@@ -1372,9 +1368,9 @@ public class Editor extends AbstractEditor {
 		}
 		
 		if (allReferences.isEmpty()) {
-			bottomReferences = Section.create("Referencias y notas", 2);
-			bottomReferences.setIntro("<references />");
-			page.setReferencesSection(bottomReferences);
+			Section references = Section.create("Referencias y notas", 2);
+			references.setIntro("<references />");
+			page.setReferencesSection(references);
 		}
 		
 		String formatted = page.toString();
@@ -2750,7 +2746,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "República Federal de Alemania";
+		String title = "ballena";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
