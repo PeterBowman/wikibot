@@ -338,6 +338,7 @@ public class Editor extends AbstractEditor {
 		formatted = formatted.replaceAll("<!-- ?o femenino=== ?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o intransitivo.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?¿flexión\\?: mira en Categoría:.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
