@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -152,7 +153,8 @@ public final class MaintenanceScript {
 	}
 
 	private static void logError(String errorType, String entry, Throwable t) {
-		System.out.printf("%s in %s%n", errorType, entry);
+		Date date = new Date();
+		System.out.printf("%s %s in %s%n", date, errorType, entry);
 		t.printStackTrace();
 		String[] lines;
 		
@@ -163,7 +165,7 @@ public final class MaintenanceScript {
 		}
 		
 		List<String> list = new ArrayList<String>(Arrays.asList(lines));
-		list.add(entry);
+		list.add(String.format("%s %s", date, entry));
 		
 		try {
 			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
