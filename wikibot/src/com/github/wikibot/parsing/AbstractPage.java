@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -18,15 +19,15 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 
-public abstract class PageBase<T extends SectionBase<T>> {
+public abstract class AbstractPage<T extends AbstractSection<T>> {
 	protected String title;
 	protected String intro;
 	protected List<T> sections;
 	protected int leadingNewlines;
 	protected int trailingNewlines;
-	private static final Pattern P_SECTION = Pattern.compile("^(?=={1,6}.+?={1,6}\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
+	private static final Pattern P_SECTION = Pattern.compile("^(?=(?:<!--.*?-->)*+(={1,6}.+?={1,6})\\s*(?:(?:<!--.*?-->)+\\s*)?$)", Pattern.MULTILINE);
 	
-	public PageBase(String title) {
+	public AbstractPage(String title) {
 		this.title = Objects.requireNonNull(title);
 		this.title = this.title.trim();
 		this.intro = "";
@@ -98,22 +99,64 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public void normalizeChildLevels() {
-		for (int selfIndex = 1; selfIndex < sections.size(); selfIndex++) {
-			T currentSection = sections.get(selfIndex);
-			int currentLevel = currentSection.getLevel();
+		if (sections.isEmpty()) {
+			return;
+		}
+		
+		int tocLevel = 1;
+		
+		BiConsumer<List<T>, Integer> cons = (sections, level) ->
+			sections.stream().forEach(s -> s.setLevel(level));
+		
+		while (true) {
+			List<T> list = new ArrayList<T>();
 			
-			for (int prevIndex = selfIndex - 1; prevIndex > -1; prevIndex--) {
-				T previousSection = sections.get(prevIndex);
-				int previousLevel = previousSection.getLevel();
-				
-				if (currentLevel > previousLevel) {
-					if (currentLevel > previousLevel + 1) {
-						currentSection.setLevel(previousLevel + 1);
-					}
-					
-					break;
+			for (T section : sections) {
+				if (
+					section.getTocLevel() == tocLevel &&
+					(
+						list.isEmpty() ||
+						!list.get(list.size() - 1).equals(section.getSiblingSections())
+					)
+				) {
+					list.add(section);
 				}
 			}
+			
+			if (list.isEmpty()) {
+				break;
+			}
+			
+			for (T section : list) {
+				List<T> siblings = section.getSiblingSections();
+				T parent = section.getParentSection();
+				
+				int minLevel = siblings.stream()
+					.map(AbstractSection::getLevel)
+					.min(Integer::min)
+					.get();
+				
+				int maxLevel = siblings.stream()
+					.map(AbstractSection::getLevel)
+					.max(Integer::max)
+					.get();
+				
+				if (
+					minLevel != maxLevel ||
+					(parent != null && minLevel > parent.getLevel() + 1)
+				) {
+					if (parent != null) {
+						int parentLevel = parent.getLevel();
+						cons.accept(siblings, parentLevel + 1);
+					} else {
+						siblings = new ArrayList<T>(section.siblingSections);
+						siblings.remove(siblings.size() - 1);
+						cons.accept(siblings, minLevel + 1);
+					}
+				}
+			}
+			
+			tocLevel++;
 		}
 		
 		buildSectionTree();
@@ -121,7 +164,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	
 	public boolean hasSectionWithHeader(String regex) {
 		return sections.stream()
-			.anyMatch(section -> section.getHeader().matches(regex));
+			.anyMatch(section -> section.getStrippedHeader().matches(regex));
 	}
 	
 	public List<T> filterSections(Predicate<T> predicate) {
@@ -131,7 +174,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 	}
 	
 	public List<T> findSectionsWithHeader(String regex) {
-		return filterSections(section -> section.getHeader().matches(regex));
+		return filterSections(section -> section.getStrippedHeader().matches(regex));
 	}
 
 	public void sortSections(Comparator<T> comparator) {
@@ -149,10 +192,7 @@ public abstract class PageBase<T extends SectionBase<T>> {
 		List<String> sections = new ArrayList<String>();
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(1))) {
 				continue;
 			}
 			

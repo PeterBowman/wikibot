@@ -199,6 +199,10 @@ public class LangSection extends Section {
 		String targetTemplate = ls.getTemplateType();
 		String targetLang = ls.getLangName();
 		
+		if (langName.equals(targetLang)) {
+			return 0;
+		}
+		
 		if (langName.equals("español")) {
 			return -1;
 		} else if (targetLang.equals("español")) {

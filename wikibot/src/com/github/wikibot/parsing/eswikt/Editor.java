@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,35 +27,39 @@ import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.parsing.EditorBase;
-import com.github.wikibot.parsing.SectionBase;
+import com.github.wikibot.parsing.AbstractEditor;
+import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public class Editor extends EditorBase {
+public class Editor extends AbstractEditor {
+	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
+	private static final Pattern P_PREFIXED_TEMPLATE;
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
-	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{.+?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
+	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TMPL_LINE = Pattern.compile("^:*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?):*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_ETYM_LINE = Pattern.compile("\n?((?:.*?\\{\\{|:*?\\* *?'{0,3})[eE]timolog[íi]a[^\n]+)");
+	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
+	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -65,12 +69,13 @@ public class Editor extends EditorBase {
 	);
 	
 	private static final List<String> PRON_TMPLS = Arrays.asList(
-		"pronunciación", "pron.la",  "audio", "transliteración", "homófono",
-		"grafía alternativa", "variantes", "parónimo", "diacrítico"
+		"pronunciación", "pron.la",  "audio", "transliteración", "homófono", "grafía alternativa",
+		"variantes", "parónimo", "diacrítico", "ortografía alternativa"
 	);
 	
 	private static final List<String> PRON_TMPLS_ALIAS = Arrays.asList(
-		null, null, null, "transliteraciones", "homófonos", "grafías alternativas", "variante", "parónimos", null
+		null, null, null, "transliteraciones", "homófonos", "grafías alternativas",
+		"variante", "parónimos", null, "ortografías alternativas"
 	);
 	
 	private static final List<String> TERM_TMPLS = Arrays.asList(
@@ -91,13 +96,20 @@ public class Editor extends EditorBase {
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
-	private static final List<String> STANDARD_HEADERS = new ArrayList<String>();
+	private static final List<String> LS_SPLITTER_LIST;
+	private static final List<String> BS_SPLITTER_LIST;
+	private static final List<String> STANDARD_HEADERS;
 	
 	private static final String TRANSLATIONS_TEMPLATE;
 	
 	private boolean isOldStructure;
+	private boolean hasFlexiveFormHeaders;
 	
 	static {
+		final List<String> templateNsAliases = Arrays.asList("Template", "Plantilla", "msg");
+		
+		P_PREFIXED_TEMPLATE = Pattern.compile("\\{\\{([ :]*?(?:" + String.join("|", templateNsAliases) + ") *?: *).+?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		
 		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
 		
 		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
@@ -114,39 +126,44 @@ public class Editor extends EditorBase {
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
 		// TODO: review headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<!\n|__|>|=|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):.+?\\]\\]|__|\\{\\||-{4,})(<ref[ >]|[^\n<:;\\*\\{\\}\\|=])", Pattern.CASE_INSENSITIVE);
+		P_LINE_JOINER = Pattern.compile("(?<![\n:;*#>=]|__|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\||-{4,})(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 		
 		final List<String> tempListLS = Arrays.asList(
-			"t\\+", "descendiente", "desc", "anotación", "etimología", "etimología2"
+			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
 		);
 		
-		final List<String> leftSideSplitterList = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
-		leftSideSplitterList.addAll(PRON_TMPLS);
-		leftSideSplitterList.addAll(TERM_TMPLS);
-		leftSideSplitterList.addAll(tempListLS);
-		leftSideSplitterList.remove("audio");
+		LS_SPLITTER_LIST = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
+		LS_SPLITTER_LIST.addAll(PRON_TMPLS);
+		LS_SPLITTER_LIST.addAll(TERM_TMPLS);
+		LS_SPLITTER_LIST.addAll(tempListLS);
+		LS_SPLITTER_LIST.remove("audio");
 		
-		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n) *?(\\{\\{ *?(?:" + String.join("|", leftSideSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
+		String tempListLSGroup = LS_SPLITTER_LIST.stream()
+			.map(Pattern::quote)
+			.collect(Collectors.joining("|"));
+		
+		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n[ :;*#]{0,5})(\\{\\{ *?(?:" + tempListLSGroup + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
 		final List<String> tempListBS = Arrays.asList(
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
-			"título referencias", "tit ref", "pron-graf", "imagen"
+			"título referencias", "pron-graf", "imagen"
 		);
 		
-		final List<String> bothSidesSplitterList = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
-		bothSidesSplitterList.addAll(AMBOX_TMPLS);
-		bothSidesSplitterList.addAll(tempListBS);
+		BS_SPLITTER_LIST = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
+		BS_SPLITTER_LIST.addAll(AMBOX_TMPLS);
+		BS_SPLITTER_LIST.addAll(tempListBS);
 		
-		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?) *?(\\[\\[ *?(?i:" + specialLinksGroup + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\{ *?(?:" + String.join("\n", bothSidesSplitterList) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
+		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?)[ :;*#]*?(\\{\\{ *?(?:" + String.join("|", BS_SPLITTER_LIST) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
-		P_ADAPT_PRON_TMPL = Pattern.compile("^[:\\*]*? *?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}\\.?$");
+		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)*\\s*)$");
 		
-		P_AMBOX_TMPLS = Pattern.compile(" *?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
 
-		P_IMAGES = Pattern.compile(" *?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:.+\\]\\]", Pattern.CASE_INSENSITIVE);
+		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
+		STANDARD_HEADERS = new ArrayList<String>(Section.HEAD_SECTIONS.size() + Section.BOTTOM_SECTIONS.size());
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 		
@@ -186,6 +203,9 @@ public class Editor extends EditorBase {
 		} else {
 			isOldStructure = false;
 		}
+		
+		Page page = Page.store(title, text);
+		hasFlexiveFormHeaders = page.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
 	@Override
@@ -195,15 +215,18 @@ public class Editor extends EditorBase {
 		}
 		
 		removeComments();
+		removeTemplatePrefixes();
+		sanitizeTemplates();
 		joinLines();
-		//minorSanitizing();
 		normalizeTemplateNames();
 		splitLines();
+		minorSanitizing();
 		transformToNewStructure();
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		moveReferencesSection();
+		normalizeEtymologyHeaders();
 		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
@@ -221,14 +244,26 @@ public class Editor extends EditorBase {
 	}
 	
 	private boolean failsafeCheck() {
-		Page page = Page.store(title, this.text);
+		String text = ParseUtils.removeCommentsAndNoWikiText(this.text);
 		
-		if (unpairedCurlyBrackets(page.getIntro())) {
+		if (getMaximumTemplateDepth(text) > 2) {
+			return false;
+		}
+		
+		Page page = Page.store(title, text);
+		
+		if (
+			unpairedCurlyBrackets(page.getIntro()) ||
+			unpairedSquareBrackets(page.getIntro())
+		) {
 			return false;
 		}
 		
 		for (Section section : page.getAllSections()) {
-			if (unpairedCurlyBrackets(section.toString())) {
+			if (
+				unpairedCurlyBrackets(section.getIntro()) ||
+				unpairedSquareBrackets(section.getIntro())
+			) {
 				return false;
 			}
 		}
@@ -237,29 +272,77 @@ public class Editor extends EditorBase {
 	}
 	
 	private boolean unpairedCurlyBrackets(String text) {
-		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		int left = StringUtils.countMatches(text, "{{");
 		int right = StringUtils.countMatches(text, "}}");
+		
 		return left != right;
 	}
 	
+	private boolean unpairedSquareBrackets(String text) {
+		int left = StringUtils.countMatches(text, "[[");
+		int right = StringUtils.countMatches(text, "]]");
+		
+		return left != right;
+	}
+	
+	private int getMaximumTemplateDepth(String text) {
+		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
+		extractTemplateRanges(text, ranges);
+		
+		Range<Integer> previousRange = null;
+		int currentDepth = 1;
+		int maxDepth = 0;
+		
+		for (Range<Integer> range : ranges) {
+			if (previousRange != null && range.containsRange(previousRange)) {
+				currentDepth++;
+			} else {
+				currentDepth = 1;
+			}
+			
+			previousRange = range;
+			maxDepth = Math.max(currentDepth, maxDepth);
+		}
+		
+		return maxDepth;
+	}
+	
+	private static void extractTemplateRanges(String text, List<Range<Integer>> ranges) {
+		Matcher m = P_TMPL_DEPTH.matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			ranges.add(Range.between(m.start(), m.end()));
+			String replacement = StringUtils.repeat('-', m.group().length());
+			m.appendReplacement(sb, replacement);
+		}
+		
+		if (sb.length() != 0) {
+			m.appendTail(sb);
+			extractTemplateRanges(sb.toString(), ranges);
+		}
+	}
+	
 	public void removeComments() {
-		String formatted = this.text;
+		String formatted = text;
 		
 		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
 		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?(en|EN) para inglés,.*?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añádela en el Alfabeto Fonético Internacional.*?-->", "");
 		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?A[ñn]ádela con el siguiente patrón.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?Añade la etimología con el siguiente patrón.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?y/o femenino\\|es\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?o femenino=== ?-->", "");
 		formatted = formatted.replaceAll("<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?o intransitivo\\|es\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?o intransitivo.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
 		formatted = formatted.replaceAll("<!-- ?(; )?si pertenece a un campo semántico .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?(;2: )?si hay más acepciones.*?-->", "");
+		formatted = formatted.replaceAll("<!-- ?si hay más que una acepción,.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->", "");
@@ -282,7 +365,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("(?s)<!-- ?otra sección opcional para enlaces externos.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?¿flexión?: mira en .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.*?-->", "");
+		formatted = formatted.replaceAll("<!---? ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->", "");
 		formatted = formatted.replaceAll("<!-- ?en general, no se indica la etimología .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->", "");
@@ -290,6 +373,7 @@ public class Editor extends EditorBase {
 		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?apellidos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?antropónimos .*?-->", "");
+		formatted = formatted.replaceAll("<!-- *?apéndice .*?-->", "");
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra, por ejemplo .*?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?tipo de palabra \\(es=español\\): .*?-->", " "); // whitespace here is mandatory!
 		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
@@ -300,8 +384,102 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "removeComments", "eliminando comentarios");
 	}
 	
+	public void removeTemplatePrefixes() {
+		String formatted = text;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_PREFIXED_TEMPLATE.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		Set<String> set = new HashSet<String>();
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			String template = m.group();
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			template = template.substring(0, startOffset) + template.substring(endOffset);
+			
+			set.add(m.group(1).trim());
+			m.appendReplacement(sb, Matcher.quoteReplacement(template));
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		m.appendTail(sb);
+		formatted = sb.toString();
+		String summary = String.format("eliminando %s", String.join(", ", set));
+		
+		checkDifferences(formatted, "removeTemplatePrefixes", summary);
+	}
+	
+	public void sanitizeTemplates() {
+		String formatted = text;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_TEMPLATE.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		boolean makeSummary = false;
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			String template = m.group();
+			String templateName = m.group(1);
+			templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
+			
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			template = template.substring(0, startOffset) + templateName +
+				template.substring(endOffset);
+			
+			String[] lines = template.split("\n");
+			
+			if (lines.length == 2 && lines[1].trim().equals("}}")) {
+				template = lines[0].trim() + lines[1].trim();
+			}
+			
+			m.appendReplacement(sb, "");
+			templateName = templateName.trim();
+			
+			if (
+				templateName.startsWith("inflect.") ||
+				LS_SPLITTER_LIST.contains(templateName) ||
+				BS_SPLITTER_LIST.contains(templateName)
+			) {
+				String sbCopy = sb.toString();
+				
+				while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
+					sb.deleteCharAt(sb.length() - 1);
+				}
+				
+				String deletedString = sbCopy.substring(sb.length());
+				
+				if (!deletedString.trim().isEmpty()) {
+					makeSummary = true;
+				}
+			}
+			
+			sb.append(template);
+		}
+		
+		m.appendTail(sb);
+		formatted = sb.toString();
+		
+		String summary = makeSummary
+			? "\"\\n[:;*#]{{\" → \"\\n{{\""
+			: null;
+		
+		checkDifferences(formatted, "sanitizeTemplates", summary);
+	}
+	
 	public void joinLines() {
-		String formatted = this.text;
+		String formatted = text;
 		
 		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
@@ -311,25 +489,23 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
-			if (
-				!refRanges.isEmpty() &&
-				refRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(refRanges, m.start())) {
 				String replacement = m.group(1).replaceFirst("^ +", "");
 				m.appendReplacement(sb, " " + Matcher.quoteReplacement(replacement));
 			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
-				String substring = formatted.substring(0, m.start());
-				int lastNewlineIndex = substring.lastIndexOf("\n");
+				int lastNewlineIndex = formatted.substring(0, m.start()).lastIndexOf("\n");
 				
-				if (lastNewlineIndex != -1 && substring.charAt(lastNewlineIndex + 1) == ' ') {
-					continue;
+				if (lastNewlineIndex != -1) {
+					String previousLine = formatted.substring(lastNewlineIndex + 1, m.start());
+					final String[] arr = {" ", ":", ";", "*", "#"};
+					
+					if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
+						continue;
+					}
 				}
 				
 				m.appendReplacement(sb, " $1");
@@ -338,54 +514,12 @@ public class Editor extends EditorBase {
 		
 		m.appendTail(sb);
 		formatted = sb.toString();
-		sb = new StringBuffer(formatted.length());
-		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m2 = P_TEMPLATE.matcher(formatted);
-		
-		while (m2.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m2.start()))
-			) {
-				continue;
-			}
-			
-			String template = m2.group();
-			String[] lines = template.split("\n");
-			
-			if (lines.length == 1) {
-				m2.appendReplacement(sb, Matcher.quoteReplacement(template));
-				continue;
-			}
-			
-			if (lines[0].trim().equals("{{")) {
-				String[] temp = Arrays.copyOfRange(lines, 1, lines.length);
-				temp[0] = lines[0].trim() + temp[0].trim();
-				template = String.join("\n", temp);
-				lines = temp;
-			}
-			
-			if (lines.length == 2 && lines[1].trim().equals("}}")) {
-				template = lines[0].trim() + lines[1].trim();
-			}
-			
-			m2.appendReplacement(sb, Matcher.quoteReplacement(template));
-		}
-		
-		m2.appendTail(sb);
-		formatted = sb.toString();
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
 	}
 	
-	public void minorSanitizing() {
-		// TODO: perrichines (comment close tag)
-		// TODO: trailing period after {{etimología}} and {{pron-graf}}
-		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
-	}
-	
 	public void normalizeTemplateNames() {
-		String formatted = this.text;
+		String formatted = text;
 		Map<String, String> map = new HashMap<String, String>(150, 1);
 		
 		// TODO: expand per [[Especial:TodasLasRedirecciones]]
@@ -406,6 +540,7 @@ public class Editor extends EditorBase {
 		map.put("ucf", "plm");
 		map.put("Anagramas", "anagrama");
 		map.put("Parónimos", "parónimo");
+		map.put("tit ref", "título referencias");
 		
 		map.put("DRAE1914", "DLC1914");
 		map.put("DUE", "MaríaMoliner");
@@ -531,10 +666,7 @@ public class Editor extends EditorBase {
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 			
 			while (m.find()) {
-				if (
-					!ignoredRanges.isEmpty() &&
-					ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-				) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
 					continue;
 				}
 				
@@ -563,16 +695,13 @@ public class Editor extends EditorBase {
 	}
 	
 	public void splitLines() {
-		String formatted = this.text;
+		String formatted = text;
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_LINE_SPLITTER_LEFT.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
@@ -587,6 +716,10 @@ public class Editor extends EditorBase {
 		int lastTrailingPos = -1;
 		
 		while (m2.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m2.start(1))) {
+				continue;
+			}
+			
 			String pre = m2.group(1);
 			String target = m2.group(2);
 			String post = m2.group(3);
@@ -619,29 +752,97 @@ public class Editor extends EditorBase {
 		}
 		
 		m2.appendTail(sb);
-		formatted = sb.toString();
+		formatted = Utils.sanitizeWhitespaces(sb.toString());
 		
 		checkDifferences(formatted, "splitLines", "dividiendo líneas");
 	}
-
+	
+	public void minorSanitizing() {
+		// TODO: perrichines (comment close tag)
+		// TODO: trailing period after {{etimología}} and {{pron-graf}}
+		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
+		
+		String formatted = this.text;
+		final String preferredFileNSAlias = "Archivo";
+		Set<String> setFileAlias = new HashSet<String>();
+		Set<String> summarySet = new LinkedHashSet<String>();
+		
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		Matcher m = P_IMAGES.matcher(formatted);
+		StringBuffer sb = new StringBuffer(formatted.length());
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			String file = m.group();
+			String alias = m.group(1);
+			
+			if (!alias.equals(preferredFileNSAlias)) {
+				setFileAlias.add(alias + ":");
+			}
+			
+			file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
+				+ preferredFileNSAlias
+				+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(file));
+		}
+		
+		if (!setFileAlias.isEmpty()) {
+			m.appendTail(sb);
+			formatted = sb.toString();
+			String temp = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
+			summarySet.add(temp);
+		}
+		
+		String temp = formatted;
+		
+		// TODO: detect comment tags
+		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
+		
+		temp = Utils.replaceWithStandardIgnoredRanges(temp, "(?<=[^\n])\n+?[:;*#]+\n", "\n\n");
+		temp = Utils.replaceWithStandardIgnoredRanges(temp, "^\n*?[:;*#]+\n", "");
+		
+		if (!temp.equals(formatted)) {
+			summarySet.add("\"\\n[:;*#]\\n\" → \"\\n\\n\"");
+			formatted = temp;
+		}
+		
+		String summary = null;
+		
+		if (!summarySet.isEmpty()) {
+			summary = String.join(", ", summarySet);
+		}
+		
+		checkDifferences(formatted, "minorSanitizing", summary);
+	}
+	
 	public void transformToNewStructure() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (
-			!isOldStructure || page.hasSectionWithHeader("^[Ff]orma .+") ||
-			!ParseUtils.getTemplates("TRANSLIT", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("INE-ES", this.text).isEmpty() ||
-			!ParseUtils.getTemplates("POZ-POL-ES", this.text).isEmpty()
+			!isOldStructure || hasFlexiveFormHeaders ||
+			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
+			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
+			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
+			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
+			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
+			!ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
 		) {
 			return;
 		}
 		
 		// Process header templates
 		
-		String formatted = replaceOldStructureTemplates(this.text);
+		String formatted = replaceOldStructureTemplates(text);
 		
-		if (formatted.equals(this.text)) {
+		if (formatted.equals(text)) {
 			return;
 		}
 		
@@ -800,17 +1001,22 @@ public class Editor extends EditorBase {
 		
 		return (
 			etymologySection != nextSection &&
-			!etymologySection.getHeader().matches("[Ee]timolog[íi]a( 1)?") &&
+			!etymologySection.getStrippedHeader().matches("[Ee]timolog[íi]a( 1)?") &&
 			!nextSection.getHeader().matches("^[Pp]ronunciaci[óo]n.*")
 		);
 	}
 
 	private String replaceOldStructureTemplates(String text) {
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length() + 10);
 		String currentSectionLang = "";
 		
 		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
+				continue;
+			}
+			
 			String pre = m.group(1);
 			String template = m.group(2);
 			String post = m.group(3);
@@ -847,7 +1053,7 @@ public class Editor extends EditorBase {
 				altGraf = "";
 			}
 			
-			pre = pre.isEmpty() ? "" : "$1\n";
+			pre = (pre.isEmpty() || pre.matches("[:;*#]+")) ? "" : "$1\n";
 			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
 			
 			if (currentSectionLang.equals(name)) {
@@ -905,9 +1111,9 @@ public class Editor extends EditorBase {
 	}
 
 	private void insertStructureTemplate(Page page) {
-		String templateName = "estructura";
+		final String templateName = "estructura";
 		
-		if (!ParseUtils.getTemplates(templateName, this.text).isEmpty()) {
+		if (!ParseUtils.getTemplates(templateName, text).isEmpty()) {
 			return;
 		}
 		
@@ -921,19 +1127,32 @@ public class Editor extends EditorBase {
 		// Move etymology template to the etymology section
 		
 		String topIntro = topSection.getIntro();
-		Matcher m = P_ETYM_LINE.matcher(topIntro);
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(topIntro);
+		Matcher m = P_ETYM_TMPL.matcher(topIntro);
+		StringBuffer sb = new StringBuffer(topIntro.length());
 		List<String> temp = new ArrayList<String>();
 		
 		while (m.find()) {
-			temp.add(m.group(1).trim());
-			topIntro = topIntro.substring(0, m.start()) + topIntro.substring(m.end());
-			m = P_ETYM_LINE.matcher(topIntro);
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			String line = m.group(1);
+			String trailingText = m.group(2);
+			
+			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
+				continue;
+			}
+			
+			temp.add(line);
+			m.appendReplacement(sb, "");
 		}
 		
 		if (!temp.isEmpty()) {
-			topSection.setIntro(topIntro);
+			m.appendTail(sb);
+			topSection.setIntro(sb.toString());
 			String etymologyIntro = etymologySection.getIntro();
-			etymologyIntro += String.join("\n\n", temp);
+			etymologyIntro += "\n" + String.join("\n\n", temp);
 			etymologySection.setIntro(etymologyIntro);
 		}
 	}
@@ -948,42 +1167,74 @@ public class Editor extends EditorBase {
 			topSection.setTrailingNewlines(1);
 		}
 		
-		// Search for the etymology template and move it to the last line
-		
-		String[] lines = etymologyIntro.split("\n");
-		
-		if (lines.length < 2) {
+		if (etymologyIntro.split("\n").length < 2) {
 			return;
 		}
 		
-		int lineNumber = 0;
-		boolean found = false;
+		// Search for the etymology template and move it to the last line
 		
-		for (; lineNumber < lines.length; lineNumber++) {
-			String line = lines[lineNumber];
-			
-			if (
-				line.matches(".*?\\{\\{[eE]timología.+") ||
-				line.matches(":*?\\* *?'{0,3}[eE]timolog[íi]a:'{0,3}.+")
-			) {
-				found = true;
-				break;
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(etymologyIntro);
+		Matcher m = P_ETYM_TMPL.matcher(etymologyIntro);
+		StringBuffer sb = new StringBuffer(etymologyIntro.length());
+		List<String> temp = new ArrayList<String>();
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
 			}
+			
+			String line = m.group(1);
+			String trailingText = m.group(2);
+			
+			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
+				continue;
+			}
+			
+			temp.add(line);
+			m.appendReplacement(sb, "");
 		}
 		
-		if (found && lineNumber != lines.length - 1) {
-			String line = lines[lineNumber];
-			lines[lineNumber] = null;
-			List<String> list = Stream.of(lines)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-			list.add(line);
-			etymologySection.setIntro(String.join("\n", list));
+		if (!temp.isEmpty()) {
+			m.appendTail(sb);
+			etymologyIntro = sb.toString().trim();
+			etymologyIntro += "\n" + String.join("\n\n", temp);
+			etymologySection.setIntro(etymologyIntro);
 		}
 	}
 	
+	private boolean analyzeEtymLine(String line) {
+		// TODO: review
+		
+		final String[] arr1 = {"{{", "{|", "[", "<ref"};
+		final String[] arr2 = {"}}", "|}", "]", "</ref"};
+		
+		BiFunction<String, String[], Boolean> biFunc = (text, delimiters) -> {
+			String open = delimiters[0];
+			String close = delimiters[1];
+			int start = text.lastIndexOf(open);
+			
+			return start == -1 || text.substring(start).indexOf(close) != -1;
+		};
+		
+		if (!biFunc.apply(line, new String[]{"<!--", "-->"})) {
+			return false;
+		}
+		
+		line = ParseUtils.removeCommentsAndNoWikiText(line);
+		
+		for (int i = 0; i < arr1.length; i++) {
+			String[] delimiters = {arr1[i], arr2[i]};
+			
+			if (!biFunc.apply(line, delimiters)) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
 	public void normalizeSectionHeaders() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (Section section : page.getAllSections()) {
 			if (section instanceof LangSection) {
@@ -993,24 +1244,23 @@ public class Editor extends EditorBase {
 			String header = section.getHeader();
 			
 			header = StringUtils.strip(header, "=").trim();
-			header = header.replaceAll("^[Ee]timolog[íi]a ?(\\d)?$", "Etimología $1").trim();
+			header = header.replaceAll("^[Ee]timolog[íi]a", "Etimología");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
-			header = header.replaceAll("^[Ll]ocuciones$", "Locuciones");
-			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)$", "Refranes");
-			header = header.replaceAll("^[Cc]onjugaci[óo]n$", "Conjugación");
-			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)$", "Información adicional");
-			header = header.replaceAll("^[Vv]er tambi[ée]n$", "Véase también");
-			header = header.replaceAll("^[Vv][ée]ase tambi[ée]n$", "Véase también");
-			header = header.replaceAll("^Proverbio$", "Refrán");
+			header = header.replaceAll("^[Ll]ocuciones", "Locuciones");
+			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)", "Refranes");
+			header = header.replaceAll("^[Cc]onjugaci[óo]n\\b", "Conjugación");
+			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)", "Información adicional");
+			header = header.replaceAll("^(?:[Vv]er|[Vv][ée]ase) tambi[ée]n", "Véase también");
+			header = header.replaceAll("^Proverbio\\b", "Refrán");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			LangSection langSection = section.getLangSectionParent();
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducciones");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducciones");
 				} else {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?$", "Traducción");
+					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducción");
 				}
 			}
 			
@@ -1019,22 +1269,6 @@ public class Editor extends EditorBase {
 			}
 			
 			section.setHeader(header);
-		}
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
-			
-			if (etymologySections.isEmpty()) {
-				continue;
-			} else if (etymologySections.size() == 1) {
-				Section etymologySection = etymologySections.get(0);
-				etymologySection.setHeader("Etimología");
-			} else {
-				for (int i = 0; i < etymologySections.size(); i++) {
-					Section etymologySection = etymologySections.get(i);
-					etymologySection.setHeader(String.format("Etimología %d", i + 1));
-				}
-			}
 		}
 		
 		String formatted = page.toString();
@@ -1046,8 +1280,8 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
-		String template = "{{título referencias}}";
+		Page page = Page.store(title, text);
+		final String templateName = "título referencias";
 		List<String> contents = new ArrayList<String>();
 		boolean found = false;
 		
@@ -1057,19 +1291,26 @@ public class Editor extends EditorBase {
 		while (iterator.hasPrevious()) {
 			Section section = iterator.previous();
 			String intro = section.getIntro();
-			intro = intro.replace("{{tit ref}}", String.format("{{%s}}", template));
-			int index = intro.indexOf(template);
+			Pattern patt = Pattern.compile("\\{\\{ *?" + templateName + " *?\\}\\}");
+			Matcher m = patt.matcher(intro);
+			StringBuffer sb = new StringBuffer(intro.length());
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 			
-			if (index != -1) {
+			while (m.find()) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
+					continue;
+				}
+				
 				found = true;
-				String content = intro.substring(index + template.length()).trim();
+				String content = intro.substring(m.end()).trim();
 				
 				if (!content.isEmpty()) {
 					contents.add(content);
 				}
 				
-				intro = intro.substring(0, index);
-				section.setIntro(intro);
+				m.appendReplacement(sb, "");
+				section.setIntro(sb.toString());
+				break;
 			}
 		}
 		
@@ -1098,45 +1339,33 @@ public class Editor extends EditorBase {
 	}
 
 	public void duplicateReferencesSection() {
-		Page page = Page.store(title, this.text);
-		
-		Section bottomReferences = page.getReferencesSection();
+		Page page = Page.store(title, text);
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() < 2) {
 			return;
 		}
 		
+		Section bottomReferences = page.getReferencesSection();
 		Iterator<Section> iterator = allReferences.iterator();
 		
 		while (iterator.hasNext()) {
 			Section section = iterator.next();
-			List<Section> childSections = section.getChildSections();
-			List<String> subSectionHeaders;
 			
-			if (childSections != null) {
-				List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-				subSectionHeaders = flattenedSubSections.stream()
-					.map(SectionBase::getHeader)
-					.collect(Collectors.toList());
-			} else {
-				subSectionHeaders = new ArrayList<String>();
+			if (section == bottomReferences) {
+				continue;
 			}
 			
-			if (
-				childSections == null ||
-				STANDARD_HEADERS.containsAll(subSectionHeaders)
-			) {
-				String content = section.getIntro();
-				content = content.replaceAll("(?s)<!--.*?-->", ""); 
-				content = content.replaceAll("<references *?/ *?>", "");
-				content = content.trim();
-				
-				// TODO: handle non-empty sections, too
-				if (content.isEmpty()) {
-					section.detachOnlySelf();
-					iterator.remove();
-				}
+			String content = section.getIntro();
+			
+			content = content.replaceAll("(?s)<!--.*?-->", ""); 
+			content = content.replaceAll("<references *?/ *?>", "");
+			content = content.trim();
+			
+			// TODO: combine non-empty sections?
+			if (content.isEmpty()) {
+				section.detachOnlySelf();
+				iterator.remove();
 			}
 		}
 		
@@ -1151,8 +1380,7 @@ public class Editor extends EditorBase {
 	}
 	
 	public void moveReferencesSection() {
-		Page page = Page.store(title, this.text);
-		
+		Page page = Page.store(title, text);
 		List<Section> allReferences = page.findSectionsWithHeader("^[Rr]eferencias.*");
 		
 		if (isOldStructure || allReferences.size() != 1) {
@@ -1165,44 +1393,50 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		List<Section> childSections = references.getChildSections();
-		
-		if (childSections != null) {
-			List<Section> flattenedSubSections = SectionBase.flattenSubSections(childSections);
-			List<String> subSectionHeaders = flattenedSubSections.stream()
-				.map(SectionBase::getHeader)
-				.collect(Collectors.toList());
-			
-			if (STANDARD_HEADERS.containsAll(subSectionHeaders)) {
-				references.detachOnlySelf();
-				references.setLevel(2);
-				page.setReferencesSection(references);
-			} else if (references.nextSiblingSection() != null) {
-				references.detach();
-				references.pushLevels(2 - references.getLevel());
-				page.setReferencesSection(references);
-			} else {
-				return;
-			}
-		} else {
-			references.detachOnlySelf();
-			references.setLevel(2);
-			page.setReferencesSection(references);
-		}
+		references.detachOnlySelf();
+		page.setReferencesSection(references);
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
 	}
-
-	public void normalizeSectionLevels() {
-		// TODO: handle single- to multiple-etymology sections edits and vice versa
-		// TODO: satura
-		
+	
+	public void normalizeEtymologyHeaders() {
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
+			
+			if (etymologySections.isEmpty()) {
+				continue;
+			} else if (etymologySections.size() == 1) {
+				Section etymologySection = etymologySections.get(0);
+				etymologySection.setHeader("Etimología");
+			} else {
+				for (int i = 0; i < etymologySections.size(); i++) {
+					Section etymologySection = etymologySections.get(i);
+					String header = String.format("Etimología %d", i + 1);
+					etymologySection.setHeader(header);
+				}
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "normalizeEtymologyHeaders", "normalizando encabezamientos de etimología");
+	}
+	
+	public void normalizeSectionLevels() {
+		// TODO: handle single- to multiple-etymology sections edits and vice versa
+		// TODO: satura, aplomo
+		
+		if (isOldStructure || hasFlexiveFormHeaders) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
 		page.normalizeChildLevels();
 		
 		// TODO: traverse siblings of the first Section?
@@ -1283,14 +1517,14 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		SectionBase.flattenSubSections(sections).stream()
-			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getHeader()))
+		AbstractSection.flattenSubSections(sections).stream()
+			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getStrippedHeader()))
 			.filter(s -> s.getLevel() > level)
 			.forEach(s -> s.pushLevels(level - s.getLevel()));
 	}
 
 	public void removePronGrafSection() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<Section> sections = page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?");
 		
 		if (isOldStructure || sections.isEmpty()) {
@@ -1299,6 +1533,9 @@ public class Editor extends EditorBase {
 		
 		for (Section section : sections) {
 			Section parentSection = section.getParentSection();
+			
+			// TODO: pull up child sections or place before normalizeSectionLevels()
+			// https://es.wiktionary.org/w/index.php?title=ni_fu_ni_fa&oldid=2899086
 			
 			if (parentSection == null || section.getChildSections() != null) {
 				continue;
@@ -1333,23 +1570,22 @@ public class Editor extends EditorBase {
 	}
 
 	public void sortLangSections() {
-		if (isOldStructure) {
+		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		page.sortSections();
 		String formatted = page.toString();
 		checkDifferences(formatted, "sortLangSections", "ordenando secciones de idioma");
 	}
 	
 	public void addMissingSections() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (
-			isOldStructure || page.getAllSections().isEmpty() ||
-			// TODO: review
-			!page.findSectionsWithHeader("(?i)^(Forma|\\{\\{forma) .+").isEmpty()
+			isOldStructure || hasFlexiveFormHeaders ||
+			page.getAllSections().isEmpty()
 		) {
 			return;
 		}
@@ -1368,7 +1604,7 @@ public class Editor extends EditorBase {
 			
 			// TODO: review, catch special cases
 			Set<String> headers = langSection.getChildSections().stream()
-				.map(SectionBase::getHeader)
+				.map(AbstractSection::getStrippedHeader)
 				.collect(Collectors.toSet());
 			
 			headers.removeAll(STANDARD_HEADERS);
@@ -1434,7 +1670,7 @@ public class Editor extends EditorBase {
 		
 		// References
 		
-		if (page.getReferencesSection() == null) {
+		if (page.findSectionsWithHeader("Referencias y notas").isEmpty()) {
 			Section references = Section.create("Referencias y notas", 2);
 			references.setIntro("<references />");
 			page.setReferencesSection(references);
@@ -1455,11 +1691,11 @@ public class Editor extends EditorBase {
 	}
 	
 	public void sortSubSections() {
-		if (isOldStructure) {
+		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
 		
 		for (LangSection langSection : list) {
@@ -1471,24 +1707,21 @@ public class Editor extends EditorBase {
 	}
 	
 	public void removeInflectionTemplates() {
-		if (isOldStructure || !this.text.contains("{{inflect.")) {
+		if (isOldStructure || !text.contains("{{inflect.")) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
+		List<Section> flexiveFormSections = page.findSectionsWithHeader("^([Ff]orma|\\{\\{forma) .+");
 		
-		for (Section section : page.getAllSections()) {
+		for (Section section : flexiveFormSections) {
 			String intro = section.getIntro();
 			
-			if (
-				section.getLangSectionParent() == null ||
-				!section.getHeader().matches("(?i)^(Forma|\\{\\{forma) .+") || 
-				!intro.contains("{{inflect.")
-			) {
+			if (!intro.contains("{{inflect.")) {
 				continue;
 			}
 			
-			intro = intro.replace("\\{\\{inflect\\..+?\\}\\}", "");
+			intro = Utils.replaceWithStandardIgnoredRanges(intro, "\\{\\{inflect\\..+?\\}\\}", "");
 			section.setIntro(intro);
 		}
 		
@@ -1501,24 +1734,25 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		Set<String> modified = new LinkedHashSet<String>();
 		
 		for (Section section : page.getAllSections()) {
 			if (
 				!(section instanceof LangSection) &&
-				!section.getHeader().matches("Etimología \\d+")
+				!section.getStrippedHeader().matches("Etimología \\d+")
 			) {
 				continue;
 			}
 			
 			LangSection langSection = section.getLangSectionParent();
 			String content = section.getIntro();
-			content = content.replaceAll("\n{2,}", "\n");
+			content = Utils.replaceWithStandardIgnoredRanges(content, "\n{2,}", "\n");
 			
 			if (
 				langSection == null || content.isEmpty() ||
-				content.contains("pron-graf")
+				// TODO: review
+				!ParseUtils.getTemplates("pron-graf", content).isEmpty()
 			) {
 				continue;
 			}
@@ -1526,9 +1760,19 @@ public class Editor extends EditorBase {
 			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
 			List<String> editedLines = new ArrayList<String>();
 			List<String> amboxTemplates = new ArrayList<String>();
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
+			MutableInt index = new MutableInt(0);
 			
 			linesLoop:
 			for (String line : content.split("\n")) {
+				if (Utils.containedInRanges(ignoredRanges, index.intValue())) {
+					index.add(line.length() + 1);
+					editedLines.add(line);
+					continue;
+				}
+				
+				index.add(line.length() + 1);
+				
 				if (
 					line.contains("{{etimología") ||
 					P_IMAGES.matcher(line).matches() ||
@@ -1548,18 +1792,13 @@ public class Editor extends EditorBase {
 				String origLine = line;
 				
 				if (m.matches()) {
-					line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
-						PRON_TMPLS,
-						PRON_TMPLS_ALIAS
-					);
+					line = makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
 					
 					if (line == null) {
 						editedLines.add(origLine);
 						continue;
 					} else {
-						templateFromText = m.group(1).trim();
+						templateFromText = m.group(2).trim();
 					}
 				}
 				
@@ -1754,7 +1993,10 @@ public class Editor extends EditorBase {
 							(
 								params.containsKey("ParamWithoutName2") &&
 								!params.get("ParamWithoutName2").isEmpty() &&
-								!StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio")
+								!(
+									StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio") ||
+									params.get("ParamWithoutName2").equalsIgnoreCase(title)
+								)
 							)
 						) {
 							editedLines.add(origLine);
@@ -1801,6 +2043,12 @@ public class Editor extends EditorBase {
 					modified.add(templateFromText);
 				} else {
 					modified.add(String.format("{{%s}}", templateName));
+				}
+				
+				String trailingComments = m.group(2).trim();
+				
+				if (!trailingComments.isEmpty()) {
+					editedLines.add(trailingComments);
 				}
 			}
 			
@@ -1887,56 +2135,56 @@ public class Editor extends EditorBase {
 	public void convertToTemplate() {
 		// TODO: add leng parameter
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
-		Set<String> modified = new HashSet<String>();
-		String[] lines = this.text.split("\n", -1);
 		
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
-			
-			if (line.isEmpty()) {
+		Set<String> modified = new HashSet<String>();
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
+		Matcher m = P_TMPL_LINE.matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
 				continue;
 			}
 			
-			Matcher m = P_TMPL_LINE.matcher(line);
+			String line = Optional
+				.ofNullable(makeTmplLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
+				.orElse(makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
 			
-			if (
-				!m.matches() || !((
-					(line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
-						TERM_TMPLS,
-						TERM_TMPLS_ALIAS)
-					) != null) || (
-					(line = makeTmplLine(
-						m.group(1).trim().toLowerCase(),
-						m.group(2).trim(),
-						PRON_TMPLS,
-						PRON_TMPLS_ALIAS)
-					) != null))
-			) {
+			if (line == null) {
 				continue;
 			}
 			
-			line = line.replace("{{derivado|", "{{derivad|");
-			lines[i] = line + ".";
-			modified.add(m.group(1).trim());
+			line = Utils.replaceWithStandardIgnoredRanges(
+				line,
+				Pattern.quote("{{derivado|"),
+				"{{derivad|"
+			);
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(line));
+			modified.add(m.group(2).trim());
 		}
 		
-		String formatted = String.join("\n", lines);
+		m.appendTail(sb);
+		String formatted = sb.toString();
 		String summary = "conversión a plantilla: " + String.join(", ", modified);
 		
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
-	private String makeTmplLine(String name, String content, List<String> listSg, List<String> listPl) {
-		name = StringUtils.strip(name, " ':");
+	private String makeTmplLine(Matcher m, List<String> templates, List<String> aliases) {
+		String leadingComments = m.group(1).trim();
+		String name = m.group(2).trim().toLowerCase();
+		String content = m.group(3).trim();
+		String trailingComments = m.group(4).trim();
 		
-		if (name.isEmpty()) {
+		if (name.isEmpty() || content.isEmpty()) {
 			return null;
 		}
 		
-		if (listPl.contains(name)) {
-			name = listSg.get(listPl.indexOf(name));
+		name = StringUtils.strip(name, " ':");
+		
+		if (aliases.contains(name)) {
+			name = templates.get(aliases.indexOf(name));
 		}
 		
 		// TODO: review
@@ -1944,7 +2192,7 @@ public class Editor extends EditorBase {
 			name = "grafía alternativa";
 		}
 		
-		if (!listSg.contains(name)) {
+		if (!templates.contains(name)) {
 			return null;
 		}
 		
@@ -2037,7 +2285,12 @@ public class Editor extends EditorBase {
 			}
 		}
 		
-		return ParseUtils.templateFromMap(map);
+		leadingComments = leadingComments.replaceAll(" *?(<!--.*?-->) *", "$1");
+		
+		return leadingComments +
+			(!leadingComments.isEmpty() ? "\n" : "") +
+			ParseUtils.templateFromMap(map) + "." +
+			trailingComments;
 	}
 	
 	public void addMissingElements() {
@@ -2045,7 +2298,7 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		Set<String> set = new LinkedHashSet<String>();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
@@ -2086,6 +2339,7 @@ public class Editor extends EditorBase {
 						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
 						ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
 					) {
+						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 						etymologySection.setIntro(etymologyIntro);
 						set.add("{{etimología}}");
@@ -2121,12 +2375,57 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "addMissingElements", summary);
 	}
 	
+	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
+		Matcher m = P_AMBOX_TMPLS.matcher(content);
+		StringBuffer sb = new StringBuffer(content.length());
+		boolean hadMatch = false;
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
+			hadMatch = true;
+		}
+		
+		sb.append("\n");
+		String lengParam = "";
+		
+		if (!langCode.equals("es")) {
+			lengParam = String.format("|leng=%s", langCode);
+		}
+		
+		// TODO: ugly workaround, just insert {{etimología}} at the end
+		
+		if (templateName.equals("etimología")) {
+			m.appendTail(sb);
+			
+			if (sb.charAt(sb.length() -1 ) != '\n') {
+				sb.append("\n");
+			}
+			
+			sb.append(String.format(templateFormat, templateName + lengParam));
+			return sb.toString().trim();
+		}
+		
+		sb.append(String.format(templateFormat, templateName + lengParam));
+		
+		if (!hadMatch) {
+			sb.append("\n");
+		}
+		
+		m.appendTail(sb);
+		return sb.toString().trim();
+	}
+	
 	public void checkLangHeaderCodeCase() {
 		if (isOldStructure) {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String langCode = langSection.getLangCode(false);
@@ -2147,22 +2446,29 @@ public class Editor extends EditorBase {
 			return;
 		}
 		
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String content = langSection.toString();
 			boolean sectionModified = false;
 			
-			for (String target : LENG_PARAM_TMPLS) {
-				List<String> templates = ParseUtils.getTemplates(target, content);
-				int index = 0;
+			for (String template : LENG_PARAM_TMPLS) {
+				Pattern patt = Pattern.compile("\\{\\{ *?" + template + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
+				Matcher m = patt.matcher(content);
+				StringBuffer sb = new StringBuffer(content.length() + 20);
+				List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
+				boolean templateModified = false;
 				
-				for (String template : templates) {
-					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-					String leng = params.get("leng");
-					boolean templateModified = false;
+				while (m.find()) {
+					if (Utils.containedInRanges(ignoredRanges, m.start())) {
+						continue;
+					}
 					
-					if (target.equals("ampliable")) {
+					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
+					String leng = params.get("leng");
+					boolean occurrenceModified = false;
+					
+					if (template.equals("ampliable")) {
 						String param1 = params.remove("ParamWithoutName1");
 						leng = Optional.ofNullable(leng).orElse(param1);
 					}
@@ -2171,7 +2477,7 @@ public class Editor extends EditorBase {
 						// TODO: is this necessary?
 						if (leng != null) {
 							params.remove("leng");
-							templateModified = true;
+							occurrenceModified = true;
 						}
 					} else if (leng == null) {
 						@SuppressWarnings("unchecked")
@@ -2180,19 +2486,24 @@ public class Editor extends EditorBase {
 						params.put("templateName", tempMap.remove("templateName"));
 						params.put("leng", langSection.getLangCode());
 						params.putAll(tempMap);
-						templateModified = true;
+						occurrenceModified = true;
 					} else if (!langSection.langCodeEqualsTo(leng)) {
 						params.put("leng", langSection.getLangCode());
+						occurrenceModified = true;
+					}
+					
+					if (occurrenceModified) {
+						String newTemplate = ParseUtils.templateFromMap(params);
+						newTemplate = Matcher.quoteReplacement(newTemplate);
+						m.appendReplacement(sb, newTemplate);
 						templateModified = true;
 					}
-					
-					index = content.indexOf(template, index);
-					
-					if (templateModified) {
-						String newTemplate = ParseUtils.templateFromMap(params);
-						content = content.substring(0, index) + newTemplate + content.substring(index + template.length());
-						sectionModified = true;
-					}
+				}
+				
+				if (templateModified) {
+					m.appendTail(sb);
+					content = sb.toString();
+					sectionModified = true;
 				}
 			}
 			
@@ -2206,43 +2517,14 @@ public class Editor extends EditorBase {
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
 	}
 	
-	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
-		Matcher m = P_AMBOX_TMPLS.matcher(content);
-		StringBuffer sb = new StringBuffer(content.length());
-		boolean hadMatch = false;
-		
-		while (m.find()) {
-			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
-			hadMatch = true;
-		}
-		
-		sb.append("\n");
-		String lengParam = "";
-		
-		if (!langCode.equals("es")) {
-			lengParam = String.format("|leng=%s", langCode);
-		}
-		
-		sb.append(String.format(templateFormat, templateName + lengParam));
-		
-		if (!hadMatch) {
-			sb.append("\n");
-		}
-		
-		m.appendTail(sb);
-		return sb.toString().trim();
-	}
-
 	public void deleteEmptySections() {
 		// TODO
 	}
 	
 	public void manageClearElements() {
-		String initial = removeBrTags(this.text);
+		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
-		final String templateName = "clear";
-		final String template = String.format("{{%s}}", templateName);
 		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
 		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
 		
@@ -2253,29 +2535,31 @@ public class Editor extends EditorBase {
 				break;
 			}
 			
+			String sectionIntro = section.getIntro();
+			String sanitizedNextSectionIntro = ParseUtils.removeCommentsAndNoWikiText(nextSection.getIntro());
+			
 			if (
-				StringUtils.startsWithAny(nextSection.getIntro(), arr) ||
+				StringUtils.startsWithAny(sanitizedNextSectionIntro, arr) ||
 				(
-					nextSection.getHeader().matches("Etimología \\d+") &&
-					!nextSection.getHeader().equals("Etimología 1")
+					nextSection.getStrippedHeader().matches("Etimología \\d+") &&
+					!nextSection.getStrippedHeader().equals("Etimología 1")
 				)
 			) {
-				List<String> templates = ParseUtils.getTemplates(templateName, section.getIntro());
-				String intro = section.getIntro();
+				List<String> templates = ParseUtils.getTemplates("clear", sectionIntro);
+				String sanitizedSectionIntro = ParseUtils.removeCommentsAndNoWikiText(sectionIntro);
 				
-				if (templates.size() == 1 && intro.endsWith(template)) {
+				if (templates.size() == 1 && sanitizedSectionIntro.endsWith("{{clear}}")) {
 					continue;
 				}
 				
 				if (!templates.isEmpty()) {
-					intro = removeClearTemplates(templateName, section);
+					sectionIntro = removeClearTemplates(section);
 				}
 				
-				intro += "\n\n" + template;
-				section.setIntro(intro);
-			} else if (section.getIntro().contains(templateName)) {
-				// TODO: sanitize templates, then use variable "template" instead
-				removeClearTemplates(templateName, section);
+				sectionIntro += "\n\n{{clear}}";
+				section.setIntro(sectionIntro);
+			} else if (sectionIntro.contains("{{clear}}")) {
+				removeClearTemplates(section);
 			}
 		}
 		
@@ -2289,10 +2573,7 @@ public class Editor extends EditorBase {
 		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {
-			if (
-				!ignoredRanges.isEmpty() &&
-				ignoredRanges.stream().anyMatch(range -> range.contains(m.start()))
-			) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
 				continue;
 			}
 			
@@ -2331,19 +2612,35 @@ public class Editor extends EditorBase {
 		return sb.toString();
 	}
 	
-	private String removeClearTemplates(final String templateName, Section section) {
+	private String removeClearTemplates(Section section) {
 		String intro = section.getIntro();
-		intro = intro.replaceAll("\n?\\{\\{ *?" + templateName + " *?\\}\\}\n?", "\n\n");
+		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+		Matcher m = P_CLEAR_TMPLS.matcher(intro);
+		StringBuffer sb = new StringBuffer(intro.length());
+		
+		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, "\n\n");
+		}
+		
+		m.appendTail(sb);
+		intro = sb.toString();
 		section.setIntro(intro);
+		
 		return intro;
 	}
 	
 	public void strongWhitespaces() {
 		// TODO: don't collide with removeComments() 
-		String initial = this.text;
-		initial = initial.replaceAll("( |&nbsp;)*\n", "\n");
-		initial = initial.replaceAll(" &nbsp;", " ");
-		initial = initial.replaceAll("&nbsp; ", " ");
+		String initial = text;
+		
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, "( |&nbsp;)*\n", "\n");
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, " &nbsp;", " ");
+		initial = Utils.replaceWithStandardIgnoredRanges(initial, "&nbsp; ", " ");
+		
 		Page page = Page.store(title, initial);
 		
 		if (page.getLeadingNewlines() > 1) {
@@ -2352,6 +2649,14 @@ public class Editor extends EditorBase {
 		
 		if (page.getTrailingNewlines() > 1) {
 			page.setTrailingNewlines(1);
+		}
+		
+		if (
+			page.getTrailingNewlines() == 1 &&
+			!page.getIntro().isEmpty() &&
+			ParseUtils.removeCommentsAndNoWikiText(page.getIntro()).isEmpty()
+		) {
+			page.setTrailingNewlines(0);
 		}
 		
 		for (Section section : page.getAllSections()) {
@@ -2365,16 +2670,17 @@ public class Editor extends EditorBase {
 		}
 		
 		String formatted = page.toString();
-		formatted = formatted.replaceAll("\n{3,}", "\n\n");
-		formatted = formatted.replaceAll("\n\n<!--", "\n<!--");
+		
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n{3,}", "\n\n");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n\n<!--", "\n<!--");
 		// TODO: trim whitespaces inside <ref>
-		formatted = formatted.replaceAll("(\\.|\\]\\]|\\}\\}|\\)) <ref(>| )", "$1<ref$2");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(\\.|\\]\\]|\\}\\}|\\)) <ref(>| )", "$1<ref$2");
 		
 		checkDifferences(formatted, "strongWhitespaces", "espacios en blanco");
 	}
 
 	public void weakWhitespaces() {
-		Page page = Page.store(title, this.text);
+		Page page = Page.store(title, text);
 		
 		if (page.getLeadingNewlines() == 1) {
 			page.setLeadingNewlines(0);
@@ -2388,6 +2694,7 @@ public class Editor extends EditorBase {
 		
 		if (
 			!intro.isEmpty() && page.getTrailingNewlines() == 0 &&
+			!ParseUtils.removeCommentsAndNoWikiText(intro).isEmpty() &&
 			!(
 				intro.split("\n").length == 1 &&
 				intro.matches("^\\{\\{[Dd]esambiguación\\|?\\}\\}.*")
@@ -2429,11 +2736,10 @@ public class Editor extends EditorBase {
 		
 		String formatted = page.toString();
 		
-		formatted = formatted.replaceAll("<references *?/ *?>", "<references />");
-		formatted = formatted.replaceAll("(?m)^ +?(\\{\\{.+)", "$1"); // TODO: might be a strong whitespace
-		formatted = formatted.replace(" </ref>", "</ref>");
-		formatted = formatted.replaceAll("([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
-		formatted = formatted.replaceAll("\n *?\\}\\}", "\n}}");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "<references *?/ *?>", "<references />");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, " </ref>", "</ref>");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n *?\\}\\}", "\n}}");
 		
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
@@ -2442,7 +2748,7 @@ public class Editor extends EditorBase {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Abigail";
+		String title = "abusivo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
@@ -2451,7 +2757,7 @@ public class Editor extends EditorBase {
 		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
-		EditorBase editor = new Editor(page);
+		AbstractEditor editor = new Editor(page);
 		editor.check();
 		
 		wb.edit(title, editor.getPageText(), editor.getSummary(), false, true, -2, null);

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.wikiutils.IOUtils;
+import org.xml.sax.SAXException;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -95,7 +96,7 @@ public final class ShortCommas implements Selectorizable {
 		IOUtils.writeToFile(String.join("\n", templates), shorts);
 	}
 	
-	public static void getList() throws IOException {
+	public static void getList() throws IOException, SAXException {
 		Set<String> wlh = new HashSet<String>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
 		List<PageContainer> pages = new ArrayList<PageContainer>(250);
 		

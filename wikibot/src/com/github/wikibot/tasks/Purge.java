@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -25,6 +26,11 @@ public final class Purge {
 		
 		int opts = Integer.parseInt(args[1]);
 		String[] titles = Arrays.copyOfRange(args, 2, args.length);
+		
+		for (int i = 0; i < titles.length; i++) {
+			String arg = titles[i];
+			titles[i] = URLDecoder.decode(arg, "UTF8");
+		}
 		
 		switch (opts) {
 			case 1:

@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-public abstract class SectionBase<T extends SectionBase<T>> {
+public abstract class AbstractSection<T extends AbstractSection<T>> {
 	protected String header;
 	protected String intro;
 	protected int level;
@@ -21,14 +21,17 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	protected int leadingNewlines;
 	protected int trailingNewlines;
 	protected String headerFormat;
+	private String headerLeadingComments;
 	private String headerTrailingComments;
 	protected T parentSection;
 	protected List<T> siblingSections;
 	protected List<T> childSections;
-	protected PageBase<T> containingPage;
+	protected AbstractPage<T> containingPage;
 	private UUID uuid;
 	
-	protected SectionBase(String text) {
+	private static final Pattern P_HEADER_REFS = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)");
+	
+	protected AbstractSection(String text) {
 		header = "";
 		intro = "";
 		level = 0;
@@ -36,6 +39,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		leadingNewlines = 0;
 		trailingNewlines = 0;
 		headerFormat = "%1$s %2$s %1$s";
+		headerLeadingComments = "";
 		headerTrailingComments = "";
 		parentSection = null;
 		siblingSections = null;
@@ -69,14 +73,15 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		int i = 6;
 		
 		for (; i >= 1; --i) {
-			String re = String.format("^={%1$d}(.+)={%1$d}((?:<!--.*?-->|\\s*)*)$", i);
+			String re = String.format("^((?:<!--.*?-->)*+)={%1$d}(.+)={%1$d}((?:<!--.*?-->|\\s*)*)$", i);
 			Matcher m = Pattern.compile(re).matcher(header);
 			
 			if (m.matches()) {
-				this.header = m.group(1).trim();
+				this.headerLeadingComments = m.group(1);
+				this.header = m.group(2).trim();
 				this.level = i;
-				this.headerTrailingComments = m.group(2);
-				buildHeaderFormatString(m.group(1));
+				this.headerTrailingComments = m.group(3);
+				buildHeaderFormatString(m.group(2));
 				break;
 			}
 		}
@@ -108,6 +113,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	
 	public String getHeader() {
 		return header;
+	}
+	
+	public String getStrippedHeader() {
+		return stripHeaderReferences(header);
 	}
 	
 	public void setHeader(String header) {
@@ -184,6 +193,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 
 	public T getParentSection() {
 		return parentSection;
+	}
+	
+	public AbstractPage<T> getContainingPage() {
+		return containingPage;
 	}
 	
 	public List<T> getSiblingSections() {
@@ -428,7 +441,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 			
 			if (diff > 0) {
 				int highestLevel = subSections.stream()
-					.map(SectionBase::getLevel)
+					.map(AbstractSection::getLevel)
 					.max(Integer::max)
 					.get();
 				
@@ -457,7 +470,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	}
 	
 	public List<T> findSubSectionsWithHeader(String regex) {
-		return filterSubSections(section -> section.getHeader().matches(regex));
+		return filterSubSections(section -> section.getStrippedHeader().matches(regex));
 	}
 	
 	public void replaceWith(T section) {
@@ -493,11 +506,11 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		containingPage.buildSectionTree();
 	}
 	
-	public static <U extends SectionBase<U>> List<U> flattenSubSections(U section) {
+	public static <U extends AbstractSection<U>> List<U> flattenSubSections(U section) {
 		return flattenSubSections(Arrays.asList(section));
 	}
 	
-	public static <U extends SectionBase<U>> List<U> flattenSubSections(List<? extends U> sections) {
+	public static <U extends AbstractSection<U>> List<U> flattenSubSections(List<? extends U> sections) {
 		List<U> list = new ArrayList<U>();
 		
 		for (U section : sections) {
@@ -511,6 +524,10 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		return list;
 	}
 	
+	public static String stripHeaderReferences(String header) {
+		return P_HEADER_REFS.matcher(header).replaceAll("").trim();
+	}
+	
 	@Override
 	public int hashCode() {
 		return 0;
@@ -518,7 +535,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null || !(obj instanceof SectionBase)) {
+		if (obj == null || !(obj instanceof AbstractSection)) {
 			return false;
 		}
 		
@@ -527,7 +544,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 		}
 		
 		@SuppressWarnings("unchecked")
-		SectionBase<T> s = (SectionBase<T>) obj;
+		AbstractSection<T> s = (AbstractSection<T>) obj;
 		
 		return uuid.equals(s.uuid);
 	}
@@ -535,6 +552,7 @@ public abstract class SectionBase<T extends SectionBase<T>> {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(1500);
+		sb.append(headerLeadingComments);
 		sb.append(String.format(headerFormat, StringUtils.repeat('=', level), header));
 		sb.append(headerTrailingComments);
 

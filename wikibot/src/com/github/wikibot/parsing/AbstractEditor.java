@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class EditorBase {
+public abstract class AbstractEditor {
 	protected String text;
 	protected String title;
 	protected Summary summ;
@@ -16,7 +17,7 @@ public abstract class EditorBase {
 	
 	private static final Pattern p_linker = Pattern.compile("\\[\\[\\s*?(:?)\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
 	
-	protected EditorBase(String title, String text) {
+	protected AbstractEditor(String title, String text) {
 		this.summ = new Summary();
 		this.notifyModifications = false;
 		this.logger = new ArrayList<String>();
@@ -58,8 +59,13 @@ public abstract class EditorBase {
 	
 	public abstract void check();
 	
+	protected void addOperation(String caller, String log, Function<String, String> func) {
+		String formatted = func.apply(text);
+		checkDifferences(formatted, caller, log);
+	}
+
 	protected void checkDifferences(String formatted, String caller, String log) {
-		if (!formatted.equals(text)) {
+		if (formatted != null && !formatted.equals(text)) {
 			logger.add(caller);
 			text = formatted;
 			
@@ -69,7 +75,7 @@ public abstract class EditorBase {
 			}
 		}
 	}
-
+	
 	@Override
 	public String toString() {
 		return String.format("%s || title=\"%s\"%n%s", logger, title, text);

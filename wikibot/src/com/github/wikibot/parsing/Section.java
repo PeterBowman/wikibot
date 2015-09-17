@@ -2,7 +2,7 @@ package com.github.wikibot.parsing;
 
 import java.util.Objects;
 
-public class Section extends SectionBase<Section> {
+public class Section extends AbstractSection<Section> {
 	Section() {
 		super(null);
 	}
