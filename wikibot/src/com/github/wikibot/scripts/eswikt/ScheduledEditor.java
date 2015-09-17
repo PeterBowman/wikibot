@@ -28,11 +28,14 @@ public final class ScheduledEditor {
 	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
 	private static final String LAST_ENTRY = LOCATION + "last.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
+	
 	private static final int BATCH = 500;
 	private static final int SLEEP_MINS = 5;
 	private static final int THREAD_CHECK_SECS = 5;
+	
 	private static ESWikt wb;
 	private static RuntimeException threadExecutionException;
+	private static String lastEntry;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
 		wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
@@ -41,7 +44,6 @@ public final class ScheduledEditor {
 		if (args.length == 0) {
 			final String category = "";
 			processCategorymembers(category);
-			return;
 		} else {
 			switch (args[0]) {
 				case "-c":
@@ -61,6 +63,8 @@ public final class ScheduledEditor {
 					return;
 			}
 		}
+		
+		System.exit(0);
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
@@ -72,7 +76,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processAllpages() {
-		String lastEntry = getLastSavedEntry();
+		retrieveLastEntry();
 		
 		while (true) {
 			PageContainer[] pages;
@@ -98,30 +102,31 @@ public final class ScheduledEditor {
 				.allMatch(ScheduledEditor::processPage);
 			
 			if (!result) {
+				storeLastEntry();
 				return;
+			} else {
+				lastEntry = pages[pages.length - 1].getTitle();
+				storeLastEntry();
 			}
-			
-			lastEntry = pages[pages.length - 1].getTitle();
-			saveLastEntry(lastEntry);
 		}
 	}
 	
-	private static String getLastSavedEntry() {
+	private static void retrieveLastEntry() {
 		String[] lines;
 		
 		try {
 			lines = IOUtils.loadFromFile(LAST_ENTRY, "", "UTF8");
 		} catch (FileNotFoundException e) {
-			return null;
+			return;
 		}
 		
-		return lines[0];
+		lastEntry = lines[0];
 	}
 	
-	private static void saveLastEntry(String entry) {
+	private static void storeLastEntry() {
 		try {
-			IOUtils.writeToFile(entry, LAST_ENTRY);
-			System.out.printf("Last entry: %s%n", entry);
+			IOUtils.writeToFile(lastEntry, LAST_ENTRY);
+			System.out.printf("Last entry: %s%n", lastEntry);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -157,12 +162,13 @@ public final class ScheduledEditor {
 	private static boolean processPage(PageContainer pc) {
 		AbstractEditor editor = new Editor(pc);
 		Thread thread = new Thread(editor::check);
+		lastEntry = pc.getTitle();
 		
 		try {
 			monitorThread(thread);
 		} catch (TimeoutException e) {
 			logError("Editor.check() timeout", pc.getTitle(), e);
-			System.exit(0);
+			return false;
 		} catch (Throwable t) {
 			logError("Editor.check() error", pc.getTitle(), t);
 			return true;

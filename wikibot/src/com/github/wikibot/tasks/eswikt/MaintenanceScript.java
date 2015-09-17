@@ -43,6 +43,8 @@ public final class MaintenanceScript {
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
+	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	
 	private static final int THREAD_CHECK_SECS = 5;
 	private static RuntimeException threadExecutionException;
 	
@@ -59,9 +61,8 @@ public final class MaintenanceScript {
 		
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		Calendar startCal = Calendar.getInstance();
-		startCal.setTime(dateFormat.parse(startTimestamp));
+		startCal.setTime(DATE_FORMAT.parse(startTimestamp));
 		
 		Calendar endCal = wb.makeCalendar();
 		Calendar gapCal = (Calendar) endCal.clone();
@@ -94,6 +95,9 @@ public final class MaintenanceScript {
 				monitorThread(thread);
 			} catch (TimeoutException e) {
 				logError("Editor.check() timeout", pc.getTitle(), e);
+				Calendar tempCal = pc.getTimestamp();
+				tempCal.add(Calendar.SECOND, 1);
+				storeTimestamp(tempCal);
 				System.exit(0);
 			} catch (Throwable t) {
 				logError("Editor.check() error", pc.getTitle(), t);
@@ -114,9 +118,7 @@ public final class MaintenanceScript {
 			}
 		}
 		
-		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		IOUtils.writeToFile(dateFormat.format(gapCal.getTime()), LAST_DATE);
-		
+		storeTimestamp(gapCal);
 		wb.logout();
 	}
 	
@@ -139,6 +141,14 @@ public final class MaintenanceScript {
 		}
 		
 		return startTimestamp;
+	}
+	
+	private static void storeTimestamp(Calendar cal) {
+		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+		
+		try {
+			IOUtils.writeToFile(DATE_FORMAT.format(cal.getTime()), LAST_DATE);
+		} catch (IOException e) {}
 	}
 
 	private static void logError(String errorType, String entry, Throwable t) {
