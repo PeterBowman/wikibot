@@ -1646,7 +1646,7 @@ public class Editor extends AbstractEditor {
 			String template = ParseUtils.templateFromMap(params);
 			etymologySection.setIntro(template + ".");
 			langSection.prependSections(etymologySection);
-			set.add("etimología");
+			set.add("Etimología");
 		}
 		
 		// Translations
@@ -1669,7 +1669,7 @@ public class Editor extends AbstractEditor {
 					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
 					translationsSection.setTrailingNewlines(1);
 					spanishSection.appendSections(translationsSection);
-					set.add("traducciones");
+					set.add("Traducciones");
 				}
 			} else if (etymologySections.size() > 1) {
 				for (Section etymologySection : etymologySections) {
@@ -1681,7 +1681,7 @@ public class Editor extends AbstractEditor {
 						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
 						translationsSection.setTrailingNewlines(1);
 						etymologySection.appendSections(translationsSection);
-						set.add("traducciones");
+						set.add("Traducciones");
 					}
 				}
 			}
@@ -1693,7 +1693,7 @@ public class Editor extends AbstractEditor {
 			Section references = Section.create("Referencias y notas", 2);
 			references.setIntro("<references />");
 			page.setReferencesSection(references);
-			set.add("referencias y notas");
+			set.add("Referencias y notas");
 		}
 		
 		if (set.isEmpty()) {
