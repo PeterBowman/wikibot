@@ -241,6 +241,7 @@ public class Editor extends AbstractEditor {
 		addMissingElements();
 		checkLangHeaderCodeCase();
 		langTemplateParams();
+		deleteEmptySections();
 		manageClearElements();
 		strongWhitespaces();
 		weakWhitespaces();
@@ -2523,7 +2524,60 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void deleteEmptySections() {
-		// TODO
+		Page page = Page.store(title, text);
+		
+		if (page.getAllLangSections().isEmpty()) {
+			return;
+		}
+		
+		Set<String> set = new HashSet<String>();
+		
+		for (Section section : page.getAllSections()) {
+			String header = section.getStrippedHeader();
+			List<Section> childSections = section.getChildSections();
+			
+			if (
+				(childSections != null && !childSections.isEmpty()) ||
+				!STANDARD_HEADERS.contains(header)
+			) {
+				continue;
+			}
+			
+			String intro = section.getIntro();
+			intro = ParseUtils.removeCommentsAndNoWikiText(intro);
+			intro = intro.replaceAll("<br.*?>", "");
+			
+			if (!intro.isEmpty()) {
+				continue;
+			}
+			
+			if (!section.getIntro().isEmpty()) {
+				Section previousSection = section.previousSection();
+				
+				if (previousSection == null) {
+					continue;
+				}
+				
+				String previousIntro = previousSection.getIntro();
+				previousIntro += "\n" + section.getIntro();
+				previousSection.setIntro(previousIntro);
+			}
+			
+			section.detachOnlySelf();
+			set.add(header);
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		String summary = (set.size() == 1)
+			? "eliminando sección vacía: "
+			: "eliminando secciones vacías: ";
+		summary += String.join(", ", set);
+		
+		checkDifferences(formatted, "deleteEmptySections", summary);
 	}
 	
 	public void manageClearElements() {
