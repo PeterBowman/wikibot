@@ -2363,6 +2363,26 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
+		Section spanishSection = page.getLangSection("es");
+		
+		if (spanishSection != null) {
+			List<Section> translations = spanishSection.findSubSectionsWithHeader("Traducciones");
+			
+			if (translations.size() == 1) {
+				Section section = translations.get(0);
+				String intro = section.getIntro();
+				
+				if (
+					ParseUtils.getTemplates("véase", intro).isEmpty() &&
+					!intro.matches("(?i).*?\\b(v[ée]an?se|ver)\\b.*")
+				) {
+					intro += "\n\n" + TRANSLATIONS_TEMPLATE;
+					section.setIntro(intro);
+					set.add("tabla de traducciones");
+				}
+			}
+		}
+		
 		Section references = page.getReferencesSection();
 		
 		// TODO: check other elements (templates, manually introduced references...)
