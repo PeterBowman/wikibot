@@ -2379,7 +2379,12 @@ public class Editor extends AbstractEditor {
 					ParseUtils.getTemplates("véase", intro).isEmpty() &&
 					!intro.matches("(?i).*?\\b(v[ée]an?se|ver)\\b.*")
 				) {
-					intro += "\n\n" + TRANSLATIONS_TEMPLATE;
+					if (intro.matches("(\\[\\[(?i:category|categoría):.+?\\]\\]\\s*)+")) {
+						intro = TRANSLATIONS_TEMPLATE + "\n\n" + intro;
+					} else {
+						intro += "\n\n" + TRANSLATIONS_TEMPLATE;
+					}
+					
 					section.setIntro(intro);
 					set.add("tabla de traducciones");
 				}
@@ -2830,7 +2835,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "pavesa";
+		String title = "Sanaa";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
