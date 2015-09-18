@@ -126,7 +126,7 @@ public class Editor extends AbstractEditor {
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
 		// TODO: review headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<![\n:;*#>=]|__|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\||-{4,})(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\||-{4,})(<ref[ >]|[^<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
@@ -503,23 +503,35 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			if (Utils.containedInRanges(refRanges, m.start())) {
-				String replacement = m.group(1).replaceFirst("^ +", "");
-				m.appendReplacement(sb, " " + Matcher.quoteReplacement(replacement));
-			} else if (!ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
-				int lastNewlineIndex = formatted.substring(0, m.start()).lastIndexOf("\n");
-				
-				if (lastNewlineIndex != -1) {
-					String previousLine = formatted.substring(lastNewlineIndex + 1, m.start());
-					final String[] arr = {" ", ":", ";", "*", "#"};
-					
-					if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
-						continue;
-					}
+			// TODO: review reference tags
+			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
+			String replacement = null;
+			String strippedLine = ParseUtils.removeCommentsAndNoWikiText(m.group(1));
+			
+			if (StringUtils.startsWithAny(strippedLine, new String[]{" ", "\n"})) {
+				if (isRefRange) {
+					replacement = m.group(1).replaceFirst("^[ \n]+", "");
+					replacement = Matcher.quoteReplacement(replacement);
+				} else {
+					continue;
 				}
-				
-				m.appendReplacement(sb, " $1");
+			} else {
+				replacement = "$1";
 			}
+			
+			int index = formatted.substring(0, m.start()).lastIndexOf("\n");
+			String previousLine = formatted.substring(index + 1, m.start());
+			previousLine = ParseUtils.removeCommentsAndNoWikiText(previousLine);
+			
+			final String[] arr = isRefRange
+				? new String[]{":", ";", "*", "#"}
+				: new String[]{" ", ":", ";", "*", "#"};
+			
+			if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
+				continue;
+			}
+			
+			m.appendReplacement(sb, " " + replacement);
 		}
 		
 		m.appendTail(sb);
@@ -2827,7 +2839,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Roman";
+		String title = "Santo Domingo Xagacia";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
