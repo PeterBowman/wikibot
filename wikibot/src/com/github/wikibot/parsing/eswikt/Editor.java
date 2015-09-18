@@ -148,7 +148,7 @@ public class Editor extends AbstractEditor {
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
-			"título referencias", "pron-graf", "imagen"
+			"título referencias", "pron-graf", "imagen", "listaref"
 		);
 		
 		BS_SPLITTER_LIST = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
