@@ -2492,6 +2492,9 @@ public class Editor extends AbstractEditor {
 				String intro = section.getIntro();
 				
 				if (
+					ParseUtils.getTemplates("trad-arriba", intro).isEmpty() &&
+					ParseUtils.getTemplates("trad", intro).isEmpty() &&
+					ParseUtils.getTemplates("t+", intro).isEmpty() &&
 					ParseUtils.getTemplates("véase", intro).isEmpty() &&
 					!intro.matches("(?i).*?\\b(v[ée]an?se|ver)\\b.*")
 				) {
@@ -2946,7 +2949,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Roquefort-sur-Soulzon";
+		String title = "pavesa";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
