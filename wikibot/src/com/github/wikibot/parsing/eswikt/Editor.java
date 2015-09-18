@@ -148,7 +148,7 @@ public class Editor extends AbstractEditor {
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
-			"título referencias", "pron-graf", "imagen"
+			"título referencias", "pron-graf", "imagen", "listaref"
 		);
 		
 		BS_SPLITTER_LIST = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
@@ -234,6 +234,7 @@ public class Editor extends AbstractEditor {
 		removePronGrafSection();
 		sortLangSections();
 		addMissingSections();
+		moveReferencesElements();
 		sortSubSections();
 		removeInflectionTemplates();
 		adaptPronunciationTemplates();
@@ -1708,6 +1709,112 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "addMissingSections", summary);
 	}
 	
+	public void moveReferencesElements() {
+		Page page = Page.store(title, text);
+		Section references = page.getReferencesSection();
+		List<Section> referencesSections = page.findSectionsWithHeader("Referencias y notas");
+		
+		if (
+			isOldStructure || references == null ||
+			referencesSections.size() > 1
+		) {
+			return;
+		}
+		
+		Page tempPage = Page.store(title, text);
+		tempPage.getReferencesSection().detachOnlySelf();
+		String str = tempPage.toString();
+		final Pattern pReferenceTags = Pattern.compile("<references *?/ *?");
+		
+		if (
+			ParseUtils.getTemplates("listaref", str).isEmpty() &&
+			str.equals(pReferenceTags.matcher(str).replaceAll(""))
+		) {
+			return;
+		}
+		
+		Set<String> set = new HashSet<String>();
+		
+		for (Section section : page.getAllSections()) {
+			if (section == references) {
+				continue;
+			}
+			
+			String intro = section.getIntro();
+			boolean isModified = false;
+			
+			List<String> templates = ParseUtils.getTemplates("listaref", intro);
+			StringBuilder sb = new StringBuilder(intro.length());
+			
+			int index = 0;
+			int lastIndex = 0;
+			
+			for (String template : templates) {
+				index = intro.indexOf(template, lastIndex);
+				
+				sb.append(intro.substring(lastIndex, index));
+				sb.append("\n\n");
+				
+				lastIndex = index + template.length();
+			}
+			
+			if (lastIndex != 0) {
+				sb.append(intro.substring(lastIndex));
+				intro = sb.toString();
+				isModified = true;
+				set.add("{{listaref}}");
+			}
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+			
+			// TODO: handle reference groups
+			Matcher m = pReferenceTags.matcher(intro);
+			StringBuffer sbf = new StringBuffer(intro.length());
+			
+			while (m.find()) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
+					continue;
+				}
+				
+				m.appendReplacement(sbf, "\n\n");
+			}
+			
+			if (sbf.length() != 0) {
+				m.appendTail(sbf);
+				intro = sbf.toString();
+				isModified = true;
+				set.add("<references>");
+			}
+			
+			if (isModified) {
+				section.setIntro(intro);
+			}
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String summary = null;
+		String referencesIntro = references.getIntro();
+		
+		if (
+			!ParseUtils
+				.getTemplates("listaref", referencesIntro).isEmpty() ||
+			pReferenceTags
+				.matcher(ParseUtils.removeCommentsAndNoWikiText(referencesIntro)).find()
+		) {
+			summary = String.format("eliminando %s", String.join(", ", set));
+		} else {
+			String added = set.contains("<references>") ? "<references />" : "{{listaref}}";
+			referencesIntro += "\n" + added;
+			references.setIntro(referencesIntro);
+			summary = String.format("trasladando %s", String.join(", ", set));
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "moveReferencesElements", summary);
+	}
+	
 	public void sortSubSections() {
 		if (isOldStructure || hasFlexiveFormHeaders) {
 			return;
@@ -2839,7 +2946,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Santo Domingo Xagacia";
+		String title = "Roquefort-sur-Soulzon";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
