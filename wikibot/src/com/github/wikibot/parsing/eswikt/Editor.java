@@ -1711,7 +1711,7 @@ public class Editor extends AbstractEditor {
 		Page tempPage = Page.store(title, text);
 		tempPage.getReferencesSection().detachOnlySelf();
 		String str = tempPage.toString();
-		final Pattern pReferenceTags = Pattern.compile("<references *?/ *?");
+		final Pattern pReferenceTags = Pattern.compile("<references *?/? *?>");
 		
 		if (
 			ParseUtils.getTemplates("listaref", str).isEmpty() &&
@@ -1751,10 +1751,10 @@ public class Editor extends AbstractEditor {
 				isModified = true;
 				set.add("{{listaref}}");
 			}
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 			
 			// TODO: handle reference groups
 			Matcher m = pReferenceTags.matcher(intro);
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 			StringBuffer sbf = new StringBuffer(intro.length());
 			
 			while (m.find()) {
