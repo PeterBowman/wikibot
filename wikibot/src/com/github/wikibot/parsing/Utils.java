@@ -76,19 +76,24 @@ public final class Utils {
 			return null;
 		}
 		
-		if (ranges.length == 1) {
-			List<Range<Integer>> temp = Arrays.asList(ranges[0]);
+		List<Range<Integer>[]> filtered = Stream.of(ranges)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
+		
+		if (filtered.isEmpty()) {
+			return null;
+		} else if (filtered.size() == 1) {
+			List<Range<Integer>> temp = Arrays.asList(filtered.get(0));
 			return new ArrayList<Range<Integer>>(temp);
 		} else {
-			List<Range<Integer>> list = sortIgnoredRanges(ranges);
+			List<Range<Integer>> list = sortIgnoredRanges(filtered);
 			combineIgnoredRanges(list);
 			return list;
 		}
 	}
 
-	@SafeVarargs
-	private static List<Range<Integer>> sortIgnoredRanges(Range<Integer>[]... ranges) {
-		List<Range<Integer>> list = Arrays.asList(ranges).stream()
+	private static List<Range<Integer>> sortIgnoredRanges(List<Range<Integer>[]> ranges) {
+		List<Range<Integer>> list = ranges.stream()
 			.filter(Objects::nonNull)
 			.flatMap(Stream::of)
 			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
@@ -115,7 +120,7 @@ public final class Utils {
 	}
 	
 	public static boolean containedInRanges(List<Range<Integer>> ignoredRanges, int index) {
-		if (ignoredRanges.isEmpty()) {
+		if (ignoredRanges == null || ignoredRanges.isEmpty()) {
 			return false;
 		}
 		
