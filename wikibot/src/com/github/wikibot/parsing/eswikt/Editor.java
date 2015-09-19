@@ -126,7 +126,7 @@ public class Editor extends AbstractEditor {
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
 		// TODO: review headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\||-{4,})(<ref[ >]|[^<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\||-{4,})(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
@@ -507,9 +507,8 @@ public class Editor extends AbstractEditor {
 			// TODO: review reference tags
 			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
 			String replacement = null;
-			String strippedLine = ParseUtils.removeCommentsAndNoWikiText(m.group(1));
 			
-			if (StringUtils.startsWithAny(strippedLine, new String[]{" ", "\n"})) {
+			if (ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
 				if (isRefRange) {
 					replacement = m.group(1).replaceFirst("^[ \n]+", "");
 					replacement = Matcher.quoteReplacement(replacement);
@@ -2954,7 +2953,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Sanaa";
+		String title = "acuífero";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
@@ -2969,6 +2968,6 @@ public class Editor extends AbstractEditor {
 		wb.edit(title, editor.getPageText(), editor.getSummary(), false, true, -2, null);
 		System.out.println(editor.getLogs());
 		
-		Login.saveSession(wb);
+		wb.logout();
 	}
 }
