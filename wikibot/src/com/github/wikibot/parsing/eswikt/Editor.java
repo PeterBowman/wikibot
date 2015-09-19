@@ -946,6 +946,30 @@ public class Editor extends AbstractEditor {
 					processIfMultipleEtym(section, etymologySection);
 				}
 				
+				if (
+					etymologySection.getIntro().isEmpty() &&
+					// see addMissingElements()
+					(
+						!ParseUtils.getTemplates("etimología", section.getIntro()).isEmpty() ||
+						!ParseUtils.getTemplates("etimología2", section.getIntro()).isEmpty()
+					)
+				) {
+					HashMap<String, String> params = new LinkedHashMap<>();
+					params.put("templateName", "etimología");
+					
+					// this should always be true
+					if (section instanceof LangSection) {
+						String langCode = ((LangSection) section).getLangCode();
+						
+						if (!langCode.equals("es")) {
+							params.put("leng", langCode);
+						}
+					}
+					
+					String template = ParseUtils.templateFromMap(params);
+					etymologySection.setIntro(template + ".");
+				}
+				
 				section.prependSections(etymologySection);
 				
 				if (!(section instanceof LangSection)) {
@@ -2684,6 +2708,7 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				(childSections != null && !childSections.isEmpty()) ||
+				// empty "Etimología \d" sections too?
 				!STANDARD_HEADERS.contains(header)
 			) {
 				continue;
