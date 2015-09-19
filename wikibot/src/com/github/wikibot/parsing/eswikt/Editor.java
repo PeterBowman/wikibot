@@ -42,6 +42,7 @@ import com.github.wikibot.utils.Users;
 public class Editor extends AbstractEditor {
 	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_PREFIXED_TEMPLATE;
+	private static final Pattern P_TAGS = Pattern.compile("<(\\w+?)[^>]*?(?<!/ ?)>.+?</\\1+? ?>", Pattern.DOTALL);
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
@@ -492,9 +493,7 @@ public class Editor extends AbstractEditor {
 	public void joinLines() {
 		String formatted = text;
 		
-		final Pattern pTags = Pattern.compile("<(\\w+?)[^>]*?(?<!/ ?)>.+?</\\1+? ?>", Pattern.DOTALL);
-		
-		Range<Integer>[] tags = Utils.findRanges(formatted, pTags);
+		Range<Integer>[] tags = Utils.findRanges(formatted, P_TAGS);
 		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		Range<Integer>[] templates = Utils.findRanges(formatted, "{{", "}}");
 		Range<Integer>[] wikitables = Utils.findRanges(formatted, "{|", "|}");
