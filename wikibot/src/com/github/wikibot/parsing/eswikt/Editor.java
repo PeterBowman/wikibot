@@ -1267,6 +1267,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		line = ParseUtils.removeCommentsAndNoWikiText(line);
+		line = line.replaceAll("<ref [^>]+?(?<=/ ?)>", "");
 		
 		for (int i = 0; i < arr1.length; i++) {
 			String[] delimiters = {arr1[i], arr2[i]};
