@@ -492,7 +492,10 @@ public class Editor extends AbstractEditor {
 	public void joinLines() {
 		String formatted = text;
 		
+		final Pattern pTags = Pattern.compile("<(\\w+?)[^>]*?(?<!/ ?)>.+?</\\1+? ?>", Pattern.DOTALL);
+		Range<Integer>[] tags = Utils.findRanges(formatted, pTags);
 		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		List<Range<Integer>> tagRanges = Utils.getIgnoredRanges(tags);
 		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		
@@ -500,14 +503,18 @@ public class Editor extends AbstractEditor {
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
+			
+			if (
+				Utils.containedInRanges(ignoredRanges, m.start()) ||
+				(!isRefRange && Utils.containedInRanges(tagRanges, m.start()))
+			) {
 				continue;
 			}
 			
 			// TODO: review reference tags
 			// https://es.wiktionary.org/w/index.php?title=casa&diff=2912203&oldid=2906951
 			
-			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
 			String replacement = null;
 			
 			if (ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
@@ -2981,7 +2988,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Guayaquil";
+		String title = "Tamaulipas";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
