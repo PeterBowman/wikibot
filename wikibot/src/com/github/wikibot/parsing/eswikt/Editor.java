@@ -2707,8 +2707,8 @@ public class Editor extends AbstractEditor {
 			List<Section> childSections = section.getChildSections();
 			
 			if (
+				header.startsWith("Etimología") || // TODO: review
 				(childSections != null && !childSections.isEmpty()) ||
-				// empty "Etimología \d" sections too?
 				!STANDARD_HEADERS.contains(header)
 			) {
 				continue;
