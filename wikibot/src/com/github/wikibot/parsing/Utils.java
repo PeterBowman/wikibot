@@ -67,11 +67,11 @@ public final class Utils {
 		Range<Integer>[] pres = findRanges(text, Pattern.compile("<pre(?: |>).+?</pre *?>", patternOptions));
 		Range<Integer>[] codes = findRanges(text, Pattern.compile("<code(?: |>).+?</code *?>", patternOptions));
 		
-		return getIgnoredRanges(comments, nowikis, pres, codes);
+		return getCombinedRanges(comments, nowikis, pres, codes);
 	}
 	
 	@SafeVarargs
-	public static List<Range<Integer>> getIgnoredRanges(Range<Integer>[]... ranges) {
+	public static List<Range<Integer>> getCombinedRanges(Range<Integer>[]... ranges) {
 		if (ranges.length == 0) {
 			return null;
 		}

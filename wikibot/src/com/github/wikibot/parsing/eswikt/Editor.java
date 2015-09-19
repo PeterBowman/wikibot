@@ -493,21 +493,36 @@ public class Editor extends AbstractEditor {
 		String formatted = text;
 		
 		final Pattern pTags = Pattern.compile("<(\\w+?)[^>]*?(?<!/ ?)>.+?</\\1+? ?>", Pattern.DOTALL);
+		
 		Range<Integer>[] tags = Utils.findRanges(formatted, pTags);
 		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
-		List<Range<Integer>> tagRanges = Utils.getIgnoredRanges(tags);
-		List<Range<Integer>> refRanges = Utils.getIgnoredRanges(refs);
+		Range<Integer>[] templates = Utils.findRanges(formatted, "{{", "}}");
+		Range<Integer>[] wikitables = Utils.findRanges(formatted, "{|", "|}");
+		
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+		List<Range<Integer>> tagRanges = Utils.getCombinedRanges(tags);
+		List<Range<Integer>> refRanges = Utils.getCombinedRanges(refs);
+		List<Range<Integer>> templateRanges = Utils.getCombinedRanges(templates);
+		List<Range<Integer>> wikitableRanges = Utils.getCombinedRanges(wikitables);
 		
 		Matcher m = P_LINE_JOINER.matcher(formatted);
 		StringBuffer sb = new StringBuffer(formatted.length());
 		
 		while (m.find()) {
+			if (Utils.containedInRanges(ignoredRanges, m.start())) {
+				continue;
+			}
+			
 			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
 			
 			if (
-				Utils.containedInRanges(ignoredRanges, m.start()) ||
-				(!isRefRange && Utils.containedInRanges(tagRanges, m.start()))
+				!isRefRange &&
+				// assume <ref> regions cannot contain these elements 
+				(
+					Utils.containedInRanges(tagRanges, m.start()) ||
+					Utils.containedInRanges(templateRanges, m.start()) ||
+					Utils.containedInRanges(wikitableRanges, m.start())
+				)
 			) {
 				continue;
 			}
@@ -2988,7 +3003,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Tamaulipas";
+		String title = "Vergleich";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
