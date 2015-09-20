@@ -36,12 +36,12 @@ public final class Utils {
 			int endPos = text.indexOf(end, startPos);
 			
 			if (endPos != -1) {
-				list.add(Range.between(startPos, endPos));
+				endPos += end.length();
+				list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
+				startPos = text.indexOf(start, endPos);
 			} else {
 				return list.toArray(new Range[list.size()]); 
 			}
-			
-			startPos = text.indexOf(start, endPos);
 		}
 		
 		return list.toArray(new Range[list.size()]);
@@ -53,7 +53,7 @@ public final class Utils {
 		Matcher m = patt.matcher(text);
 		
 		while (m.find()) {
-			list.add(Range.between(m.start(), m.end()));
+			list.add(Range.between(m.start(), m.end() - 1)); // inclusive/inclusive
 		}
 		
 		return list.toArray(new Range[list.size()]);
@@ -78,6 +78,7 @@ public final class Utils {
 		
 		List<Range<Integer>[]> filtered = Stream.of(ranges)
 			.filter(Objects::nonNull)
+			.filter(arr -> arr.length != 0)
 			.collect(Collectors.toList());
 		
 		if (filtered.isEmpty()) {

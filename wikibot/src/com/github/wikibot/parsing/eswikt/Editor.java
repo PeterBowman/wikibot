@@ -334,6 +334,9 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeComments() {
+		// TODO: detect comment region
+		// https://es.wiktionary.org/w/index.php?title=allophone&diff=2942385&oldid=1056999
+		
 		String formatted = text;
 		
 		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
