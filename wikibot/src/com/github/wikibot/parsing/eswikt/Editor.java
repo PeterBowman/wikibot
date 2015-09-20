@@ -353,7 +353,8 @@ public class Editor extends AbstractEditor {
 		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
 		formatted = formatted.replaceAll("<!-- ?(; )?si pertenece a un campo semántico .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?(;2: )?si hay más acepciones.*?-->", "");
-		formatted = formatted.replaceAll("(;2: ?)?<!-- ?si hay más que una acepción,.*?-->", "");
+		formatted = formatted.replaceAll(";2: ?<!-- ?si hay más que una acepción,.*?-->\\.?(?=\n)", "");
+		formatted = formatted.replaceAll("<!-- ?si hay más que una acepción,.*?-->", "");
 		formatted = formatted.replaceAll("(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->", "");
 		formatted = formatted.replaceAll("<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->", "");
@@ -3002,7 +3003,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Vergleich";
+		String title = "albarguería";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
