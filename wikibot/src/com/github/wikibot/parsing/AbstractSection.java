@@ -120,7 +120,10 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public void setHeader(String header) {
-		this.header = header;
+		this.header = header.trim();
+		
+		// since this.header may be an empty string
+		buildHeaderFormatString(this.header);
 	}
 	
 	public String getIntro() {
