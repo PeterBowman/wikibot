@@ -3,7 +3,12 @@ package com.github.wikibot.parsing.eswikt;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
 
 import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.AbstractSection;
@@ -61,14 +66,14 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	void sortSections() {
-		if (childSections == null) {
+		if (childSections == null || hasDuplicatedChildSections()) {
 			return;
 		}
-		
+
 		Collections.sort(childSections);
 		propagateTree();
 	}
-
+	
 	@Override
 	public int compareTo(Section s) {
 		String header = getStrippedHeader();
@@ -90,5 +95,25 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		} else {
 			return 0;
 		}
+	}
+	
+	protected boolean hasDuplicatedChildSections() {
+		List<String> headers = childSections.stream()
+			.map(AbstractSection::getStrippedHeader)
+			.collect(Collectors.toList());
+		
+		@SuppressWarnings("unchecked")
+		Map<String, Integer> cardinalityMap = CollectionUtils.getCardinalityMap(headers);
+		
+		for (Entry<String, Integer> entry : cardinalityMap.entrySet()) {
+			if (entry.getValue() > 1 && (
+				HEAD_SECTIONS.contains(entry.getKey()) ||
+				BOTTOM_SECTIONS.contains(entry.getKey())
+			)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

@@ -184,10 +184,14 @@ public class LangSection extends Section {
 		}
 		
 		if (etymologySections.size() == 1) {
+			if (hasDuplicatedChildSections()) {
+				return;
+			}
+			
 			Collections.sort(childSections);
 			propagateTree();
 		} else {
-			for (Section etymologySection : etymologySections.toArray(new Section[etymologySections.size()])) {
+			for (Section etymologySection : etymologySections) {
 				etymologySection.sortSections();
 			}
 		}
