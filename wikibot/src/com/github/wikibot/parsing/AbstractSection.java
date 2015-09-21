@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.ParseUtils;
 
 public abstract class AbstractSection<T extends AbstractSection<T>> {
 	protected String header;
@@ -116,7 +117,10 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public String getStrippedHeader() {
-		return stripHeaderReferences(header);
+		String header = stripHeaderReferences(this.header);
+		header = ParseUtils.removeCommentsAndNoWikiText(header);
+		header = Utils.sanitizeWhitespaces(header);
+		return header.trim();
 	}
 	
 	public void setHeader(String header) {
