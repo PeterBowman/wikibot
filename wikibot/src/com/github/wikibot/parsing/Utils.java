@@ -73,7 +73,7 @@ public final class Utils {
 	@SafeVarargs
 	public static List<Range<Integer>> getCombinedRanges(Range<Integer>[]... ranges) {
 		if (ranges.length == 0) {
-			return null;
+			return new ArrayList<Range<Integer>>();
 		}
 		
 		List<Range<Integer>[]> filtered = Stream.of(ranges)
@@ -82,7 +82,7 @@ public final class Utils {
 			.collect(Collectors.toList());
 		
 		if (filtered.isEmpty()) {
-			return null;
+			return new ArrayList<Range<Integer>>();
 		} else if (filtered.size() == 1) {
 			List<Range<Integer>> temp = Arrays.asList(filtered.get(0));
 			return new ArrayList<Range<Integer>>(temp);
