@@ -124,10 +124,14 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public void setHeader(String header) {
+		boolean wasEmpty = this.header.isEmpty();
 		this.header = header.trim();
 		
-		// since this.header may be an empty string
-		buildHeaderFormatString(this.header);
+		if (wasEmpty && !this.header.isEmpty()) {
+			headerFormat = "%1$s %2$s %1$s";
+		} else if (!wasEmpty && this.header.isEmpty()) {
+			headerFormat = "%1$s %1$s";
+		}
 	}
 	
 	public String getIntro() {
