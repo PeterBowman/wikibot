@@ -230,8 +230,15 @@ public final class ScheduledEditor {
 	
 	private static void logError(String errorType, String entry, Throwable t) {
 		Date date = new Date();
-		System.out.printf("%s %s in %s%n", date, errorType, entry);
+		
+		String log = String.format(
+			"%s %s in %s (%s: %s)",
+			date, errorType, entry, t.getClass().getName(), t.getMessage()
+		);
+		
+		System.out.println(log);
 		t.printStackTrace();
+		
 		String[] lines;
 		
 		try {
@@ -241,7 +248,7 @@ public final class ScheduledEditor {
 		}
 		
 		List<String> list = new ArrayList<String>(Arrays.asList(lines));
-		list.add(String.format("%s %s", date, entry));
+		list.add(log);
 		
 		try {
 			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
