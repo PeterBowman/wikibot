@@ -27,7 +27,7 @@ public final class Utils {
 		int startPos = text.indexOf(start);
 		
 		if (startPos == -1) {
-			return null;
+			return new Range[]{};
 		}
 		
 		List<Range<Integer>> list = new ArrayList<Range<Integer>>();

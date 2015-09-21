@@ -97,6 +97,7 @@ public class Editor extends AbstractEditor {
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
+	private static final List<Pattern> COMMENT_PATT_LIST;
 	private static final List<String> LS_SPLITTER_LIST;
 	private static final List<String> BS_SPLITTER_LIST;
 	private static final List<String> STANDARD_HEADERS;
@@ -176,6 +177,64 @@ public class Editor extends AbstractEditor {
 		);
 		
 		TRANSLATIONS_TEMPLATE = String.join("\n", translationsTemplate);
+		
+		final List<String> pCommentsList = Arrays.asList(
+			"<!--( *?|\n*?)-->",
+			"<!-- ?si hay términos que se diferencian .*?-->",
+			"<!-- ?(en|EN) para inglés,.*?-->",
+			"<!---? ?Añádela en el Alfabeto Fonético Internacional.*?-->",
+			"<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.*?-->",
+			"<!-- ?A[ñn]ádela con el siguiente patrón.*?-->",
+			"<!-- ?Añade la etimología con el siguiente patrón.*?-->",
+			"<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->",
+			"<!-- ?o femenino=== ?-->",
+			"<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->",
+			"<!-- ?o intransitivo.*?-->",
+			"<!-- ?¿flexión\\?: mira en Categoría:.*?-->",
+			"(?s)<!-- ?Escoge la plantilla adecuada .*?-->",
+			"(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .*?-->",
+			"<!-- ?explicación de lo que significa la palabra -->",
+			"<!-- ?(; )?si pertenece a un campo semántico .*?-->",
+			"<!-- ?(;2: )?si hay más acepciones.*?-->",
+			"<!-- ?si hay más que una acepción,.*?-->",
+			"(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->",
+			"<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->",
+			"<!-- ?\\{\\{sinónimo(\\|leng=xx)?\\|<(SINÓNIMO )?1>\\|<(SINÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{antónimo(\\|leng=xx)?\\|<(ANTÓNIMO )?1>\\|<(ANTÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{hipónimo(\\|leng=xx)?\\|<(HIPÓNIMO )?1>\\|<(HIPÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{hiperónimo(\\|leng=xx)?\\|<(HIPERÓNIMO )?1>\\|<(HIPERÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{relacionado(\\|leng=xx)?\\|<1>\\|<2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{ejemplo\\|<oración.*?-->",
+			"<!-- ?\\{\\{ejemplo\\}\\} ?-->",
+			"<!-- ?aquí pones una explicaci[óo]n .*?-->",
+			"<!-- ?aquí escribes una explicaci[óo]n .*?-->",
+			"<!-- ?si tienes información adicional.*?-->",
+			"(?s)<!-- ?Puedes también incluir las siguientes secciones.*?-->",
+			"<!-- ?\\{\\{etimología\\|IDIOMA.*?-->",
+			"<!-- ?posiblemente desees incluir una imagen.*?-->",
+			"<!-- ?si se trata de un país.*?-->",
+			"(?s)<!-- ?puedes también incluir locuciones.*?-->",
+			"(?s)<!-- ?Incluir la plantilla de conjugación aquí.*?-->",
+			"(?s)<!-- ?otra sección opcional para enlaces externos.*?-->",
+			"<!-- ?¿flexión?: mira en .*?-->",
+			"<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->",
+			"<!---? ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.*?-->",
+			"<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->",
+			"<!-- ?en general, no se indica la etimología .*?-->",
+			"<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->",
+			"<!-- ?si vas a insertar una nueva sección de etimología o de idioma.*?-->",
+			"<!-- ?si se trata de un país,? por favor,? pon.*?-->",
+			"<!-- *?apellidos .*?-->",
+			"<!-- *?antropónimos .*?-->",
+			"<!-- *?apéndice .*?-->",
+			"<!-- *?o femeninos]].*?-->",
+			"<!-- ?(primera|segunda) locución ?-->"
+		);
+		
+		COMMENT_PATT_LIST = pCommentsList.stream()
+			.map(Pattern::compile)
+			.collect(Collectors.toList());
 	}
 	
 	public Editor(Page page) {
@@ -334,69 +393,51 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeComments() {
-		// TODO: detect comment region
-		// https://es.wiktionary.org/w/index.php?title=allophone&diff=2942385&oldid=1056999
+		@SuppressWarnings("unchecked")
+		Range<Integer>[][] tempArray = COMMENT_PATT_LIST.stream()
+			.map(patt -> Utils.findRanges(text, patt))
+			.toArray(Range[][]::new);
 		
-		String formatted = text;
+		List<Range<Integer>> selectedRanges = Utils.getCombinedRanges(tempArray);
+		List<Range<Integer>> ignoredRanges = Arrays.asList(Utils.findRanges(text, "<!--", "-->"));
+		Iterator<Range<Integer>> iterator = selectedRanges.iterator();
 		
-		formatted = formatted.replaceAll("<!--( *?|\n*?)-->", "");
-		formatted = formatted.replaceAll("<!-- ?si hay términos que se diferencian .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?(en|EN) para inglés,.*?-->", "");
-		formatted = formatted.replaceAll("<!---? ?Añádela en el Alfabeto Fonético Internacional.*?-->", "");
-		formatted = formatted.replaceAll("<!---? ?Añade la pronunciación en el Alfabeto Fonético Internacional.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?A[ñn]ádela con el siguiente patrón.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?Añade la etimología con el siguiente patrón.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?o femenino=== ?-->", "");
-		formatted = formatted.replaceAll("<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?o intransitivo.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?¿flexión\\?: mira en Categoría:.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?Escoge la plantilla adecuada .*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?Utiliza cualquiera de las siguientes plantillas .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?explicación de lo que significa la palabra -->", "");
-		formatted = formatted.replaceAll("<!-- ?(; )?si pertenece a un campo semántico .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?(;2: )?si hay más acepciones.*?-->", "");
-		formatted = formatted.replaceAll(";2: ?<!-- ?si hay más que una acepción,.*?-->\\.?(?=\n)", "");
-		formatted = formatted.replaceAll("<!-- ?si hay más que una acepción,.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{sinónimo(\\|leng=xx)?\\|<(SINÓNIMO )?1>\\|<(SINÓNIMO )?2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{antónimo(\\|leng=xx)?\\|<(ANTÓNIMO )?1>\\|<(ANTÓNIMO )?2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{hipónimo(\\|leng=xx)?\\|<(HIPÓNIMO )?1>\\|<(HIPÓNIMO )?2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{hiperónimo(\\|leng=xx)?\\|<(HIPERÓNIMO )?1>\\|<(HIPERÓNIMO )?2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{relacionado(\\|leng=xx)?\\|<1>\\|<2>\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{ejemplo\\|<oración.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{ejemplo\\}\\} ?-->", "");
-		formatted = formatted.replaceAll("<!-- ?aquí pones una explicaci[óo]n .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?aquí escribes una explicaci[óo]n .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?si tienes información adicional.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?Puedes también incluir las siguientes secciones.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{etimología\\|IDIOMA.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?posiblemente desees incluir una imagen.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?si se trata de un país.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?puedes también incluir locuciones.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?Incluir la plantilla de conjugación aquí.*?-->", "");
-		formatted = formatted.replaceAll("(?s)<!-- ?otra sección opcional para enlaces externos.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?¿flexión?: mira en .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->", "");
-		formatted = formatted.replaceAll("<!---? ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->", "");
-		formatted = formatted.replaceAll("<!-- ?en general, no se indica la etimología .*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->", "");
-		formatted = formatted.replaceAll("<!-- ?si vas a insertar una nueva sección de etimología o de idioma.*?-->", "");
-		formatted = formatted.replaceAll("<!-- ?si se trata de un país,? por favor,? pon.*?-->", "");
-		formatted = formatted.replaceAll("<!-- *?apellidos .*?-->", "");
-		formatted = formatted.replaceAll("<!-- *?antropónimos .*?-->", "");
-		formatted = formatted.replaceAll("<!-- *?apéndice .*?-->", "");
-		formatted = formatted.replaceAll("<!-- *?tipo de palabra, por ejemplo .*?-->", " "); // whitespace here is mandatory!
-		formatted = formatted.replaceAll("<!-- *?tipo de palabra \\(es=español\\): .*?-->", " "); // whitespace here is mandatory!
-		formatted = formatted.replaceAll("<!-- *?o femeninos]].*?-->", "");
-		formatted = formatted.replaceAll("<!--\\s*$", "");
-		formatted = formatted.replaceAll("\\* ?\\[\\[\\]\\] ?<!-- ?(primera|segunda) locución ?-->", "");
+		while (iterator.hasNext()) {
+			if (!ignoredRanges.contains(iterator.next())) {
+				iterator.remove();
+			}
+		}
 		
-		formatted = Utils.sanitizeWhitespaces(formatted);
+		String formatted;
 		
+		if (!selectedRanges.isEmpty()) {
+			StringBuilder sb = new StringBuilder(text.length());
+			Range<Integer> lastRange = null;
+			
+			for (Range<Integer> currentRange : selectedRanges) {
+				int start = (lastRange != null) ? lastRange.getMaximum() + 1 : 0;
+				int end = currentRange.getMinimum();
+				sb.append(text.substring(start, end));
+				lastRange = currentRange;
+			}
+			
+			sb.append(text.substring(lastRange.getMaximum() + 1));
+			formatted = sb.toString();
+		} else {
+			formatted = text;
+		}
+		
+		Page page = Page.store(title, formatted);
+		
+		for (Section section : page.getAllSections()) {
+			String header = section.getHeader();
+			header = header.replaceAll("<!-- *?tipo de palabra, por ejemplo .*?-->", "");
+			header = header.replaceAll("<!-- *?tipo de palabra \\(es=español\\): .*?-->", "");
+			header = header.replaceAll(" {2,}", " ");
+			section.setHeader(header);
+		}
+		
+		formatted = page.toString();
 		checkDifferences(formatted, "removeComments", "eliminando comentarios");
 	}
 	
@@ -810,6 +851,7 @@ public class Editor extends AbstractEditor {
 		// TODO: perrichines (comment close tag)
 		// TODO: trailing period after {{etimología}} and {{pron-graf}}
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
+		// TODO: remove ";2: .?\n", "* [[]]\n" (see removeComments()) 
 		
 		String formatted = this.text;
 		final String preferredFileNSAlias = "Archivo";
@@ -3006,7 +3048,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "albarguería";
+		String title = "allophone";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
