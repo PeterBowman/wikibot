@@ -2538,6 +2538,8 @@ public class Editor extends AbstractEditor {
 				}
 				
 				if (
+					// TODO: review
+					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
 					ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 					ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
@@ -2552,6 +2554,7 @@ public class Editor extends AbstractEditor {
 					String etymologyIntro = etymologySection.getIntro();
 					
 					if (
+						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
 						ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
@@ -2664,6 +2667,21 @@ public class Editor extends AbstractEditor {
 		
 		m.appendTail(sb);
 		return sb.toString().trim();
+	}
+	
+	private String removeBlockTemplates(String text) {
+		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		
+		for (String target : PRON_TMPLS) {
+			for (String template : ParseUtils.getTemplates(target, text)) {
+				text = text.replace(template, "");
+			}
+		}
+		
+		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
+		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
+		
+		return text;
 	}
 	
 	public void checkLangHeaderCodeCase() {
@@ -3048,7 +3066,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "allophone";
+		String title = "Übersetzung";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
