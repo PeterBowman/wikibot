@@ -54,7 +54,9 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?):*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
-	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br +?clear *?= *?(?:\" *?all *?\"|' *?all *?'|all) *?>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br\\b([^>]*?)>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_BR_CLEAR = Pattern.compile("clear *?= *?(?<quote>['\"]?)all\\k<quote>", Pattern.CASE_INSENSITIVE);
+	private static final Pattern P_BR_STYLE = Pattern.compile("style *?=[^=]*?\\bclear *?:.+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
@@ -2831,6 +2833,10 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void manageClearElements() {
+		if (isOldStructure || Page.store(title, text).getAllLangSections().isEmpty()) {
+			return;
+		}
+		
 		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
@@ -2887,7 +2893,15 @@ public class Editor extends AbstractEditor {
 			}
 			
 			String pre = m.group(1);
-			String post = m.group(2);
+			String content = m.group(2);
+			String post = m.group(3);
+			
+			if (
+				!P_BR_CLEAR.matcher(content).find() &&
+				!P_BR_STYLE.matcher(content).find()
+			) {
+				continue;
+			}
 			
 			StringBuilder buff = new StringBuilder(pre.length() + post.length());
 			
@@ -3057,7 +3071,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "-le";
+		String title = "meter";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
