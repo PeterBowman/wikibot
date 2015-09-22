@@ -2669,7 +2669,7 @@ public class Editor extends AbstractEditor {
 	private String removeBlockTemplates(String text) {
 		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		
-		List<String> list = new ArrayList<String>(PRON_TMPLS.size() + AMBOX_TMPLS.size());
+		List<String> list = new ArrayList<String>(PRON_TMPLS.size() + AMBOX_TMPLS.size() + 1);
 		list.addAll(PRON_TMPLS);
 		list.addAll(AMBOX_TMPLS);
 		list.add("pron-graf");
@@ -2684,7 +2684,7 @@ public class Editor extends AbstractEditor {
 		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
 		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
 		
-		return text;
+		return text.trim();
 	}
 	
 	public void checkLangHeaderCodeCase() {
