@@ -2621,21 +2621,19 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
-		Matcher m = P_AMBOX_TMPLS.matcher(content);
-		StringBuffer sb = new StringBuffer(content.length());
-		boolean hadMatch = false;
+		String[] lines = content.split("\n");
+		List<String> amboxTemplates = new ArrayList<String>();
+		List<String> otherLines = new ArrayList<String>();
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
+		for (String line : lines) {
+			if (P_AMBOX_TMPLS.matcher(line).matches()) {
+				amboxTemplates.add(line);
+			} else {
+				otherLines.add(line);
 			}
-			
-			m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
-			hadMatch = true;
 		}
 		
-		sb.append("\n");
+		List<String> outputList = new ArrayList<String>(amboxTemplates);
 		String lengParam = "";
 		
 		if (!langCode.equals("es")) {
@@ -2645,24 +2643,15 @@ public class Editor extends AbstractEditor {
 		// TODO: ugly workaround, just insert {{etimología}} at the end
 		
 		if (templateName.equals("etimología")) {
-			m.appendTail(sb);
-			
-			if (sb.charAt(sb.length() -1 ) != '\n') {
-				sb.append("\n");
-			}
-			
-			sb.append(String.format(templateFormat, templateName + lengParam));
-			return sb.toString().trim();
+			outputList.addAll(otherLines);
+			outputList.add(String.format(templateFormat, templateName + lengParam));
+		} else {
+			outputList.add(String.format(templateFormat, templateName + lengParam));
+			outputList.addAll(otherLines);
 		}
 		
-		sb.append(String.format(templateFormat, templateName + lengParam));
-		
-		if (!hadMatch) {
-			sb.append("\n");
-		}
-		
-		m.appendTail(sb);
-		return sb.toString().trim();
+		outputList.removeIf(String::isEmpty);
+		return String.join("\n", outputList);
 	}
 	
 	private String removeBlockTemplates(String text) {
