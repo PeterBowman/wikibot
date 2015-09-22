@@ -2668,7 +2668,12 @@ public class Editor extends AbstractEditor {
 	private String removeBlockTemplates(String text) {
 		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		
-		for (String target : PRON_TMPLS) {
+		List<String> list = new ArrayList<String>(PRON_TMPLS.size() + AMBOX_TMPLS.size());
+		list.addAll(PRON_TMPLS);
+		list.addAll(AMBOX_TMPLS);
+		list.add("pron-graf");
+		
+		for (String target : list) {
 			for (String template : ParseUtils.getTemplates(target, text)) {
 				text = text.replace(template, "");
 			}
@@ -3062,7 +3067,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Übersetzung";
+		String title = "-le";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
