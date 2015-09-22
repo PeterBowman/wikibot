@@ -2538,12 +2538,10 @@ public class Editor extends AbstractEditor {
 				}
 				
 				if (
-					// TODO: review
-					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
 					ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 					ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
-					ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
-					ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
+					// TODO: review
+					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
 				) {
 					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 					etymologySection.setIntro(etymologyIntro);
@@ -2554,11 +2552,9 @@ public class Editor extends AbstractEditor {
 					String etymologyIntro = etymologySection.getIntro();
 					
 					if (
-						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
 						ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
-						ParseUtils.getTemplates("etimología", etymologyIntro).isEmpty() &&
-						ParseUtils.getTemplates("etimología2", etymologyIntro).isEmpty()
+						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
 					) {
 						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
