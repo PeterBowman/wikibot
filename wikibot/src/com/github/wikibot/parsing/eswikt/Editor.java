@@ -1177,6 +1177,7 @@ public class Editor extends AbstractEditor {
 				String replacement = String.format("%s=ETYM alt-%s=%s", pre, altGraf, post);
 				m.appendReplacement(sb, replacement);
 			} else {
+				sortTemplateParamsMap(params);
 				String newTemplate = ParseUtils.templateFromMap(params);
 				String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
 				m.appendReplacement(sb, replacement);
@@ -1187,6 +1188,15 @@ public class Editor extends AbstractEditor {
 		
 		m.appendTail(sb);
 		return sb.toString();
+	}
+	
+	private void sortTemplateParamsMap(Map<String, String> params) {
+		Map<String, String> tempMap = new LinkedHashMap<>(params.size(), 1);
+		tempMap.put("templateName", params.remove("templateName"));
+		tempMap.put("ParamWithoutName1", params.remove("ParamWithoutName1"));
+		tempMap.putAll(params);
+		params.clear();
+		params.putAll(tempMap);
 	}
 
 	private void extractAltParameter(Section section, String alt) {
@@ -3071,7 +3081,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "meter";
+		String title = "akeru";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
