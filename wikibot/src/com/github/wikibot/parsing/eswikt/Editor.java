@@ -189,7 +189,7 @@ public class Editor extends AbstractEditor {
 			"<!-- ?A[ñn]ádela con el siguiente patrón.*?-->",
 			"<!-- ?Añade la etimología con el siguiente patrón.*?-->",
 			"<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->",
-			"<!-- ?o femenino=== ?-->",
+			"<!-- ?o (femenino|masculino)s?=== ?-->",
 			"<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->",
 			"<!-- ?o intransitivo.*?-->",
 			"<!-- ?¿flexión\\?: mira en Categoría:.*?-->",
@@ -230,7 +230,7 @@ public class Editor extends AbstractEditor {
 			"<!-- *?apellidos .*?-->",
 			"<!-- *?antropónimos .*?-->",
 			"<!-- *?apéndice .*?-->",
-			"<!-- *?o femeninos]].*?-->",
+			"<!-- *?o (femenino|masculino)s?]].*?-->",
 			"<!-- ?(primera|segunda) locución ?-->"
 		);
 		
@@ -333,11 +333,11 @@ public class Editor extends AbstractEditor {
 			Section section = sections.get(index);
 			
 			if (unpairedCurlyBrackets(section.getIntro())) {
-				throw new Error("Unpaired curly brackets in Section intro (#" + index + ")");
+				throw new Error("Unpaired curly brackets in Section intro (#" + (index + 1) + ")");
 			}
 			
 			if (unpairedSquareBrackets(section.getIntro())) {
-				throw new Error("Unpaired square brackets in Section intro (#" + index + ")");
+				throw new Error("Unpaired square brackets in Section intro (#" + (index + 1) + ")");
 			}
 		}
 	}
