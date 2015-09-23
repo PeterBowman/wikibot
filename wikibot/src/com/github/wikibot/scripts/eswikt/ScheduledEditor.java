@@ -36,7 +36,7 @@ public final class ScheduledEditor {
 	
 	private static ESWikt wb;
 	private static RuntimeException threadExecutionException;
-	private static String lastEntry;
+	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
 		wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
@@ -65,7 +65,7 @@ public final class ScheduledEditor {
 			}
 		}
 		
-		System.exit(0);
+		System.exit(exitCode.value);
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
@@ -77,7 +77,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processAllpages() {
-		retrieveLastEntry();
+		String lastEntry = retrieveLastEntry();
 		
 		while (true) {
 			PageContainer[] pages;
@@ -97,37 +97,41 @@ public final class ScheduledEditor {
 				break;
 			}
 			
-			boolean result = Stream.of(pages)
-				.limit(pages.length - 1)
-				.filter(ScheduledEditor::filterPages)
-				.allMatch(ScheduledEditor::processPage);
-			
-			if (!result) {
-				storeLastEntry();
-				return;
-			} else {
-				lastEntry = pages[pages.length - 1].getTitle();
-				storeLastEntry();
+			for (int i = 0; i < pages.length - 1; i++) {
+				PageContainer pc = pages[i];
+				
+				if (!filterPages(pc)) {
+					continue;
+				}
+				
+				if (!processPage(pc)) {
+					String nextEntry = pages[i + 1].getTitle();
+					storeEntry(nextEntry);
+					return;
+				}
 			}
+			
+			lastEntry = pages[pages.length - 1].getTitle();
+			storeEntry(lastEntry);
 		}
 	}
 	
-	private static void retrieveLastEntry() {
+	private static String retrieveLastEntry() {
 		String[] lines;
 		
 		try {
 			lines = IOUtils.loadFromFile(LAST_ENTRY, "", "UTF8");
 		} catch (FileNotFoundException e) {
-			return;
+			return null;
 		}
 		
-		lastEntry = lines[0];
+		return lines[0];
 	}
 	
-	private static void storeLastEntry() {
+	private static void storeEntry(String entry) {
 		try {
-			IOUtils.writeToFile(lastEntry, LAST_ENTRY);
-			System.out.printf("Last entry: %s%n", lastEntry);
+			IOUtils.writeToFile(entry, LAST_ENTRY);
+			System.out.printf("Last entry: %s%n", entry);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -163,12 +167,12 @@ public final class ScheduledEditor {
 	private static boolean processPage(PageContainer pc) {
 		AbstractEditor editor = new Editor(pc);
 		Thread thread = new Thread(editor::check);
-		lastEntry = pc.getTitle();
 		
 		try {
 			monitorThread(thread);
 		} catch (TimeoutException e) {
 			logError("Editor.check() timeout", pc.getTitle(), e);
+			exitCode = ExitCode.FAILURE;
 			return false;
 		} catch (Throwable t) {
 			logError("Editor.check() error", pc.getTitle(), t);
@@ -263,6 +267,17 @@ public final class ScheduledEditor {
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
 			threadExecutionException = new RuntimeException(e.getMessage());
+		}
+	}
+	
+	private enum ExitCode {
+		SUCCESS (0),
+		FAILURE (1); // thread timeout
+		
+		int value;
+		
+		ExitCode(int value) {
+			this.value = value;
 		}
 	}
 }
