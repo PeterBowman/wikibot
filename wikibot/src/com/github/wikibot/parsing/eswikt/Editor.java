@@ -2851,7 +2851,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, initial);
 		
 		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
-		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba"};
+		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba", "{{derivados"};
 		
 		for (Section section : page.getAllSections()) {
 			Section nextSection = section.nextSection();
