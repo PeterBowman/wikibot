@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -853,12 +854,11 @@ public class Editor extends AbstractEditor {
 		// TODO: perrichines (comment close tag)
 		// TODO: trailing period after {{etimología}} and {{pron-graf}}
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
-		// TODO: remove ";2: .?\n", "* [[]]\n" (see removeComments()) 
 		
 		String formatted = this.text;
 		final String preferredFileNSAlias = "Archivo";
 		Set<String> setFileAlias = new HashSet<String>();
-		Set<String> summarySet = new LinkedHashSet<String>();
+		Set<String> setLog = new LinkedHashSet<String>();
 		
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		Matcher m = P_IMAGES.matcher(formatted);
@@ -890,29 +890,44 @@ public class Editor extends AbstractEditor {
 			m.appendTail(sb);
 			formatted = sb.toString();
 			String temp = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
-			summarySet.add(temp);
+			setLog.add(temp);
 		}
-		
-		String temp = formatted;
 		
 		// TODO: detect comment tags
 		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
 		
-		temp = Utils.replaceWithStandardIgnoredRanges(temp, "(?<=[^\n])\n+?[:;*#]+\n", "\n\n");
-		temp = Utils.replaceWithStandardIgnoredRanges(temp, "^\n*?[:;*#]+\n", "");
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[:;*#]$\" → \"\"", text -> {
+			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[:;*#]+\n", "\n\n");
+			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[:;*#]+\n", "");
+			return text;
+		});
 		
-		if (!temp.equals(formatted)) {
-			summarySet.add("\"\\n[:;*#]\\n\" → \"\\n\\n\"");
-			formatted = temp;
-		}
+		formatted = applyReplacementFunction(formatted, setLog, "\"^* [[]]$\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^\\* ?\\[\\[\\]\\]$", "")
+		);
+		
+		formatted = applyReplacementFunction(formatted, setLog, "\"^;[2-9]:$\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?[2-9]: ?\\.?$", "")
+		);
 		
 		String summary = null;
 		
-		if (!summarySet.isEmpty()) {
-			summary = String.join(", ", summarySet);
+		if (!setLog.isEmpty()) {
+			summary = String.join(", ", setLog);
 		}
 		
 		checkDifferences(formatted, "minorSanitizing", summary);
+	}
+	
+	private String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
+		String testString = func.apply(text);
+		
+		if (!testString.equals(text)) {
+			set.add(log);
+			return testString;
+		} else {
+			return text;
+		}
 	}
 	
 	public void transformToNewStructure() {
@@ -3082,7 +3097,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "regunzar";
+		String title = "Roman";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
