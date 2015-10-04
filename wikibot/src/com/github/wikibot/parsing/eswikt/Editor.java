@@ -59,7 +59,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_BR_CLEAR = Pattern.compile("clear *?= *?(?<quote>['\"]?)all\\k<quote>", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_BR_STYLE = Pattern.compile("style *?=[^=]*?\\bclear *?:.+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
-	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,·\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
+	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
