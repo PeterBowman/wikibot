@@ -49,7 +49,7 @@ public final class Page extends AbstractPage<Section> {
 		
 		try {
 			CODE_TO_LANG = Stream.of(IOUtils.loadFromFile("./data/eswikt.langs.txt", "", "UTF8"))
-				.map(line -> line.split("\\s"))
+				.map(line -> line.split("\t"))
 				.collect(Collectors.toMap(
 					arr -> arr[0], // lower case!
 					arr -> arr[1],

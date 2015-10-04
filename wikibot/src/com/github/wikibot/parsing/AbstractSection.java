@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.ParseUtils;
 
 public abstract class AbstractSection<T extends AbstractSection<T>> {
 	protected String header;
@@ -116,11 +117,21 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public String getStrippedHeader() {
-		return stripHeaderReferences(header);
+		String header = stripHeaderReferences(this.header);
+		header = ParseUtils.removeCommentsAndNoWikiText(header);
+		header = Utils.sanitizeWhitespaces(header);
+		return header.trim();
 	}
 	
 	public void setHeader(String header) {
-		this.header = header;
+		boolean wasEmpty = this.header.isEmpty();
+		this.header = header.trim();
+		
+		if (wasEmpty && !this.header.isEmpty()) {
+			headerFormat = "%1$s %2$s %1$s";
+		} else if (!wasEmpty && this.header.isEmpty()) {
+			headerFormat = "%1$s %1$s";
+		}
 	}
 	
 	public String getIntro() {

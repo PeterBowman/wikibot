@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -42,6 +44,11 @@ public final class MaintenanceScript {
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
+	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	
+	private static final int THREAD_CHECK_SECS = 5;
+	private static RuntimeException threadExecutionException;
+	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
 		
@@ -55,9 +62,8 @@ public final class MaintenanceScript {
 		
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		Calendar startCal = Calendar.getInstance();
-		startCal.setTime(dateFormat.parse(startTimestamp));
+		startCal.setTime(DATE_FORMAT.parse(startTimestamp));
 		
 		Calendar endCal = wb.makeCalendar();
 		Calendar gapCal = (Calendar) endCal.clone();
@@ -84,11 +90,18 @@ public final class MaintenanceScript {
 		
 		for (PageContainer pc : pages) {
 			AbstractEditor editor = new Editor(pc);
+			Thread thread = new Thread(editor::check);
 			
 			try {
-				editor.check();
+				monitorThread(thread);
+			} catch (TimeoutException e) {
+				logError("Editor.check() timeout", pc.getTitle(), e);
+				Calendar tempCal = pc.getTimestamp();
+				tempCal.add(Calendar.SECOND, 1);
+				storeTimestamp(tempCal);
+				System.exit(0);
 			} catch (Throwable t) {
-				logError("eswikt.Editor error", pc.getTitle(), t);
+				logError("Editor.check() error", pc.getTitle(), t);
 				continue;
 			}
 			
@@ -106,9 +119,7 @@ public final class MaintenanceScript {
 			}
 		}
 		
-		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		IOUtils.writeToFile(dateFormat.format(gapCal.getTime()), LAST_DATE);
-		
+		storeTimestamp(gapCal);
 		wb.logout();
 	}
 	
@@ -132,10 +143,26 @@ public final class MaintenanceScript {
 		
 		return startTimestamp;
 	}
+	
+	private static void storeTimestamp(Calendar cal) {
+		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+		
+		try {
+			IOUtils.writeToFile(DATE_FORMAT.format(cal.getTime()), LAST_DATE);
+		} catch (IOException e) {}
+	}
 
 	private static void logError(String errorType, String entry, Throwable t) {
-		System.out.printf("%s in %s%n", errorType, entry);
+		Date date = new Date();
+		
+		String log = String.format(
+			"%s %s in %s (%s: %s)",
+			date, errorType, entry, t.getClass().getName(), t.getMessage()
+		);
+		
+		System.out.println(log);
 		t.printStackTrace();
+		
 		String[] lines;
 		
 		try {
@@ -145,11 +172,39 @@ public final class MaintenanceScript {
 		}
 		
 		List<String> list = new ArrayList<String>(Arrays.asList(lines));
-		list.add(entry);
+		list.add(log);
 		
 		try {
 			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
 		} catch (IOException e) {}
+	}
+	
+	private static void monitorThread(Thread thread) throws TimeoutException {
+		thread.setUncaughtExceptionHandler(new MonitoredThreadExceptionHandler());
+		thread.start();
+		
+		final long endMs = System.currentTimeMillis() + THREAD_CHECK_SECS * 1000;
+		
+		while (thread.isAlive()) {
+			if (threadExecutionException != null) {
+				throw threadExecutionException;
+			}
+			
+			if (System.currentTimeMillis() > endMs) {
+				throw new TimeoutException("Thread timeout");
+			}
+		}
+	}
+	
+	private static class MonitoredThreadExceptionHandler implements Thread.UncaughtExceptionHandler {
+		MonitoredThreadExceptionHandler() {
+			threadExecutionException = null;
+		}
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			threadExecutionException = new RuntimeException(e.getMessage());
+		}
 	}
 }
 

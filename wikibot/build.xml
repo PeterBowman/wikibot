@@ -55,9 +55,13 @@
     <target depends="clean" name="cleanall">
         <ant antfile="build.xml" dir="${wiki-java.location}" inheritAll="false" target="clean"/>
     </target>
-    <target depends="build-subprojects,build-project" name="build"/>
+    <target depends="cleanall,build-subprojects,build-project" name="build"/>
     <target name="build-subprojects">
-        <ant antfile="build.xml" dir="${wiki-java.location}" inheritAll="false" target="build-project"/>
+        <ant antfile="build.xml" dir="${wiki-java.location}" inheritAll="false" target="build-project">
+            <propertyset>
+                <propertyref name="build.compiler"/>
+            </propertyset>
+        </ant>
     </target>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
@@ -67,189 +71,17 @@
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target name="CyryllicAccentsInTranslations">
-        <java classname="com.github.wikibot.scripts.misc.CyryllicAccentsInTranslations" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
     </target>
-    <target name="DevanagariIAST">
-        <java classname="com.github.wikibot.scripts.plwikt.DevanagariIAST" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Edit">
-        <java classname="com.github.wikibot.scripts.Edit" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Editor">
-        <java classname="com.github.wikibot.parsing.eswikt.Editor" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="EditorBase">
-        <java classname="com.github.wikibot.parsing.EditorBase" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="EntryParser">
-        <java classname="com.github.wikibot.parsing.EntryParser" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="ESWikt">
-        <java classname="com.github.wikibot.main.ESWikt" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="FemaleFormsInTranslations">
-        <java classname="com.github.wikibot.scripts.misc.FemaleFormsInTranslations" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="GermanNounDeclension">
-        <java classname="com.github.wikibot.scripts.plwikt.GermanNounDeclension" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="LinkManager">
-        <java classname="com.github.wikibot.tasks.plwikt.LinkManager" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Login">
-        <java classname="com.github.wikibot.utils.Login" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="MaintenanceScript">
-        <java classname="com.github.wikibot.tasks.eswikt.MaintenanceScript" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="MissingPolishGerunds">
-        <java classname="com.github.wikibot.scripts.plwikt.MissingPolishGerunds" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="MissingWikiquoteBacklinks">
-        <java classname="com.github.wikibot.scripts.plwikt.MissingWikiquoteBacklinks" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="MorfeuszLookup">
-        <java classname="com.github.wikibot.utils.MorfeuszLookup" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Page (1)">
-        <java classname="com.github.wikibot.parsing.eswikt.Page" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Page (2)">
-        <java classname="com.github.wikibot.parsing.Page" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Page">
-        <java classname="com.github.wikibot.parsing.plwikt.Page" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="PolishGerundsList">
-        <java classname="com.github.wikibot.tasks.plwikt.PolishGerundsList" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="PolishMasculineNounHeaders">
-        <java classname="com.github.wikibot.scripts.plwikt.PolishMasculineNounHeaders" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="PolishVerbsConjugation">
-        <java classname="com.github.wikibot.scripts.plwikt.PolishVerbsConjugation" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="PolishVerbsInsertInflection">
-        <java classname="com.github.wikibot.scripts.plwikt.PolishVerbsInsertInflection" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="PurgeCategory">
-        <java classname="com.github.wikibot.scripts.PurgeCategory" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="RAE">
-        <java classname="com.github.wikibot.utils.RAE" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="ReflexiveVerbRedirects">
-        <java classname="com.github.wikibot.scripts.plwikt.ReflexiveVerbRedirects" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Replace">
-        <java classname="com.github.wikibot.scripts.Replace" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="ReplaceEnDash">
-        <java classname="com.github.wikibot.scripts.plwikt.ReplaceEnDash" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="ReviewPolishGerunds">
-        <java classname="com.github.wikibot.scripts.plwikt.ReviewPolishGerunds" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Rollback">
-        <java classname="com.github.wikibot.scripts.Rollback" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="ShortCommas">
-        <java classname="com.github.wikibot.scripts.plwikt.ShortCommas" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="SJP">
-        <java classname="com.github.wikibot.utils.SJP" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="SpanishCanonicalInflectedForms">
-        <java classname="com.github.wikibot.tasks.plwikt.SpanishCanonicalInflectedForms" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="T1_ES_VERB_FORMS">
-        <java classname="com.github.wikibot.tasks.plwikt.SpanishVerbFormsMaintenance" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Test">
-        <java classname="com.github.wikibot.main.Test" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Test2">
-        <java classname="com.github.wikibot.main.Test2" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="UpdateInterwikiPrefixes">
-        <java classname="com.github.wikibot.scripts.UpdateInterwikiPrefixes" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
-    </target>
-    <target name="Wikibot">
-        <java classname="com.github.wikibot.main.Wikibot" failonerror="true" fork="yes">
-            <classpath refid="wikibot.classpath"/>
-        </java>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
     </target>
 </project>

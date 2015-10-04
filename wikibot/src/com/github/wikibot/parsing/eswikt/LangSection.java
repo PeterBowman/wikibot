@@ -2,14 +2,16 @@ package com.github.wikibot.parsing.eswikt;
 
 import java.text.Collator;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.parsing.ParsingException;
 
@@ -18,7 +20,7 @@ public class LangSection extends Section {
 	private String langName;
 	private String templateType;
 	private Map<String, String> templateParams;
-	private static final Pattern P_HEADER = Pattern.compile("^\\{\\{(lengua|translit)\\|(.+?)(?:\\|(.+?))?\\}\\}$");
+	private static final Pattern P_HEADER = Pattern.compile("^\\{\\{ *?(?:lengua|translit) *?\\|.+?\\}\\}$");
 	
 	LangSection() {
 		super(null);
@@ -78,6 +80,10 @@ public class LangSection extends Section {
 	}
 
 	public void setLangCode(String langCode) {
+		if (StringUtils.isBlank(langCode)) {
+			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		}
+		
 		this.langCode = langCode.toLowerCase();
 		this.langName = Page.CODE_TO_LANG.getOrDefault(this.langCode, "");
 		updateHeader();
@@ -88,6 +94,10 @@ public class LangSection extends Section {
 	}
 
 	public void setLangName(String langName) throws UnsupportedOperationException {
+		if (StringUtils.isBlank(langName)) {
+			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		}
+		
 		String langCode = Page.CODE_TO_LANG.keySet().stream()
 			.filter(code -> Page.CODE_TO_LANG.get(code).equals(langName))
 			.findFirst()
@@ -107,6 +117,10 @@ public class LangSection extends Section {
 	}
 	
 	public void setTemplateType(String templateType) {
+		if (StringUtils.isBlank(templateType)) {
+			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		}
+		
 		this.templateType = templateType;
 		updateHeader();
 	}
@@ -116,60 +130,44 @@ public class LangSection extends Section {
 	}
 	
 	public void setTemplateParams(Map<String, String> templateParams) {
+		Objects.requireNonNull(templateParams);
 		this.templateParams = templateParams;
 		updateHeader();
 	}
 	
 	@Override
 	public void setHeader(String header) {
+		if (StringUtils.isBlank(header)) {
+			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		}
+		
 		this.header = header;
 		extractHeader();
 	}
 	
 	private void extractHeader() {
-		Matcher m = P_HEADER.matcher(header);
-		
-		if (!m.matches()) {
+		if (!P_HEADER.matcher(header).matches()) {
 			throw new ParsingException("Invalid header format: " + header);
 		}
 		
-		templateType = m.group(1);
-		langCode = m.group(2);
-		langName = Page.CODE_TO_LANG.getOrDefault(langCode.toLowerCase(), "");
-		String paramString = m.group(3);
+		HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(header);
 		
-		if (paramString != null) {
-			String[] params = paramString.split("\\|");
-			
-			for (int i = 0; i < params.length; i++) {
-				String param = params[i];
-				
-				if (param.indexOf("=") == -1) {
-					templateParams.put(String.format("_param%d", i + 1), param.trim());
-				} else {
-					String[] splits = param.split("=");
-					templateParams.put(splits[0].trim(), splits[splits.length - 1].trim());
-				}
-			}
-		}
+		templateType = params.remove("templateName");
+		langCode = params.remove("ParamWithoutName1");
+		
+		Objects.requireNonNull(langCode);
+		
+		langName = Page.CODE_TO_LANG.getOrDefault(langCode.toLowerCase(), "");
+		templateParams = params;
 	}
 	
 	private void updateHeader() {
-		String paramString = templateParams.keySet().stream()
-			.map(key -> {
-				if (!key.startsWith("_param")) {
-					return String.format("%s=%s", key, templateParams.get(key));
-				} else {
-					return templateParams.get(key);
-				}
-			})
-			.collect(Collectors.joining("|"));
+		HashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("templateName", templateType);
+		params.put("ParamWithoutName1", langCode);
 		
-		if (!paramString.isEmpty()) {
-			header = String.format("{{%s|%s|%s}}", templateType, langCode, paramString);
-		} else {
-			header = String.format("{{%s|%s}}", templateType, langCode);
-		}
+		templateParams.forEach(params::putIfAbsent);
+		header = ParseUtils.templateFromMap(params);
 	}
 	
 	void sortSections() {
@@ -184,10 +182,14 @@ public class LangSection extends Section {
 		}
 		
 		if (etymologySections.size() == 1) {
+			if (hasDuplicatedChildSections()) {
+				return;
+			}
+			
 			Collections.sort(childSections);
 			propagateTree();
 		} else {
-			for (Section etymologySection : etymologySections.toArray(new Section[etymologySections.size()])) {
+			for (Section etymologySection : etymologySections) {
 				etymologySection.sortSections();
 			}
 		}

@@ -1,18 +1,21 @@
 package com.github.wikibot.scripts.eswikt;
 
+import static org.wikiutils.IOUtils.loadFromFile;
+import static org.wikiutils.IOUtils.writeToFile;
+import static org.wikiutils.ParseUtils.getTemplates;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
-import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -27,9 +30,14 @@ public final class ScheduledEditor {
 	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
 	private static final String LAST_ENTRY = LOCATION + "last.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
+	
 	private static final int BATCH = 500;
 	private static final int SLEEP_MINS = 5;
+	private static final int THREAD_CHECK_SECS = 5;
+	
 	private static ESWikt wb;
+	private static RuntimeException threadExecutionException;
+	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
 		wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
@@ -38,7 +46,6 @@ public final class ScheduledEditor {
 		if (args.length == 0) {
 			final String category = "";
 			processCategorymembers(category);
-			return;
 		} else {
 			switch (args[0]) {
 				case "-c":
@@ -58,6 +65,8 @@ public final class ScheduledEditor {
 					return;
 			}
 		}
+		
+		System.exit(exitCode.value);
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
@@ -69,7 +78,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processAllpages() {
-		String lastEntry = getLastSavedEntry();
+		String lastEntry = retrieveLastEntry();
 		
 		while (true) {
 			PageContainer[] pages;
@@ -89,25 +98,30 @@ public final class ScheduledEditor {
 				break;
 			}
 			
-			boolean result = Stream.of(pages)
-				.limit(pages.length - 1)
-				.filter(ScheduledEditor::filterPages)
-				.allMatch(ScheduledEditor::processPage);
-			
-			if (!result) {
-				return;
+			for (int i = 0; i < pages.length - 1; i++) {
+				PageContainer pc = pages[i];
+				
+				if (!filterPages(pc)) {
+					continue;
+				}
+				
+				if (!processPage(pc)) {
+					String nextEntry = pages[i + 1].getTitle();
+					storeEntry(nextEntry);
+					return;
+				}
 			}
 			
 			lastEntry = pages[pages.length - 1].getTitle();
-			saveLastEntry(lastEntry);
+			storeEntry(lastEntry);
 		}
 	}
 	
-	private static String getLastSavedEntry() {
+	private static String retrieveLastEntry() {
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(LAST_ENTRY, "", "UTF8");
+			lines = loadFromFile(LAST_ENTRY, "", "UTF8");
 		} catch (FileNotFoundException e) {
 			return null;
 		}
@@ -115,9 +129,9 @@ public final class ScheduledEditor {
 		return lines[0];
 	}
 	
-	private static void saveLastEntry(String entry) {
+	private static void storeEntry(String entry) {
 		try {
-			IOUtils.writeToFile(entry, LAST_ENTRY);
+			writeToFile(entry, LAST_ENTRY);
 			System.out.printf("Last entry: %s%n", entry);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -128,13 +142,13 @@ public final class ScheduledEditor {
 		String text = pc.getText();
 		
 		if (
-			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
-			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
-			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
+			!getTemplates("TRANSLIT", text).isEmpty() ||
+			!getTemplates("TRANS", text).isEmpty() ||
+			!getTemplates("TAXO", text).isEmpty() ||
+			!getTemplates("carácter oriental", text).isEmpty() ||
+			!getTemplates("Chono-ES", text).isEmpty() ||
+			!getTemplates("INE-ES", text).isEmpty() ||
+			!getTemplates("POZ-POL-ES", text).isEmpty()
 		) {
 			return false;
 		}
@@ -153,11 +167,16 @@ public final class ScheduledEditor {
 	
 	private static boolean processPage(PageContainer pc) {
 		AbstractEditor editor = new Editor(pc);
+		Thread thread = new Thread(editor::check);
 		
 		try {
-			editor.check();
+			monitorThread(thread);
+		} catch (TimeoutException e) {
+			logError("Editor.check() timeout", pc.getTitle(), e);
+			exitCode = ExitCode.FAILURE;
+			return false;
 		} catch (Throwable t) {
-			logError("eswikt.Editor error", pc.getTitle(), t);
+			logError("Editor.check() error", pc.getTitle(), t);
 			return true;
 		}
 		
@@ -174,6 +193,23 @@ public final class ScheduledEditor {
 		}
 		
 		return true;
+	}
+	
+	private static void monitorThread(Thread thread) throws TimeoutException {
+		thread.setUncaughtExceptionHandler(new MonitoredThreadExceptionHandler());
+		thread.start();
+		
+		final long endMs = System.currentTimeMillis() + THREAD_CHECK_SECS * 1000;
+		
+		while (thread.isAlive()) {
+			if (threadExecutionException != null) {
+				throw threadExecutionException;
+			}
+			
+			if (System.currentTimeMillis() > endMs) {
+				throw new TimeoutException("Thread timeout");
+			}
+		}
 	}
 	
 	private static void editEntry(PageContainer pc, AbstractEditor editor) throws Throwable {
@@ -198,21 +234,51 @@ public final class ScheduledEditor {
 	}
 	
 	private static void logError(String errorType, String entry, Throwable t) {
-		System.out.printf("%s in %s%n", errorType, entry);
+		Date date = new Date();
+		
+		String log = String.format(
+			"%s %s in %s (%s: %s)",
+			date, errorType, entry, t.getClass().getName(), t.getMessage()
+		);
+		
+		System.out.println(log);
 		t.printStackTrace();
+		
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
+			lines = loadFromFile(ERROR_LOG, "", "UTF8");
 		} catch (FileNotFoundException e) {
 			lines = new String[]{};
 		}
 		
 		List<String> list = new ArrayList<String>(Arrays.asList(lines));
-		list.add(entry);
+		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			writeToFile(String.join("\n", list), ERROR_LOG);
 		} catch (IOException e) {}
+	}
+	
+	private static class MonitoredThreadExceptionHandler implements Thread.UncaughtExceptionHandler {
+		MonitoredThreadExceptionHandler() {
+			threadExecutionException = null;
+		}
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			threadExecutionException = new RuntimeException(e.getMessage());
+		}
+	}
+	
+	private enum ExitCode {
+		SUCCESS (0),
+		FAILURE (1); // thread timeout
+		
+		int value;
+		
+		ExitCode(int value) {
+			this.value = value;
+		}
 	}
 }

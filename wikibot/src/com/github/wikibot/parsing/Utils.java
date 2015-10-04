@@ -27,7 +27,7 @@ public final class Utils {
 		int startPos = text.indexOf(start);
 		
 		if (startPos == -1) {
-			return null;
+			return new Range[]{};
 		}
 		
 		List<Range<Integer>> list = new ArrayList<Range<Integer>>();
@@ -36,12 +36,12 @@ public final class Utils {
 			int endPos = text.indexOf(end, startPos);
 			
 			if (endPos != -1) {
-				list.add(Range.between(startPos, endPos));
+				endPos += end.length();
+				list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
+				startPos = text.indexOf(start, endPos);
 			} else {
 				return list.toArray(new Range[list.size()]); 
 			}
-			
-			startPos = text.indexOf(start, endPos);
 		}
 		
 		return list.toArray(new Range[list.size()]);
@@ -53,7 +53,7 @@ public final class Utils {
 		Matcher m = patt.matcher(text);
 		
 		while (m.find()) {
-			list.add(Range.between(m.start(), m.end()));
+			list.add(Range.between(m.start(), m.end() - 1)); // inclusive/inclusive
 		}
 		
 		return list.toArray(new Range[list.size()]);
@@ -67,28 +67,34 @@ public final class Utils {
 		Range<Integer>[] pres = findRanges(text, Pattern.compile("<pre(?: |>).+?</pre *?>", patternOptions));
 		Range<Integer>[] codes = findRanges(text, Pattern.compile("<code(?: |>).+?</code *?>", patternOptions));
 		
-		return getIgnoredRanges(comments, nowikis, pres, codes);
+		return getCombinedRanges(comments, nowikis, pres, codes);
 	}
 	
 	@SafeVarargs
-	public static List<Range<Integer>> getIgnoredRanges(Range<Integer>[]... ranges) {
+	public static List<Range<Integer>> getCombinedRanges(Range<Integer>[]... ranges) {
 		if (ranges.length == 0) {
-			return null;
+			return new ArrayList<Range<Integer>>();
 		}
 		
-		if (ranges.length == 1) {
-			List<Range<Integer>> temp = Arrays.asList(ranges[0]);
+		List<Range<Integer>[]> filtered = Stream.of(ranges)
+			.filter(Objects::nonNull)
+			.filter(arr -> arr.length != 0)
+			.collect(Collectors.toList());
+		
+		if (filtered.isEmpty()) {
+			return new ArrayList<Range<Integer>>();
+		} else if (filtered.size() == 1) {
+			List<Range<Integer>> temp = Arrays.asList(filtered.get(0));
 			return new ArrayList<Range<Integer>>(temp);
 		} else {
-			List<Range<Integer>> list = sortIgnoredRanges(ranges);
+			List<Range<Integer>> list = sortIgnoredRanges(filtered);
 			combineIgnoredRanges(list);
 			return list;
 		}
 	}
 
-	@SafeVarargs
-	private static List<Range<Integer>> sortIgnoredRanges(Range<Integer>[]... ranges) {
-		List<Range<Integer>> list = Arrays.asList(ranges).stream()
+	private static List<Range<Integer>> sortIgnoredRanges(List<Range<Integer>[]> ranges) {
+		List<Range<Integer>> list = ranges.stream()
 			.filter(Objects::nonNull)
 			.flatMap(Stream::of)
 			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
@@ -115,7 +121,7 @@ public final class Utils {
 	}
 	
 	public static boolean containedInRanges(List<Range<Integer>> ignoredRanges, int index) {
-		if (ignoredRanges.isEmpty()) {
+		if (ignoredRanges == null || ignoredRanges.isEmpty()) {
 			return false;
 		}
 		
