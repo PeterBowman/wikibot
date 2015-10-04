@@ -320,6 +320,7 @@ public class Editor extends AbstractEditor {
 		moveReferencesElements();
 		sortSubSections();
 		removeInflectionTemplates();
+		manageAnnotationTemplates();
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
@@ -2009,6 +2010,159 @@ public class Editor extends AbstractEditor {
 		String formatted = page.toString();
 		checkDifferences(formatted, "removeInflectionTemplates", "eliminando plantillas de flexión");
 	}
+	
+	public void manageAnnotationTemplates() {
+		final String annotationTemplateName = "anotación";
+		List<String> templates = ParseUtils.getTemplates(annotationTemplateName, text);
+		
+		if (isOldStructure || templates.isEmpty()) {
+			return;
+		}
+		
+		boolean hasDeletedEmptyTemplates = false;
+		
+		// Remove empty templates
+		
+		String formatted = text;
+		StringBuilder sb = new StringBuilder(formatted.length());
+		
+		int index = 0;
+		int lastIndex = 0;
+		
+		for (String template : templates) {
+			index = formatted.indexOf(template, lastIndex);
+			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+			
+			long count = params.values().stream()
+				.filter(value -> value != null && !value.isEmpty())
+				.count();
+			
+			if (count > 1) {
+				lastIndex = index + template.length();
+				continue;
+			}
+			
+			sb.append(formatted.substring(lastIndex, index));
+			lastIndex = index + template.length();
+		}
+		
+		if (sb.length() != 0) {
+			sb.append(formatted.substring(lastIndex));
+			formatted = sb.toString();
+			hasDeletedEmptyTemplates = true;
+		}
+		
+		// Convert annotations to their corresponding templates
+		
+		Page page = Page.store(title, formatted);
+		Set<String> set = new LinkedHashSet<String>();
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			String text = langSection.toString();
+			templates = ParseUtils.getTemplates(annotationTemplateName, text);
+			
+			if (templates.isEmpty()) {
+				continue;
+			}
+			
+			boolean found = false;
+			List<String> toIntro = new ArrayList<String>();
+			sb = new StringBuilder(text.length());
+			
+			index = 0;
+			lastIndex = 0;
+			
+			for (String template : templates) {
+				index = text.indexOf(template, lastIndex);
+				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				
+				if (
+					// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
+					// https://es.wiktionary.org/w/index.php?title=suspended&oldid=2630232
+					!params.getOrDefault("link", "").isEmpty() ||
+					// TODO: disable categorization? ({{uso|anticuado}}); ~60k entries
+					params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
+					!convertAnnotationTemplateParams(params)
+				) {
+					lastIndex = index + template.length();
+					continue;
+				}
+				
+				found = true;
+				set.add(String.format("{{%s}}", params.get("templateName")));
+				String newTemplate = ParseUtils.templateFromMap(params) + ".";
+				
+				sb.append(text.substring(lastIndex, index));
+				
+				if (PRON_TMPLS.contains(params.get("templateName"))) {
+					toIntro.add(newTemplate);
+				} else {
+					sb.append(newTemplate);
+				}
+				
+				lastIndex = index + template.length();
+			}
+			
+			if (found) {
+				sb.append(text.substring(lastIndex));
+				text = sb.toString();
+				// FIXME: implement section-level parsing
+				LangSection newLangSection = LangSection.parse(text);
+				
+				if (!toIntro.isEmpty()) {
+					String intro = newLangSection.getIntro();
+					intro += "\n" + String.join("\n", toIntro);
+					newLangSection.setIntro(intro);
+				}
+				
+				langSection.replaceWith(newLangSection);
+			}
+		}
+		
+		if (hasDeletedEmptyTemplates) {
+			set.add("eliminando plantillas vacías");
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		formatted = page.toString();
+		String summary = String.format("{{%s}} → %s", annotationTemplateName, String.join(", ", set));
+		checkDifferences(formatted, "manageAnnotationTemplates", summary);
+	}
+	
+	private static boolean convertAnnotationTemplateParams(HashMap<String, String> params) {
+		String templateType = params.getOrDefault("tit", params.getOrDefault("tít", "relacionado"));
+		templateType = templateType.toLowerCase();
+		
+		if (PRON_TMPLS_ALIAS.contains(templateType)) {
+			templateType = PRON_TMPLS.get(PRON_TMPLS_ALIAS.indexOf(templateType));
+		} else if (TERM_TMPLS_ALIAS.contains(templateType)) {
+			templateType = TERM_TMPLS.get(TERM_TMPLS_ALIAS.indexOf(templateType));
+		} else if (
+			!PRON_TMPLS.contains(templateType) &&
+			!TERM_TMPLS.contains(templateType)
+		) {
+			return false;
+		}
+		
+		params.put("templateName", templateType);
+		params.remove("tit");
+		params.remove("tít");
+		
+		Iterator<Entry<String, String>> iterator = params.entrySet().iterator();
+		
+		while (iterator.hasNext()) {
+			Entry<String, String> entry = iterator.next();
+			
+			if (entry.getValue() == null || entry.getValue().isEmpty()) {
+				iterator.remove();
+			}
+		}
+		
+		return true;
+	}
 
 	public void adaptPronunciationTemplates() {
 		if (isOldStructure) {
@@ -3039,7 +3193,10 @@ public class Editor extends AbstractEditor {
 		if (
 			page.getTrailingNewlines() == 1 &&
 			!page.getIntro().isEmpty() &&
-			ParseUtils.removeCommentsAndNoWikiText(page.getIntro()).isEmpty()
+			(
+				ParseUtils.removeCommentsAndNoWikiText(page.getIntro()).isEmpty() ||
+				page.getIntro().matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
+			)
 		) {
 			page.setTrailingNewlines(0);
 		}
@@ -3082,7 +3239,7 @@ public class Editor extends AbstractEditor {
 			!ParseUtils.removeCommentsAndNoWikiText(intro).isEmpty() &&
 			!(
 				intro.split("\n").length == 1 &&
-				intro.matches("^\\{\\{[Dd]esambiguación\\|?\\}\\}.*")
+				intro.matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
 			)
 		) {
 			page.setTrailingNewlines(1);
@@ -3133,7 +3290,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "circulares";
+		String title = "hablase";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
