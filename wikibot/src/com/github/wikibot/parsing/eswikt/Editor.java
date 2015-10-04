@@ -1726,6 +1726,8 @@ public class Editor extends AbstractEditor {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (
+				// TODO: discuss with the community
+				title.contains(" ") ||
 				langSection.getChildSections() == null ||
 				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()
 			) {
@@ -3088,7 +3090,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Roman";
+		String title = "per favor";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
