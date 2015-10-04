@@ -59,7 +59,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_BR_CLEAR = Pattern.compile("clear *?= *?(?<quote>['\"]?)all\\k<quote>", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_BR_STYLE = Pattern.compile("style *?=[^=]*?\\bclear *?:.+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
-	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
+	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,·\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
@@ -2460,7 +2460,7 @@ public class Editor extends AbstractEditor {
 			if (StringUtils.containsAny(term, '[', ']')) {
 				Matcher m2 = P_LINK.matcher(term);
 				
-				if (!m2.matches() || StringUtils.containsAny(m2.group(3), '[', ']')) {
+				if (!m2.matches()) {
 					return null;
 				}
 				
@@ -2470,12 +2470,14 @@ public class Editor extends AbstractEditor {
 				if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
 					Matcher m3 = P_PARENS.matcher(trail);
 					
-					if (!m3.matches()) {
+					if (!m3.matches() || StringUtils.containsAny(m3.group(1), '[', ']')) {
 						return null;
 					} else {
 						trail = m3.group(1).trim();
 						map.put("nota" + i, m3.group(2));
 					}
+				} else if (StringUtils.containsAny(trail, '[', ']')) {
+					return null;
 				}
 				
 				if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
@@ -2484,7 +2486,7 @@ public class Editor extends AbstractEditor {
 			} else if (StringUtils.containsAny(term, '{', '}')) {
 				Matcher m2 = P_LINK_TMPLS.matcher(term);
 				
-				if (!m2.matches() || StringUtils.containsAny(m2.group(2), '[', ']')) {
+				if (!m2.matches()) {
 					return null;
 				}
 				
@@ -3090,7 +3092,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "per favor";
+		String title = "sustantivo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
