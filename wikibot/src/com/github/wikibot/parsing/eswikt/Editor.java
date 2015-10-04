@@ -333,19 +333,17 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private void failsafeCheck() {
-		String strippedText = ParseUtils.removeCommentsAndNoWikiText(this.text);
-		
-		if (getMaximumTemplateDepth(strippedText) > 2) {
+		if (getMaximumTemplateDepth(text) > 2) {
 			throw new Error("Maximum template depth > 2");
 		}
 		
 		Page page = Page.store(title, text);
 		
-		if (unpairedCurlyBrackets(page.getIntro())) {
+		if (hasUnpairedBrackets(page.getIntro(), "{{", "}}")) {
 			throw new Error("Unpaired curly brackets in Page intro");
 		}
 		
-		if (unpairedSquareBrackets(page.getIntro())) {
+		if (hasUnpairedBrackets(page.getIntro(), "[[", "]]")) {
 			throw new Error("Unpaired square brackets in Page intro");
 		}
 		
@@ -354,31 +352,24 @@ public class Editor extends AbstractEditor {
 		for (int index = 0; index < sections.size(); index++) {
 			Section section = sections.get(index);
 			
-			if (unpairedCurlyBrackets(section.getIntro())) {
+			if (hasUnpairedBrackets(section.getIntro(), "{{", "}}")) {
 				throw new Error("Unpaired curly brackets in Section intro (#" + (index + 1) + ")");
 			}
 			
-			if (unpairedSquareBrackets(section.getIntro())) {
+			if (hasUnpairedBrackets(section.getIntro(), "[[", "]]")) {
 				throw new Error("Unpaired square brackets in Section intro (#" + (index + 1) + ")");
 			}
 		}
 	}
 	
-	private boolean unpairedCurlyBrackets(String text) {
-		int left = StringUtils.countMatches(text, "{{");
-		int right = StringUtils.countMatches(text, "}}");
+	private static boolean hasUnpairedBrackets(String text, String open, String close) {
+		int left = StringUtils.countMatches(text, open);
+		int right = StringUtils.countMatches(text, close);
 		
 		return left != right;
 	}
 	
-	private boolean unpairedSquareBrackets(String text) {
-		int left = StringUtils.countMatches(text, "[[");
-		int right = StringUtils.countMatches(text, "]]");
-		
-		return left != right;
-	}
-	
-	private int getMaximumTemplateDepth(String text) {
+	private static int getMaximumTemplateDepth(String text) {
 		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
 		extractTemplateRanges(text, ranges);
 		
@@ -949,7 +940,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "minorSanitizing", summary);
 	}
 	
-	private String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
+	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
 		String testString = func.apply(text);
 		
 		if (!testString.equals(text)) {
@@ -978,7 +969,7 @@ public class Editor extends AbstractEditor {
 		
 		// Process header templates
 		
-		String formatted = replaceOldStructureTemplates(text);
+		String formatted = replaceOldStructureTemplates(title, text);
 		
 		if (formatted.equals(text)) {
 			return;
@@ -1100,7 +1091,14 @@ public class Editor extends AbstractEditor {
 				section instanceof LangSection &&
 				!etymologySections.get(0).getHeader().matches("[Ee]timolog[íi]a( 1)?")
 			) {
-				insertStructureTemplate(page);
+				String templateName = "estructura";
+				
+				if (ParseUtils.getTemplates(templateName, text).isEmpty()) {
+					insertStructureTemplate(templateName, page);
+					String log = String.format("{{%s}}", templateName);
+					checkDifferences(page.toString(), "transformToNewStructure", log);
+				}
+				
 				return;
 			} else {
 				if (section instanceof LangSection) {
@@ -1159,7 +1157,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
 	}
 
-	private boolean hasAdditionalEtymSections(Section nextSection, List<Section> etymologySections) {
+	private static boolean hasAdditionalEtymSections(Section nextSection, List<Section> etymologySections) {
 		if (etymologySections.isEmpty() || nextSection == null) {
 			return false;
 		}
@@ -1173,7 +1171,7 @@ public class Editor extends AbstractEditor {
 		);
 	}
 
-	private String replaceOldStructureTemplates(String text) {
+	private static String replaceOldStructureTemplates(String title, String text) {
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length() + 10);
@@ -1240,7 +1238,7 @@ public class Editor extends AbstractEditor {
 		return sb.toString();
 	}
 	
-	private void sortTemplateParamsMap(Map<String, String> params) {
+	private static void sortTemplateParamsMap(Map<String, String> params) {
 		Map<String, String> tempMap = new LinkedHashMap<>(params.size(), 1);
 		tempMap.put("templateName", params.remove("templateName"));
 		tempMap.put("ParamWithoutName1", params.remove("ParamWithoutName1"));
@@ -1249,7 +1247,7 @@ public class Editor extends AbstractEditor {
 		params.putAll(tempMap);
 	}
 
-	private void extractAltParameter(Section section, String alt) {
+	private static void extractAltParameter(Section section, String alt) {
 		String intro = section.getIntro();
 		List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", intro);
 		
@@ -1282,25 +1280,18 @@ public class Editor extends AbstractEditor {
 		}
 	}
 
-	private void insertAltComment(Section section, String alt) {
+	private static void insertAltComment(Section section, String alt) {
 		String comment = String.format("<!-- NO EDITAR: alt=%s -->", alt);
 		section.setIntro(comment + "\n" + section.getIntro());
 	}
 
-	private void insertStructureTemplate(Page page) {
-		final String templateName = "estructura";
-		
-		if (!ParseUtils.getTemplates(templateName, text).isEmpty()) {
-			return;
-		}
-		
+	private static void insertStructureTemplate(final String templateName, Page page) {
 		String pageIntro = page.getIntro();
 		pageIntro += String.format("\n{{%s}}", templateName);
 		page.setIntro(pageIntro);
-		checkDifferences(page.toString(), "transformToNewStructure", "{{estructura}}");
 	}
 
-	private void processIfSingleEtym(Section topSection, Section etymologySection) {
+	private static void processIfSingleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
 		String topIntro = topSection.getIntro();
@@ -1334,7 +1325,7 @@ public class Editor extends AbstractEditor {
 		}
 	}
 
-	private void processIfMultipleEtym(Section topSection, Section etymologySection) {
+	private static void processIfMultipleEtym(Section topSection, Section etymologySection) {
 		String etymologyIntro = etymologySection.getIntro();
 		etymologyIntro = topSection.getIntro() + "\n" + etymologyIntro;
 		etymologySection.setIntro(etymologyIntro);
@@ -1379,7 +1370,7 @@ public class Editor extends AbstractEditor {
 		}
 	}
 	
-	private boolean analyzeEtymLine(String line) {
+	private static boolean analyzeEtymLine(String line) {
 		// TODO: review
 		
 		final String[] arr1 = {"{{", "{|", "[", "<ref"};
@@ -1689,7 +1680,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "normalizeSectionLevels", "normalizando niveles de títulos");
 	}
 
-	private void pushStandardSections(List<Section> sections, int level) {
+	private static void pushStandardSections(List<Section> sections, int level) {
 		// TODO: get rid of those null checks, find a better way
 		if (sections == null) {
 			return;
@@ -1771,6 +1762,8 @@ public class Editor extends AbstractEditor {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (
+				// TODO: discuss with the community
+				title.contains(" ") ||
 				langSection.getChildSections() == null ||
 				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
@@ -2544,7 +2537,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "adaptPronunciationTemplates", summary);
 	}
 	
-	private void makePronGrafParams(Map<String, String> sourceMap, Map<String, String> targetMap, String prefix) {
+	private static void makePronGrafParams(Map<String, String> sourceMap, Map<String, String> targetMap, String prefix) {
 		for (int i = 1; i < 21; i++) {
 			String num = (i == 1) ? "" : Integer.toString(i);
 			targetMap.put(prefix + num, sourceMap.get("ParamWithoutName" + i));
@@ -2612,7 +2605,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
-	private String makeTmplLine(Matcher m, List<String> templates, List<String> aliases) {
+	private static String makeTmplLine(Matcher m, List<String> templates, List<String> aliases) {
 		String leadingComments = m.group(1).trim();
 		String name = m.group(2).trim().toLowerCase();
 		String content = m.group(3).trim();
@@ -2663,7 +2656,7 @@ public class Editor extends AbstractEditor {
 			if (StringUtils.containsAny(term, '[', ']')) {
 				Matcher m2 = P_LINK.matcher(term);
 				
-				if (!m2.matches() || StringUtils.containsAny(m2.group(3), '[', ']')) {
+				if (!m2.matches()) {
 					return null;
 				}
 				
@@ -2673,12 +2666,14 @@ public class Editor extends AbstractEditor {
 				if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
 					Matcher m3 = P_PARENS.matcher(trail);
 					
-					if (!m3.matches()) {
+					if (!m3.matches() || StringUtils.containsAny(m3.group(1), '[', ']')) {
 						return null;
 					} else {
 						trail = m3.group(1).trim();
 						map.put("nota" + i, m3.group(2));
 					}
+				} else if (StringUtils.containsAny(trail, '[', ']')) {
+					return null;
 				}
 				
 				if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
@@ -2687,7 +2682,7 @@ public class Editor extends AbstractEditor {
 			} else if (StringUtils.containsAny(term, '{', '}')) {
 				Matcher m2 = P_LINK_TMPLS.matcher(term);
 				
-				if (!m2.matches() || StringUtils.containsAny(m2.group(2), '[', ']')) {
+				if (!m2.matches()) {
 					return null;
 				}
 				
@@ -2843,7 +2838,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "addMissingElements", summary);
 	}
 	
-	private String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
+	private static String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
 		String[] lines = content.split("\n");
 		List<String> amboxTemplates = new ArrayList<String>();
 		List<String> otherLines = new ArrayList<String>();
@@ -2877,7 +2872,7 @@ public class Editor extends AbstractEditor {
 		return String.join("\n", outputList);
 	}
 	
-	private String removeBlockTemplates(String text) {
+	private static String removeBlockTemplates(String text) {
 		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		
 		List<String> list = new ArrayList<String>(PRON_TMPLS.size() + AMBOX_TMPLS.size() + 1);
@@ -3104,7 +3099,7 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "manageClearElements", "elementos \"clear\"");
 	}
 	
-	private String removeBrTags(String text) {
+	private static String removeBrTags(String text) {
 		Matcher m = P_BR_TAGS.matcher(text);
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
 		StringBuffer sb = new StringBuffer(text.length());
@@ -3157,7 +3152,7 @@ public class Editor extends AbstractEditor {
 		return sb.toString();
 	}
 	
-	private String removeClearTemplates(Section section) {
+	private static String removeClearTemplates(Section section) {
 		String intro = section.getIntro();
 		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 		Matcher m = P_CLEAR_TMPLS.matcher(intro);

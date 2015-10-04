@@ -1,5 +1,9 @@
 package com.github.wikibot.scripts.eswikt;
 
+import static org.wikiutils.IOUtils.loadFromFile;
+import static org.wikiutils.IOUtils.writeToFile;
+import static org.wikiutils.ParseUtils.getTemplates;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -12,9 +16,6 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
-import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -119,7 +120,7 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(LAST_ENTRY, "", "UTF8");
+			lines = loadFromFile(LAST_ENTRY, "", "UTF8");
 		} catch (FileNotFoundException e) {
 			return null;
 		}
@@ -129,7 +130,7 @@ public final class ScheduledEditor {
 	
 	private static void storeEntry(String entry) {
 		try {
-			IOUtils.writeToFile(entry, LAST_ENTRY);
+			writeToFile(entry, LAST_ENTRY);
 			System.out.printf("Last entry: %s%n", entry);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -140,13 +141,13 @@ public final class ScheduledEditor {
 		String text = pc.getText();
 		
 		return (
-			ParseUtils.getTemplates("TRANSLIT", text).isEmpty() &&
-			ParseUtils.getTemplates("TRANS", text).isEmpty() &&
-			ParseUtils.getTemplates("TAXO", text).isEmpty() &&
-			ParseUtils.getTemplates("carácter oriental", text).isEmpty() &&
-			ParseUtils.getTemplates("Chono-ES", text).isEmpty() &&
-			ParseUtils.getTemplates("INE-ES", text).isEmpty() &&
-			ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
+			getTemplates("TRANSLIT", text).isEmpty() &&
+			getTemplates("TRANS", text).isEmpty() &&
+			getTemplates("TAXO", text).isEmpty() &&
+			getTemplates("carácter oriental", text).isEmpty() &&
+			getTemplates("Chono-ES", text).isEmpty() &&
+			getTemplates("INE-ES", text).isEmpty() &&
+			getTemplates("POZ-POL-ES", text).isEmpty()
 		);
 	}
 	
@@ -234,7 +235,7 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
+			lines = loadFromFile(ERROR_LOG, "", "UTF8");
 		} catch (FileNotFoundException e) {
 			lines = new String[]{};
 		}
@@ -243,7 +244,7 @@ public final class ScheduledEditor {
 		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			writeToFile(String.join("\n", list), ERROR_LOG);
 		} catch (IOException e) {}
 	}
 	
