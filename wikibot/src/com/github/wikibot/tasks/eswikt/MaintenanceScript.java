@@ -100,6 +100,8 @@ public final class MaintenanceScript {
 				tempCal.add(Calendar.SECOND, 1);
 				storeTimestamp(tempCal);
 				System.exit(0);
+			} catch (UnsupportedOperationException e) {
+				continue;
 			} catch (Throwable t) {
 				logError("Editor.check() error", pc.getTitle(), t);
 				continue;

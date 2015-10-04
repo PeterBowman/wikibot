@@ -18,7 +18,6 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
-import com.github.wikibot.parsing.Page;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -140,28 +139,15 @@ public final class ScheduledEditor {
 	private static boolean filterPages(PageContainer pc) {
 		String text = pc.getText();
 		
-		if (
-			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
-			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
-			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
-		) {
-			return false;
-		}
-		
-		Page p = null;
-		
-		try {
-			p = Page.wrap(pc);
-		} catch (Exception e) {
-			logError("Page wrap error", pc.getTitle(), e);
-			return false;
-		}
-		
-		return !p.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
+		return (
+			ParseUtils.getTemplates("TRANSLIT", text).isEmpty() &&
+			ParseUtils.getTemplates("TRANS", text).isEmpty() &&
+			ParseUtils.getTemplates("TAXO", text).isEmpty() &&
+			ParseUtils.getTemplates("carácter oriental", text).isEmpty() &&
+			ParseUtils.getTemplates("Chono-ES", text).isEmpty() &&
+			ParseUtils.getTemplates("INE-ES", text).isEmpty() &&
+			ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
+		);
 	}
 	
 	private static boolean processPage(PageContainer pc) {
@@ -174,6 +160,8 @@ public final class ScheduledEditor {
 			logError("Editor.check() timeout", pc.getTitle(), e);
 			exitCode = ExitCode.FAILURE;
 			return false;
+		} catch (UnsupportedOperationException e) {
+			return true;
 		} catch (Throwable t) {
 			logError("Editor.check() error", pc.getTitle(), t);
 			return true;

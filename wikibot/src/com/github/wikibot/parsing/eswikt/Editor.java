@@ -106,9 +106,11 @@ public class Editor extends AbstractEditor {
 	private static final List<String> STANDARD_HEADERS;
 	
 	private static final String TRANSLATIONS_TEMPLATE;
+	private static final String HAS_FLEXIVE_FORM_HEADER_RE = "([Ff]orma|\\{\\{forma) .+";
+	
+	private static final Predicate<LangSection> FLEXIVE_FORM_CHECK;
 	
 	private boolean isOldStructure;
-	private boolean hasFlexiveFormHeaders;
 	
 	static {
 		final List<String> templateNsAliases = Arrays.asList("Template", "Plantilla", "msg");
@@ -238,6 +240,23 @@ public class Editor extends AbstractEditor {
 		COMMENT_PATT_LIST = pCommentsList.stream()
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
+		
+		FLEXIVE_FORM_CHECK = langSection -> {
+			List<Section> allSubsections = AbstractSection.flattenSubSections(langSection);
+			allSubsections.remove(langSection);
+			
+			List<String> allHeaders = allSubsections.stream()
+				.map(AbstractSection::getStrippedHeader)
+				.collect(Collectors.toList());
+			
+			allHeaders.removeIf(STANDARD_HEADERS::contains);
+			
+			if (!allHeaders.removeIf(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))) {
+				return true;
+			}
+			
+			return allHeaders.isEmpty();
+		};
 	}
 	
 	public Editor(Page page) {
@@ -266,9 +285,6 @@ public class Editor extends AbstractEditor {
 		} else {
 			isOldStructure = false;
 		}
-		
-		Page page = Page.store(title, text);
-		hasFlexiveFormHeaders = page.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
 	}
 	
 	@Override
@@ -288,6 +304,12 @@ public class Editor extends AbstractEditor {
 		splitLines();
 		minorSanitizing();
 		transformToNewStructure();
+		
+		// TODO
+		if (!checkFlexiveFormHeaders()) {
+			throw new UnsupportedOperationException();
+		}
+		
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
@@ -395,6 +417,15 @@ public class Editor extends AbstractEditor {
 		}
 	}
 	
+	private boolean checkFlexiveFormHeaders() {
+		if (isOldStructure) {
+			return true;
+		}
+		
+		return Page.store(title, text).getAllLangSections().stream()
+			.allMatch(FLEXIVE_FORM_CHECK);
+	}
+
 	public void removeComments() {
 		@SuppressWarnings("unchecked")
 		Range<Integer>[][] tempArray = COMMENT_PATT_LIST.stream()
@@ -934,7 +965,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		if (
-			!isOldStructure || hasFlexiveFormHeaders ||
+			!isOldStructure ||
 			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
 			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
@@ -1012,6 +1043,11 @@ public class Editor extends AbstractEditor {
 			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
 			if (
+				section instanceof LangSection &&
+				FLEXIVE_FORM_CHECK.test((LangSection) section)
+			) {
+				continue;
+			} else if (
 				etymologySections.isEmpty() ||
 				hasAdditionalEtymSections(section.nextSection(), etymologySections)
 			) {
@@ -1571,7 +1607,7 @@ public class Editor extends AbstractEditor {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura, aplomo
 		
-		if (isOldStructure || hasFlexiveFormHeaders) {
+		if (isOldStructure) {
 			return;
 		}
 		
@@ -1615,6 +1651,10 @@ public class Editor extends AbstractEditor {
 		page.normalizeChildLevels();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
+			if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
+				continue;
+			}
+			
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("^Etimología.*");
 			
 			if (etymologySections.isEmpty()) {
@@ -1709,7 +1749,7 @@ public class Editor extends AbstractEditor {
 	}
 
 	public void sortLangSections() {
-		if (isOldStructure || hasFlexiveFormHeaders) {
+		if (isOldStructure) {
 			return;
 		}
 		
@@ -1722,10 +1762,7 @@ public class Editor extends AbstractEditor {
 	public void addMissingSections() {
 		Page page = Page.store(title, text);
 		
-		if (
-			isOldStructure || hasFlexiveFormHeaders ||
-			page.getAllSections().isEmpty()
-		) {
+		if (isOldStructure || page.getAllSections().isEmpty()) {
 			return;
 		}
 		
@@ -1736,7 +1773,8 @@ public class Editor extends AbstractEditor {
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (
 				langSection.getChildSections() == null ||
-				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()
+				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
+				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 			) {
 				continue;
 			}
@@ -1747,7 +1785,6 @@ public class Editor extends AbstractEditor {
 				.collect(Collectors.toSet());
 			
 			headers.removeAll(STANDARD_HEADERS);
-			headers.removeIf(header -> header.matches("(?i)^(Forma|\\{\\{forma) .+"));
 			
 			if (headers.isEmpty()) {
 				continue;
@@ -1936,15 +1973,16 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void sortSubSections() {
-		if (isOldStructure || hasFlexiveFormHeaders) {
+		if (isOldStructure) {
 			return;
 		}
 		
 		Page page = Page.store(title, text);
-		List<LangSection> list = new ArrayList<LangSection>(page.getAllLangSections());
 		
-		for (LangSection langSection : list) {
-			langSection.sortSections();
+		for (LangSection langSection : page.getAllLangSections()) {
+			if (!langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
+				langSection.sortSections();
+			}
 		}
 		
 		String formatted = page.toString();
@@ -1957,7 +1995,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Page page = Page.store(title, text);
-		List<Section> flexiveFormSections = page.findSectionsWithHeader("^([Ff]orma|\\{\\{forma) .+");
+		List<Section> flexiveFormSections = page.findSectionsWithHeader(HAS_FLEXIVE_FORM_HEADER_RE);
 		
 		for (Section section : flexiveFormSections) {
 			String intro = section.getIntro();
@@ -3097,7 +3135,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Roman";
+		String title = "hablaras";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
