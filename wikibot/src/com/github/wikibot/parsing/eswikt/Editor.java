@@ -192,7 +192,7 @@ public class Editor extends AbstractEditor {
 			"<!-- ?A[ñn]ádela con el siguiente patrón.*?-->",
 			"<!-- ?Añade la etimología con el siguiente patrón.*?-->",
 			"<!-- ?(y/)?o femenino\\|es\\}\\}.*?-->",
-			"<!-- ?o (femenino|masculino)s?(\\]\\])?=== ?-->",
+			"<!-- ?o (femenino|masculino)s?(\\]\\])?(===)? ?-->",
 			"<!-- ?o \\{\\{adverbio de tiempo\\|es\\}\\}.*?-->",
 			"<!-- ?(o )?intransitivo.*?-->",
 			"<!-- ?¿flexión\\?: mira en Categoría:.*?-->",
@@ -224,16 +224,14 @@ public class Editor extends AbstractEditor {
 			"(?s)<!-- ?otra sección opcional para enlaces externos.*?-->",
 			"<!-- ?¿flexión?: mira en .*?-->",
 			"<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->",
-			"<!---? ?\\{\\{pronunciación\\|\\[ (ˈ|eˈxem.plo) \\]\\}\\}.*?-->",
-			"<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?\\}\\} *?-->",
+			"<!---? ?\\{\\{pronunciación(\\|\\|leng=.*?)?\\|(\\[ ?(ˈ|eˈxem.plo) ?\\])?\\}\\}.*?-->",
+			"<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?(\\}\\}|\\|) *?-->",
 			"<!-- ?en general, no se indica la etimología .*?-->",
-			"<!-- ?\\{\\{pronunciación\\|\\}\\} ?-->",
 			"<!-- ?si vas a insertar una nueva sección de etimología o de idioma.*?-->",
 			"<!-- ?si se trata de un país,? por favor,? pon.*?-->",
 			"<!-- *?apellidos .*?-->",
 			"<!-- *?antropónimos .*?-->",
 			"<!-- *?apéndice .*?-->",
-			"<!-- *?o (femenino|masculino)s?]].*?-->",
 			"<!-- ?(primera|segunda) locución ?-->"
 		);
 		
@@ -3135,7 +3133,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "hablaras";
+		String title = "circulares";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
