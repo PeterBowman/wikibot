@@ -2058,64 +2058,11 @@ public class Editor extends AbstractEditor {
 		Set<String> set = new LinkedHashSet<String>();
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			String text = langSection.toString();
-			templates = ParseUtils.getTemplates(annotationTemplateName, text);
+			List<Section> flexiveFormSections = langSection
+				.findSubSectionsWithHeader(HAS_FLEXIVE_FORM_HEADER_RE);
 			
-			if (templates.isEmpty()) {
-				continue;
-			}
-			
-			boolean found = false;
-			List<String> toIntro = new ArrayList<String>();
-			sb = new StringBuilder(text.length());
-			
-			index = 0;
-			lastIndex = 0;
-			
-			for (String template : templates) {
-				index = text.indexOf(template, lastIndex);
-				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-				
-				if (
-					// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
-					// https://es.wiktionary.org/w/index.php?title=suspended&oldid=2630232
-					!params.getOrDefault("link", "").isEmpty() ||
-					// TODO: disable categorization? ({{uso|anticuado}}); ~60k entries
-					params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
-					!convertAnnotationTemplateParams(params)
-				) {
-					lastIndex = index + template.length();
-					continue;
-				}
-				
-				found = true;
-				set.add(String.format("{{%s}}", params.get("templateName")));
-				String newTemplate = ParseUtils.templateFromMap(params) + ".";
-				
-				sb.append(text.substring(lastIndex, index));
-				
-				if (PRON_TMPLS.contains(params.get("templateName"))) {
-					toIntro.add(newTemplate);
-				} else {
-					sb.append(newTemplate);
-				}
-				
-				lastIndex = index + template.length();
-			}
-			
-			if (found) {
-				sb.append(text.substring(lastIndex));
-				text = sb.toString();
-				// FIXME: implement section-level parsing
-				LangSection newLangSection = LangSection.parse(text);
-				
-				if (!toIntro.isEmpty()) {
-					String intro = newLangSection.getIntro();
-					intro += "\n" + String.join("\n", toIntro);
-					newLangSection.setIntro(intro);
-				}
-				
-				langSection.replaceWith(newLangSection);
+			for (Section section : flexiveFormSections) {
+				processAnnotationTemplates(section, set, annotationTemplateName);
 			}
 		}
 		
@@ -2130,6 +2077,65 @@ public class Editor extends AbstractEditor {
 		formatted = page.toString();
 		String summary = String.format("{{%s}} → %s", annotationTemplateName, String.join(", ", set));
 		checkDifferences(formatted, "manageAnnotationTemplates", summary);
+	}
+	
+	private static void processAnnotationTemplates(Section section, Set<String> set, String templateName) {
+		String sectionIntro = section.getIntro();
+		List<String> templates = ParseUtils.getTemplates(templateName, sectionIntro);
+		
+		if (templates.isEmpty()) {
+			return;
+		}
+		
+		boolean found = false;
+		List<String> tempList = new ArrayList<String>();
+		StringBuilder sb = new StringBuilder(sectionIntro.length());
+		
+		int index = 0;
+		int lastIndex = 0;
+		
+		for (String template : templates) {
+			index = sectionIntro.indexOf(template, lastIndex);
+			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+			
+			if (
+				// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
+				// https://es.wiktionary.org/w/index.php?title=suspended&oldid=2630232
+				!params.getOrDefault("link", "").isEmpty() ||
+				// TODO: disable categorization? ({{uso|anticuado}}); ~60k entries
+				params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
+				!convertAnnotationTemplateParams(params)
+			) {
+				lastIndex = index + template.length();
+				continue;
+			}
+			
+			found = true;
+			set.add(String.format("{{%s}}", params.get("templateName")));
+			String newTemplate = ParseUtils.templateFromMap(params) + ".";
+			
+			sb.append(sectionIntro.substring(lastIndex, index));
+			
+			if (PRON_TMPLS.contains(params.get("templateName"))) {
+				tempList.add(newTemplate);
+			} else {
+				sb.append(newTemplate);
+			}
+			
+			lastIndex = index + template.length();
+		}
+		
+		if (found) {
+			sb.append(sectionIntro.substring(lastIndex));
+			section.setIntro(sb.toString());
+			
+			if (!tempList.isEmpty()) {
+				LangSection langSection = section.getLangSectionParent();
+				String langSectionIntro = langSection.getIntro();
+				langSectionIntro += "\n" + String.join("\n", tempList);
+				langSection.setIntro(langSectionIntro);
+			}
+		}
 	}
 	
 	private static boolean convertAnnotationTemplateParams(HashMap<String, String> params) {
