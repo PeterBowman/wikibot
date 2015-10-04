@@ -1892,24 +1892,10 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			boolean isModified = false;
 			
-			List<String> templates = ParseUtils.getTemplates("listaref", intro);
-			StringBuilder sb = new StringBuilder(intro.length());
+			String temp = Utils.replaceTemplates(intro, "listaref", match -> "");
 			
-			int index = 0;
-			int lastIndex = 0;
-			
-			for (String template : templates) {
-				index = intro.indexOf(template, lastIndex);
-				
-				sb.append(intro.substring(lastIndex, index));
-				sb.append("\n\n");
-				
-				lastIndex = index + template.length();
-			}
-			
-			if (lastIndex != 0) {
-				sb.append(intro.substring(lastIndex));
-				intro = sb.toString();
+			if (!temp.equals(intro)) {
+				intro = temp.trim();
 				isModified = true;
 				set.add("{{listaref}}");
 			}
@@ -1917,19 +1903,19 @@ public class Editor extends AbstractEditor {
 			// TODO: handle reference groups
 			Matcher m = pReferenceTags.matcher(intro);
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			StringBuffer sbf = new StringBuffer(intro.length());
+			StringBuffer sb = new StringBuffer(intro.length());
 			
 			while (m.find()) {
 				if (Utils.containedInRanges(ignoredRanges, m.start())) {
 					continue;
 				}
 				
-				m.appendReplacement(sbf, "\n\n");
+				m.appendReplacement(sb, "\n\n");
 			}
 			
-			if (sbf.length() != 0) {
-				m.appendTail(sbf);
-				intro = sbf.toString();
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				intro = sb.toString();
 				isModified = true;
 				set.add("<references>");
 			}
@@ -2006,9 +1992,8 @@ public class Editor extends AbstractEditor {
 	
 	public void manageAnnotationTemplates() {
 		final String annotationTemplateName = "anotación";
-		List<String> templates = ParseUtils.getTemplates(annotationTemplateName, text);
 		
-		if (isOldStructure || templates.isEmpty()) {
+		if (isOldStructure || ParseUtils.getTemplates(annotationTemplateName, text).isEmpty()) {
 			return;
 		}
 		
@@ -2016,32 +2001,17 @@ public class Editor extends AbstractEditor {
 		
 		// Remove empty templates
 		
-		String formatted = text;
-		StringBuilder sb = new StringBuilder(formatted.length());
-		
-		int index = 0;
-		int lastIndex = 0;
-		
-		for (String template : templates) {
-			index = formatted.indexOf(template, lastIndex);
-			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+		String formatted = Utils.replaceTemplates(text, annotationTemplateName, match -> {
+			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
 			
 			long count = params.values().stream()
 				.filter(value -> value != null && !value.isEmpty())
 				.count();
 			
-			if (count > 1) {
-				lastIndex = index + template.length();
-				continue;
-			}
-			
-			sb.append(formatted.substring(lastIndex, index));
-			lastIndex = index + template.length();
-		}
+			return count > 1 ? match : "";
+		});
 		
-		if (sb.length() != 0) {
-			sb.append(formatted.substring(lastIndex));
-			formatted = sb.toString();
+		if (!formatted.equals(text)) {
 			hasDeletedEmptyTemplates = true;
 		}
 		
@@ -2073,23 +2043,8 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static void processAnnotationTemplates(Section section, Set<String> set, String templateName) {
-		String sectionIntro = section.getIntro();
-		List<String> templates = ParseUtils.getTemplates(templateName, sectionIntro);
-		
-		if (templates.isEmpty()) {
-			return;
-		}
-		
-		boolean found = false;
-		List<String> tempList = new ArrayList<String>();
-		StringBuilder sb = new StringBuilder(sectionIntro.length());
-		
-		int index = 0;
-		int lastIndex = 0;
-		
-		for (String template : templates) {
-			index = sectionIntro.indexOf(template, lastIndex);
-			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+		String temp = Utils.replaceTemplates(section.getIntro(), templateName, match -> {
+			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
 			
 			if (
 				// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
@@ -2099,35 +2054,25 @@ public class Editor extends AbstractEditor {
 				params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
 				!convertAnnotationTemplateParams(params)
 			) {
-				lastIndex = index + template.length();
-				continue;
+				return match;
 			}
 			
-			found = true;
 			set.add(String.format("{{%s}}", params.get("templateName")));
 			String newTemplate = ParseUtils.templateFromMap(params) + ".";
 			
-			sb.append(sectionIntro.substring(lastIndex, index));
-			
 			if (PRON_TMPLS.contains(params.get("templateName"))) {
-				tempList.add(newTemplate);
-			} else {
-				sb.append(newTemplate);
-			}
-			
-			lastIndex = index + template.length();
-		}
-		
-		if (found) {
-			sb.append(sectionIntro.substring(lastIndex));
-			section.setIntro(sb.toString());
-			
-			if (!tempList.isEmpty()) {
 				LangSection langSection = section.getLangSectionParent();
 				String langSectionIntro = langSection.getIntro();
-				langSectionIntro += "\n" + String.join("\n", tempList);
+				langSectionIntro += "\n" + newTemplate;
 				langSection.setIntro(langSectionIntro);
+				return "";
+			} else {
+				return newTemplate;
 			}
+		});
+		
+		if (!temp.equals(section.getIntro())) {
+			section.setIntro(temp);
 		}
 	}
 	
@@ -3291,7 +3236,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "hablase";
+		String title = "comerás";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
