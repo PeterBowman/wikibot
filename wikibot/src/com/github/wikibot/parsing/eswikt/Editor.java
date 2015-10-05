@@ -2135,13 +2135,17 @@ public class Editor extends AbstractEditor {
 						
 						String param1 = params.get("ParamWithoutName1");
 						
-						if (param1 != null && (
-							param1.isEmpty() || param1.equals("-") || param1.equals("[]") ||
-							param1.equals("//") || param1.equals("...") ||
-							param1.equals("[ ˈ ]") || param1.equals("[ˈ]") ||
-							param1.equals("&nbsp;")
-						)) {
-							param1 = null;
+						if (param1 != null) {
+							if (
+								param1.isEmpty() || param1.equals("-") || param1.equals("[]") ||
+								param1.equals("//") || param1.equals("...") ||
+								param1.equals("[ ˈ ]") || param1.equals("[ˈ]") ||
+								param1.equals("&nbsp;") ||
+								SPANISH_PRON_TMPL_PARAMS.stream()
+									.anyMatch(param -> !params.getOrDefault(param, "").isEmpty())
+							) {
+								param1 = null;
+							}
 						}
 						
 						if (param1 == null) {
