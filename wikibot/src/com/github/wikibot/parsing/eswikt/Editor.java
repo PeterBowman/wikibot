@@ -1895,27 +1895,20 @@ public class Editor extends AbstractEditor {
 			String temp = Utils.replaceTemplates(intro, "listaref", match -> "");
 			
 			if (!temp.equals(intro)) {
-				intro = temp.trim();
+				intro = temp;
 				isModified = true;
 				set.add("{{listaref}}");
 			}
 			
 			// TODO: handle reference groups
-			Matcher m = pReferenceTags.matcher(intro);
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			StringBuffer sb = new StringBuffer(intro.length());
+			temp = Utils.replaceWithStandardIgnoredRanges(intro, pReferenceTags,
+				m -> m.start(),
+				(m, sb) -> m.appendReplacement(sb, "\n\n")
+			);
 			
-			while (m.find()) {
-				if (Utils.containedInRanges(ignoredRanges, m.start())) {
-					continue;
-				}
-				
-				m.appendReplacement(sb, "\n\n");
-			}
 			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				intro = sb.toString();
+			if (!temp.equals(intro)) {
+				intro = temp;
 				isModified = true;
 				set.add("<references>");
 			}
