@@ -1892,24 +1892,10 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			boolean isModified = false;
 			
-			List<String> templates = ParseUtils.getTemplates("listaref", intro);
-			StringBuilder sb = new StringBuilder(intro.length());
+			String temp = Utils.replaceTemplates(intro, "listaref", match -> "");
 			
-			int index = 0;
-			int lastIndex = 0;
-			
-			for (String template : templates) {
-				index = intro.indexOf(template, lastIndex);
-				
-				sb.append(intro.substring(lastIndex, index));
-				sb.append("\n\n");
-				
-				lastIndex = index + template.length();
-			}
-			
-			if (lastIndex != 0) {
-				sb.append(intro.substring(lastIndex));
-				intro = sb.toString();
+			if (!temp.equals(intro)) {
+				intro = temp.trim();
 				isModified = true;
 				set.add("{{listaref}}");
 			}
@@ -1917,19 +1903,19 @@ public class Editor extends AbstractEditor {
 			// TODO: handle reference groups
 			Matcher m = pReferenceTags.matcher(intro);
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			StringBuffer sbf = new StringBuffer(intro.length());
+			StringBuffer sb = new StringBuffer(intro.length());
 			
 			while (m.find()) {
 				if (Utils.containedInRanges(ignoredRanges, m.start())) {
 					continue;
 				}
 				
-				m.appendReplacement(sbf, "\n\n");
+				m.appendReplacement(sb, "\n\n");
 			}
 			
-			if (sbf.length() != 0) {
-				m.appendTail(sbf);
-				intro = sbf.toString();
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				intro = sb.toString();
 				isModified = true;
 				set.add("<references>");
 			}
@@ -2006,41 +1992,24 @@ public class Editor extends AbstractEditor {
 	
 	public void manageAnnotationTemplates() {
 		final String annotationTemplateName = "anotación";
-		List<String> templates = ParseUtils.getTemplates(annotationTemplateName, text);
 		
-		if (isOldStructure || templates.isEmpty()) {
+		if (isOldStructure || ParseUtils.getTemplates(annotationTemplateName, text).isEmpty()) {
 			return;
 		}
 		
 		// Remove empty templates
 		
-		String formatted = text;
-		StringBuilder sb = new StringBuilder(formatted.length());
-		
-		int index = 0;
-		int lastIndex = 0;
-		
-		for (String template : templates) {
-			index = formatted.indexOf(template, lastIndex);
-			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+		String formatted = Utils.replaceTemplates(text, annotationTemplateName, match -> {
+			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
 			
 			long count = params.values().stream()
 				.filter(value -> value != null && !value.isEmpty())
 				.count();
 			
-			if (count > 1) {
-				lastIndex = index + template.length();
-				continue;
-			}
-			
-			sb.append(formatted.substring(lastIndex, index));
-			lastIndex = index + template.length();
-		}
+			return count > 1 ? match : "";
+		});
 		
-		if (sb.length() != 0) {
-			sb.append(formatted.substring(lastIndex));
-			formatted = sb.toString();
-		} else {
+		if (formatted.equals(text)) {
 			return;
 		}
 		
@@ -3181,7 +3150,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "hablase";
+		String title = "comerás";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
