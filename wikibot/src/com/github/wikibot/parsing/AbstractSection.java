@@ -470,6 +470,15 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		setLevel(level + diff);
 	}
 	
+	public boolean hasSubSectionWithHeader(String regex) {
+		if (childSections != null) {
+			return flattenSubSections(childSections).stream()
+				.anyMatch(section -> section.getStrippedHeader().matches(regex));
+		} else {
+			return false;
+		}
+	}
+	
 	public List<T> filterSubSections(Predicate<T> predicate) {
 		if (childSections != null) {
 			return flattenSubSections(childSections).stream()

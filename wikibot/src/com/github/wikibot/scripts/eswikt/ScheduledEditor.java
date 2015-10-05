@@ -11,15 +11,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.wikiutils.ParseUtils;
+
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
-import com.github.wikibot.parsing.Page;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -153,16 +156,14 @@ public final class ScheduledEditor {
 			return false;
 		}
 		
-		Page p = null;
-		
-		try {
-			p = Page.wrap(pc);
-		} catch (Exception e) {
-			logError("Page wrap error", pc.getTitle(), e);
-			return false;
-		}
-		
-		return !p.hasSectionWithHeader("^([Ff]orma|\\{\\{forma) .+");
+		return !getTemplates("anotación", text).stream()
+			.map(ParseUtils::getTemplateParametersWithValue)
+			.map(Map::values)
+			.anyMatch(values -> {
+				values.removeIf(Objects::isNull);
+				values.removeIf(String::isEmpty);
+				return values.size() > 1;
+			});
 	}
 	
 	private static boolean processPage(PageContainer pc) {
@@ -175,6 +176,13 @@ public final class ScheduledEditor {
 			logError("Editor.check() timeout", pc.getTitle(), e);
 			exitCode = ExitCode.FAILURE;
 			return false;
+		} catch (UnsupportedOperationException e) {
+			// FIXME
+			System.out.printf(
+				"%s Editor.check() error in %s (%s: %s)",
+				new Date(), pc.getTitle(), e.getClass().getName(), e.getMessage()
+			);
+			return true;
 		} catch (Throwable t) {
 			logError("Editor.check() error", pc.getTitle(), t);
 			return true;
