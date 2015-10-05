@@ -305,7 +305,7 @@ public class Editor extends AbstractEditor {
 		
 		// TODO
 		if (!checkFlexiveFormHeaders()) {
-			throw new UnsupportedOperationException();
+			throw new UnsupportedOperationException("checkFlexiveFormHeaders()");
 		}
 		
 		normalizeSectionHeaders();
@@ -2012,8 +2012,6 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		boolean hasDeletedEmptyTemplates = false;
-		
 		// Remove empty templates
 		
 		String formatted = text;
@@ -2042,127 +2040,14 @@ public class Editor extends AbstractEditor {
 		if (sb.length() != 0) {
 			sb.append(formatted.substring(lastIndex));
 			formatted = sb.toString();
-			hasDeletedEmptyTemplates = true;
-		}
-		
-		// Convert annotations to their corresponding templates
-		
-		Page page = Page.store(title, formatted);
-		Set<String> set = new LinkedHashSet<String>();
-		
-		for (LangSection langSection : page.getAllLangSections()) {
-			List<Section> flexiveFormSections = langSection
-				.findSubSectionsWithHeader(HAS_FLEXIVE_FORM_HEADER_RE);
-			
-			for (Section section : flexiveFormSections) {
-				processAnnotationTemplates(section, set, annotationTemplateName);
-			}
-		}
-		
-		if (hasDeletedEmptyTemplates) {
-			set.add("eliminando plantillas vacías");
-		}
-		
-		if (set.isEmpty()) {
+		} else {
 			return;
 		}
 		
-		formatted = page.toString();
-		String summary = String.format("{{%s}} → %s", annotationTemplateName, String.join(", ", set));
+		String summary = String.format("{{%s}} → eliminando plantillas vacías", annotationTemplateName);
 		checkDifferences(formatted, "manageAnnotationTemplates", summary);
 	}
 	
-	private static void processAnnotationTemplates(Section section, Set<String> set, String templateName) {
-		String sectionIntro = section.getIntro();
-		List<String> templates = ParseUtils.getTemplates(templateName, sectionIntro);
-		
-		if (templates.isEmpty()) {
-			return;
-		}
-		
-		boolean found = false;
-		List<String> tempList = new ArrayList<String>();
-		StringBuilder sb = new StringBuilder(sectionIntro.length());
-		
-		int index = 0;
-		int lastIndex = 0;
-		
-		for (String template : templates) {
-			index = sectionIntro.indexOf(template, lastIndex);
-			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-			
-			if (
-				// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
-				// https://es.wiktionary.org/w/index.php?title=suspended&oldid=2630232
-				!params.getOrDefault("link", "").isEmpty() ||
-				// TODO: disable categorization? ({{uso|anticuado}}); ~60k entries
-				params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
-				!convertAnnotationTemplateParams(params)
-			) {
-				lastIndex = index + template.length();
-				continue;
-			}
-			
-			found = true;
-			set.add(String.format("{{%s}}", params.get("templateName")));
-			String newTemplate = ParseUtils.templateFromMap(params) + ".";
-			
-			sb.append(sectionIntro.substring(lastIndex, index));
-			
-			if (PRON_TMPLS.contains(params.get("templateName"))) {
-				tempList.add(newTemplate);
-			} else {
-				sb.append(newTemplate);
-			}
-			
-			lastIndex = index + template.length();
-		}
-		
-		if (found) {
-			sb.append(sectionIntro.substring(lastIndex));
-			section.setIntro(sb.toString());
-			
-			if (!tempList.isEmpty()) {
-				LangSection langSection = section.getLangSectionParent();
-				String langSectionIntro = langSection.getIntro();
-				langSectionIntro += "\n" + String.join("\n", tempList);
-				langSection.setIntro(langSectionIntro);
-			}
-		}
-	}
-	
-	private static boolean convertAnnotationTemplateParams(HashMap<String, String> params) {
-		String templateType = params.getOrDefault("tit", params.getOrDefault("tít", "relacionado"));
-		templateType = templateType.toLowerCase();
-		
-		if (PRON_TMPLS_ALIAS.contains(templateType)) {
-			templateType = PRON_TMPLS.get(PRON_TMPLS_ALIAS.indexOf(templateType));
-		} else if (TERM_TMPLS_ALIAS.contains(templateType)) {
-			templateType = TERM_TMPLS.get(TERM_TMPLS_ALIAS.indexOf(templateType));
-		} else if (
-			!PRON_TMPLS.contains(templateType) &&
-			!TERM_TMPLS.contains(templateType)
-		) {
-			return false;
-		}
-		
-		params.put("templateName", templateType);
-		params.remove("tit");
-		params.remove("tít");
-		
-		Iterator<Entry<String, String>> iterator = params.entrySet().iterator();
-		
-		while (iterator.hasNext()) {
-			Entry<String, String> entry = iterator.next();
-			
-			if (entry.getValue() == null || entry.getValue().isEmpty()) {
-				iterator.remove();
-			}
-		}
-		
-		return true;
-	}
-
 	public void adaptPronunciationTemplates() {
 		if (isOldStructure) {
 			return;
@@ -2226,6 +2111,11 @@ public class Editor extends AbstractEditor {
 				String origLine = line;
 				
 				if (m.matches()) {
+					// FIXME
+					if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
+						throw new UnsupportedOperationException("adaptPronunciationTemplates()");
+					}
+					
 					line = makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
 					
 					if (line == null) {

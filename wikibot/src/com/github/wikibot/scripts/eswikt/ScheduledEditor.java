@@ -11,11 +11,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
+
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -140,15 +144,26 @@ public final class ScheduledEditor {
 	private static boolean filterPages(PageContainer pc) {
 		String text = pc.getText();
 		
-		return (
-			getTemplates("TRANSLIT", text).isEmpty() &&
-			getTemplates("TRANS", text).isEmpty() &&
-			getTemplates("TAXO", text).isEmpty() &&
-			getTemplates("carácter oriental", text).isEmpty() &&
-			getTemplates("Chono-ES", text).isEmpty() &&
-			getTemplates("INE-ES", text).isEmpty() &&
-			getTemplates("POZ-POL-ES", text).isEmpty()
-		);
+		if (
+			!getTemplates("TRANSLIT", text).isEmpty() ||
+			!getTemplates("TRANS", text).isEmpty() ||
+			!getTemplates("TAXO", text).isEmpty() ||
+			!getTemplates("carácter oriental", text).isEmpty() ||
+			!getTemplates("Chono-ES", text).isEmpty() ||
+			!getTemplates("INE-ES", text).isEmpty() ||
+			!getTemplates("POZ-POL-ES", text).isEmpty()
+		) {
+			return false;
+		}
+		
+		return !getTemplates("anotación", text).stream()
+			.map(ParseUtils::getTemplateParametersWithValue)
+			.map(Map::values)
+			.anyMatch(values -> {
+				values.removeIf(Objects::isNull);
+				values.removeIf(String::isEmpty);
+				return values.size() > 1;
+			});
 	}
 	
 	private static boolean processPage(PageContainer pc) {
@@ -162,6 +177,11 @@ public final class ScheduledEditor {
 			exitCode = ExitCode.FAILURE;
 			return false;
 		} catch (UnsupportedOperationException e) {
+			// FIXME
+			System.out.printf(
+				"%s Editor.check() error in %s (%s: %s)",
+				new Date(), pc.getTitle(), e.getClass().getName(), e.getMessage()
+			);
 			return true;
 		} catch (Throwable t) {
 			logError("Editor.check() error", pc.getTitle(), t);
