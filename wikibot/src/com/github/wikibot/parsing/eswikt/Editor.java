@@ -2632,7 +2632,20 @@ public class Editor extends AbstractEditor {
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
 			String langCode = langSection.getLangCode();
 			
-			if (etymologySections.size() == 1) {
+			// FIXME
+			if (
+				etymologySections.isEmpty() &&
+				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
+				ParseUtils.getTemplates("pron-graf", langSection.getIntro()).isEmpty()
+			) {
+				String langSectionIntro = langSection.getIntro();
+				
+				if (ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty()) {
+					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
+					langSection.setIntro(langSectionIntro);
+					set.add("{{pron-graf}}");
+				}
+			} else if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);
 				String langSectionIntro = langSection.getIntro();
 				String etymologyIntro = etymologySection.getIntro();
@@ -3182,7 +3195,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "abaldonaban";
+		String title = "abatamos";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
