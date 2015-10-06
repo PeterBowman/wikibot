@@ -321,6 +321,7 @@ public class Editor extends AbstractEditor {
 		sortSubSections();
 		removeInflectionTemplates();
 		manageAnnotationTemplates();
+		manageDisambigTemplates();
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
@@ -2017,6 +2018,33 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "manageAnnotationTemplates", summary);
 	}
 	
+	public void manageDisambigTemplates() {
+		final String disambigTemplateName = "desambiguación";
+		
+		if (isOldStructure || ParseUtils.getTemplates(disambigTemplateName, text).isEmpty()) {
+			return;
+		}
+		
+		// Remove empty templates
+		
+		String formatted = Utils.replaceTemplates(text, disambigTemplateName, match -> {
+			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
+			
+			long count = params.values().stream()
+				.filter(value -> value != null && !value.isEmpty())
+				.count();
+			
+			return count > 1 ? match : "";
+		});
+		
+		if (formatted.equals(text)) {
+			return;
+		}
+		
+		String summary = String.format("{{%s}} → eliminando plantillas vacías", disambigTemplateName);
+		checkDifferences(formatted, "manageDisambiguationTemplates", summary);
+	}
+	
 	public void adaptPronunciationTemplates() {
 		if (isOldStructure) {
 			return;
@@ -3154,7 +3182,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "Romanos";
+		String title = "abaldonaban";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
