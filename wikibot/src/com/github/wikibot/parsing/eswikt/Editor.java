@@ -1034,7 +1034,7 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				section instanceof LangSection &&
-				FLEXIVE_FORM_CHECK.test((LangSection) section)
+				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 			) {
 				continue;
 			} else if (
@@ -3154,7 +3154,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "comerás";
+		String title = "Romanos";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
