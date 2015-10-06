@@ -39,7 +39,7 @@ public final class ScheduledEditor {
 	private static final int THREAD_CHECK_SECS = 5;
 	
 	private static ESWikt wb;
-	private static RuntimeException threadExecutionException;
+	private static volatile RuntimeException threadExecutionException;
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
