@@ -2923,6 +2923,7 @@ public class Editor extends AbstractEditor {
 			intro = ParseUtils.removeCommentsAndNoWikiText(intro);
 			intro = intro.replaceAll("<br.*?>", "");
 			intro = intro.replace("{{clear}}", "");
+			intro = intro.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
 			
 			if (!intro.isEmpty()) {
 				continue;
@@ -3199,7 +3200,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "ababillan";
+		String title = "acolo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
