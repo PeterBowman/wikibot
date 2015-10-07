@@ -204,6 +204,9 @@ public final class ScheduledEditor {
 	}
 	
 	private static void monitorThread(Thread thread) throws TimeoutException {
+		// TODO: inspect wait() and notify() methods
+		// http://stackoverflow.com/questions/2536692
+		
 		thread.setUncaughtExceptionHandler(new MonitoredThreadExceptionHandler());
 		thread.start();
 		
@@ -217,6 +220,14 @@ public final class ScheduledEditor {
 			if (System.currentTimeMillis() > endMs) {
 				throw new TimeoutException("Thread timeout");
 			}
+		}
+		
+		if (threadExecutionException != null) {
+			throw threadExecutionException;
+		}
+		
+		if (System.currentTimeMillis() > endMs) {
+			throw new TimeoutException("Thread timeout");
 		}
 	}
 	
