@@ -2021,7 +2021,11 @@ public class Editor extends AbstractEditor {
 	public void manageDisambigTemplates() {
 		final String disambigTemplateName = "desambiguación";
 		
-		if (isOldStructure || ParseUtils.getTemplates(disambigTemplateName, text).isEmpty()) {
+		if (
+			isOldStructure ||
+			ParseUtils.getTemplates(disambigTemplateName, text).isEmpty() ||
+			!Page.store(title, text).hasSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
+		) {
 			return;
 		}
 		
@@ -3195,7 +3199,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "abandons";
+		String title = "ababillan";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
