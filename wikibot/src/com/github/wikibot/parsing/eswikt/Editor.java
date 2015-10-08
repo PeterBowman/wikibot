@@ -225,7 +225,7 @@ public class Editor extends AbstractEditor {
 			"<!-- ?¿flexión?: mira en .*?-->",
 			"<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->",
 			"<!---? ?\\{\\{pronunciación(\\|leng=.*?)?\\|?(\\[ ?(ˈ|eˈxem.plo) ?\\])?\\}\\}.*?-->",
-			"<!-- ?\\{\\{pronunciación\\|\\[.+?\\]\\}\\} \\|-\\|c=.+?\\|s=.+?(\\}\\}|\\|) *?-->",
+			"<!-- ?\\{\\{pronunciación\\|(\\[.+?\\]| ˈ )\\}\\} \\|-\\|c=.+?\\|s=.+?(\\}\\}|\\|) *?-->",
 			"<!-- ?en general, no se indica la etimología .*?-->",
 			"<!-- ?si vas a insertar una nueva sección de etimología o de idioma.*?-->",
 			"<!-- ?si se trata de un país,? por favor,? pon.*?-->",
@@ -3200,7 +3200,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "acolo";
+		String title = "abalancé";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
