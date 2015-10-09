@@ -1414,23 +1414,32 @@ public class Editor extends AbstractEditor {
 			String header = section.getHeader();
 			
 			header = StringUtils.strip(header, "=").trim();
-			header = header.replaceAll("^[Ee]timolog[íi]a", "Etimología");
+			header = header.replaceAll("(?i)^Etimolog[íi]a", "Etimología");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
-			header = header.replaceAll("^[Ll]ocuciones", "Locuciones");
-			header = header.replaceAll("^(?:[Rr]efranes|[Dd]ichos?)", "Refranes");
-			header = header.replaceAll("^[Cc]onjugaci[óo]n\\b", "Conjugación");
-			header = header.replaceAll("^[Ii]nformaci[óo]n (?:adicional|avanzada)", "Información adicional");
-			header = header.replaceAll("^(?:[Vv]er|[Vv][ée]ase) tambi[ée]n", "Véase también");
-			header = header.replaceAll("^Proverbio\\b", "Refrán");
+			header = header.replaceAll("(?i)^Locuciones", "Locuciones");
+			header = header.replaceAll("(?i)^(?:Refranes|Dichos?)", "Refranes");
+			header = header.replaceAll("(?i)^Conjugaci[óo]n\\b", "Conjugación");
+			header = header.replaceAll("(?i)^Informaci[óo]n (?:adicional|avanzada)", "Información adicional");
+			header = header.replaceAll("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
+			header = header.replaceAll("(?i)^Proverbio\\b", "Refrán");
+			
+			header = header.replaceAll("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
+			header = header.replaceAll("(?i)^Forma (?:de )?verb(?:o|al)$", "Forma verbal");
+			header = header.replaceAll("(?i)^Forma (?:de )?adjetiv[oa]$", "Forma adjetiva");
+			header = header.replaceAll("(?i)^Forma (?:de )?(?:pronombre|pronominal)$", "Forma pronominal");
+			header = header.replaceAll("(?i)^Forma (?:de )?(?:preposición|prepositiv[oa])$", "Forma prepositiva");
+			header = header.replaceAll("(?i)^Forma (?:de )?adverbi(?:o|al)$", "Forma adverbial");
+			
+			header = header.replaceAll("(?i)^Forma (?:de )?sub?stantiv[oa] (masculin|femenin|neutr)[oa]$", "Forma sustantiva $1a");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			LangSection langSection = section.getLangSectionParent();
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducciones");
+					header = header.replaceAll("(?i)^Traducci[óo]n(es)?", "Traducciones");
 				} else {
-					header = header.replaceAll("^[Tt]raducci[óo]n(es)?", "Traducción");
+					header = header.replaceAll("(?i)^Traducci[óo]n(es)?", "Traducción");
 				}
 			}
 			
