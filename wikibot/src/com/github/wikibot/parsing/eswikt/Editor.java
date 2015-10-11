@@ -1034,6 +1034,15 @@ public class Editor extends AbstractEditor {
 			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
 			if (
+				section.getIntro().isEmpty() &&
+				section.getChildSections() == null
+			) {
+				if (!(section instanceof LangSection)) {
+					section.detachOnlySelf();
+				} else {
+					continue;
+				}
+			} else if (
 				section instanceof LangSection &&
 				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 			) {
@@ -1112,6 +1121,12 @@ public class Editor extends AbstractEditor {
 				section.detachOnlySelf();
 			}
 		}
+		
+		// Detach empty LangSections
+		
+		page.getAllLangSections().stream()
+			.filter(ls -> ls.getIntro().isEmpty() && ls.getChildSections() == null)
+			.forEach(AbstractSection::detachOnlySelf);
 		
 		page.normalizeChildLevels();
 		
