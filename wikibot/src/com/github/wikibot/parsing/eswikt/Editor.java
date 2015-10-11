@@ -1991,7 +1991,10 @@ public class Editor extends AbstractEditor {
 		for (Section section : flexiveFormSections) {
 			String intro = section.getIntro();
 			
-			if (!intro.contains("{{inflect.")) {
+			if (
+				!intro.contains("{{inflect.") ||
+				!ParseUtils.getTemplates("participio", intro).isEmpty()
+			) {
 				continue;
 			}
 			
@@ -3212,7 +3215,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "abalancé";
+		String title = "rescatado";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
