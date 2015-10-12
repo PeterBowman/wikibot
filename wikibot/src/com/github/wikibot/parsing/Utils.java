@@ -2,15 +2,18 @@ package com.github.wikibot.parsing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.Range;
+import org.wikiutils.ParseUtils;
 
 public final class Utils {
 	private Utils() {}
@@ -153,5 +156,50 @@ public final class Utils {
 		
 		m.appendTail(sb);
 		return sb.toString();
+	}
+	
+	public static String replaceTemplates(String text, String templateName, Function<String, String> func) {
+		List<String> templates = ParseUtils.getTemplates(templateName, text);
+		
+		if (templates.isEmpty()) {
+			return text;
+		}
+		
+		StringBuilder sb = new StringBuilder(text.length());
+		
+		int index = 0;
+		int lastIndex = 0;
+		
+		for (String template : templates) {
+			index = indexOfIgnoringRanges(text, template, lastIndex);
+			sb.append(text.substring(lastIndex, index));
+			sb.append(func.apply(template));
+			lastIndex = index + template.length();
+		}
+		
+		sb.append(text.substring(lastIndex));
+		return sb.toString();
+	}
+	
+	public static int indexOfIgnoringRanges(String str, String target, int fromIndex) {
+		HashMap<Integer, Integer> noWiki = ParseUtils.getIgnorePositions(str, "<nowiki>", "</nowiki>");
+		HashMap<Integer, Integer> comment = ParseUtils.getIgnorePositions(str, "<!--", "-->");
+		
+		int index = 0;
+		
+		while (true) {
+			index = str.indexOf(target, fromIndex);
+			
+			if (index == -1 || (
+				!ParseUtils.isIgnorePosition(noWiki, index) &&
+				!ParseUtils.isIgnorePosition(comment, index)
+			)) {
+				break;
+			} else {
+				fromIndex = index + target.length();
+			}
+		}
+
+		return index;
 	}
 }

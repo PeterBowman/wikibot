@@ -47,7 +47,7 @@ public final class MaintenanceScript {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
 	private static final int THREAD_CHECK_SECS = 5;
-	private static RuntimeException threadExecutionException;
+	private static volatile RuntimeException threadExecutionException;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
@@ -100,6 +100,8 @@ public final class MaintenanceScript {
 				tempCal.add(Calendar.SECOND, 1);
 				storeTimestamp(tempCal);
 				System.exit(0);
+			} catch (UnsupportedOperationException e) {
+				continue;
 			} catch (Throwable t) {
 				logError("Editor.check() error", pc.getTitle(), t);
 				continue;
@@ -193,6 +195,14 @@ public final class MaintenanceScript {
 			if (System.currentTimeMillis() > endMs) {
 				throw new TimeoutException("Thread timeout");
 			}
+		}
+		
+		if (threadExecutionException != null) {
+			throw threadExecutionException;
+		}
+		
+		if (System.currentTimeMillis() > endMs) {
+			throw new TimeoutException("Thread timeout");
 		}
 	}
 	
