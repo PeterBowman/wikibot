@@ -100,6 +100,10 @@ public class Editor extends AbstractEditor {
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
+	private static final List<String> RECONSTRUCTED_LANGS = Arrays.asList(
+		"poz-pol", "ine"
+	);
+	
 	private static final List<Pattern> COMMENT_PATT_LIST;
 	private static final List<String> LS_SPLITTER_LIST;
 	private static final List<String> BS_SPLITTER_LIST;
@@ -932,9 +936,7 @@ public class Editor extends AbstractEditor {
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
 			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
 			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("INE-ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("POZ-POL-ES", text).isEmpty()
+			!ParseUtils.getTemplates("Chono-ES", text).isEmpty()
 		) {
 			return;
 		}
@@ -1005,6 +1007,14 @@ public class Editor extends AbstractEditor {
 			List<Section> etymologySections = section.findSubSectionsWithHeader("[Ee]timolog[íi]a.*");
 			
 			if (
+				etymologySections.isEmpty() &&
+				section instanceof LangSection &&
+				RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) &&
+				ParseUtils.getTemplates("etimología", section.getIntro()).isEmpty() &&
+				ParseUtils.getTemplates("etimología2", section.getIntro()).isEmpty()
+			) {
+				continue;
+			} else if (
 				etymologySections.isEmpty() ||
 				hasAdditionalEtymSections(section.nextSection(), etymologySections)
 			) {
@@ -1731,7 +1741,8 @@ public class Editor extends AbstractEditor {
 				// TODO: discuss with the community
 				title.contains(" ") ||
 				langSection.getChildSections() == null ||
-				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()
+				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
+				RECONSTRUCTED_LANGS.contains(langSection.getLangCode())
 			) {
 				continue;
 			}
@@ -2543,7 +2554,13 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		Set<String> set = new LinkedHashSet<String>();
 		
+		// {{etimología}} and {{pron-graf}}
+		
 		for (LangSection langSection : page.getAllLangSections()) {
+			if (RECONSTRUCTED_LANGS.contains(langSection.getLangCode())) {
+				continue;
+			}
+			
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
 			String langCode = langSection.getLangCode();
 			
@@ -2600,6 +2617,8 @@ public class Editor extends AbstractEditor {
 		
 		Section spanishSection = page.getLangSection("es");
 		
+		// Translations
+		
 		if (spanishSection != null) {
 			List<Section> translations = spanishSection.findSubSectionsWithHeader("Traducciones");
 			
@@ -2628,11 +2647,33 @@ public class Editor extends AbstractEditor {
 		
 		Section references = page.getReferencesSection();
 		
+		// <references />
+		
 		// TODO: check other elements (templates, manually introduced references...)
 		if (references != null && references.getIntro().isEmpty()) {
 			references.setIntro("<references />");
 			set.add("<references>");
 		}
+		
+		// {{reconstruido}}
+		
+		final String reconstructedTmpl = "reconstruido";
+		
+		page.getAllLangSections().stream()
+			.filter(langSection -> RECONSTRUCTED_LANGS.contains(langSection.getLangCode()))
+			.forEach(langSection -> {
+				String content = langSection.toString();
+				content = ParseUtils.removeCommentsAndNoWikiText(content);
+				
+				if (!ParseUtils.getTemplates(reconstructedTmpl, content).isEmpty()) {
+					return;
+				}
+				
+				String intro = langSection.getIntro();
+				intro = String.format("{{%s}}", reconstructedTmpl) + "\n" + intro;
+				langSection.setIntro(intro);
+				set.add("{{reconstruido}}");
+			});
 		
 		if (set.isEmpty()) {
 			return;
@@ -3094,7 +3135,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "sustantivo";
+		String title = "*fafine";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

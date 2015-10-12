@@ -146,9 +146,7 @@ public final class ScheduledEditor {
 			!getTemplates("TRANS", text).isEmpty() ||
 			!getTemplates("TAXO", text).isEmpty() ||
 			!getTemplates("carácter oriental", text).isEmpty() ||
-			!getTemplates("Chono-ES", text).isEmpty() ||
-			!getTemplates("INE-ES", text).isEmpty() ||
-			!getTemplates("POZ-POL-ES", text).isEmpty()
+			!getTemplates("Chono-ES", text).isEmpty()
 		) {
 			return false;
 		}
