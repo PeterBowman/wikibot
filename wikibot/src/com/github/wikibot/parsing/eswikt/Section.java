@@ -19,8 +19,8 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	);
 	
 	public static final List<String> BOTTOM_SECTIONS = Arrays.asList(
-		"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también",
-		"Traducciones", "Evidencias", "Otras formas"
+		"Locuciones", "Refranes", "Conjugación", "Evidencias", "Otras formas", "Información adicional",
+		"Véase también", "Traducciones"
 	);
 
 	Section() {

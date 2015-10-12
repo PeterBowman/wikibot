@@ -177,11 +177,7 @@ public class LangSection extends Section {
 		
 		List<Section> etymologySections = findSubSectionsWithHeader("^Etimología.*");
 		
-		if (etymologySections.isEmpty()) {
-			return;
-		}
-		
-		if (etymologySections.size() == 1) {
+		if (etymologySections.size() < 2) {
 			if (hasDuplicatedChildSections()) {
 				return;
 			}
@@ -189,9 +185,7 @@ public class LangSection extends Section {
 			Collections.sort(childSections);
 			propagateTree();
 		} else {
-			for (Section etymologySection : etymologySections) {
-				etymologySection.sortSections();
-			}
+			etymologySections.forEach(Section::sortSections);
 		}
 	}
 
