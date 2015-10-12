@@ -2827,6 +2827,7 @@ public class Editor extends AbstractEditor {
 		text = P_IMAGES.matcher(text).replaceAll("");
 		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
 		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
+		text = text.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
 		
 		return text.trim();
 	}
