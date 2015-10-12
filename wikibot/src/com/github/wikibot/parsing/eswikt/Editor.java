@@ -1280,6 +1280,19 @@ public class Editor extends AbstractEditor {
 	}
 
 	private static void extractAltParameter(Section section, String alt) {
+		if (
+			section instanceof LangSection &&
+			RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode())
+		) {
+			if (ParseUtils.removeCommentsAndNoWikiText(alt).isEmpty()) {
+				Map<String, String> params = ((LangSection) section).getTemplateParams();
+				params.remove("alt");
+				((LangSection) section).setTemplateParams(params);
+			}
+			
+			return;
+		}
+		
 		String intro = section.getIntro();
 		List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", intro);
 		
@@ -3278,7 +3291,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "*h₃ekʷ";
+		String title = "*gʷʰorm-";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
