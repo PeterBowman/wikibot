@@ -2954,6 +2954,7 @@ public class Editor extends AbstractEditor {
 			intro = intro.replaceAll("<br.*?>", "");
 			intro = intro.replace("{{clear}}", "");
 			intro = intro.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
+			intro = intro.trim();
 			
 			if (!intro.isEmpty()) {
 				continue;
