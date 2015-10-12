@@ -148,8 +148,7 @@ public final class ScheduledEditor {
 			!getTemplates("TRANSLIT", text).isEmpty() ||
 			!getTemplates("TRANS", text).isEmpty() ||
 			!getTemplates("TAXO", text).isEmpty() ||
-			!getTemplates("carácter oriental", text).isEmpty() ||
-			!getTemplates("Chono-ES", text).isEmpty()
+			!getTemplates("carácter oriental", text).isEmpty()
 		) {
 			return false;
 		}

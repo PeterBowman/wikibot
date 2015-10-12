@@ -101,7 +101,7 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> RECONSTRUCTED_LANGS = Arrays.asList(
-		"poz-pol", "ine"
+		"poz-pol", "ine", "chono"
 	);
 	
 	private static final List<Pattern> COMMENT_PATT_LIST;
@@ -966,8 +966,7 @@ public class Editor extends AbstractEditor {
 			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
 			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
 			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
-			!ParseUtils.getTemplates("carácter oriental", text).isEmpty() ||
-			!ParseUtils.getTemplates("Chono-ES", text).isEmpty()
+			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
 		) {
 			return;
 		}
@@ -3291,7 +3290,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "*mánu";
+		String title = "cot";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
