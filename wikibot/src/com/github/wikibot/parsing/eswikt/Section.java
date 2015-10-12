@@ -15,11 +15,12 @@ import com.github.wikibot.parsing.AbstractSection;
 
 public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	public static final List<String> HEAD_SECTIONS = Arrays.asList(
-		"Pronunciación y escritura", "Etimología"
+		"Pronunciación y escritura", "Notación", "Etimología"
 	);
 	
 	public static final List<String> BOTTOM_SECTIONS = Arrays.asList(
-		"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también", "Traducciones"
+		"Locuciones", "Refranes", "Conjugación", "Información adicional", "Véase también",
+		"Traducciones", "Evidencias", "Otras formas"
 	);
 
 	Section() {
