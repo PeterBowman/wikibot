@@ -1653,11 +1653,12 @@ public class Editor extends AbstractEditor {
 		// TODO: handle single- to multiple-etymology sections edits and vice versa
 		// TODO: satura, aplomo
 		
-		if (isOldStructure) {
+		Page page = Page.store(title, text);
+		
+		if (isOldStructure || page.getAllLangSections().isEmpty()) {
 			return;
 		}
 		
-		Page page = Page.store(title, text);
 		page.normalizeChildLevels();
 		
 		// TODO: traverse siblings of the first Section?
