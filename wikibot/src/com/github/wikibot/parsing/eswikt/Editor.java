@@ -64,6 +64,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
+	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -333,6 +334,7 @@ public class Editor extends AbstractEditor {
 		langTemplateParams();
 		deleteEmptySections();
 		manageClearElements();
+		applyUcfTemplates();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -3179,6 +3181,72 @@ public class Editor extends AbstractEditor {
 		section.setIntro(intro);
 		
 		return intro;
+	}
+	
+	public void applyUcfTemplates() {
+		Page page = Page.store(title, text);
+		
+		if (page.getAllLangSections().isEmpty()) {
+			return;
+		}
+		
+		List<Section> sections = page.filterSections(section ->
+			section != page.getReferencesSection() &&
+			!(section instanceof LangSection) &&
+			!STANDARD_HEADERS.contains(section)
+		);
+		
+		boolean modified = false;
+				
+		for (Section section : sections) {
+			String intro = section.getIntro();
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+			Matcher m = P_UCF.matcher(intro);
+			StringBuffer sb = new StringBuffer(intro.length());
+			
+			while (m.find()) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
+					continue;
+				}
+				
+				String target = m.group(2);
+				String pipe = m.group(3);
+				String trail = m.group(4);
+				
+				if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
+					continue;
+				}
+				
+				if (pipe != null && (
+					pipe.isEmpty() ||
+					!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
+				)) {
+					continue;
+				}
+				
+				if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
+					continue;
+				}
+				
+				String template = String.format("{{plm|%s}}", target);
+				String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
+				
+				m.appendReplacement(sb, replacement);
+			}
+			
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				section.setIntro(sb.toString());
+				modified = true;
+			}
+		}
+		
+		if (!modified) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlace a {{plm}}");
 	}
 	
 	public void strongWhitespaces() {
