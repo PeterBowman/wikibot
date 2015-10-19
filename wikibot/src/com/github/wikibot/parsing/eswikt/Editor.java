@@ -931,9 +931,9 @@ public class Editor extends AbstractEditor {
 		// TODO: detect comment tags
 		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
 		
-		formatted = applyReplacementFunction(formatted, setLog, "\"^[:;*#]$\" → \"\"", text -> {
-			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[:;*#]+\n", "\n\n");
-			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[:;*#]+\n", "");
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[.,:;*#]$\" → \"\"", text -> {
+			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[.,:;*#]+\n", "\n\n");
+			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[.,:;*#]+\n", "");
 			return text;
 		});
 		
