@@ -628,6 +628,13 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
+			index = formatted.indexOf("\n", m.start(1));
+			String thisLine = formatted.substring(m.start(1), index != -1 ? index : formatted.length());
+			
+			if (thisLine.startsWith(" |")) { // template parameters and wikitable rows
+				continue;
+			}
+			
 			m.appendReplacement(sb, " " + replacement);
 		}
 		
@@ -3292,7 +3299,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "cot";
+		String title = "armadura";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
