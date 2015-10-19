@@ -333,6 +333,7 @@ public class Editor extends AbstractEditor {
 		checkLangHeaderCodeCase();
 		langTemplateParams();
 		deleteEmptySections();
+		deleteWrongSections();
 		manageClearElements();
 		applyUcfTemplates();
 		strongWhitespaces();
@@ -3059,6 +3060,83 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "deleteEmptySections", summary);
 	}
 	
+	public void deleteWrongSections() {
+		Page page = Page.store(title, text);
+		List<LangSection> langSections = page.getAllLangSections();
+		
+		if (isOldStructure || langSections.isEmpty()) {
+			return;
+		}
+		
+		Set<String> set = new HashSet<String>();
+		
+		for (LangSection langSection : langSections) {
+			List<Section> childSections = langSection.getChildSections();
+			
+			if (childSections == null) {
+				continue;
+			}
+			
+			long flex = childSections.stream()
+				.map(AbstractSection::getStrippedHeader)
+				.filter(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
+				.count();
+			
+			long nonFlex = childSections.stream()
+				.map(AbstractSection::getStrippedHeader)
+				.filter(header -> !STANDARD_HEADERS.contains(header))
+				.filter(header -> !header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
+				.count();
+			
+			if (langSection.langCodeEqualsTo("es") && (nonFlex != 0 || flex == 0)) {
+				continue;
+			}
+			
+			// delete empty translations Section in non-Spanish LangSections or flexive forms
+			
+			langSection.findSubSectionsWithHeader("Traducciones").forEach(section -> {
+				String intro = section.getIntro();
+				intro = ParseUtils.removeCommentsAndNoWikiText(intro);
+				intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+				intro = intro.trim();
+				
+				if (intro.isEmpty() && section.getChildSections() == null) {
+					section.detachOnlySelf();
+					set.add(section.getStrippedHeader());
+				}
+			});
+			
+			// delete empty etymology Section in flexive forms
+			
+			if (nonFlex != 0 || flex == 0) {
+				continue;
+			}
+			
+			langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
+				String intro = section.getIntro();
+				intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+				intro = intro.trim();
+				
+				if (intro.isEmpty() && section.getChildSections() == null) {
+					section.detachOnlySelf();
+					set.add(section.getStrippedHeader());
+				}
+			});
+		}
+		
+		if (set.isEmpty()) {
+			return;
+		}
+		
+		String formatted = page.toString();
+		String summary = (set.size() == 1)
+			? "eliminando sección: "
+			: "eliminando secciones: ";
+		summary += String.join(", ", set);
+		
+		checkDifferences(formatted, "deleteWrongSections", summary);
+	}
+	
 	public void manageClearElements() {
 		if (isOldStructure || Page.store(title, text).getAllLangSections().isEmpty()) {
 			return;
@@ -3367,7 +3445,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "armadura";
+		String title = "armaduras";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
