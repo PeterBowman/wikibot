@@ -167,6 +167,7 @@ public class Editor extends AbstractEditor {
 		BS_SPLITTER_LIST.addAll(AMBOX_TMPLS);
 		BS_SPLITTER_LIST.addAll(tempListBS);
 		
+		// TODO: ignore comments (https://es.wiktionary.org/w/index.php?title=lombriz&diff=3376825&oldid=3362646)
 		P_LINE_SPLITTER_BOTH = Pattern.compile("(\n?)[ :;*#]*?(\\{\\{ *?(?:" + String.join("|", BS_SPLITTER_LIST) + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\}) *(\n?)", Pattern.DOTALL);
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)*\\s*)$");
@@ -3061,6 +3062,8 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void deleteWrongSections() {
+		// TODO: move elements (category links, {{clear}}, maybe images too?) to the preceding section
+		
 		Page page = Page.store(title, text);
 		List<LangSection> langSections = page.getAllLangSections();
 		
