@@ -950,6 +950,10 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?[2-9]: ?\\.?$", "")
 		);
 		
+		formatted = applyReplacementFunction(formatted, setLog, "\"^;\\d.+\" → \";\\d:.+\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^;\\s*?(\\d+?)\\s*(\\{\\{plm[\\|\\}][^:]+?|(?!\\s*?\\{\\{)[^:]+?)$", ";$1: $2")
+		);
+		
 		String summary = null;
 		
 		if (!setLog.isEmpty()) {
