@@ -3284,7 +3284,7 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section)
 		);
 		
-		boolean modified = false;
+		int count = 0;
 				
 		for (Section section : sections) {
 			String intro = section.getIntro();
@@ -3320,21 +3320,25 @@ public class Editor extends AbstractEditor {
 				String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
 				
 				m.appendReplacement(sb, replacement);
+				count++;
 			}
 			
 			if (sb.length() != 0) {
 				m.appendTail(sb);
 				section.setIntro(sb.toString());
-				modified = true;
 			}
 		}
 		
-		if (!modified) {
+		if (count == 0) {
 			return;
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlace a {{plm}}");
+		String summary = (count == 1)
+			? "convirtiendo enlace a {{plm}}"
+			: "convirtiendo enlaces a {{plm}}";
+		
+		checkDifferences(formatted, "applyUcfTemplates", summary);
 	}
 	
 	public void strongWhitespaces() {
@@ -3546,7 +3550,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "armaduras";
+		String title = "explotar";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
