@@ -103,7 +103,8 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> RECONSTRUCTED_LANGS = Arrays.asList(
-		"poz-pol", "ine", "chono"
+		"poz-pol", "ine",
+		"chono" // https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
 	);
 	
 	private static final List<Pattern> COMMENT_PATT_LIST;
@@ -2828,6 +2829,8 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllLangSections().stream()
 			.filter(langSection -> RECONSTRUCTED_LANGS.contains(langSection.getLangCode()))
+			// https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
+			.filter(langSection -> !langSection.getLangName().equals("chono"))
 			.forEach(langSection -> {
 				String content = langSection.toString();
 				content = ParseUtils.removeCommentsAndNoWikiText(content);
