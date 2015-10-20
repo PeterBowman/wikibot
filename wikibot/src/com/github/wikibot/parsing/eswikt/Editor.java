@@ -65,6 +65,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -3271,8 +3272,10 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
+		Section references = page.getReferencesSection();
+		
 		List<Section> sections = page.filterSections(section ->
-			section != page.getReferencesSection() &&
+			section != references &&
 			!(section instanceof LangSection) &&
 			!STANDARD_HEADERS.contains(section)
 		);
@@ -3334,11 +3337,15 @@ public class Editor extends AbstractEditor {
 		// TODO: don't collide with removeComments() 
 		String initial = text;
 		
+		// &nbsp; replacements
+		
 		initial = Utils.replaceWithStandardIgnoredRanges(initial, "( |&nbsp;)*\n", "\n");
 		initial = Utils.replaceWithStandardIgnoredRanges(initial, " &nbsp;", " ");
 		initial = Utils.replaceWithStandardIgnoredRanges(initial, "&nbsp; ", " ");
 		
 		Page page = Page.store(title, initial);
+		
+		// leading and trailing newlines
 		
 		if (page.getLeadingNewlines() > 1) {
 			page.setLeadingNewlines(0);
@@ -3369,7 +3376,48 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
+		// term whitespaces (;1 {{foo}}: bar)
+		
+		Section references = page.getReferencesSection();
+		
+		page.filterSections(section ->
+			section != references &&
+			!(section instanceof LangSection) &&
+			!STANDARD_HEADERS.contains(section.getStrippedHeader())
+		).forEach(section -> {
+			String intro = section.getIntro();
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+			Matcher m = P_TERM.matcher(intro);
+			StringBuffer sb = new StringBuffer(intro.length());
+			
+			while (m.find()) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
+					continue;
+				}
+				
+				String template = m.group(2);
+				
+				if (template == null || template.startsWith(" ")) {
+					continue;
+				}
+				
+				String replacement =
+					intro.substring(m.start(), m.start(2)) +
+					" " + template +
+					intro.substring(m.end(2), m.end());
+				
+				m.appendReplacement(sb, replacement);
+			}
+			
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				section.setIntro(sb.toString());
+			}
+		});
+		
 		String formatted = page.toString();
+		
+		// miscellaneous
 		
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n{3,}", "\n\n");
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n\n<!--", "\n<!--");
@@ -3386,18 +3434,20 @@ public class Editor extends AbstractEditor {
 			page.setLeadingNewlines(0);
 		}
 		
-		String intro = page.getIntro();
+		String pageIntro = page.getIntro();
 		
-		if (intro.isEmpty() && page.getTrailingNewlines() == 1) {
+		// leading and trailing newlines (+ Section's headerFormat)
+		
+		if (pageIntro.isEmpty() && page.getTrailingNewlines() == 1) {
 			page.setTrailingNewlines(0);
 		}
 		
 		if (
-			!intro.isEmpty() && page.getTrailingNewlines() == 0 &&
-			!ParseUtils.removeCommentsAndNoWikiText(intro).isEmpty() &&
+			!pageIntro.isEmpty() && page.getTrailingNewlines() == 0 &&
+			!ParseUtils.removeCommentsAndNoWikiText(pageIntro).isEmpty() &&
 			!(
-				intro.split("\n").length == 1 &&
-				intro.matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
+				pageIntro.split("\n").length == 1 &&
+				pageIntro.matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
 			)
 		) {
 			page.setTrailingNewlines(1);
@@ -3434,7 +3484,51 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
+		// term whitespaces (;1 {{foo}}: bar)
+		
+		Section references = page.getReferencesSection();
+		
+		page.filterSections(section ->
+			section != references &&
+			!(section instanceof LangSection) &&
+			!STANDARD_HEADERS.contains(section.getStrippedHeader())
+		).forEach(section -> {
+			String intro = section.getIntro();
+			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
+			Matcher m = P_TERM.matcher(intro);
+			StringBuffer sb = new StringBuffer(intro.length());
+			
+			while (m.find()) {
+				if (Utils.containedInRanges(ignoredRanges, m.start())) {
+					continue;
+				}
+				
+				String number = m.group(1);
+				String colon = m.group(3);
+				String definition = m.group(4);
+				
+				if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
+					continue;
+				}
+				
+				String replacement =
+					intro.substring(m.start(), m.start(1)) +
+					number.trim() +
+					intro.substring(m.end(1), m.start(3)) +
+					colon.trim() + " " + definition.trim();
+				
+				m.appendReplacement(sb, replacement);
+			}
+			
+			if (sb.length() != 0) {
+				m.appendTail(sb);
+				section.setIntro(sb.toString());
+			}
+		});
+		
 		String formatted = page.toString();
+		
+		// miscellaneous
 		
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "<references *?/ *?>", "<references />");
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, " </ref>", "</ref>");
