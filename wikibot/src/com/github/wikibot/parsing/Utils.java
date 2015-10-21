@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -138,26 +139,45 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
-		List<Range<Integer>> ignoredRanges = getStandardIgnoredRanges(text);
-		return replaceWithIgnoredranges(text, regex, replacement, ignoredRanges);
+		return replaceWithIgnoredranges(text, regex, replacement, getStandardIgnoredRanges(text));
 	}
 	
-	public static String replaceWithIgnoredranges(String text, String regex, String replacement, List<Range<Integer>> ignoredRanges) {
-		Matcher m = Pattern.compile(regex).matcher(text);
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
+			BiConsumer<Matcher, StringBuffer> biCons) {
+		Function<Matcher, Integer> func = m -> m.start();
+		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
+			Function<Matcher, Integer> func, BiConsumer<Matcher, StringBuffer> biCons) {
+		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	}
+	
+	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
+			List<Range<Integer>> ignoredRanges) {
+		Pattern patt = Pattern.compile(regex);
+		Function<Matcher, Integer> func = m -> m.start();
+		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
+		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
+	}
+	
+	public static String replaceWithIgnoredranges(String text, Pattern patt,
+			List<Range<Integer>> ignoredRanges, Function<Matcher, Integer> func,
+			BiConsumer<Matcher, StringBuffer> biCons) {
+		Matcher m = patt.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {
-			if (containedInRanges(ignoredRanges, m.start())) {
+			if (containedInRanges(ignoredRanges, func.apply(m))) {
 				continue;
 			}
 			
-			m.appendReplacement(sb, replacement);
+			biCons.accept(m, sb);
 		}
 		
-		m.appendTail(sb);
-		return sb.toString();
+		return m.appendTail(sb).toString();
 	}
-	
+
 	public static String replaceTemplates(String text, String templateName, Function<String, String> func) {
 		List<String> templates = ParseUtils.getTemplates(templateName, text);
 		
