@@ -39,7 +39,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Page page = Page.store(title, text);
-		Set<String> log = new HashSet<String>();
+		Set<String> log = new HashSet<>();
 		
 		for (Section s : page.getAllSections()) {
 			Field inflection = s.getField(FieldTypes.INFLECTION);

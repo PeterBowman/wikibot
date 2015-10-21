@@ -9,7 +9,7 @@ public class DefinitionHeader {
 	
 	DefinitionHeader(String header, List<String> definitions) {
 		this.header = header;
-		this.definitions = (definitions != null) ? definitions : new ArrayList<String>();
+		this.definitions = (definitions != null) ? definitions : new ArrayList<>();
 	}
 	
 	public String toString() {

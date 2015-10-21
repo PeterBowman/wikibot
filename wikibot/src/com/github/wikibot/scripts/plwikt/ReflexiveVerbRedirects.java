@@ -54,7 +54,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	
 	public static void getLists() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers("Język polski - czasowniki", PLWikt.MAIN_NAMESPACE, 400);
-		List<String> pron = new ArrayList<String>();
+		List<String> pron = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista total de verbos: %d%n", pages.length);
 		

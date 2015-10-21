@@ -34,7 +34,7 @@ public final class Misc {
 		private int base;
 		
 		public MyRandom(int digits) {			
-			set = new HashSet<Integer>();
+			set = new HashSet<>();
 			r = new Random();
 			base = (int) Math.pow(10, digits - 1);
 		}
@@ -181,7 +181,7 @@ public final class Misc {
 	}
 	
 	public static Map<String, String> readList(String data) {
-		Map<String, String> map = new LinkedHashMap<String, String>();
+		Map<String, String> map = new LinkedHashMap<>();
 		String[] drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
 		
 		for (String draft : drafts) {
@@ -224,7 +224,7 @@ public final class Misc {
 	}
 	
 	public static Map<String, String[]> readMultiList(String data, String separator) {
-		Map<String, String[]> map = new LinkedHashMap<String, String[]>();
+		Map<String, String[]> map = new LinkedHashMap<>();
 		String[] drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
 		
 		for (String draft : drafts) {

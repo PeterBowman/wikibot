@@ -75,7 +75,7 @@ public class JyddishIpa implements Selectorizable {
 			String[] IPA_list  = wb.whatTranscludesHere("Szablon:IPA", 0);
 			String[] IPA2_list = wb.whatTranscludesHere("Szablon:IPA2", 0);
 						
-			ArrayList<String> list = new ArrayList<String>(IPA_list.length + IPA2_list.length);
+			ArrayList<String> list = new ArrayList<>(IPA_list.length + IPA2_list.length);
 			list.addAll(Arrays.asList(IPA_list));
 			
 			outer_loop:

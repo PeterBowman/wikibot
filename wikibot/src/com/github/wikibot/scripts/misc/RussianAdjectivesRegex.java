@@ -85,7 +85,7 @@ public class RussianAdjectivesRegex {
 			return;
 		} else {
 			index = aux;
-			shortforms = new HashMap<String, String>();
+			shortforms = new HashMap<>();
 		}
 		
 		//System.out.println(index + " " + line.indexOf("krótka forma'' –", index));

@@ -51,7 +51,7 @@ public final class ShortCommas implements Selectorizable {
 		
 		try {
 			String[] lines = IOUtils.loadFromFile(f.getPath(), "", "UTF8");
-			Set<String> tempSet = new HashSet<String>(Arrays.asList(shorts));
+			Set<String> tempSet = new HashSet<>(Arrays.asList(shorts));
 			tempSet.addAll(Arrays.asList(lines));
 			shorts = tempSet.toArray(new String[tempSet.size()]);
 		} catch (FileNotFoundException e) {
@@ -97,8 +97,8 @@ public final class ShortCommas implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException, SAXException {
-		Set<String> wlh = new HashSet<String>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
-		List<PageContainer> pages = new ArrayList<PageContainer>(250);
+		Set<String> wlh = new HashSet<>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
+		List<PageContainer> pages = new ArrayList<>(250);
 		
 		wb.readXmlDump(page -> {
 			if (wlh.contains(page.getTitle()) && patt.matcher(page.getText()).matches()) {
@@ -119,15 +119,15 @@ public final class ShortCommas implements Selectorizable {
 			return;
 		}
 		
-		Map<String, Collection<String>> map = new HashMap<String, Collection<String>>(pages.size());
+		Map<String, Collection<String>> map = new HashMap<>(pages.size());
 		ListIterator<PageContainer> lt = pages.listIterator();
 		
 		while (lt.hasNext()) {
 			PageContainer page = lt.next();
 			String text = page.getText();
 			String[] lines = text.split("\n");
-			List<String> newLines = new ArrayList<String>();
-			List<String> targets = new ArrayList<String>();
+			List<String> newLines = new ArrayList<>();
+			List<String> targets = new ArrayList<>();
 			
 			for (int i = 0; i < lines.length; i++) {
 				String line = lines[i];
@@ -177,7 +177,7 @@ public final class ShortCommas implements Selectorizable {
 		List<PageContainer> pages = Misc.deserialize(info);
 		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n\n");
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		wb.setThrottle(3500);

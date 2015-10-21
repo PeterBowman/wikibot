@@ -28,7 +28,7 @@ public class ESWikt extends Wikibot {
 	
 	public static void main(String[] args) throws IOException, SAXException {
 		ESWikt wb = new ESWikt();
-		List<String> list = Collections.synchronizedList(new ArrayList<String>(500));
+		List<String> list = Collections.synchronizedList(new ArrayList<>(500));
 		
 		wb.readXmlDump(page -> {
 			Page p;

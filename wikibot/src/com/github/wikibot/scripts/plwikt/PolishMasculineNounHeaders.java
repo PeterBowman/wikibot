@@ -77,7 +77,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", PLWikt.MAIN_NAMESPACE));
 		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", PLWikt.MAIN_NAMESPACE));
 		
-		masc = new ArrayList<String>(masc);
+		masc = new ArrayList<>(masc);
 		masc.removeAll(mrz);
 		masc.removeAll(mos);
 		masc.removeAll(mzw);
@@ -144,8 +144,8 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		}
 		
 		wb.setThrottle(2500);
-		List<String> errors = new ArrayList<String>();
-		List<String> edited = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
+		List<String> edited = new ArrayList<>();
 		
 		String summaryTemplate = "półautomatyczne doprecyzowanie rodzaju męskiego, wer. [[User:Peter Bowman|Peter Bowman]]";
 		
@@ -190,7 +190,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		}
 		
 		String[] allpages = IOUtils.loadFromFile(f_allpages, "", "UTF8");
-		List<String> temp = new ArrayList<String>(Arrays.asList(allpages));
+		List<String> temp = new ArrayList<>(Arrays.asList(allpages));
 		temp.removeAll(edited);
 		temp.removeAll(omitted);
 		IOUtils.writeToFile(String.join("\n", temp), f_allpages);

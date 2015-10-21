@@ -36,9 +36,9 @@ public final class PurgeRecentChanges {
 	public static int rejected = 0;
 	
 	public static List<String> getDiffs(Wikibot wb, List<Long> revids) throws IOException {
-		List<String> list = new ArrayList<String>(revids.size());
+		List<String> list = new ArrayList<>(revids.size());
 		String[] revidsStrings = revids.stream().map(Objects::toString).toArray(String[]::new);
-		Map<String, String> request = new HashMap<String, String>();
+		Map<String, String> request = new HashMap<>();
 		request.put("prop", "revisions");
 		request.put("rvdiffto", "prev");
 		
@@ -53,7 +53,7 @@ public final class PurgeRecentChanges {
 		
 		String url = sb_url.toString();
 		int size = revids.size();
-		List<Long> notcached = new ArrayList<Long>(size);
+		List<Long> notcached = new ArrayList<>(size);
 		
 		for (int i = 0; i*DIFF_BATCH_SIZE < size; i++) {
 			StringBuilder sb = new StringBuilder(DIFF_BATCH_SIZE*12);
@@ -105,7 +105,7 @@ public final class PurgeRecentChanges {
 	}
 	
 	public static List<String> addCustom(List<String> logs, int count) {
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 		
 		list.add("Wikisłownik:Strona główna");
 		
@@ -166,9 +166,9 @@ public final class PurgeRecentChanges {
 			int editcount = 0;
 			int count = 0;
 			
-			List<String> allrevids = new ArrayList<String>(revcount);
-			List<String> al_logs = new ArrayList<String>(revcount);
-			List<Long> edited_diffs = new ArrayList<Long>(revcount);
+			List<String> allrevids = new ArrayList<>(revcount);
+			List<String> al_logs = new ArrayList<>(revcount);
+			List<Long> edited_diffs = new ArrayList<>(revcount);
 			
 			long start1 = System.currentTimeMillis();
 			
@@ -209,7 +209,7 @@ public final class PurgeRecentChanges {
 			int seconds1 = (int) (System.currentTimeMillis() - start1) / 1000;
 			int minutes1 = (int) Math.floor(seconds1/60);
 			
-			List<String> custom_pages = new ArrayList<String>();
+			List<String> custom_pages = new ArrayList<>();
 			
 			if (ALLOW_CUSTOMFETCH) {
 				custom_pages.addAll(addCustom(al_logs, count));

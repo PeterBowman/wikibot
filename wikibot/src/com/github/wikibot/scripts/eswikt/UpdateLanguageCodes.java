@@ -89,7 +89,7 @@ public final class UpdateLanguageCodes {
 			
 			System.out.printf("%d language codes extracted%n", list.size());
 		} else {
-			return new TreeMap<String, String>();
+			return new TreeMap<>();
 		}
 		
 		return list.stream()
@@ -118,20 +118,20 @@ public final class UpdateLanguageCodes {
 	}
 	
 	private static List<String> updateAddedLangs(Map<String, String> origMap, Map<String, String> newMap) {
-		newMap = new HashMap<String, String>(newMap);
+		newMap = new HashMap<>(newMap);
 		Set<String> keySet = newMap.keySet();
 		keySet.removeAll(origMap.keySet());
 		origMap.putAll(newMap);
-		List<String> codes = new ArrayList<String>(keySet);
+		List<String> codes = new ArrayList<>(keySet);
 		Collections.sort(codes);
 		return codes;
 	}
 	
 	private static List<String> updateRemovedLangs(Map<String, String> origMap, Map<String, String> newMap) {
-		Set<String> keySet = new HashSet<String>(origMap.keySet());
+		Set<String> keySet = new HashSet<>(origMap.keySet());
 		keySet.removeAll(newMap.keySet());
 		keySet.stream().forEach(origMap::remove);
-		List<String> codes = new ArrayList<String>(keySet);
+		List<String> codes = new ArrayList<>(keySet);
 		Collections.sort(codes);
 		return codes;
 	}
@@ -146,7 +146,7 @@ public final class UpdateLanguageCodes {
 		}
 		
 		origMap.putAll(modifiedMap);
-		List<String> codes = new ArrayList<String>(modifiedMap.keySet());
+		List<String> codes = new ArrayList<>(modifiedMap.keySet());
 		Collections.sort(codes);
 		return codes;
 	}
@@ -203,7 +203,7 @@ public final class UpdateLanguageCodes {
 			sb.append(" (");
 		}
 		
-		List<String> details = new ArrayList<String>();
+		List<String> details = new ArrayList<>();
 		
 		if (!addedCodes.isEmpty()) {
 			details.add(String.format("añadidos: %s", String.join(", ", addedCodes)));

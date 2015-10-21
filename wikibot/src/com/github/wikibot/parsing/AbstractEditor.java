@@ -20,7 +20,7 @@ public abstract class AbstractEditor {
 	protected AbstractEditor(String title, String text) {
 		this.summ = new Summary();
 		this.notifyModifications = false;
-		this.logger = new ArrayList<String>();
+		this.logger = new ArrayList<>();
 		this.title = title;
 		this.text = Utils.sanitizeWhitespaces(text);
 	}
@@ -127,7 +127,7 @@ public abstract class AbstractEditor {
 		private String primary;
 		
 		public Summary() {
-			data = new LinkedHashSet<String>();
+			data = new LinkedHashSet<>();
 			primary = "";
 		}
 		

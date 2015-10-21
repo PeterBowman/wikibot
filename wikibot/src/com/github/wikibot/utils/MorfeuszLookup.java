@@ -28,7 +28,7 @@ public class MorfeuszLookup {
 	private MorfeuszLookup() {}
 	
 	public static Map<String, List<String>> getResults(String target) {
-		Map<String, List<String>> results = new HashMap<String, List<String>>();
+		Map<String, List<String>> results = new HashMap<>();
 		
 		// http://stackoverflow.com/a/27087060
 		ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
@@ -44,7 +44,7 @@ public class MorfeuszLookup {
 		        		List<String> list = results.get(canonical);
 		        		list.add(info);
 		        	} else {
-		        		List<String> list = new ArrayList<String>();
+		        		List<String> list = new ArrayList<>();
 		        		list.add(info);
 		        		results.put(canonical, list);
 		        	}
@@ -114,7 +114,7 @@ public class MorfeuszLookup {
 	
 	public static void main(String[] args) {
 		//Map<String, List<String>> res = MorfeuszLookup.getResults("piksel");
-		List<String> res = new ArrayList<String>();
+		List<String> res = new ArrayList<>();
 		MorfeuszLookup.find(arr -> {
 			if (arr[1].equals("kontent")) {
 				res.add(Arrays.asList(arr).toString());

@@ -57,7 +57,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	public static void getLists() throws IOException {
 		String[] titles = IOUtils.loadFromFile(f_pages, "", "UTF8");
 		PageContainer[] pages = wb.getContentOfPages(titles, 450);
-		Map<String, String> worklist = new LinkedHashMap<String, String>();
+		Map<String, String> worklist = new LinkedHashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -115,7 +115,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
 		Map<String, String> worklist = Misc.readList(lines);
 		Set<String> titles = worklist.keySet();
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		for (String title : titles) {
 			PageContainer page = Misc.retrievePage(pages, title);

@@ -38,7 +38,7 @@ public final class Page extends AbstractPage<Section> {
 	static {
 		try {
 			INTERWIKI_PREFIXES = IOUtils.loadFromFile("./data/interwiki.txt", "", "UTF8");
-			List<String> excluded = new ArrayList<String>(Arrays.asList(INTERWIKI_PREFIXES));
+			List<String> excluded = new ArrayList<>(Arrays.asList(INTERWIKI_PREFIXES));
 			// TODO: review per [[Especial:Diff/2709872]]
 			//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
 			String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
@@ -64,7 +64,7 @@ public final class Page extends AbstractPage<Section> {
 	private Page(String title, String text) {
 		super(title);
 		
-		this.langSections = new ArrayList<LangSection>();
+		this.langSections = new ArrayList<>();
 		this.references = null;
 		this.trailingContent = "";
 
@@ -161,7 +161,7 @@ public final class Page extends AbstractPage<Section> {
 	}
 	
 	public List<LangSection> getAllLangSections() {
-		return Collections.unmodifiableList(new ArrayList<LangSection>(langSections));
+		return Collections.unmodifiableList(new ArrayList<>(langSections));
 	}
 
 	public Section getReferencesSection() {
@@ -191,7 +191,7 @@ public final class Page extends AbstractPage<Section> {
 			return;
 		}
 		
-		List<Section> nonLangSections = new ArrayList<Section>();
+		List<Section> nonLangSections = new ArrayList<>();
 		
 		for (Section section : sections) {
 			if (!(section instanceof LangSection) && section.getLangSectionParent() == null) {
@@ -200,7 +200,7 @@ public final class Page extends AbstractPage<Section> {
 		}
 		
 		Collections.sort(langSections);
-		sections = new ArrayList<Section>(AbstractSection.flattenSubSections(langSections));
+		sections = new ArrayList<>(AbstractSection.flattenSubSections(langSections));
 		
 		if (!nonLangSections.isEmpty()) {
 			appendSections(nonLangSections.toArray(new Section[nonLangSections.size()]));

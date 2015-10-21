@@ -46,7 +46,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		PrintWriter pw_a = null, pw_b = null;
 		int count_a = 0, count_b = 0;
 		
-		List<String> list = new ArrayList<String>(300);
+		List<String> list = new ArrayList<>(300);
 		
 		try {
 			pw_a = new PrintWriter(new File(location + "list_a.txt"));
@@ -73,7 +73,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		System.out.println("Tamaño de la lista para análisis: " + list.size());
 		int count = 0, testcount = 0;
 		
-		List<String> out = new ArrayList<String>();
+		List<String> out = new ArrayList<>();
 		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]), 400);
 		
 		for (PageContainer page : pages) {

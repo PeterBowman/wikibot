@@ -119,7 +119,7 @@ public class PLWikt extends Wikibot {
 	}
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, SAXException {
-		List<String> list = Collections.synchronizedList(new ArrayList<String>(250));
+		List<String> list = Collections.synchronizedList(new ArrayList<>(250));
 		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
 		
 		wb.readXmlDump(page -> {

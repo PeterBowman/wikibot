@@ -80,7 +80,7 @@ public final class Edit implements Selectorizable {
 	@Deprecated
 	public static void getList() throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
-		Map<String, String> pages = new LinkedHashMap<String, String>();
+		Map<String, String> pages = new LinkedHashMap<>();
 		String line = null;
 		String title = null;
 		StringBuilder sb = new StringBuilder(200);
@@ -239,7 +239,7 @@ public final class Edit implements Selectorizable {
 	
 	public static void getDiffs() throws IOException {
 		String[] lines = IOUtils.loadFromFile(difflist, "", "UTF8");
-		String[] titles = new HashSet<String>(Arrays.asList(lines)).toArray(new String[lines.length]);
+		String[] titles = new HashSet<>(Arrays.asList(lines)).toArray(new String[lines.length]);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -268,7 +268,7 @@ public final class Edit implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
 		wb.setThrottle(4000);
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		String summary = "tworzenie kategorii";
 		//String summary = "recuperando la versión anterior a la edición de Thegastiinthedark";

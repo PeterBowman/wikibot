@@ -56,7 +56,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 	
 	public static void extract_adj() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers(RU_CATEGORY, 0);
-		List<String> list = new ArrayList<String>(pages.length);
+		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
 			Section section = Page.wrap(page).getSection(RU_LANG);

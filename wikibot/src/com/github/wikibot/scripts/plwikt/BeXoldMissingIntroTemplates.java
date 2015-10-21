@@ -80,7 +80,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
 		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
-		Map<String, String> pages = new LinkedHashMap<String, String>();
+		Map<String, String> pages = new LinkedHashMap<>();
 		String line = null;
 		String title = null;
 		StringBuilder sb = new StringBuilder(500);
@@ -110,7 +110,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		Map<String, String> pages = new LinkedHashMap<String, String>();
+		Map<String, String> pages = new LinkedHashMap<>();
 		Map<String, Calendar> info = null;
 		File f1 = new File(locationser + "preview.ser");
 		File f2 = new File(locationser + "info.ser");
@@ -125,9 +125,9 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 			return;
 		
 		wb.setThrottle(5000);
-		ArrayList<String> errors = new ArrayList<String>();
-		ArrayList<String> conflicts = new ArrayList<String>();
-		ArrayList<String> edited = new ArrayList<String>();
+		ArrayList<String> errors = new ArrayList<>();
+		ArrayList<String> conflicts = new ArrayList<>();
+		ArrayList<String> edited = new ArrayList<>();
 		
 		//String summary = "uzupełnienie sekcji początkowych";
 		//String summary = "konwersja zapisu ręcznego na wywoł//anie szablonu {{ortografieBE}}";

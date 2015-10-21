@@ -113,15 +113,15 @@ public final class LinkManager implements Selectorizable {
 			return;
 		}
 		
-		List<String> output = new ArrayList<String>(data.size());
-		List<String> summarylist = new ArrayList<String>(data.size());
+		List<String> output = new ArrayList<>(data.size());
+		List<String> summarylist = new ArrayList<>(data.size());
 		
-		Map<Integer, LinkDiff> editcodes = new HashMap<Integer, LinkDiff>(data.size()*15);
-		Map<String, Calendar> timestamps = new HashMap<String, Calendar>(data.size()*15);
+		Map<Integer, LinkDiff> editcodes = new HashMap<>(data.size()*15);
+		Map<String, Calendar> timestamps = new HashMap<>(data.size()*15);
 		
-		//ArrayList<Revision> revs = new ArrayList<Revision>();
-		Map<String, String[]> backlinkscache = new HashMap<String, String[]>(10000);
-		Map<String, String> contentscache = new HashMap<String, String>(10000);
+		//ArrayList<Revision> revs = new ArrayList<>();
+		Map<String, String[]> backlinkscache = new HashMap<>(10000);
+		Map<String, String> contentscache = new HashMap<>(10000);
 		
 		MyRandom r = new Misc.MyRandom(5);
 				
@@ -163,7 +163,7 @@ public final class LinkManager implements Selectorizable {
 			}
 
 			summarylist.add(entry.target);
-			List<String[]> lists = new ArrayList<String[]>(entry.links.length);
+			List<String[]> lists = new ArrayList<>(entry.links.length);
 			
 			for (String link : entry.links) {
 				if (!backlinkscache.containsKey(link)) {
@@ -189,9 +189,9 @@ public final class LinkManager implements Selectorizable {
 			
 			System.out.printf("Enlaces encontrados para la combinación \"%s\": %d%n", entry.target, pages.length);
 			
-			//revs = wb.getTopRevision(new ArrayList<String>(Arrays.asList(pages)));
-			Map<String, String> contents = new HashMap<String, String>(5000);
-			List<String> fetchlist = new ArrayList<String>(1000);
+			//revs = wb.getTopRevision(new ArrayList<>(Arrays.asList(pages)));
+			Map<String, String> contents = new HashMap<>(5000);
+			List<String> fetchlist = new ArrayList<>(1000);
 			
 			for (String page : pages) {
 				String key = page + "-" + entry.lang;
@@ -220,8 +220,8 @@ public final class LinkManager implements Selectorizable {
 			int pagecount = 0;
 			int matchcount = 0;
 			
-			entry.diffmap = new LinkedHashMap<String, List<LinkDiff>>(pages.length);
-			List<String> backlinks = new ArrayList<String>(250);
+			entry.diffmap = new LinkedHashMap<>(pages.length);
+			List<String> backlinks = new ArrayList<>(250);
 			
 			for (Entry<String, String> contentmap : contents.entrySet()) {
 				String backlink = contentmap.getKey();
@@ -258,7 +258,7 @@ public final class LinkManager implements Selectorizable {
 			output.add(template.replace("$1", sb.toString()));
 			
 			if (!backlinks.isEmpty()) {
-				Map<String, Calendar> tmp = new HashMap<String, Calendar>(timestamps);
+				Map<String, Calendar> tmp = new HashMap<>(timestamps);
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
@@ -312,8 +312,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		String[] lines = worklist.split("\\n+");
-		List<Integer> codes = new ArrayList<Integer>(100);
-		Map<String, List<LinkDiff>> pagemap = new HashMap<String, List<LinkDiff>>();
+		List<Integer> codes = new ArrayList<>(100);
+		Map<String, List<LinkDiff>> pagemap = new HashMap<>();
 		
 		for (String line : lines) {
 			int a = line.indexOf("<span style=\"display:none;\">");
@@ -339,7 +339,7 @@ public final class LinkManager implements Selectorizable {
 			if (pagemap.containsKey(diff.page)) {
 				pagemap.get(diff.page).add(diff);
 			} else {
-				List<LinkDiff> temp = new ArrayList<LinkDiff>();
+				List<LinkDiff> temp = new ArrayList<>();
 				temp.add(diff);
 				pagemap.put(diff.page, temp);
 			}
@@ -348,7 +348,7 @@ public final class LinkManager implements Selectorizable {
 		wb.setThrottle(4000);
 		int edited = 0;
 		boolean assertion = true;
-		Map<String, String[]> errormap = new LinkedHashMap<String, String[]>();
+		Map<String, String[]> errormap = new LinkedHashMap<>();
 		String errnotfound = "nie udało się wyszukać ciągu znaków „<nowiki>$1</nowiki>”";
 		
 		outer:
@@ -363,10 +363,10 @@ public final class LinkManager implements Selectorizable {
 			
 			String page = entry.getKey();
 			List<LinkDiff> list = entry.getValue();
-			Set<String> difflist = new HashSet<String>();
+			Set<String> difflist = new HashSet<>();
 			
 			String pagetext = wb.getPageText(page);
-			Map<Integer, LineInfo> linemap = new TreeMap<Integer, LineInfo>(new Comparator<Integer>() {
+			Map<Integer, LineInfo> linemap = new TreeMap<>(new Comparator<Integer>() {
 				public int compare(Integer arg0, Integer arg1) {
 					return Integer.compare(arg1, arg0);
 				}
@@ -588,7 +588,7 @@ public final class LinkManager implements Selectorizable {
 						String username = rev.getUser();
 						User user = wb.getUser(username);
 						Map<String, Object> userinfo = user.getUserInfo();
-						List<String> groups = new ArrayList<String>(Arrays.asList((String[]) userinfo.get("groups")));
+						List<String> groups = new ArrayList<>(Arrays.asList((String[]) userinfo.get("groups")));
 						
 						if (groups.contains("editor")) {
 							try {
@@ -637,7 +637,7 @@ public final class LinkManager implements Selectorizable {
 			throw new UnsupportedOperationException("Imposible hallar la cabecera de la sección " + requestheader);
 		}
 		
-		List<LinkData> data = new ArrayList<LinkData>();
+		List<LinkData> data = new ArrayList<>();
 		String[] lines = mainpagetext.split("\\n");
 		LinkData aux = null;
 		int opt = 0;
@@ -659,7 +659,7 @@ public final class LinkManager implements Selectorizable {
 							aux.templatelinker = line;
 						} else {
 							String[] forms = line.split("\\s*?,\\s*");
-							Set<String> set = new HashSet<String>(Arrays.asList(forms));
+							Set<String> set = new HashSet<>(Arrays.asList(forms));
 							aux.forms = set.toArray(new String[set.size()]);
 						}
 						break;
@@ -702,7 +702,7 @@ public final class LinkManager implements Selectorizable {
 		
 		sb.append(": '''wyszukiwane ciągi znaków:''' ");
 		
-		List<String> tempforms = new ArrayList<String>();
+		List<String> tempforms = new ArrayList<>();
 		
 		if (entry.linkedFormsLower != null && !entry.linkedFormsLower.isEmpty()) {
 			tempforms.addAll(entry.linkedFormsLower);
@@ -769,7 +769,7 @@ public final class LinkManager implements Selectorizable {
 	}
 	
 	private static String linker(String[] words, String[] source, String sep) {
-		List<String> links = new ArrayList<String>(words.length);
+		List<String> links = new ArrayList<>(words.length);
 		
 		for (int i = 0; i < words.length; i++) {
 			if (words[i].equals(source[i])) {
@@ -835,7 +835,7 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		Matcher m = Pattern.compile("^\\|.*?=(.*?)$", Pattern.MULTILINE).matcher(declension);
-		Set<String> forms = new HashSet<String>(14);
+		Set<String> forms = new HashSet<>(14);
 		
 		while (m.find()) {
 			String group = m.group(1).trim();
@@ -849,14 +849,14 @@ public final class LinkManager implements Selectorizable {
 	}
 	
 	private static List<LinkDiff> getMatches(LinkData entry, String text) {
-		List<LinkDiff> list = new ArrayList<LinkDiff>();
+		List<LinkDiff> list = new ArrayList<>();
 		text += "\n";
 		
 		int a = 0, b = 0;
 		
 		while ((b = text.indexOf("\n", a)) != -1) {
 			String line = text.substring(a, b);
-			List<LinkDiff> linediffs = new ArrayList<LinkDiff>();
+			List<LinkDiff> linediffs = new ArrayList<>();
 						
 			for (String form : entry.linkedFormsUpper) {
 				String targetlink = entry.upperLinksMap.get(form);
@@ -865,7 +865,7 @@ public final class LinkManager implements Selectorizable {
 			
 			InspectLinkList(linediffs);
 			list.addAll(linediffs);
-			linediffs = new ArrayList<LinkDiff>();
+			linediffs = new ArrayList<>();
 			
 			if (entry.isUpperCase) {
 				a = b + 1;
@@ -887,7 +887,7 @@ public final class LinkManager implements Selectorizable {
 	}
 	
 	private static List<LinkDiff> searchLinkedForms(String line, int linestart, String oldlink, String newlink) {
-		List<LinkDiff> diffs = new ArrayList<LinkDiff>();
+		List<LinkDiff> diffs = new ArrayList<>();
 		int index = 0;
 		
 		while ((index = line.indexOf(oldlink, index)) != -1) {
@@ -967,17 +967,17 @@ class LinkData implements Serializable {
 		isUpperCase = !target.substring(0, 1).toLowerCase().equals(target.substring(0, 1));
 		
 		if (!isUpperCase) {
-			linkedFormsLower = new ArrayList<String>();
-			linkedFormsUpper = new ArrayList<String>();
+			linkedFormsLower = new ArrayList<>();
+			linkedFormsUpper = new ArrayList<>();
 			
-			lowerLinksMap = new HashMap<String, String>();
-			upperLinksMap = new HashMap<String, String>();
+			lowerLinksMap = new HashMap<>();
+			upperLinksMap = new HashMap<>();
 		} else {
 			linkedFormsLower = null;
-			linkedFormsUpper = new ArrayList<String>();
+			linkedFormsUpper = new ArrayList<>();
 			
 			lowerLinksMap = null;
-			upperLinksMap = new HashMap<String, String>();
+			upperLinksMap = new HashMap<>();
 		}
 	}
 }
@@ -990,7 +990,7 @@ class LineInfo implements Serializable {
 	LineInfo(String line) {
 		this.line = line;
 		
-		diffmap = new TreeMap<Integer, LinkDiff>(new Comparator<Integer>() {
+		diffmap = new TreeMap<>(new Comparator<Integer>() {
 			public int compare(Integer o1, Integer o2) {
 				if (o1 > o2) {
 					return -1;

@@ -26,7 +26,7 @@ import com.github.wikibot.utils.Users;
 
 public final class PolishVerbsInsertInflection implements Selectorizable {
 	private static PLWikt wb;
-	private static Map<String, Map<String, String>> models = new HashMap<String, Map<String, String>>();
+	private static Map<String, Map<String, String>> models = new HashMap<>();
 	private static final String location = "./data/scripts.plwikt/PolishVerbsInsertInflection/";
 	private static final String f_serialized = location + "/targets.ser";
 	private static final String f_worklist = location + "/worklist.txt";
@@ -73,8 +73,8 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		targets = PLWikt.relativeComplement(targets, inflections);
 		
 		PageContainer[] pages = wb.getContentOfPages(targets, 400);
-		List<PageContainer> serialized = new ArrayList<PageContainer>();
-		Map<String, Collection<String>> map = new HashMap<String, Collection<String>>(pages.length);
+		List<PageContainer> serialized = new ArrayList<>();
+		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -113,8 +113,8 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	
 	public static void analyzeConjugationTemplate() throws IOException {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", PLWikt.MAIN_NAMESPACE);
-		List<PageContainer> serialized = new ArrayList<PageContainer>();
-		Map<String, Collection<String>> map = new HashMap<String, Collection<String>>(pages.length);
+		List<PageContainer> serialized = new ArrayList<>();
+		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -169,7 +169,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	
 	public static void getModelVc() throws IOException {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
 		
@@ -207,7 +207,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		List<PageContainer> pages = Misc.deserialize(f_serialized);
 		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
 		Map<String, String[]> map = Misc.readMultiList(lines);
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		wb.setThrottle(2000);
@@ -305,7 +305,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	
 	private static Map<String, String> constructForms(String verb, Map<String, String> model) {
 		String lemma = verb.replace(" się", "").substring(0, verb.lastIndexOf(model.get("robić")));
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		
 		map.put("model", model.get("model"));
 		map.put("robić", String.format("%s%s", lemma, model.get("robić")));
@@ -332,7 +332,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 	
 	static {
-		Map<String, String> I = new HashMap<String, String>();
+		Map<String, String> I = new HashMap<>();
 		
 		I.put("model", "I");
 		I.put("robić", "ać");
@@ -351,7 +351,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		I.put("robieni", "ani");
 		I.put("robienie", "anie");
 		
-		Map<String, String> III = new HashMap<String, String>();
+		Map<String, String> III = new HashMap<>();
 		
 		III.put("model", "III");
 		III.put("robić", "ieć");
@@ -370,7 +370,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		III.put("robieni", "iali");
 		III.put("robienie", "ienie");
 		
-		Map<String, String> IV = new HashMap<String, String>();
+		Map<String, String> IV = new HashMap<>();
 		
 		IV.put("model", "IV");
 		IV.put("robić", "ować");
@@ -389,7 +389,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		IV.put("robieni", "owani");
 		IV.put("robienie", "owanie");
 		
-		Map<String, String> Va = new HashMap<String, String>();
+		Map<String, String> Va = new HashMap<>();
 		
 		Va.put("model", "Va");
 		Va.put("robić", "nąć");
@@ -408,7 +408,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		Va.put("robieni", "nięci");
 		Va.put("robienie", "nięcie");
 		
-		Map<String, String> VIaL = new HashMap<String, String>();
+		Map<String, String> VIaL = new HashMap<>();
 		
 		VIaL.put("model", "VIa");
 		VIaL.put("robić", "lić");
@@ -427,7 +427,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaL.put("robieni", "leni");
 		VIaL.put("robienie", "lenie");
 		
-		Map<String, String> VIaSC = new HashMap<String, String>();
+		Map<String, String> VIaSC = new HashMap<>();
 		
 		VIaSC.put("model", "VIa");
 		VIaSC.put("robić", "ścić");
@@ -446,7 +446,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaSC.put("robieni", "szczeni");
 		VIaSC.put("robienie", "szczenie");
 		
-		Map<String, String> VIaC = new HashMap<String, String>();
+		Map<String, String> VIaC = new HashMap<>();
 		
 		VIaC.put("model", "VIa");
 		VIaC.put("robić", "cić");
@@ -465,7 +465,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaC.put("robieni", "ceni");
 		VIaC.put("robienie", "cenie");
 		
-		Map<String, String> VIaDZ = new HashMap<String, String>();
+		Map<String, String> VIaDZ = new HashMap<>();
 		
 		VIaDZ.put("model", "VIa");
 		VIaDZ.put("robić", "dzić");
@@ -484,7 +484,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaDZ.put("robieni", "dzeni");
 		VIaDZ.put("robienie", "dzenie");
 		
-		Map<String, String> VIaZ = new HashMap<String, String>();
+		Map<String, String> VIaZ = new HashMap<>();
 		
 		VIaZ.put("model", "VIa");
 		VIaZ.put("robić", "zić");
@@ -503,7 +503,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaZ.put("robieni", "żeni");
 		VIaZ.put("robienie", "żenie");
 		
-		Map<String, String> VIaS = new HashMap<String, String>();
+		Map<String, String> VIaS = new HashMap<>();
 		
 		VIaS.put("model", "VIa");
 		VIaS.put("robić", "sić");
@@ -522,7 +522,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaS.put("robieni", "szeni");
 		VIaS.put("robienie", "szenie");
 		
-		Map<String, String> VIaN = new HashMap<String, String>();
+		Map<String, String> VIaN = new HashMap<>();
 		
 		VIaN.put("model", "VIa");
 		VIaN.put("robić", "nić");
@@ -541,7 +541,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaN.put("robieni", "nieni");
 		VIaN.put("robienie", "nienie");
 		
-		Map<String, String> VIaO = new HashMap<String, String>();
+		Map<String, String> VIaO = new HashMap<>();
 		
 		VIaO.put("model", "VIa");
 		VIaO.put("robić", "oić");
@@ -560,7 +560,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIaO.put("robieni", "ojeni");
 		VIaO.put("robienie", "ojenie");
 		
-		Map<String, String> VIa = new HashMap<String, String>();
+		Map<String, String> VIa = new HashMap<>();
 		
 		VIa.put("model", "VIa");
 		VIa.put("robić", "ić");
@@ -580,7 +580,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIa.put("robienie", "ienie");
 		
 		
-		Map<String, String> VIb = new HashMap<String, String>();
+		Map<String, String> VIb = new HashMap<>();
 		
 		VIb.put("model", "VIb");
 		VIb.put("robić", "yć");
@@ -599,7 +599,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIb.put("robieni", "eni");
 		VIb.put("robienie", "enie");
 		
-		Map<String, String> VIIIa = new HashMap<String, String>();
+		Map<String, String> VIIIa = new HashMap<>();
 		
 		VIIIa.put("model", "VIIIa");
 		VIIIa.put("robić", "ywać");
@@ -618,7 +618,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		VIIIa.put("robieni", "ywani");
 		VIIIa.put("robienie", "ywanie");
 		
-		Map<String, String> VIIIb = new HashMap<String, String>();
+		Map<String, String> VIIIb = new HashMap<>();
 		
 		VIIIb.put("model", "VIIIb");
 		VIIIb.put("robić", "iwać");

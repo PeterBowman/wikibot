@@ -95,8 +95,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		
 		int count = 0;
 		
-		List<String> masc_errors = new ArrayList<String>(50);
-		List<String> fem_errors = new ArrayList<String>(50);
+		List<String> masc_errors = new ArrayList<>(50);
+		List<String> fem_errors = new ArrayList<>(50);
 		
 		PrintWriter pw = null, pw_errs = null;
 		
@@ -166,7 +166,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void mascWorklist() throws IOException {
-		Map<String, List<String>> list = new LinkedHashMap<String, List<String>>(100);
+		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
 		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
 		String line, header = null;
@@ -187,7 +187,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			
 			if (isHeader) {
 				header = line;
-				list.put(header, new ArrayList<String>(6));
+				list.put(header, new ArrayList<>(6));
 				isHeader = false;
 			} else if (!line.startsWith("*")) {
 				aux = list.get(header);
@@ -223,7 +223,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void femWorklist() throws IOException {
-		Map<String, List<String>> list = new LinkedHashMap<String, List<String>>(100);
+		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
 		BufferedReader br = new BufferedReader(new FileReader(location + "fem_worklist.txt"));
 		String line, header = null;
@@ -242,7 +242,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			
 			if (isHeader) {
 				header = line;
-				list.put(header, new ArrayList<String>(6));
+				list.put(header, new ArrayList<>(6));
 				isHeader = false;
 			} else if (!line.startsWith("*")) {
 				aux = list.get(header);
@@ -266,8 +266,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		PrintWriter pw_masc = new PrintWriter(new File(location + "masc_output.txt"));
 		PrintWriter pw_fem = new PrintWriter(new File(location + "fem_output.txt"));
 		
-		Map<String, String> masc_ready = new LinkedHashMap<String, String>(masc_list.size());
-		Map<String, String> fem_ready = new LinkedHashMap<String, String>(fem_list.size());
+		Map<String, String> masc_ready = new LinkedHashMap<>(masc_list.size());
+		Map<String, String> fem_ready = new LinkedHashMap<>(fem_list.size());
 		
 		Set<String> masc_set = masc_list.keySet();
 		Set<String> fem_set = fem_list.keySet();
@@ -308,7 +308,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			
 			String intro = translationsText.substring(0, translationsText.indexOf("\n* ") + 1);
 			String body = translationsText.substring(translationsText.indexOf("\n* ") + 1);
-			List<String> myList = new ArrayList<String>(Arrays.asList(body.split("\n")));
+			List<String> myList = new ArrayList<>(Arrays.asList(body.split("\n")));
 			
 			for (String transl : transls) {
 				myList.add("* " + transl);
@@ -419,7 +419,7 @@ class Translations {
 	
 	public Translations(String entry, Section section) {
 		this.entry = entry;
-		this.translations = new HashMap<String, String>();
+		this.translations = new HashMap<>();
 		
 		try {
 			analyzeDefs(section);
@@ -432,7 +432,7 @@ class Translations {
 	public Translations(String entry, String alt_gender, Section section) {
 		this.entry = entry;
 		this.alt_gender = alt_gender;
-		this.translations = new HashMap<String, String>();
+		this.translations = new HashMap<>();
 		
 		try {
 			analyzeDefs(section);

@@ -76,9 +76,9 @@ public class PolishGerundsList implements Selectorizable {
 	
 	public static void foreignGerunds() throws IOException {
 		String[] all_gerunds = wb.whatTranscludesHere("Szablon:odczasownikowy od", 0);
-		List<String> list_gerunds = new ArrayList<String>(Arrays.asList(all_gerunds));
+		List<String> list_gerunds = new ArrayList<>(Arrays.asList(all_gerunds));
 		
-		List<String> polish_gerunds = new ArrayList<String>(Arrays.asList(PLWikt.intersection(
+		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(PLWikt.intersection(
 			wb.getCategoryMembers("polski (indeks)", 0),
 			all_gerunds
 		)));
@@ -99,12 +99,12 @@ public class PolishGerundsList implements Selectorizable {
 		
 		System.out.println("Sustantivos neutros: " + titles.length + ", gerundios: " + all_gerunds.length);
 		
-		List<String> list = new ArrayList<String>(Arrays.asList(titles));
-		list.removeAll(new ArrayList<String>(Arrays.asList(all_gerunds)));
+		List<String> list = new ArrayList<>(Arrays.asList(titles));
+		list.removeAll(new ArrayList<>(Arrays.asList(all_gerunds)));
 		
 		System.out.println("Tamaño tras excluir gerundios con plantilla: " + list.size());
 		
-		List<String> nongerund_list = new ArrayList<String>(list.size());
+		List<String> nongerund_list = new ArrayList<>(list.size());
 		
 		for (String page : list) {
 			if (!page.endsWith("ie")) {
@@ -118,7 +118,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		Map<String, String> contentmap = wb.getContentOfPageList(list, "język polski", 400);
 		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]), 400);
-		List<String[]> work_list = new ArrayList<String[]>(pages.length);
+		List<String[]> work_list = new ArrayList<>(pages.length);
 		MyArrayList txt = new MyArrayList(contentmap.size());
 		String patt = ".*?\\(\\d\\.\\d\\)\\s\\{\\{rzecz.*";
 		
@@ -156,8 +156,8 @@ public class PolishGerundsList implements Selectorizable {
 	}*/
 	
 	public static void getMorfeuszList() throws FileNotFoundException, IOException {
-		Set<String> gers = new HashSet<String>(300000);
-		Set<String> substs = new HashSet<String>(150000);
+		Set<String> gers = new HashSet<>(300000);
+		Set<String> substs = new HashSet<>(150000);
 		
 		MorfeuszLookup.find(row -> {
 			String form = (String) row[0];
@@ -222,15 +222,15 @@ public class PolishGerundsList implements Selectorizable {
 		
 		Set<String> gers = Misc.deserialize(locationser + "gers.ser");
 		Set<String> substs = Misc.deserialize(locationser + "substs.ser");
-		Set<String> gerunds = new HashSet<String>(list.keySet());
+		Set<String> gerunds = new HashSet<>(list.keySet());
 		Collections.addAll(gerunds, intersection);
 		
 		System.out.printf("Gerundios en total: %d\n", gerunds.size());
 		
-		List<String> listOnlyDefinitions = new ArrayList<String>(200);
-		List<String> listOnlyTemplates = new ArrayList<String>(500);
-		List<String> listErrors = new ArrayList<String>(200);
-		List<String> listNoDictEntry = new ArrayList<String>(500);
+		List<String> listOnlyDefinitions = new ArrayList<>(200);
+		List<String> listOnlyTemplates = new ArrayList<>(500);
+		List<String> listErrors = new ArrayList<>(200);
+		List<String> listNoDictEntry = new ArrayList<>(500);
 		
 		PageContainer[] pages = wb.getContentOfPages(gerunds.toArray(new String[gerunds.size()]), 400);
 		
@@ -290,7 +290,7 @@ public class PolishGerundsList implements Selectorizable {
 		Misc.serialize(listOnlyTemplates, locationser + "sin definición.ser");
 		Misc.serialize(listNoDictEntry, locationser + "sin entrada.ser");
 		
-		List<String> listOnlyDefinitions2 = new ArrayList<String>(listOnlyDefinitions.stream()
+		List<String> listOnlyDefinitions2 = new ArrayList<>(listOnlyDefinitions.stream()
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
 			.collect(Collectors.toList()));
 		
@@ -321,7 +321,7 @@ public class PolishGerundsList implements Selectorizable {
 		// Only definition
 		
 		com.github.wikibot.parsing.Section onlyDefinitionSection = com.github.wikibot.parsing.Section.create("bez szablonu", 3);
-		List<String> tempList = new ArrayList<String>(listOnlyDefinitions.size());
+		List<String> tempList = new ArrayList<>(listOnlyDefinitions.size());
 		
 		for (String entry : listOnlyDefinitions) {
 			String formatted = String.format("# [[%s]] ([[%s]])", entry, list.getOrDefault(entry, ""));
@@ -334,7 +334,7 @@ public class PolishGerundsList implements Selectorizable {
 		// Only template
 		
 		com.github.wikibot.parsing.Section onlyTemplateSection = com.github.wikibot.parsing.Section.create("brakujące definicje", 3);
-		tempList = new ArrayList<String>(listOnlyTemplates.size());
+		tempList = new ArrayList<>(listOnlyTemplates.size());
 		
 		for (String entry : listOnlyTemplates) {
 			String formatted = String.format("# [[%s]] ([http://sjp.pwn.pl/szukaj/%s SJP])", entry, entry);
@@ -360,7 +360,7 @@ public class PolishGerundsList implements Selectorizable {
 		String[] in = IOUtils.loadFromFile(location_old + "errores.txt", "", "UTF8");
 		String[] in2 = IOUtils.loadFromFile(location + "errores.txt", "", "UTF8");
 		
-		tempList = new ArrayList<String>(Arrays.asList(ArrayUtils.addAll(in, in2)).stream()
+		tempList = new ArrayList<>(Arrays.asList(ArrayUtils.addAll(in, in2)).stream()
 			.map(line -> String.format("# [[%s]] – %s", (Object[]) line.split(" - ")))
 			.collect(Collectors.toList()));
 		
@@ -372,7 +372,7 @@ public class PolishGerundsList implements Selectorizable {
 		com.github.wikibot.parsing.Section reflexiveVerbs = com.github.wikibot.parsing.Section.create("czasowniki zwrotne", 3);
 		in = IOUtils.loadFromFile(location_old + "reflexivos.txt", "", "UTF8");
 		
-		tempList = new ArrayList<String>(Arrays.asList(in).stream()
+		tempList = new ArrayList<>(Arrays.asList(in).stream()
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
 			.collect(Collectors.toList()));
 		

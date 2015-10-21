@@ -49,8 +49,8 @@ public final class PolishVerbsConjugation implements Selectorizable {
 	
 	public static void getLists() throws IOException {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
-		List<PageContainer> targets = new ArrayList<PageContainer>();
-		Map<String, String> map = new HashMap<String, String>(1000);
+		List<PageContainer> targets = new ArrayList<>();
+		Map<String, String> map = new HashMap<>(1000);
 		
 		outer:
 		for (PageContainer page : pages) {
@@ -85,7 +85,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		List<PageContainer> pages = Misc.deserialize(f_serialized);
 		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
 		Map<String, String> map = Misc.readList(lines);
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		wb.setThrottle(2000);

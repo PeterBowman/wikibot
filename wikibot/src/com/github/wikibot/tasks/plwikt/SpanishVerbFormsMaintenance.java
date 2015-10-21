@@ -80,7 +80,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		IOUtils.writeToFile(String.join("\n", verbs), location + "verbos.txt");
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
 	    
-	    List<String> verb_forms = new ArrayList<String>(verb_templates.size() * 51);
+	    List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
 	    StringBuilder urlB = new StringBuilder();
 	    Pattern p = Pattern.compile("<td( colspan=\"2\")?>[\\*]*(\\[\\[\\w+#es\\|\\w+\\]\\]&nbsp;)?\\[\\[([a-záéíóúüñ]+)");
 	    	
@@ -134,12 +134,12 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			dictionary = Misc.deserialize(f_hm);
 			System.out.println("Tamaño de la lista extraída: " + dictionary.size());
 		} else {
-			dictionary = new HashMap<String, Boolean>(form_count);
+			dictionary = new HashMap<>(form_count);
 		}
 	 	
 		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]), 450);
-		Map<String, Integer> cached = new HashMap<String, Integer>(dictionary.size());
-		Map<RAE, Integer> live = new HashMap<RAE, Integer>();
+		Map<String, Integer> cached = new HashMap<>(dictionary.size());
+		Map<RAE, Integer> live = new HashMap<>();
 		
 		for (String form : verb_forms) {
 			String content = Stream.of(pages2)
@@ -196,10 +196,10 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		final int BATCH = 25;
 		int c = 0;
 		int hashsize = 0;
-		Set<String> verb_summary = new HashSet<String>(500);
+		Set<String> verb_summary = new HashSet<>(500);
 		
 		ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 5);
-		Map<Future<RAE>, Integer> rae_tasks = new HashMap<Future<RAE>, Integer>(BATCH);
+		Map<Future<RAE>, Integer> rae_tasks = new HashMap<>(BATCH);
 		
 		for (Entry<RAE, Integer> entry : live.entrySet()) {
 			rae_tasks.put(executor.submit(entry.getKey()), entry.getValue());
@@ -248,7 +248,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 				
 				if (c != live.size() - 1) {
 					executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 10);
-					rae_tasks = new HashMap<Future<RAE>, Integer>(BATCH);
+					rae_tasks = new HashMap<>(BATCH);
 				}
 			}
 		}
@@ -298,7 +298,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		}*/
 		
 		int summ_count = verb_summary.size();
-		List<String> output_list = new ArrayList<String>(verb_summary);
+		List<String> output_list = new ArrayList<>(verb_summary);
 		Misc.sortList(output_list, "es");
 		String output = String.join("\n", output_list);
 		

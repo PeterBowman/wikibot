@@ -72,10 +72,10 @@ public final class MissingPolishGerunds implements Selectorizable {
 	public static void checkGerunds() throws IOException, LoginException {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
 		
-		List<String> errors = new ArrayList<String>(100);
-		List<String> refl = new ArrayList<String>(100);
-		List<String> gerunds = new ArrayList<String>(2000);
-		Map<String, String> list = new HashMap<String, String>(2000);
+		List<String> errors = new ArrayList<>(100);
+		List<String> refl = new ArrayList<>(100);
+		List<String> gerunds = new ArrayList<>(2000);
+		Map<String, String> list = new HashMap<>(2000);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -134,8 +134,8 @@ public final class MissingPolishGerunds implements Selectorizable {
 	
 	@SuppressWarnings("rawtypes")
 	public static void getMissing() throws IOException, LoginException, ClassNotFoundException {
-		List<String> aff = new ArrayList<String>(500);
-		List<String> neg = new ArrayList<String>(500);
+		List<String> aff = new ArrayList<>(500);
+		List<String> neg = new ArrayList<>(500);
 		
 		Map<String, String> list = Misc.deserialize(f_list_ser);
 		

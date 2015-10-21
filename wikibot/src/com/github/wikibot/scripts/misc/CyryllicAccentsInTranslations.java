@@ -61,7 +61,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	
 	public static void getList() throws IOException, ClassNotFoundException {
 		PageContainer[] pages = Misc.deserialize(contentlist);
-		Map<String, String> querymap = new HashMap<String, String>(500);
+		Map<String, String> querymap = new HashMap<>(500);
 		
 		//final String pattern = "\\[\\[[^\\|].*?́[^\\|].*?\\]\\]";
 		//final String pattern2 = ".*?\\[\\[[ \u0400-\uFFFF]+\\|[ \u0400-\uFFFF]*?\u0301[ \u0400-\uFFFF]*?\\]\\].*";
@@ -89,7 +89,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		//Map<String, String> listA = Misc.deserialize(locationser + "targetlist - 372.ser");
 		//Map<String, String> listB = Misc.deserialize(locationser + "targetlist - 321.ser");
 		Map<String, String> listX = Misc.deserialize(locationser + "targetlist.ser");
-		Map<String, String> listC = new HashMap<String, String>(100);
+		Map<String, String> listC = new HashMap<>(100);
 		
 		StringBuilder sb = new StringBuilder(5000);
 		
@@ -102,7 +102,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 			
 			String translations = entry.getValue();
 			String[] lines = translations.split("\n");
-			List<String> list = new ArrayList<String>();
+			List<String> list = new ArrayList<>();
 			
 			
 			for (String line : lines) {

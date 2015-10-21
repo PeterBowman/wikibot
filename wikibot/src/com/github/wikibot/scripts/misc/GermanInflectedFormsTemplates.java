@@ -70,7 +70,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		int count = 0;
 		
 		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", PLWikt.MAIN_NAMESPACE);
-		List<String> list = new ArrayList<String>(250);
+		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -99,7 +99,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		//BufferedReader br = new BufferedReader(new FileReader(location + "work_list_headers.txt"));
 		String line = null;
 		
-		ArrayList<String[]> list = new ArrayList<String[]>(250);
+		ArrayList<String[]> list = new ArrayList<>(250);
 		String title = null;
 		boolean jumptonext = false;
 		int i = -1;
@@ -149,7 +149,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	
 	public static void findWrongHeaders() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", PLWikt.MAIN_NAMESPACE);
-		List<String> list = new ArrayList<String>(250);
+		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -185,7 +185,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		System.out.println("Tamaño de la lista: " + list.size());
 		
 		int conflicts = 0;
-		List<String> problems = new ArrayList<String>();
+		List<String> problems = new ArrayList<>();
 		
 		for (String[] decl_entry : list) {
 			String page = decl_entry[0];

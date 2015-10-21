@@ -30,7 +30,7 @@ public final class OlafbotTilde implements Selectorizable {
 	private static final List<String> langs;
 	
 	static {
-		langs = new ArrayList<String>();
+		langs = new ArrayList<>();
 		langs.add("islandzki");
 		//langs.add("niemiecki");
 	}
@@ -75,7 +75,7 @@ public final class OlafbotTilde implements Selectorizable {
 	
 	public static void getList() throws IOException {
 		String cnt = wb.getPageText("Wikipedysta:Olafbot/SK/tyldy");
-		LinkedHashMap<String, String> pages = new LinkedHashMap<String, String>(1200);
+		LinkedHashMap<String, String> pages = new LinkedHashMap<>(1200);
 		PrintWriter pw = new PrintWriter(new File(location + "all.txt"));
 		
 		for (int i = cnt.indexOf("\n# "); i != -1; i = cnt.indexOf("\n# ", ++i)) {
@@ -112,8 +112,8 @@ public final class OlafbotTilde implements Selectorizable {
 	}
 	
 	public static void getEntries() throws UnsupportedEncodingException, IOException, ClassNotFoundException {
-		LinkedHashMap<String, String> pages = new LinkedHashMap<String, String>();
-		LinkedHashMap<String, String[]> worklist = new LinkedHashMap<String, String[]>();
+		LinkedHashMap<String, String> pages = new LinkedHashMap<>();
+		LinkedHashMap<String, String[]> worklist = new LinkedHashMap<>();
 		
 		pages = Misc.deserialize(locationser + "all.ser");
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
@@ -144,7 +144,7 @@ public final class OlafbotTilde implements Selectorizable {
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
 		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
-		LinkedHashMap<String, String[]> pages = new LinkedHashMap<String, String[]>();
+		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
 		String line = null;
 		
 		pages = Misc.deserialize(locationser + "preview.ser");
@@ -202,7 +202,7 @@ public final class OlafbotTilde implements Selectorizable {
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		LinkedHashMap<String, String[]> pages = new LinkedHashMap<String, String[]>();
+		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
 		File f1 = new File(locationser + "preview.ser");
 		File f2 = new File(locationser + "stats.ser");
 		File f3 = new File(locationser + "all.ser");
@@ -216,9 +216,9 @@ public final class OlafbotTilde implements Selectorizable {
 			return;
 		
 		wb.setThrottle(3000);
-		ArrayList<String> errors = new ArrayList<String>();
-		ArrayList<String> excluded = new ArrayList<String>();
-		ArrayList<String> edited = new ArrayList<String>();
+		ArrayList<String> errors = new ArrayList<>();
+		ArrayList<String> excluded = new ArrayList<>();
+		ArrayList<String> edited = new ArrayList<>();
 		
 		String summary = "półautomatyczna zamiana tyldy; wer.: [[User:Peter Bowman|Peter Bowman]]";
 		

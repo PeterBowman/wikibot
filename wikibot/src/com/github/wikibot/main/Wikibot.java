@@ -161,7 +161,7 @@ public class Wikibot extends WMFWiki {
 	throws IOException {
 		int listSize = titles.length;
 		String[] batches = constructTitleString(titles, limit);
-		List<T> list = new ArrayList<T>(listSize);
+		List<T> list = new ArrayList<>(listSize);
 		
 		for (int i = 0; i < batches.length; i++) {
 			String line = null;
@@ -203,7 +203,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private PageContainer[] getGeneratedContent(String url, int limit) throws IOException {
-		List<PageContainer> list = new ArrayList<PageContainer>(slowmax);
+		List<PageContainer> list = new ArrayList<>(slowmax);
 		
 		String cont = "continue=";
 		String line;
@@ -236,7 +236,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private Collection<PageContainer> parseContentLine(String line) {
-		Collection<PageContainer> list = new ArrayList<PageContainer>(max);
+		Collection<PageContainer> list = new ArrayList<>(max);
 		int start = line.indexOf("<page ");
 		
 		do {
@@ -338,7 +338,7 @@ public class Wikibot extends WMFWiki {
         url.append("&rvtoken=rollback&titles=");
 		
 		Function<String, Collection<Revision>> func = (line) -> {
-			List<Revision> list = new ArrayList<Revision>(slowmax);
+			List<Revision> list = new ArrayList<>(slowmax);
 			
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
 				String title = parseAttribute(line, "title", page);
@@ -472,7 +472,7 @@ public class Wikibot extends WMFWiki {
         String url = sb_url.toString();
         String cont = "continue=";
 
-        List<Revision> revisions = new ArrayList<Revision>(500);
+        List<Revision> revisions = new ArrayList<>(500);
         
         do {
             String line = fetch(url + "&" + cont, "recentChanges");
@@ -691,7 +691,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
-    	Map<String, List<String[]>> map = new HashMap<String, List<String[]>>(max);
+    	Map<String, List<String[]>> map = new HashMap<>(max);
     	String url = query + "list=iwbacklinks&iwbllimit=max&iwblprop=iwprefix%7Ciwtitle";
     	url += "&rawcontinue=";
     	String next = null;
@@ -725,7 +725,7 @@ public class Wikibot extends WMFWiki {
 					List<String[]> list = map.get(title);
 					list.add(new String[]{iwPrefix, iwTitle});
 				} else {
-					List<String[]> list = new ArrayList<String[]>();
+					List<String[]> list = new ArrayList<>();
 					list.add(new String[]{iwPrefix, iwTitle});
 					map.put(title, list);
 				}
@@ -737,7 +737,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public Map<String, List<String>> allIwBacklinksWithPrefix(String prefix) throws IOException {
-    	Map<String, List<String>> map = new HashMap<String, List<String>>(max);
+    	Map<String, List<String>> map = new HashMap<>(max);
     	StringBuilder url = new StringBuilder(query);
     	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
     	url.append("&rawcontinue=");
@@ -776,7 +776,7 @@ public class Wikibot extends WMFWiki {
 					List<String> list = map.get(title);
 					list.add(iwTitle);
 				} else {
-					List<String> list = new ArrayList<String>();
+					List<String> list = new ArrayList<>();
 					list.add(iwTitle);
 					map.put(title, list);
 				}
@@ -788,7 +788,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public String[] searchIwBacklinks(String prefix, String target) throws IOException {
-    	List<String> list = new ArrayList<String>();
+    	List<String> list = new ArrayList<>();
     	
     	StringBuilder url = new StringBuilder(query);
     	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
@@ -877,7 +877,7 @@ public class Wikibot extends WMFWiki {
 	}
     
     public void fetchRequest(Map<String, String> params, String tag, Consumer<String> cons) throws IOException {
-    	List<String> temp = new ArrayList<String>(params.size());
+    	List<String> temp = new ArrayList<>(params.size());
     	
     	for (Entry<String, String> entry : params.entrySet()) {
     		String key = entry.getKey();

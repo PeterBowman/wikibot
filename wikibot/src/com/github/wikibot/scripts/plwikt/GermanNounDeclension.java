@@ -38,7 +38,7 @@ public final class GermanNounDeclension implements Selectorizable {
 	private static final Map<String, String[]> det;
 	
 	static {
-		det = new HashMap<String, String[]>();
+		det = new HashMap<>();
 		det.put("m",  new String[]{"der", "des", "dem", "den"});
 		det.put("f",  new String[]{"die", "der", "der", "die"});
 		det.put("n",  new String[]{"das", "des", "dem", "das"});
@@ -86,14 +86,14 @@ public final class GermanNounDeclension implements Selectorizable {
 		if (f.exists()) {
 			excluded = Misc.deserialize(f);
 		} else {
-			excluded = new ArrayList<String[]>(200);
+			excluded = new ArrayList<>(200);
 		}
 		
 		int excludesize = 0;
 		int count = 0;
 		
 		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - rzeczowniki", 0);
-		List<String> list = new ArrayList<String>(pages.length);
+		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -197,7 +197,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		if (f.exists()) {
 			excluded = Misc.deserialize(f);
 		} else {
-			excluded = new ArrayList<String[]>(100);
+			excluded = new ArrayList<>(100);
 		}
 		
 		int excluded_size = excluded.size();
@@ -206,7 +206,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		BufferedReader br = new BufferedReader(new FileReader(location + "work_list.txt"));
 		String line = null;
 		
-		List<String[]> decl = new ArrayList<String[]>(500);
+		List<String[]> decl = new ArrayList<>(500);
 		
 		outer:
 		while ((line = br.readLine()) != null) {
@@ -472,7 +472,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		//Calendar start = wb.getRevision(4111867).getTimestamp();
 		//Revision[] revs = wb.contribs("PBbot", "", end, start, 0);
 		
-		List<String> list = new ArrayList<String>(100);
+		List<String> list = new ArrayList<>(100);
 		
 		for (Revision rev : revs) {
 			if (rev.getPage().equals("Actinium")) break;

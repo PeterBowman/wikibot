@@ -129,7 +129,7 @@ public class Editor extends AbstractEditor {
 		
 		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
 		
-		final List<String> specialLinksList = new ArrayList<String>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
+		final List<String> specialLinksList = new ArrayList<>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
 		specialLinksList.addAll(fileNsAliases);
 		specialLinksList.addAll(categoryNsAliases);
 		specialLinksList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
@@ -147,7 +147,7 @@ public class Editor extends AbstractEditor {
 			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
 		);
 		
-		LS_SPLITTER_LIST = new ArrayList<String>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
+		LS_SPLITTER_LIST = new ArrayList<>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
 		LS_SPLITTER_LIST.addAll(PRON_TMPLS);
 		LS_SPLITTER_LIST.addAll(TERM_TMPLS);
 		LS_SPLITTER_LIST.addAll(tempListLS);
@@ -166,7 +166,7 @@ public class Editor extends AbstractEditor {
 			"título referencias", "pron-graf", "imagen", "listaref"
 		);
 		
-		BS_SPLITTER_LIST = new ArrayList<String>(AMBOX_TMPLS.size() + tempListBS.size());
+		BS_SPLITTER_LIST = new ArrayList<>(AMBOX_TMPLS.size() + tempListBS.size());
 		BS_SPLITTER_LIST.addAll(AMBOX_TMPLS);
 		BS_SPLITTER_LIST.addAll(tempListBS);
 		
@@ -179,7 +179,7 @@ public class Editor extends AbstractEditor {
 
 		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-		STANDARD_HEADERS = new ArrayList<String>(Section.HEAD_SECTIONS.size() + Section.BOTTOM_SECTIONS.size());
+		STANDARD_HEADERS = new ArrayList<>(Section.HEAD_SECTIONS.size() + Section.BOTTOM_SECTIONS.size());
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 		
@@ -382,7 +382,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static int getMaximumTemplateDepth(String text) {
-		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
+		List<Range<Integer>> ranges = new ArrayList<>();
 		extractTemplateRanges(text, ranges);
 		
 		Range<Integer> previousRange = null;
@@ -478,7 +478,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeTemplatePrefixes() {
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_PREFIXED_TEMPLATE,
 			(m, sb) -> {
@@ -627,7 +627,7 @@ public class Editor extends AbstractEditor {
 	
 	public void normalizeTemplateNames() {
 		String formatted = text;
-		Map<String, String> map = new HashMap<String, String>(150, 1);
+		Map<String, String> map = new HashMap<>(150, 1);
 		
 		// TODO: expand per [[Especial:TodasLasRedirecciones]]
 		// TODO: delete obsolete templates
@@ -764,7 +764,7 @@ public class Editor extends AbstractEditor {
 		
 		map.put("Caracter oriental", "Carácter oriental");
 		
-		List<String> found = new ArrayList<String>();
+		List<String> found = new ArrayList<>();
 		
 		for (Entry<String, String> entry : map.entrySet()) {
 			final String target = entry.getKey();
@@ -853,8 +853,8 @@ public class Editor extends AbstractEditor {
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		
 		final String preferredFileNSAlias = "Archivo";
-		Set<String> setFileAlias = new HashSet<String>();
-		Set<String> setLog = new LinkedHashSet<String>();
+		Set<String> setFileAlias = new HashSet<>();
+		Set<String> setLog = new LinkedHashSet<>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
 			(m, sb) -> {
@@ -1267,7 +1267,7 @@ public class Editor extends AbstractEditor {
 			ParseUtils.getTemplates("diacrítico", intro).isEmpty() &&
 			!intro.contains("Diacrítico:")
 		) {
-			HashMap<String, String> params = new LinkedHashMap<String, String>();
+			HashMap<String, String> params = new LinkedHashMap<>();
 			params.put("templateName", "diacrítico");
 			params.put("ParamWithoutName1", alt);
 			String template = ParseUtils.templateFromMap(params);
@@ -1297,7 +1297,7 @@ public class Editor extends AbstractEditor {
 	private static void processIfSingleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
-		List<String> temp = new ArrayList<String>();
+		List<String> temp = new ArrayList<>();
 		
 		String topIntro = Utils.replaceWithStandardIgnoredRanges(topSection.getIntro(), P_ETYM_TMPL,
 			(m, sb) -> {
@@ -1337,7 +1337,7 @@ public class Editor extends AbstractEditor {
 		
 		// Search for the etymology template and move it to the last line
 		
-		List<String> temp = new ArrayList<String>();
+		List<String> temp = new ArrayList<>();
 		
 		etymologyIntro = Utils.replaceWithStandardIgnoredRanges(etymologyIntro, P_ETYM_TMPL,
 			(m, sb) -> {
@@ -1452,7 +1452,7 @@ public class Editor extends AbstractEditor {
 		
 		Page page = Page.store(title, text);
 		final String templateName = "título referencias";
-		List<String> contents = new ArrayList<String>();
+		List<String> contents = new ArrayList<>();
 		boolean found = false;
 		
 		List<Section> sections = page.getAllSections();
@@ -1758,7 +1758,7 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Set<String> set = new LinkedHashSet<String>();
+		Set<String> set = new LinkedHashSet<>();
 		
 		// Etymology
 		
@@ -1788,7 +1788,7 @@ public class Editor extends AbstractEditor {
 			Section etymologySection = Section.create("Etimología", 3);
 			etymologySection.setTrailingNewlines(1);
 			
-			HashMap<String, String> params = new LinkedHashMap<String, String>();
+			HashMap<String, String> params = new LinkedHashMap<>();
 			params.put("templateName", "etimología");
 			
 			if (!langSection.langCodeEqualsTo("es")) {
@@ -1885,7 +1885,7 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		
 		for (Section section : page.getAllSections()) {
 			if (section == references) {
@@ -2052,7 +2052,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Page page = Page.store(title, text);
-		Set<String> modified = new LinkedHashSet<String>();
+		Set<String> modified = new LinkedHashSet<>();
 		
 		for (Section section : page.getAllSections()) {
 			if (
@@ -2074,9 +2074,9 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			Map<String, Map<String, String>> tempMap = new HashMap<String, Map<String, String>>();
-			List<String> editedLines = new ArrayList<String>();
-			List<String> amboxTemplates = new ArrayList<String>();
+			Map<String, Map<String, String>> tempMap = new HashMap<>();
+			List<String> editedLines = new ArrayList<>();
+			List<String> amboxTemplates = new ArrayList<>();
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
 			MutableInt index = new MutableInt(0);
 			
@@ -2150,7 +2150,7 @@ public class Editor extends AbstractEditor {
 				}
 				
 				Map<String, String> params = ParseUtils.getTemplateParametersWithValue(templates.get(0));
-				Map<String, String> newParams = new LinkedHashMap<String, String>();
+				Map<String, String> newParams = new LinkedHashMap<>();
 				
 				switch (templateName) {
 					case "pronunciación":
@@ -2384,7 +2384,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			HashMap<String, String> newMap = new LinkedHashMap<String, String>();
+			HashMap<String, String> newMap = new LinkedHashMap<>();
 			newMap.put("templateName", "pron-graf");
 			
 			if (!langSection.langCodeEqualsTo("es")) {
@@ -2462,7 +2462,7 @@ public class Editor extends AbstractEditor {
 		// TODO: add leng parameter
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		
-		Set<String> modified = new HashSet<String>();
+		Set<String> modified = new HashSet<>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TMPL_LINE,
 			m -> m.start(2),
@@ -2525,13 +2525,13 @@ public class Editor extends AbstractEditor {
 		
 		// http://stackoverflow.com/a/2787064
 		Matcher msep = P_LIST_ARGS.matcher(content);
-		List<String> lterms = new ArrayList<String>();
+		List<String> lterms = new ArrayList<>();
 		
 		while (msep.find()) {
 			lterms.add(msep.group().trim());
 		}
 		
-		HashMap<String, String> map = new LinkedHashMap<String, String>(lterms.size(), 1);
+		HashMap<String, String> map = new LinkedHashMap<>(lterms.size(), 1);
 		map.put("templateName", name);
 		
 		for (int i = 1; i <= lterms.size(); i++) {
@@ -2620,7 +2620,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Page page = Page.store(title, text);
-		Set<String> set = new LinkedHashSet<String>();
+		Set<String> set = new LinkedHashSet<>();
 		
 		// {{etimología}} and {{pron-graf}}
 		
@@ -2770,8 +2770,8 @@ public class Editor extends AbstractEditor {
 	
 	private static String insertTemplate(String content, String langCode, String templateName, String templateFormat) {
 		String[] lines = content.split("\n");
-		List<String> amboxTemplates = new ArrayList<String>();
-		List<String> otherLines = new ArrayList<String>();
+		List<String> amboxTemplates = new ArrayList<>();
+		List<String> otherLines = new ArrayList<>();
 		
 		for (String line : lines) {
 			if (P_AMBOX_TMPLS.matcher(line).matches()) {
@@ -2781,7 +2781,7 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		List<String> outputList = new ArrayList<String>(amboxTemplates);
+		List<String> outputList = new ArrayList<>(amboxTemplates);
 		String lengParam = "";
 		
 		if (!langCode.equals("es")) {
@@ -2805,7 +2805,7 @@ public class Editor extends AbstractEditor {
 	private static String removeBlockTemplates(String text) {
 		text = ParseUtils.removeCommentsAndNoWikiText(text);
 		
-		List<String> list = new ArrayList<String>(PRON_TMPLS.size() + AMBOX_TMPLS.size() + 1);
+		List<String> list = new ArrayList<>(PRON_TMPLS.size() + AMBOX_TMPLS.size() + 1);
 		list.addAll(PRON_TMPLS);
 		list.addAll(AMBOX_TMPLS);
 		list.add("pron-graf");
@@ -2926,7 +2926,7 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		
 		for (Section section : page.getAllSections()) {
 			String header = section.getStrippedHeader();
@@ -2990,7 +2990,7 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		
 		for (LangSection langSection : langSections) {
 			List<Section> childSections = langSection.getChildSections();

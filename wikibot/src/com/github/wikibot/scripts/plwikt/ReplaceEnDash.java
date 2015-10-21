@@ -58,7 +58,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	
 	public static void getLists() throws IOException {
 		Integer[] namespaces = new Integer[]{PLWikt.ANNEX_NAMESPACE, PLWikt.INDEX_NAMESPACE, PLWikt.CATEGORY_NAMESPACE};
-		List<String> titles = new ArrayList<String>();
+		List<String> titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {
 			// FIXME: limited to 5000 pages
@@ -71,7 +71,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		System.out.printf("Páginas existentes detectadas: %d%n", targets.length);
 		IOUtils.writeToFile(String.join("\n", targets), renameList);
 		
-		titles = new ArrayList<String>();
+		titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {
 			String[] temp = wb.allLinks("", namespace);
@@ -86,7 +86,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	
 	public static void getEditTargets() throws IOException {
 		String[] titles = IOUtils.loadFromFile(editList, "", "UTF8");
-		Map<String, Collection<String>> map = new HashMap<String, Collection<String>>();
+		Map<String, Collection<String>> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -99,7 +99,7 @@ public final class ReplaceEnDash implements Selectorizable {
 						Collection<String> list = map.get(backlink);
 						list.add(title);
 					} else {
-						List<String> list = new ArrayList<String>();
+						List<String> list = new ArrayList<>();
 						list.add(title);
 						map.put(backlink, list);
 					}
@@ -135,7 +135,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	public static void edit() throws IOException, LoginException {
 		String[] lines = IOUtils.loadFromFile(reviewedList, "", "UTF8");
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
@@ -143,7 +143,7 @@ public final class ReplaceEnDash implements Selectorizable {
 			String title = entry.getKey();
 			String[] backlinks = entry.getValue();
 			String text = wb.getPageText(title);
-			List<String> missing = new ArrayList<String>(); 
+			List<String> missing = new ArrayList<>(); 
 			
 			for (String backlink : backlinks) {
 				String target = String.format("[[%s", backlink);

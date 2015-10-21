@@ -77,7 +77,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		
 		PageContainer[] wiktpages = wb.getContentOfPageIds(wiktids);
 		PageContainer[] quotepages = quote.getContentOfPages(quotetitles);
-		Map<String, Collection<String>> map = new HashMap<String, Collection<String>>(list.size());
+		Map<String, Collection<String>> map = new HashMap<>(list.size());
 		
 		for (PageContainer wiktpage : wiktpages) {
 			Page wp = Page.wrap(wiktpage);
@@ -123,7 +123,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(ser_pages);
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		for (Entry<String, String[]> entry : map.entrySet()) {
 			String title = entry.getKey();

@@ -29,7 +29,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 		this.title = Objects.requireNonNull(title);
 		this.title = this.title.trim();
 		this.intro = "";
-		this.sections = new ArrayList<T>();
+		this.sections = new ArrayList<>();
 		this.leadingNewlines = 0;
 		this.trailingNewlines = 0;
 	}
@@ -93,7 +93,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	}
 	
 	public List<T> getAllSections() {
-		return Collections.unmodifiableList(new ArrayList<T>(sections));
+		return Collections.unmodifiableList(new ArrayList<>(sections));
 	}
 	
 	public void normalizeChildLevels() {
@@ -107,7 +107,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 			sections.stream().forEach(s -> s.setLevel(level));
 		
 		while (true) {
-			List<T> list = new ArrayList<T>();
+			List<T> list = new ArrayList<>();
 			
 			for (T section : sections) {
 				if (
@@ -147,7 +147,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 						int parentLevel = parent.getLevel();
 						cons.accept(siblings, parentLevel + 1);
 					} else {
-						siblings = new ArrayList<T>(section.siblingSections);
+						siblings = new ArrayList<>(section.siblingSections);
 						siblings.remove(siblings.size() - 1);
 						cons.accept(siblings, minLevel + 1);
 					}
@@ -184,7 +184,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	}
 	
 	protected void extractSections(String text, Function<String, T> func, Pattern pSection) {
-		List<String> sections = new ArrayList<String>();
+		List<String> sections = new ArrayList<>();
 		
 		String lastChunk = Utils.replaceWithStandardIgnoredRanges(text, pSection,
 			m -> m.start(1),
@@ -253,8 +253,8 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	}
 
 	private List<T> traverseSiblingSections(List<T> sections, final int tocLevel) {
-		List<T> siblings = new ArrayList<T>(sections.size());
-		Map<T, List<T>> map = new LinkedHashMap<T, List<T>>(sections.size());
+		List<T> siblings = new ArrayList<>(sections.size());
+		Map<T, List<T>> map = new LinkedHashMap<>(sections.size());
 		int minLevel = 6;
 		
 		for (T section : sections) {
@@ -272,7 +272,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 					List<T> children = map.get(previous);
 					children.add(section);
 				} else {
-					List<T> children = new ArrayList<T>();
+					List<T> children = new ArrayList<>();
 					children.add(section);
 					map.put(previous, children);
 				}

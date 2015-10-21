@@ -268,7 +268,7 @@ public final class ScheduledEditor {
 			lines = new String[]{};
 		}
 		
-		List<String> list = new ArrayList<String>(Arrays.asList(lines));
+		List<String> list = new ArrayList<>(Arrays.asList(lines));
 		list.add(log);
 		
 		try {

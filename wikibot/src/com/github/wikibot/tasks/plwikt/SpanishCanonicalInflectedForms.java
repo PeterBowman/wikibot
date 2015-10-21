@@ -31,7 +31,7 @@ public final class SpanishCanonicalInflectedForms implements Selectorizable {
 	private static final Map<Character, Character> strippedAccentsMap;
 	
 	static {
-		strippedAccentsMap = new HashMap<Character, Character>(5, 1);
+		strippedAccentsMap = new HashMap<>(5, 1);
 		
 		strippedAccentsMap.put('á', 'a');
 		strippedAccentsMap.put('é', 'e');

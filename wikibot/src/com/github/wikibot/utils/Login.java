@@ -63,7 +63,7 @@ public class Login {
 			credentials = Misc.deserialize(LOCATION + "credentials.ser");
 		} catch (ClassNotFoundException | IOException e) {
 			System.out.println(e.getMessage());
-			credentials = new HashMap<String, char[]>();
+			credentials = new HashMap<>();
 		}
 	}
 	

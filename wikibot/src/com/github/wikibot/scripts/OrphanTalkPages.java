@@ -33,7 +33,7 @@ public class OrphanTalkPages {
 			PLWikt.PORTAL_TALK_NAMESPACE
 		};
 		
-		List<String> list = new ArrayList<String>(3000);
+		List<String> list = new ArrayList<>(3000);
 		
 		for (int namespace : namespaces) {
 			list.addAll(Arrays.asList(wb.listPages("", null, namespace)));
@@ -42,7 +42,7 @@ public class OrphanTalkPages {
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
 		IOUtils.writeToFile(String.join("\n", list), "./test.txt");
 		
-		List<String> targets = new ArrayList<String>(list.size());
+		List<String> targets = new ArrayList<>(list.size());
 		
 		for (String talkpage : list) {
 			int namespace = wb.namespace(talkpage);
@@ -56,7 +56,7 @@ public class OrphanTalkPages {
 		}
 		
 		Map[] infos = wb.getPageInfo(targets.toArray(new String[targets.size()]));
-		List<String> missing = new ArrayList<String>(targets.size());
+		List<String> missing = new ArrayList<>(targets.size());
 		
 		for (int i = 0; i < targets.size(); i++) {
 			if (!(boolean)infos[i].get("exists")) {

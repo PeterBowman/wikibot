@@ -9,7 +9,7 @@ public final class DefinitionsField extends Field {
 	
 	protected DefinitionsField(FieldTypes name, String content) {
 		super(name, content);
-		definitions = new ArrayList<DefinitionHeader>();
+		definitions = new ArrayList<>();
 		parseField();
 	}
 	
@@ -27,7 +27,7 @@ public final class DefinitionsField extends Field {
 				}
 				
 				currentHeader = line;
-				currentDefinitions = new ArrayList<String>();
+				currentDefinitions = new ArrayList<>();
 			}
 		}
 		
@@ -37,7 +37,7 @@ public final class DefinitionsField extends Field {
 	}
 	
 	public DefinitionHeader addDefinitionHeader(String headerTitle, String content) {
-		List<String> definitions = new ArrayList<String>();
+		List<String> definitions = new ArrayList<>();
 		definitions.add(content);
 		DefinitionHeader header = new DefinitionHeader(headerTitle, definitions);
 		content += "\n" + header.toString();

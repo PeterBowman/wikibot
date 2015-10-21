@@ -212,13 +212,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	
 	public List<T> getSiblingSections() {
 		return Objects.nonNull(siblingSections)
-			? Collections.unmodifiableList(new ArrayList<T>(siblingSections))
+			? Collections.unmodifiableList(new ArrayList<>(siblingSections))
 			: null;
 	}
 	
 	public List<T> getChildSections() {
 		return Objects.nonNull(childSections)
-			? Collections.unmodifiableList(new ArrayList<T>(childSections))
+			? Collections.unmodifiableList(new ArrayList<>(childSections))
 			: null;
 	}
 	
@@ -312,7 +312,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			containingPage.buildSectionTree();
 		} else {
 			if (childSections == null) {
-				childSections = new ArrayList<T>();
+				childSections = new ArrayList<>();
 			}
 			
 			Collections.addAll(childSections, sections);
@@ -337,7 +337,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			containingPage.buildSectionTree();
 		} else {
 			if (childSections == null) {
-				childSections = new ArrayList<T>();
+				childSections = new ArrayList<>();
 			}
 			
 			childSections.addAll(0, Arrays.asList(sections));
@@ -485,7 +485,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 				.filter(predicate)
 				.collect(Collectors.toList());
 		} else {
-			return new ArrayList<T>();
+			return new ArrayList<>();
 		}
 	}
 	
@@ -531,7 +531,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public static <U extends AbstractSection<U>> List<U> flattenSubSections(List<? extends U> sections) {
-		List<U> list = new ArrayList<U>();
+		List<U> list = new ArrayList<>();
 		
 		for (U section : sections) {
 			list.add(section);

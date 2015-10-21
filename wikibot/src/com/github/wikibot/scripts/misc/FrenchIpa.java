@@ -44,7 +44,7 @@ public class FrenchIpa {
 		IOUtils.writeToFile(String.join("\n", pages), "./test2.txt");
 		
 		PageContainer[] contents = wb.getContentOfPages(pages);
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		
 		for (PageContainer page : contents) {
 			Page p = Page.wrap(page);

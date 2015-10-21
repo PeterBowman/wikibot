@@ -28,7 +28,7 @@ public class LangSection extends Section {
 		this.langCode = "";
 		this.langName = "";
 		this.templateType = "";
-		this.templateParams = new LinkedHashMap<String, String>();
+		this.templateParams = new LinkedHashMap<>();
 	}
 	
 	LangSection(String text) {
@@ -40,7 +40,7 @@ public class LangSection extends Section {
 			throw new ParsingException("Empty text parameter (Section.constructor)");
 		}
 		
-		this.templateParams = new LinkedHashMap<String, String>();
+		this.templateParams = new LinkedHashMap<>();
 		
 		extractHeader();
 	}
@@ -126,7 +126,7 @@ public class LangSection extends Section {
 	}
 	
 	public Map<String, String> getTemplateParams() {
-		return new LinkedHashMap<String, String>(templateParams);
+		return new LinkedHashMap<>(templateParams);
 	}
 	
 	public void setTemplateParams(Map<String, String> templateParams) {
@@ -162,7 +162,7 @@ public class LangSection extends Section {
 	}
 	
 	private void updateHeader() {
-		HashMap<String, String> params = new LinkedHashMap<String, String>();
+		HashMap<String, String> params = new LinkedHashMap<>();
 		params.put("templateName", templateType);
 		params.put("ParamWithoutName1", langCode);
 		

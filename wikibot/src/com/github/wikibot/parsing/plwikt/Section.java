@@ -34,7 +34,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		this.lang = "";
 		this.langShort = "";
 		this.headerTitle = "";
-		this.fields = new ArrayList<Field>();
+		this.fields = new ArrayList<>();
 	}
 	
 	Section(String text) {
@@ -46,7 +46,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 			throw new ParsingException("Empty text parameter (Section.constructor)");
 		}
 		
-		this.fields = new ArrayList<Field>();
+		this.fields = new ArrayList<>();
 		
 		parseSection();
 		extractHeader();
@@ -274,7 +274,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	public List<Field> getAllFields() {
-		return Collections.unmodifiableList(new ArrayList<Field>(fields));
+		return Collections.unmodifiableList(new ArrayList<>(fields));
 	}
 	
 	@Override

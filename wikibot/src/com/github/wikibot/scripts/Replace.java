@@ -112,7 +112,7 @@ public final class Replace implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
 		wb.setThrottle(3000);
-		List<String> conflicts = new ArrayList<String>();
+		List<String> conflicts = new ArrayList<>();
 		
 		String summary = String.format(summaryFormat, target, replacement);
 		//String summary = "usunięcie znaków soft hyphen";

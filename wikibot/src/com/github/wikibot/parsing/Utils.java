@@ -34,7 +34,7 @@ public final class Utils {
 			return new Range[]{};
 		}
 		
-		List<Range<Integer>> list = new ArrayList<Range<Integer>>();
+		List<Range<Integer>> list = new ArrayList<>();
 		
 		while (startPos != -1) {
 			int endPos = text.indexOf(end, startPos);
@@ -53,7 +53,7 @@ public final class Utils {
 	
 	@SuppressWarnings("unchecked")
 	public static Range<Integer>[] findRanges(String text, Pattern patt) {
-		List<Range<Integer>> list = new ArrayList<Range<Integer>>();
+		List<Range<Integer>> list = new ArrayList<>();
 		Matcher m = patt.matcher(text);
 		
 		while (m.find()) {
@@ -77,7 +77,7 @@ public final class Utils {
 	@SafeVarargs
 	public static List<Range<Integer>> getCombinedRanges(Range<Integer>[]... ranges) {
 		if (ranges.length == 0) {
-			return new ArrayList<Range<Integer>>();
+			return new ArrayList<>();
 		}
 		
 		List<Range<Integer>[]> filtered = Stream.of(ranges)
@@ -86,10 +86,10 @@ public final class Utils {
 			.collect(Collectors.toList());
 		
 		if (filtered.isEmpty()) {
-			return new ArrayList<Range<Integer>>();
+			return new ArrayList<>();
 		} else if (filtered.size() == 1) {
 			List<Range<Integer>> temp = Arrays.asList(filtered.get(0));
-			return new ArrayList<Range<Integer>>(temp);
+			return new ArrayList<>(temp);
 		} else {
 			List<Range<Integer>> list = sortIgnoredRanges(filtered);
 			combineIgnoredRanges(list);

@@ -42,7 +42,7 @@ public final class MassReview {
 		System.out.printf("Summary: %s%n", summary);
 		
 		ListIterator<String[]> iterator = list.listIterator();
-		List<String> errors = new ArrayList<String>();
+		List<String> errors = new ArrayList<>();
 		
 		while (iterator.hasNext()) {
 			String[] arr = iterator.next();
