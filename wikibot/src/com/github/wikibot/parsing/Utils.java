@@ -161,6 +161,12 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
+			BiConsumer<Matcher, StringBuffer> biCons) {
+		Function<Matcher, Integer> func = m -> m.start();
+		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			Function<Matcher, Integer> func, BiConsumer<Matcher, StringBuffer> biCons) {
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}

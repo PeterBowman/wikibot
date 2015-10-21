@@ -481,7 +481,6 @@ public class Editor extends AbstractEditor {
 		Set<String> set = new HashSet<String>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_PREFIXED_TEMPLATE,
-			m -> m.start(),
 			(m, sb) -> {
 				String template = m.group();
 				String prefix = m.group(1);
@@ -508,7 +507,6 @@ public class Editor extends AbstractEditor {
 		MutableBoolean makeSummary = new MutableBoolean(false);
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TEMPLATE,
-			m -> m.start(),
 			(m, sb) -> {
 				String template = m.group();
 				String templateName = m.group(1);
@@ -570,7 +568,6 @@ public class Editor extends AbstractEditor {
 		List<Range<Integer>> wikitableRanges = Utils.getCombinedRanges(wikitables);
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_JOINER,
-			m -> m.start(),
 			(m, sb) -> {
 				boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
 				
@@ -779,7 +776,6 @@ public class Editor extends AbstractEditor {
 			);
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(formatted, patt,
-				m -> m.start(),
 				(m, sb) -> m.appendReplacement(sb, "{{" + replacement + "$1}}")
 			);
 			
@@ -805,7 +801,6 @@ public class Editor extends AbstractEditor {
 	
 	public void splitLines() {
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_SPLITTER_LEFT,
-			m -> m.start(),
 			(m, sb) -> m.appendReplacement(sb, "\n$1")
 		);
 		
@@ -862,7 +857,6 @@ public class Editor extends AbstractEditor {
 		Set<String> setLog = new LinkedHashSet<String>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
-			m -> m.start(),
 			(m, sb) -> {
 				int startOffset = m.start(1) - m.start();
 				int endOffset = startOffset + m.group(1).length();
@@ -1306,7 +1300,6 @@ public class Editor extends AbstractEditor {
 		List<String> temp = new ArrayList<String>();
 		
 		String topIntro = Utils.replaceWithStandardIgnoredRanges(topSection.getIntro(), P_ETYM_TMPL,
-			m -> m.start(),
 			(m, sb) -> {
 				String line = m.group(1);
 				String trailingText = m.group(2);
@@ -1347,7 +1340,6 @@ public class Editor extends AbstractEditor {
 		List<String> temp = new ArrayList<String>();
 		
 		etymologyIntro = Utils.replaceWithStandardIgnoredRanges(etymologyIntro, P_ETYM_TMPL,
-			m -> m.start(),
 			(m, sb) -> {
 				String line = m.group(1);
 				String trailingText = m.group(2);
@@ -1913,7 +1905,6 @@ public class Editor extends AbstractEditor {
 			
 			// TODO: handle reference groups
 			temp = Utils.replaceWithStandardIgnoredRanges(intro, pReferenceTags,
-				m -> m.start(),
 				(m, sb) -> m.appendReplacement(sb, "\n\n")
 			);
 			
@@ -2874,7 +2865,6 @@ public class Editor extends AbstractEditor {
 				MutableBoolean templateModified = new MutableBoolean(false);
 				
 				String temp = Utils.replaceWithStandardIgnoredRanges(content, patt,
-					m -> m.start(),
 					(m, sb) -> {
 						HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
 						String leng = params.get("leng");
@@ -3121,7 +3111,6 @@ public class Editor extends AbstractEditor {
 	
 	private static String removeBrTags(String text) {
 		return Utils.replaceWithStandardIgnoredRanges(text, P_BR_TAGS,
-			m -> m.start(),
 			(m, sb) -> {
 				String pre = m.group(1);
 				String content = m.group(2);
@@ -3166,7 +3155,6 @@ public class Editor extends AbstractEditor {
 	
 	private static String removeClearTemplates(Section section) {
 		String intro = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), P_CLEAR_TMPLS,
-			m -> m.start(),
 			(m, sb) -> m.appendReplacement(sb, "\n\n")
 		);
 		
@@ -3195,7 +3183,6 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF,
-				m -> m.start(),
 				(m, sb) -> {
 					String target = m.group(2);
 					String pipe = m.group(3);
@@ -3296,7 +3283,6 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
-				m -> m.start(),
 				(m, sb) -> {
 					String template = m.group(2);
 					
@@ -3399,7 +3385,6 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
-				m -> m.start(),
 				(m, sb) -> {
 					String number = m.group(1);
 					String colon = m.group(3);
