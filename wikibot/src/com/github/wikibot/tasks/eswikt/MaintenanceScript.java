@@ -47,7 +47,7 @@ public final class MaintenanceScript {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
 	private static final int THREAD_CHECK_SECS = 5;
-	private static RuntimeException threadExecutionException;
+	private static volatile RuntimeException threadExecutionException;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
@@ -195,6 +195,14 @@ public final class MaintenanceScript {
 			if (System.currentTimeMillis() > endMs) {
 				throw new TimeoutException("Thread timeout");
 			}
+		}
+		
+		if (threadExecutionException != null) {
+			throw threadExecutionException;
+		}
+		
+		if (System.currentTimeMillis() > endMs) {
+			throw new TimeoutException("Thread timeout");
 		}
 	}
 	
