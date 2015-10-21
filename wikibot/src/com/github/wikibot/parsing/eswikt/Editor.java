@@ -3280,57 +3280,52 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section)
 		);
 		
-		int count = 0;
+		MutableInt count = new MutableInt(0);
 				
 		for (Section section : sections) {
 			String intro = section.getIntro();
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			Matcher m = P_UCF.matcher(intro);
-			StringBuffer sb = new StringBuffer(intro.length());
 			
-			while (m.find()) {
-				if (Utils.containedInRanges(ignoredRanges, m.start())) {
-					continue;
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF,
+				m -> m.start(),
+				(m, sb) -> {
+					String target = m.group(2);
+					String pipe = m.group(3);
+					String trail = m.group(4);
+					
+					if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
+						return;
+					}
+					
+					if (pipe != null && (
+						pipe.isEmpty() ||
+						!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
+					)) {
+						return;
+					}
+					
+					if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
+						return;
+					}
+					
+					String template = String.format("{{plm|%s}}", target);
+					String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
+					
+					m.appendReplacement(sb, replacement);
+					count.increment();
 				}
-				
-				String target = m.group(2);
-				String pipe = m.group(3);
-				String trail = m.group(4);
-				
-				if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
-					continue;
-				}
-				
-				if (pipe != null && (
-					pipe.isEmpty() ||
-					!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
-				)) {
-					continue;
-				}
-				
-				if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
-					continue;
-				}
-				
-				String template = String.format("{{plm|%s}}", target);
-				String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
-				
-				m.appendReplacement(sb, replacement);
-				count++;
-			}
+			);
 			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				section.setIntro(sb.toString());
+			if (!temp.equals(intro)) {
+				section.setIntro(temp);
 			}
 		}
 		
-		if (count == 0) {
+		if (count.intValue() == 0) {
 			return;
 		}
 		
 		String formatted = page.toString();
-		String summary = (count == 1)
+		String summary = (count.intValue() == 1)
 			? "convirtiendo enlace a {{plm}}"
 			: "convirtiendo enlaces a {{plm}}";
 		
@@ -3390,32 +3385,27 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section.getStrippedHeader())
 		).forEach(section -> {
 			String intro = section.getIntro();
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			Matcher m = P_TERM.matcher(intro);
-			StringBuffer sb = new StringBuffer(intro.length());
 			
-			while (m.find()) {
-				if (Utils.containedInRanges(ignoredRanges, m.start())) {
-					continue;
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
+				m -> m.start(),
+				(m, sb) -> {
+					String template = m.group(2);
+					
+					if (template == null || template.startsWith(" ")) {
+						return;
+					}
+					
+					String replacement =
+						intro.substring(m.start(), m.start(2)) +
+						" " + template +
+						intro.substring(m.end(2), m.end());
+					
+					m.appendReplacement(sb, replacement);
 				}
-				
-				String template = m.group(2);
-				
-				if (template == null || template.startsWith(" ")) {
-					continue;
-				}
-				
-				String replacement =
-					intro.substring(m.start(), m.start(2)) +
-					" " + template +
-					intro.substring(m.end(2), m.end());
-				
-				m.appendReplacement(sb, replacement);
-			}
+			);
 			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				section.setIntro(sb.toString());
+			if (!temp.equals(intro)) {
+				section.setIntro(temp);
 			}
 		});
 		
@@ -3498,35 +3488,30 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section.getStrippedHeader())
 		).forEach(section -> {
 			String intro = section.getIntro();
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-			Matcher m = P_TERM.matcher(intro);
-			StringBuffer sb = new StringBuffer(intro.length());
 			
-			while (m.find()) {
-				if (Utils.containedInRanges(ignoredRanges, m.start())) {
-					continue;
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
+				m -> m.start(),
+				(m, sb) -> {
+					String number = m.group(1);
+					String colon = m.group(3);
+					String definition = m.group(4);
+					
+					if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
+						return;
+					}
+					
+					String replacement =
+						intro.substring(m.start(), m.start(1)) +
+						number.trim() +
+						intro.substring(m.end(1), m.start(3)) +
+						colon.trim() + " " + definition.trim();
+					
+					m.appendReplacement(sb, replacement);
 				}
-				
-				String number = m.group(1);
-				String colon = m.group(3);
-				String definition = m.group(4);
-				
-				if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
-					continue;
-				}
-				
-				String replacement =
-					intro.substring(m.start(), m.start(1)) +
-					number.trim() +
-					intro.substring(m.end(1), m.start(3)) +
-					colon.trim() + " " + definition.trim();
-				
-				m.appendReplacement(sb, replacement);
-			}
+			);
 			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				section.setIntro(sb.toString());
+			if (!temp.equals(intro)) {
+				section.setIntro(temp);
 			}
 		});
 		
