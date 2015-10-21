@@ -12,11 +12,9 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 
 public abstract class AbstractPage<T extends AbstractSection<T>> {
@@ -186,23 +184,18 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	}
 	
 	protected void extractSections(String text, Function<String, T> func, Pattern pSection) {
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
-		Matcher m = pSection.matcher(text);
-		StringBuffer sb = new StringBuffer(1000);
 		List<String> sections = new ArrayList<String>();
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start(1))) {
-				continue;
+		String lastChunk = Utils.replaceWithStandardIgnoredRanges(text, pSection,
+			m -> m.start(1),
+			(m, sb) -> {
+				m.appendReplacement(sb, "");
+				sections.add(sb.toString());
+				sb.delete(0, sb.length());
 			}
-			
-			m.appendReplacement(sb, "");
-			sections.add(sb.toString());
-			sb = new StringBuffer(1000);
-		}
+		);
 		
-		m.appendTail(sb);
-		sections.add(sb.toString());
+		sections.add(lastChunk);
 		intro = sections.get(0);
 		
 		if (!intro.isEmpty()) {
