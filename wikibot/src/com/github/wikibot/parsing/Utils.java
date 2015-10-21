@@ -139,25 +139,7 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
-		List<Range<Integer>> ignoredRanges = getStandardIgnoredRanges(text);
-		return replaceWithIgnoredranges(text, regex, replacement, ignoredRanges);
-	}
-	
-	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
-			List<Range<Integer>> ignoredRanges) {
-		Matcher m = Pattern.compile(regex).matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
-		
-		while (m.find()) {
-			if (containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			m.appendReplacement(sb, replacement);
-		}
-		
-		m.appendTail(sb);
-		return sb.toString();
+		return replaceWithIgnoredranges(text, regex, replacement, getStandardIgnoredRanges(text));
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
@@ -169,6 +151,14 @@ public final class Utils {
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			Function<Matcher, Integer> func, BiConsumer<Matcher, StringBuffer> biCons) {
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	}
+	
+	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
+			List<Range<Integer>> ignoredRanges) {
+		Pattern patt = Pattern.compile(regex);
+		Function<Matcher, Integer> func = m -> m.start();
+		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
+		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
 	}
 	
 	public static String replaceWithIgnoredranges(String text, Pattern patt,
