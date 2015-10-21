@@ -28,6 +28,7 @@ import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.wikiutils.ParseUtils;
 
@@ -477,93 +478,80 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeTemplatePrefixes() {
-		String formatted = text;
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m = P_PREFIXED_TEMPLATE.matcher(formatted);
-		StringBuffer sb = new StringBuffer(formatted.length());
 		Set<String> set = new HashSet<String>();
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_PREFIXED_TEMPLATE,
+			m -> m.start(),
+			(m, sb) -> {
+				String template = m.group();
+				String prefix = m.group(1);
+				
+				int startOffset = m.start(1) - m.start();
+				int endOffset = startOffset + prefix.length();
+				
+				template = template.substring(0, startOffset) + template.substring(endOffset);
+				
+				set.add(prefix.trim());
+				m.appendReplacement(sb, Matcher.quoteReplacement(template));
 			}
-			
-			String template = m.group();
-			int startOffset = m.start(1) - m.start();
-			int endOffset = startOffset + m.group(1).length();
-			template = template.substring(0, startOffset) + template.substring(endOffset);
-			
-			set.add(m.group(1).trim());
-			m.appendReplacement(sb, Matcher.quoteReplacement(template));
-		}
+		);
 		
 		if (set.isEmpty()) {
 			return;
 		}
 		
-		m.appendTail(sb);
-		formatted = sb.toString();
 		String summary = String.format("eliminando %s", String.join(", ", set));
-		
 		checkDifferences(formatted, "removeTemplatePrefixes", summary);
 	}
 	
 	public void sanitizeTemplates() {
-		String formatted = text;
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m = P_TEMPLATE.matcher(formatted);
-		StringBuffer sb = new StringBuffer(formatted.length());
-		boolean makeSummary = false;
+		MutableBoolean makeSummary = new MutableBoolean(false);
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			String template = m.group();
-			String templateName = m.group(1);
-			templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
-			
-			int startOffset = m.start(1) - m.start();
-			int endOffset = startOffset + m.group(1).length();
-			
-			template = template.substring(0, startOffset) + templateName +
-				template.substring(endOffset);
-			
-			String[] lines = template.split("\n");
-			
-			if (lines.length == 2 && lines[1].trim().equals("}}")) {
-				template = lines[0].trim() + lines[1].trim();
-			}
-			
-			m.appendReplacement(sb, "");
-			templateName = templateName.trim();
-			
-			if (
-				templateName.startsWith("inflect.") ||
-				LS_SPLITTER_LIST.contains(templateName) ||
-				BS_SPLITTER_LIST.contains(templateName)
-			) {
-				String sbCopy = sb.toString();
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TEMPLATE,
+			m -> m.start(),
+			(m, sb) -> {
+				String template = m.group();
+				String templateName = m.group(1);
+				templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
 				
-				while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
-					sb.deleteCharAt(sb.length() - 1);
+				int startOffset = m.start(1) - m.start();
+				int endOffset = startOffset + m.group(1).length();
+				
+				template = template.substring(0, startOffset) + templateName +
+					template.substring(endOffset);
+				
+				String[] lines = template.split("\n");
+				
+				if (lines.length == 2 && lines[1].trim().equals("}}")) {
+					template = lines[0].trim() + lines[1].trim();
 				}
 				
-				String deletedString = sbCopy.substring(sb.length());
+				m.appendReplacement(sb, "");
+				templateName = templateName.trim();
 				
-				if (!deletedString.trim().isEmpty()) {
-					makeSummary = true;
+				if (
+					templateName.startsWith("inflect.") ||
+					LS_SPLITTER_LIST.contains(templateName) ||
+					BS_SPLITTER_LIST.contains(templateName)
+				) {
+					String sbCopy = sb.toString();
+					
+					while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
+						sb.deleteCharAt(sb.length() - 1);
+					}
+					
+					String deletedString = sbCopy.substring(sb.length());
+					
+					if (!deletedString.trim().isEmpty()) {
+						makeSummary.setTrue();
+					}
 				}
+				
+				sb.append(template);
 			}
-			
-			sb.append(template);
-		}
+		);
 		
-		m.appendTail(sb);
-		formatted = sb.toString();
-		
-		String summary = makeSummary
+		String summary = makeSummary.booleanValue()
 			? "\"\\n[:;*#]{{\" → \"\\n{{\""
 			: null;
 		
@@ -571,81 +559,71 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void joinLines() {
-		String formatted = text;
+		Range<Integer>[] tags = Utils.findRanges(text, P_TAGS);
+		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] templates = Utils.findRanges(text, "{{", "}}");
+		Range<Integer>[] wikitables = Utils.findRanges(text, "{|", "|}");
 		
-		Range<Integer>[] tags = Utils.findRanges(formatted, P_TAGS);
-		Range<Integer>[] refs = Utils.findRanges(formatted, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
-		Range<Integer>[] templates = Utils.findRanges(formatted, "{{", "}}");
-		Range<Integer>[] wikitables = Utils.findRanges(formatted, "{|", "|}");
-		
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
 		List<Range<Integer>> tagRanges = Utils.getCombinedRanges(tags);
 		List<Range<Integer>> refRanges = Utils.getCombinedRanges(refs);
 		List<Range<Integer>> templateRanges = Utils.getCombinedRanges(templates);
 		List<Range<Integer>> wikitableRanges = Utils.getCombinedRanges(wikitables);
 		
-		Matcher m = P_LINE_JOINER.matcher(formatted);
-		StringBuffer sb = new StringBuffer(formatted.length());
-		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
-			
-			if (
-				!isRefRange &&
-				// assume <ref> regions cannot contain these elements 
-				(
-					Utils.containedInRanges(tagRanges, m.start()) ||
-					Utils.containedInRanges(templateRanges, m.start()) ||
-					Utils.containedInRanges(wikitableRanges, m.start())
-				)
-			) {
-				continue;
-			}
-			
-			// TODO: review reference tags
-			// https://es.wiktionary.org/w/index.php?title=casa&diff=2912203&oldid=2906951
-			
-			String replacement = null;
-			
-			if (ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
-				if (isRefRange) {
-					replacement = m.group(1).replaceFirst("^[ \n]+", "");
-					replacement = Matcher.quoteReplacement(replacement);
-				} else {
-					continue;
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_JOINER,
+			m -> m.start(),
+			(m, sb) -> {
+				boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
+				
+				if (
+					!isRefRange &&
+					// assume <ref> regions cannot contain these elements 
+					(
+						Utils.containedInRanges(tagRanges, m.start()) ||
+						Utils.containedInRanges(templateRanges, m.start()) ||
+						Utils.containedInRanges(wikitableRanges, m.start())
+					)
+				) {
+					return;
 				}
-			} else {
-				replacement = "$1";
+				
+				// TODO: review reference tags
+				// https://es.wiktionary.org/w/index.php?title=casa&diff=2912203&oldid=2906951
+				
+				String replacement = null;
+				
+				if (ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
+					if (isRefRange) {
+						replacement = m.group(1).replaceFirst("^[ \n]+", "");
+						replacement = Matcher.quoteReplacement(replacement);
+					} else {
+						return;
+					}
+				} else {
+					replacement = "$1";
+				}
+				
+				int index = text.substring(0, m.start()).lastIndexOf("\n");
+				String previousLine = text.substring(index + 1, m.start());
+				previousLine = ParseUtils.removeCommentsAndNoWikiText(previousLine);
+				
+				final String[] arr = isRefRange
+					? new String[]{":", ";", "*", "#"}
+					: new String[]{" ", ":", ";", "*", "#"};
+				
+				if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
+					return;
+				}
+				
+				index = text.indexOf("\n", m.start(1));
+				String thisLine = text.substring(m.start(1), index != -1 ? index : text.length());
+				
+				if (thisLine.startsWith(" |")) { // template parameters and wikitable rows
+					return;
+				}
+				
+				m.appendReplacement(sb, " " + replacement);
 			}
-			
-			int index = formatted.substring(0, m.start()).lastIndexOf("\n");
-			String previousLine = formatted.substring(index + 1, m.start());
-			previousLine = ParseUtils.removeCommentsAndNoWikiText(previousLine);
-			
-			final String[] arr = isRefRange
-				? new String[]{":", ";", "*", "#"}
-				: new String[]{" ", ":", ";", "*", "#"};
-			
-			if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
-				continue;
-			}
-			
-			index = formatted.indexOf("\n", m.start(1));
-			String thisLine = formatted.substring(m.start(1), index != -1 ? index : formatted.length());
-			
-			if (thisLine.startsWith(" |")) { // template parameters and wikitable rows
-				continue;
-			}
-			
-			m.appendReplacement(sb, " " + replacement);
-		}
-		
-		m.appendTail(sb);
-		formatted = sb.toString();
+		);
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
 	}
@@ -792,24 +770,21 @@ public class Editor extends AbstractEditor {
 		List<String> found = new ArrayList<String>();
 		
 		for (Entry<String, String> entry : map.entrySet()) {
-			String target = entry.getKey();
-			String replacement = entry.getValue();
-			StringBuffer sb = new StringBuffer(formatted.length() + 10);
-			Pattern patt = Pattern.compile("\\{\\{ *?" + target + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
-			Matcher m = patt.matcher(formatted);
-			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
+			final String target = entry.getKey();
+			final String replacement = entry.getValue();
 			
-			while (m.find()) {
-				if (Utils.containedInRanges(ignoredRanges, m.start())) {
-					continue;
-				}
-				
-				m.appendReplacement(sb, "{{" + replacement + "$1}}");
-			}
+			final Pattern patt = Pattern.compile(
+				"\\{\\{ *?" + target + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}",
+				Pattern.DOTALL
+			);
 			
-			if (sb.length() != 0) {
-				m.appendTail(sb);
-				formatted = sb.toString();
+			String temp = Utils.replaceWithStandardIgnoredRanges(formatted, patt,
+				m -> m.start(),
+				(m, sb) -> m.appendReplacement(sb, "{{" + replacement + "$1}}")
+			);
+			
+			if (!temp.equals(formatted)) {
+				formatted = temp;
 				found.add(target);
 			}
 		}
@@ -829,65 +804,51 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void splitLines() {
-		String formatted = text;
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m = P_LINE_SPLITTER_LEFT.matcher(formatted);
-		StringBuffer sb = new StringBuffer(formatted.length());
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_SPLITTER_LEFT,
+			m -> m.start(),
+			(m, sb) -> m.appendReplacement(sb, "\n$1")
+		);
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			m.appendReplacement(sb, "\n$1");
-		}
+		final int stringLength = formatted.length();
+		MutableInt lastTrailingPos = new MutableInt(-1);
 		
-		m.appendTail(sb);
-		formatted = sb.toString();
-		sb = new StringBuffer(formatted.length());
-		ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m2 = P_LINE_SPLITTER_BOTH.matcher(formatted);
-		int lastTrailingPos = -1;
-		
-		while (m2.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m2.start(1))) {
-				continue;
-			}
-			
-			String pre = m2.group(1);
-			String target = m2.group(2);
-			String post = m2.group(3);
-			boolean atStringStart = (m2.start(1) == 0);
-			boolean atStringEnd = (m2.end(3) == formatted.length());
-			
-			if (
-				!(atStringStart || pre.equals("\n")) ||
-				!(atStringEnd || post.equals("\n"))
-			) {
-				StringBuilder replacement = new StringBuilder(target.length() + 2);
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, P_LINE_SPLITTER_BOTH,
+			m -> m.start(1),
+			(m, sb) -> {
+				String pre = m.group(1);
+				String target = m.group(2);
+				String post = m.group(3);
+				
+				boolean atStringStart = (m.start(1) == 0);
+				boolean atStringEnd = (m.end(3) == stringLength);
 				
 				if (
-					!atStringStart &&
-					m2.start() != lastTrailingPos
+					!(atStringStart || pre.equals("\n")) ||
+					!(atStringEnd || post.equals("\n"))
 				) {
-					replacement.append('\n');
+					StringBuilder replacement = new StringBuilder(target.length() + 2);
+					
+					if (
+						!atStringStart &&
+						m.start() != lastTrailingPos.intValue()
+					) {
+						replacement.append('\n');
+					}
+					
+					replacement.append(target);
+					
+					if (!atStringEnd) {
+						replacement.append('\n');
+					}
+					
+					m.appendReplacement(sb, Matcher.quoteReplacement(replacement.toString()));
 				}
 				
-				replacement.append(target);
-				
-				if (!atStringEnd) {
-					replacement.append('\n');
-				}
-				
-				m2.appendReplacement(sb, Matcher.quoteReplacement(replacement.toString()));
+				lastTrailingPos.setValue(m.end());
 			}
-			
-			lastTrailingPos = m2.end();
-		}
+		);
 		
-		m2.appendTail(sb);
-		formatted = Utils.sanitizeWhitespaces(sb.toString());
-		
+		formatted = Utils.sanitizeWhitespaces(formatted);
 		checkDifferences(formatted, "splitLines", "dividiendo líneas");
 	}
 	
@@ -896,42 +857,34 @@ public class Editor extends AbstractEditor {
 		// TODO: trailing period after {{etimología}} and {{pron-graf}}
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		
-		String formatted = this.text;
 		final String preferredFileNSAlias = "Archivo";
 		Set<String> setFileAlias = new HashSet<String>();
 		Set<String> setLog = new LinkedHashSet<String>();
 		
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(formatted);
-		Matcher m = P_IMAGES.matcher(formatted);
-		StringBuffer sb = new StringBuffer(formatted.length());
-		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
+			m -> m.start(),
+			(m, sb) -> {
+				int startOffset = m.start(1) - m.start();
+				int endOffset = startOffset + m.group(1).length();
+				
+				String file = m.group();
+				String alias = m.group(1);
+				
+				if (!alias.equals(preferredFileNSAlias)) {
+					setFileAlias.add(alias + ":");
+				}
+				
+				file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
+					+ preferredFileNSAlias
+					+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
+				
+				m.appendReplacement(sb, Matcher.quoteReplacement(file));
 			}
-			
-			int startOffset = m.start(1) - m.start();
-			int endOffset = startOffset + m.group(1).length();
-			
-			String file = m.group();
-			String alias = m.group(1);
-			
-			if (!alias.equals(preferredFileNSAlias)) {
-				setFileAlias.add(alias + ":");
-			}
-			
-			file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
-				+ preferredFileNSAlias
-				+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
-			
-			m.appendReplacement(sb, Matcher.quoteReplacement(file));
-		}
+		);
 		
 		if (!setFileAlias.isEmpty()) {
-			m.appendTail(sb);
-			formatted = sb.toString();
-			String temp = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
-			setLog.add(temp);
+			String log = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
+			setLog.add(log);
 		}
 		
 		// TODO: detect comment tags
@@ -1220,70 +1173,65 @@ public class Editor extends AbstractEditor {
 	}
 
 	private static String replaceOldStructureTemplates(String title, String text) {
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
-		Matcher m = P_OLD_STRUCT_HEADER.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length() + 10);
-		String currentSectionLang = "";
+		StringBuilder currentSectionLang = new StringBuilder(15);
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
-				continue;
+		return Utils.replaceWithStandardIgnoredRanges(text, P_OLD_STRUCT_HEADER,
+			m -> m.start(2),
+			(m, sb) -> {
+				String pre = m.group(1);
+				String template = m.group(2);
+				String post = m.group(3);
+				
+				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				String name = params.get("templateName");
+				
+				if (name.equals("lengua") || name.equals("translit")) {
+					m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
+					currentSectionLang.replace(0, currentSectionLang.length(),
+						params.get("ParamWithoutName1").toLowerCase()
+					);
+					return;
+				}
+				
+				String altGraf = params.getOrDefault("ParamWithoutName1", "");
+				
+				if (name.equals("TRANSLIT")) {
+					name = params.get("ParamWithoutName2");
+					params.put("templateName", "translit");
+				} else {
+					name = name.replace("-ES", "").toLowerCase();
+					params.put("templateName", "lengua");
+					params.put("ParamWithoutName1", name);
+					params.remove("ParamWithoutName2");
+					params.remove("num");
+					params.remove("núm");
+				}
+				
+				if (
+					!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
+					!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
+				) {
+					params.put("alt", altGraf);
+				} else {
+					altGraf = "";
+				}
+				
+				pre = (pre.isEmpty() || pre.matches("[:;*#]+")) ? "" : "$1\n";
+				post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
+				
+				if (currentSectionLang.toString().equals(name)) {
+					String replacement = String.format("%s=ETYM alt-%s=%s", pre, altGraf, post);
+					m.appendReplacement(sb, replacement);
+				} else {
+					sortTemplateParamsMap(params);
+					String newTemplate = ParseUtils.templateFromMap(params);
+					String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
+					m.appendReplacement(sb, replacement);
+				}
+				
+				currentSectionLang.replace(0, currentSectionLang.length(), name);
 			}
-			
-			String pre = m.group(1);
-			String template = m.group(2);
-			String post = m.group(3);
-			
-			HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-			String name = params.get("templateName");
-			
-			if (name.equals("lengua") || name.equals("translit")) {
-				m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
-				currentSectionLang = params.get("ParamWithoutName1").toLowerCase();
-				continue;
-			}
-			
-			String altGraf = params.getOrDefault("ParamWithoutName1", "");
-			
-			if (name.equals("TRANSLIT")) {
-				name = params.get("ParamWithoutName2");
-				params.put("templateName", "translit");
-			} else {
-				name = name.replace("-ES", "").toLowerCase();
-				params.put("templateName", "lengua");
-				params.put("ParamWithoutName1", name);
-				params.remove("ParamWithoutName2");
-				params.remove("num");
-				params.remove("núm");
-			}
-			
-			if (
-				!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
-				!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
-			) {
-				params.put("alt", altGraf);
-			} else {
-				altGraf = "";
-			}
-			
-			pre = (pre.isEmpty() || pre.matches("[:;*#]+")) ? "" : "$1\n";
-			post = (post.isEmpty() || post.matches("<!--.+?-->")) ? "" : "\n$3";
-			
-			if (currentSectionLang.equals(name)) {
-				String replacement = String.format("%s=ETYM alt-%s=%s", pre, altGraf, post);
-				m.appendReplacement(sb, replacement);
-			} else {
-				sortTemplateParamsMap(params);
-				String newTemplate = ParseUtils.templateFromMap(params);
-				String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
-				m.appendReplacement(sb, replacement);
-			}
-			
-			currentSectionLang = name;
-		}
-		
-		m.appendTail(sb);
-		return sb.toString();
+		);
 	}
 	
 	private static void sortTemplateParamsMap(Map<String, String> params) {
@@ -1355,31 +1303,25 @@ public class Editor extends AbstractEditor {
 	private static void processIfSingleEtym(Section topSection, Section etymologySection) {
 		// Move etymology template to the etymology section
 		
-		String topIntro = topSection.getIntro();
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(topIntro);
-		Matcher m = P_ETYM_TMPL.matcher(topIntro);
-		StringBuffer sb = new StringBuffer(topIntro.length());
 		List<String> temp = new ArrayList<String>();
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
+		String topIntro = Utils.replaceWithStandardIgnoredRanges(topSection.getIntro(), P_ETYM_TMPL,
+			m -> m.start(),
+			(m, sb) -> {
+				String line = m.group(1);
+				String trailingText = m.group(2);
+				
+				if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
+					return;
+				}
+				
+				temp.add(line);
+				m.appendReplacement(sb, "");
 			}
-			
-			String line = m.group(1);
-			String trailingText = m.group(2);
-			
-			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-				continue;
-			}
-			
-			temp.add(line);
-			m.appendReplacement(sb, "");
-		}
+		);
 		
 		if (!temp.isEmpty()) {
-			m.appendTail(sb);
-			topSection.setIntro(sb.toString());
+			topSection.setIntro(topIntro);
 			String etymologyIntro = etymologySection.getIntro();
 			etymologyIntro += "\n" + String.join("\n\n", temp);
 			etymologySection.setIntro(etymologyIntro);
@@ -1402,30 +1344,24 @@ public class Editor extends AbstractEditor {
 		
 		// Search for the etymology template and move it to the last line
 		
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(etymologyIntro);
-		Matcher m = P_ETYM_TMPL.matcher(etymologyIntro);
-		StringBuffer sb = new StringBuffer(etymologyIntro.length());
 		List<String> temp = new ArrayList<String>();
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
+		etymologyIntro = Utils.replaceWithStandardIgnoredRanges(etymologyIntro, P_ETYM_TMPL,
+			m -> m.start(),
+			(m, sb) -> {
+				String line = m.group(1);
+				String trailingText = m.group(2);
+				
+				if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
+					return;
+				}
+				
+				temp.add(line);
+				m.appendReplacement(sb, "");
 			}
-			
-			String line = m.group(1);
-			String trailingText = m.group(2);
-			
-			if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-				continue;
-			}
-			
-			temp.add(line);
-			m.appendReplacement(sb, "");
-		}
+		).trim();
 		
 		if (!temp.isEmpty()) {
-			m.appendTail(sb);
-			etymologyIntro = sb.toString().trim();
 			etymologyIntro += "\n" + String.join("\n\n", temp);
 			etymologySection.setIntro(etymologyIntro);
 		}
@@ -2536,37 +2472,30 @@ public class Editor extends AbstractEditor {
 		// TODO: <sub>/<sup> -> {{subíndice}}/{{superíndice}}
 		
 		Set<String> modified = new HashSet<String>();
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
-		Matcher m = P_TMPL_LINE.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start(2))) {
-				continue;
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TMPL_LINE,
+			m -> m.start(2),
+			(m, sb) -> {
+				String line = Optional
+					.ofNullable(makeTmplLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
+					.orElse(makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
+				
+				if (line == null) {
+					return;
+				}
+				
+				line = Utils.replaceWithStandardIgnoredRanges(
+					line,
+					Pattern.quote("{{derivado|"),
+					"{{derivad|"
+				);
+				
+				m.appendReplacement(sb, Matcher.quoteReplacement(line));
+				modified.add(m.group(2).trim());
 			}
-			
-			String line = Optional
-				.ofNullable(makeTmplLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
-				.orElse(makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
-			
-			if (line == null) {
-				continue;
-			}
-			
-			line = Utils.replaceWithStandardIgnoredRanges(
-				line,
-				Pattern.quote("{{derivado|"),
-				"{{derivad|"
-			);
-			
-			m.appendReplacement(sb, Matcher.quoteReplacement(line));
-			modified.add(m.group(2).trim());
-		}
+		);
 		
-		m.appendTail(sb);
-		String formatted = sb.toString();
 		String summary = "conversión a plantilla: " + String.join(", ", modified);
-		
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
@@ -2934,64 +2863,63 @@ public class Editor extends AbstractEditor {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String content = langSection.toString();
-			boolean sectionModified = false;
+			MutableBoolean sectionModified = new MutableBoolean(false);
 			
 			for (String template : LENG_PARAM_TMPLS) {
-				Pattern patt = Pattern.compile("\\{\\{ *?" + template + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
-				Matcher m = patt.matcher(content);
-				StringBuffer sb = new StringBuffer(content.length() + 20);
-				List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(content);
-				boolean templateModified = false;
+				Pattern patt = Pattern.compile(
+					"\\{\\{ *?" + template + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}",
+					Pattern.DOTALL
+				);
 				
-				while (m.find()) {
-					if (Utils.containedInRanges(ignoredRanges, m.start())) {
-						continue;
-					}
-					
-					HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
-					String leng = params.get("leng");
-					boolean occurrenceModified = false;
-					
-					if (template.equals("ampliable")) {
-						String param1 = params.remove("ParamWithoutName1");
-						leng = Optional.ofNullable(leng).orElse(param1);
-					}
-					
-					if (langSection.langCodeEqualsTo("es")) {
-						// TODO: is this necessary?
-						if (leng != null) {
-							params.remove("leng");
+				MutableBoolean templateModified = new MutableBoolean(false);
+				
+				String temp = Utils.replaceWithStandardIgnoredRanges(content, patt,
+					m -> m.start(),
+					(m, sb) -> {
+						HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
+						String leng = params.get("leng");
+						boolean occurrenceModified = false;
+						
+						if (template.equals("ampliable")) {
+							String param1 = params.remove("ParamWithoutName1");
+							leng = Optional.ofNullable(leng).orElse(param1);
+						}
+						
+						if (langSection.langCodeEqualsTo("es")) {
+							// TODO: is this necessary?
+							if (leng != null) {
+								params.remove("leng");
+								occurrenceModified = true;
+							}
+						} else if (leng == null) {
+							@SuppressWarnings("unchecked")
+							Map<String, String> tempMap = (Map<String, String>) params.clone();
+							params.clear();
+							params.put("templateName", tempMap.remove("templateName"));
+							params.put("leng", langSection.getLangCode());
+							params.putAll(tempMap);
+							occurrenceModified = true;
+						} else if (!langSection.langCodeEqualsTo(leng)) {
+							params.put("leng", langSection.getLangCode());
 							occurrenceModified = true;
 						}
-					} else if (leng == null) {
-						@SuppressWarnings("unchecked")
-						Map<String, String> tempMap = (Map<String, String>) params.clone();
-						params.clear();
-						params.put("templateName", tempMap.remove("templateName"));
-						params.put("leng", langSection.getLangCode());
-						params.putAll(tempMap);
-						occurrenceModified = true;
-					} else if (!langSection.langCodeEqualsTo(leng)) {
-						params.put("leng", langSection.getLangCode());
-						occurrenceModified = true;
+						
+						if (occurrenceModified) {
+							String newTemplate = ParseUtils.templateFromMap(params);
+							newTemplate = Matcher.quoteReplacement(newTemplate);
+							m.appendReplacement(sb, newTemplate);
+							templateModified.setTrue();
+						}
 					}
-					
-					if (occurrenceModified) {
-						String newTemplate = ParseUtils.templateFromMap(params);
-						newTemplate = Matcher.quoteReplacement(newTemplate);
-						m.appendReplacement(sb, newTemplate);
-						templateModified = true;
-					}
-				}
+				);
 				
-				if (templateModified) {
-					m.appendTail(sb);
-					content = sb.toString();
-					sectionModified = true;
+				if (templateModified.booleanValue()) {
+					content = temp;
+					sectionModified.setTrue();
 				}
 			}
 			
-			if (sectionModified) {
+			if (sectionModified.booleanValue()) {
 				LangSection newLangSection = LangSection.parse(content);
 				langSection.replaceWith(newLangSection);
 			}
@@ -3192,76 +3120,57 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static String removeBrTags(String text) {
-		Matcher m = P_BR_TAGS.matcher(text);
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(text);
-		StringBuffer sb = new StringBuffer(text.length());
-		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			String pre = m.group(1);
-			String content = m.group(2);
-			String post = m.group(3);
-			
-			if (
-				!P_BR_CLEAR.matcher(content).find() &&
-				!P_BR_STYLE.matcher(content).find()
-			) {
-				continue;
-			}
-			
-			StringBuilder buff = new StringBuilder(pre.length() + post.length());
-			
-			if (pre.trim().isEmpty() && post.trim().isEmpty()) {
-				if (!pre.isEmpty()) {
-					buff.append('\n');
-					
-					if (!post.isEmpty()) {
+		return Utils.replaceWithStandardIgnoredRanges(text, P_BR_TAGS,
+			m -> m.start(),
+			(m, sb) -> {
+				String pre = m.group(1);
+				String content = m.group(2);
+				String post = m.group(3);
+				
+				if (
+					!P_BR_CLEAR.matcher(content).find() &&
+					!P_BR_STYLE.matcher(content).find()
+				) {
+					return;
+				}
+				
+				StringBuilder buff = new StringBuilder(pre.length() + post.length());
+				
+				if (pre.trim().isEmpty() && post.trim().isEmpty()) {
+					if (!pre.isEmpty()) {
 						buff.append('\n');
+						
+						if (!post.isEmpty()) {
+							buff.append('\n');
+						}
 					}
-				}
-				
-				m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
-			} else {
-				post = post.replaceFirst("^ *", "");
-				
-				if (!pre.trim().isEmpty() && !post.trim().isEmpty()) {
-					buff.append(pre);
-					buff.append('\n').append('\n');
-					buff.append(post);
+					
+					m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
 				} else {
-					buff.append(pre);
-					buff.append(post);
+					post = post.replaceFirst("^ *", "");
+					
+					if (!pre.trim().isEmpty() && !post.trim().isEmpty()) {
+						buff.append(pre);
+						buff.append('\n').append('\n');
+						buff.append(post);
+					} else {
+						buff.append(pre);
+						buff.append(post);
+					}
+					
+					m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
 				}
-				
-				m.appendReplacement(sb, Matcher.quoteReplacement(buff.toString()));
 			}
-		}
-		
-		m.appendTail(sb);
-		return sb.toString();
+		);
 	}
 	
 	private static String removeClearTemplates(Section section) {
-		String intro = section.getIntro();
-		List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
-		Matcher m = P_CLEAR_TMPLS.matcher(intro);
-		StringBuffer sb = new StringBuffer(intro.length());
+		String intro = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), P_CLEAR_TMPLS,
+			m -> m.start(),
+			(m, sb) -> m.appendReplacement(sb, "\n\n")
+		);
 		
-		while (m.find()) {
-			if (Utils.containedInRanges(ignoredRanges, m.start())) {
-				continue;
-			}
-			
-			m.appendReplacement(sb, "\n\n");
-		}
-		
-		m.appendTail(sb);
-		intro = sb.toString();
 		section.setIntro(intro);
-		
 		return intro;
 	}
 	
