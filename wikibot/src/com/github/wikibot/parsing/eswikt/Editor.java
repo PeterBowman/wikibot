@@ -3250,12 +3250,15 @@ public class Editor extends AbstractEditor {
 			page.setTrailingNewlines(1);
 		}
 		
+		String pageIntro = page.getIntro();
+		String strippedPageIntro = ParseUtils.removeCommentsAndNoWikiText(pageIntro);
+		
 		if (
 			page.getTrailingNewlines() == 1 &&
 			!page.getIntro().isEmpty() &&
 			(
-				ParseUtils.removeCommentsAndNoWikiText(page.getIntro()).isEmpty() ||
-				page.getIntro().matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
+				strippedPageIntro.isEmpty() ||
+				strippedPageIntro.matches("(?s).*\\{\\{[Dd]esambiguación\\|*?\\}\\}$")
 			)
 		) {
 			page.setTrailingNewlines(0);
@@ -3331,13 +3334,12 @@ public class Editor extends AbstractEditor {
 			page.setTrailingNewlines(0);
 		}
 		
+		String strippedPageIntro = ParseUtils.removeCommentsAndNoWikiText(pageIntro);
+		
 		if (
 			!pageIntro.isEmpty() && page.getTrailingNewlines() == 0 &&
-			!ParseUtils.removeCommentsAndNoWikiText(pageIntro).isEmpty() &&
-			!(
-				pageIntro.split("\n").length == 1 &&
-				pageIntro.matches("^\\{\\{[Dd]esambiguación\\|*?\\}\\}.*")
-			)
+			!strippedPageIntro.isEmpty() &&
+			!strippedPageIntro.matches("(?s).*\\{\\{[Dd]esambiguación\\|*?\\}\\}$")
 		) {
 			page.setTrailingNewlines(1);
 		}
@@ -3425,7 +3427,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "explotar";
+		String title = "alcahuetería";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
