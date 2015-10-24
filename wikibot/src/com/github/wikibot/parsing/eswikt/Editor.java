@@ -64,6 +64,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
+	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?:[^\\[\\{\\}]+?\\]\\]");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
@@ -334,6 +335,7 @@ public class Editor extends AbstractEditor {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
+		removeCategoryLinks();
 		checkLangHeaderCodeCase();
 		langTemplateParams();
 		deleteEmptySections();
@@ -2817,11 +2819,16 @@ public class Editor extends AbstractEditor {
 		}
 		
 		text = P_IMAGES.matcher(text).replaceAll("");
+		text = P_CATEGORY_LINKS.matcher(text).replaceAll("");
 		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
 		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
-		text = text.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
 		
 		return text.trim();
+	}
+	
+	public void removeCategoryLinks() {
+		//String formatted = text;
+		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías superfluas");
 	}
 	
 	public void checkLangHeaderCodeCase() {
@@ -2944,7 +2951,7 @@ public class Editor extends AbstractEditor {
 			intro = ParseUtils.removeCommentsAndNoWikiText(intro);
 			intro = intro.replaceAll("<br.*?>", "");
 			intro = intro.replace("{{clear}}", "");
-			intro = intro.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
+			intro = P_CATEGORY_LINKS.matcher(intro).replaceAll("");
 			intro = intro.trim();
 			
 			if (!intro.isEmpty()) {
