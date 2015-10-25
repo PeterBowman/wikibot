@@ -88,7 +88,7 @@ public final class ScheduledEditor {
 			
 			try {
 				pages = wb.listPagesContent(lastEntry, BATCH, ESWikt.MAIN_NAMESPACE);
-			} catch (IOException e) {
+			} catch (IOException | UnknownError e) {
 				e.printStackTrace();
 				sleep();
 				continue;
@@ -232,7 +232,7 @@ public final class ScheduledEditor {
 		try {
 			wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 			System.out.println(editor.getLogs());
-		} catch (IOException e) {
+		} catch (IOException | UnknownError e) {
 			sleep();
 			editEntry(pc, editor);
 			return;
