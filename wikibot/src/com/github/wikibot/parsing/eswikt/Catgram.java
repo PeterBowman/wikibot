@@ -46,6 +46,7 @@ public class Catgram {
 		DIGRAPH (null),
 		EXCLAMATIVE (null),
 		FEMININE (null),
+		FEMININE_AND_MASCULINE (null),
 		VERB_FORM (null),
 		IMPERFECTIVE (null),
 		IMPERSONAL (null),
@@ -329,6 +330,12 @@ public class Catgram {
 		Data.FEMININE.properties.type = Type.QUALIFIER;
 		Data.FEMININE.properties.singular = "femenino";
 		Data.FEMININE.properties.femSingularAdj = "femenina";
+		
+		Data.FEMININE_AND_MASCULINE.properties.type = Type.QUALIFIER;
+		Data.FEMININE_AND_MASCULINE.properties.singular = "femenino y masculino";
+		Data.FEMININE_AND_MASCULINE.properties.plural = "femeninos y masculinos";
+		Data.FEMININE_AND_MASCULINE.properties.mascSingularAdj = "de género común";
+		Data.FEMININE_AND_MASCULINE.properties.mascPluralAdj = "de género común";
 		
 		Data.VERB_FORM.properties.type = Type.FEMININE_NOUN;
 		Data.VERB_FORM.properties.singular = "forma verbal";
