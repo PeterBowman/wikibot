@@ -312,16 +312,16 @@ public class Editor extends AbstractEditor {
 		splitLines();
 		minorSanitizing();
 		transformToNewStructure();
+		normalizeSectionHeaders();
+		substituteReferencesTemplate();
+		duplicateReferencesSection();
+		moveReferencesSection();
 		
 		// TODO
 		if (!checkFlexiveFormHeaders()) {
 			throw new UnsupportedOperationException("checkFlexiveFormHeaders()");
 		}
 		
-		normalizeSectionHeaders();
-		substituteReferencesTemplate();
-		duplicateReferencesSection();
-		moveReferencesSection();
 		normalizeEtymologyHeaders();
 		normalizeSectionLevels();
 		removePronGrafSection();
@@ -946,20 +946,27 @@ public class Editor extends AbstractEditor {
 		
 		page = Page.store(page.getTitle(), formatted);
 		
+		// References section(s)
+		
+		List<Section> references = page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?");
+		references.forEach(section -> section.setHeader("Referencias y notas"));
+		references.forEach(section -> section.setLevel(2));
+		references.forEach(AbstractSection::detachOnlySelf);
+		
 		// Push down old-structure sections
 		
-		for (Section section : page.getAllSections()) {
+		page.filterSections(section ->
+				section.getLevel() < 3 &&
+				!(section instanceof LangSection)
+			)
+			.forEach(section -> section.setLevel(section.getLevel() + 1));
+		
+		// Needs Section reparsing
+		/*for (Section section : page.getAllSections()) {
 			if (section.getLangSectionParent() == null) {
 				section.setLevel(section.getLevel() + 1);
 			}
-		}
-		
-		// References section(s)
-		
-		for (Section section : page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?")) {
-			section.setHeader("Referencias y notas");
-			section.setLevel(2);
-		}
+		}*/
 		
 		// TODO: add a method to reparse all Sections?
 		page = Page.store(page.getTitle(), page.toString());
@@ -1146,6 +1153,9 @@ public class Editor extends AbstractEditor {
 				}
 			}
 		}
+		
+		// Reattach references Sections
+		page.appendSections(references.toArray(new Section[references.size()]));
 		
 		formatted = page.toString();
 		isOldStructure = false;
@@ -1984,7 +1994,7 @@ public class Editor extends AbstractEditor {
 			List<String> list = new ArrayList<>();
 			
 			Utils.replaceWithStandardIgnoredRanges(intro, P_INFLECT_TMPLS,
-				(m, b) -> list.add(m.group(1))
+				(m, sb) -> list.add(m.group(1))
 			);
 			
 			String temp = intro;
@@ -3441,7 +3451,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "esos";
+		String title = "folga";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
