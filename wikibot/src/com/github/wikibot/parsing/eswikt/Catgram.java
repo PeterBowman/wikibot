@@ -1,10 +1,12 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.wikiutils.IOUtils;
 
 public class Catgram {
@@ -46,7 +48,6 @@ public class Catgram {
 		DIGRAPH (null),
 		EXCLAMATIVE (null),
 		FEMININE (null),
-		FEMININE_AND_MASCULINE (null),
 		VERB_FORM (null),
 		IMPERFECTIVE (null),
 		IMPERSONAL (null),
@@ -196,6 +197,10 @@ public class Catgram {
 			return properties.compoundTerms;
 		}
 		
+		public String[] getRedirects() {
+			return properties.redirects;
+		}
+		
 		private String retrieveCompoundData(Function<Data, String> mapper) {
 			return Stream.of(properties.compoundTerms)
 				.map(mapper)
@@ -211,6 +216,7 @@ public class Catgram {
 		Data.ADJECTIVE.properties.type = Type.MASCULINE_NOUN;
 		Data.ADJECTIVE.properties.singular = "adjetivo";
 		Data.ADJECTIVE.properties.femSingularAdj = "adjetiva";
+		Data.ADJECTIVE.properties.redirects = new String[]{"adjetivos"};
 		
 		Data.NUMERAL_ADJECTIVE.properties.type = Type.COMPOUND;
 		Data.NUMERAL_ADJECTIVE.properties.compoundTerms = new Data[]{Data.ADJECTIVE, Data.NUMERAL};
@@ -222,6 +228,7 @@ public class Catgram {
 		Data.ADVERB.properties.singular = "adverbio";
 		Data.ADVERB.properties.mascSingularAdj = "adverbial";
 		Data.ADVERB.properties.mascPluralAdj = "adverbiales";
+		Data.ADVERB.properties.redirects = new String[]{"adverbios"};
 		
 		Data.AFFIX.properties.type = Type.MASCULINE_NOUN;
 		Data.AFFIX.properties.singular = "afijo";
@@ -234,6 +241,7 @@ public class Catgram {
 		Data.ARTICLE.properties.type = Type.MASCULINE_NOUN;
 		Data.ARTICLE.properties.singular = "artículo";
 		Data.ARTICLE.properties.mascSingularAdj = "de artículo";
+		Data.ARTICLE.properties.redirects = new String[]{"artículos", "articulos", "articulo"};
 		
 		Data.AUXILIARY.properties.type = Type.QUALIFIER;
 		Data.AUXILIARY.properties.singular = "auxiliar";
@@ -331,16 +339,11 @@ public class Catgram {
 		Data.FEMININE.properties.singular = "femenino";
 		Data.FEMININE.properties.femSingularAdj = "femenina";
 		
-		Data.FEMININE_AND_MASCULINE.properties.type = Type.QUALIFIER;
-		Data.FEMININE_AND_MASCULINE.properties.singular = "femenino y masculino";
-		Data.FEMININE_AND_MASCULINE.properties.plural = "femeninos y masculinos";
-		Data.FEMININE_AND_MASCULINE.properties.mascSingularAdj = "de género común";
-		Data.FEMININE_AND_MASCULINE.properties.mascPluralAdj = "de género común";
-		
 		Data.VERB_FORM.properties.type = Type.FEMININE_NOUN;
 		Data.VERB_FORM.properties.singular = "forma verbal";
 		Data.VERB_FORM.properties.plural = "formas verbales";
 		Data.VERB_FORM.properties.mascSingularAdj = "de forma verbal";
+		Data.VERB_FORM.properties.mascPluralAdj = "de formas verbales";
 		
 		Data.IMPERFECTIVE.properties.type = Type.QUALIFIER;
 		Data.IMPERFECTIVE.properties.singular = "imperfectivo";
@@ -416,7 +419,7 @@ public class Catgram {
 		Data.PARTICLE.properties.type = Type.FEMININE_NOUN;
 		Data.PARTICLE.properties.singular = "partícula";
 		Data.PARTICLE.properties.mascSingularAdj = "de partícula";
-		Data.PARTICLE.properties.mascPluralAdj = "de partícula";
+		Data.PARTICLE.properties.mascPluralAdj = "de partículas";
 		
 		Data.PERSONAL.properties.type = Type.QUALIFIER;
 		Data.PERSONAL.properties.singular = "personal";
@@ -429,6 +432,7 @@ public class Catgram {
 		Data.POSSESSIVE.properties.type = Type.QUALIFIER;
 		Data.POSSESSIVE.properties.singular = "posesivo";
 		Data.POSSESSIVE.properties.femSingularAdj = "posesiva";
+		Data.POSSESSIVE.properties.redirects = new String[]{"posesivos"};
 		
 		Data.POSTPOSITION.properties.type = Type.FEMININE_NOUN;
 		Data.POSTPOSITION.properties.singular = "postposición";
@@ -445,11 +449,13 @@ public class Catgram {
 		Data.PREPOSITION.properties.plural = "preposiciones";
 		Data.PREPOSITION.properties.mascSingularAdj = "prepositivo";
 		Data.PREPOSITION.properties.femSingularAdj = "prepositiva";
+		Data.PREPOSITION.properties.redirects = new String[]{"preposicion", "preposiciones"};
 		
 		Data.PRONOUN.properties.type = Type.MASCULINE_NOUN;
 		Data.PRONOUN.properties.singular = "pronombre";
 		Data.PRONOUN.properties.mascSingularAdj = "pronominal";
 		Data.PRONOUN.properties.mascPluralAdj = "pronominales";
+		Data.PRONOUN.properties.redirects = new String[]{"pronombres", "pronominal"};
 		
 		Data.POSSESSIVE_PRONOUN.properties.type = Type.COMPOUND;
 		Data.POSSESSIVE_PRONOUN.properties.compoundTerms = new Data[]{Data.PRONOUN, Data.POSSESSIVE};
@@ -471,7 +477,7 @@ public class Catgram {
 		Data.ACRONYM.properties.type = Type.FEMININE_NOUN;
 		Data.ACRONYM.properties.singular = "sigla";
 		Data.ACRONYM.properties.mascSingularAdj = "de sigla";
-		Data.ACRONYM.properties.mascPluralAdj = "de sigla";
+		Data.ACRONYM.properties.mascPluralAdj = "de siglas";
 		
 		Data.SINGULAR.properties.type = Type.QUALIFIER;
 		Data.SINGULAR.properties.singular = "singular";
@@ -490,6 +496,7 @@ public class Catgram {
 		Data.NOUN.properties.type = Type.MASCULINE_NOUN;
 		Data.NOUN.properties.singular = "sustantivo";
 		Data.NOUN.properties.femSingularAdj = "sustantiva";
+		Data.NOUN.properties.redirects = new String[]{"sustantivos"};
 		
 		Data.PROPER_NOUN.properties.type = Type.MASCULINE_NOUN;
 		Data.PROPER_NOUN.properties.singular = "sustantivo propio";
@@ -505,6 +512,7 @@ public class Catgram {
 		Data.VERB.properties.singular = "verbo";
 		Data.VERB.properties.mascSingularAdj = "verbal";
 		Data.VERB.properties.mascPluralAdj = "verbales";
+		Data.VERB.properties.redirects = new String[]{"verbos"};
 	}
 	
 	private static class Properties {
@@ -516,19 +524,25 @@ public class Catgram {
 		String mascPluralAdj;
 		String femPluralAdj;
 		Data[] compoundTerms;
+		String[] redirects;
 	}
 	
 	public enum Type {
 		MASCULINE_NOUN,
 		FEMININE_NOUN,
-		QUALIFIER,
+		QUALIFIER, // TODO: default gender: masculine?
 		INVARIANT_QUALIFIER,
-		COMPOUND
+		COMPOUND // TODO: extract gender from the first element?
 	}
 	
 	public static Data queryData(String singular) {
 		return Stream.of(Data.values())
-			.filter(data -> data.getSingular().equals(singular))
+			.filter(data ->
+				data.getSingular().equals(singular) ||
+				Optional.ofNullable(data.getRedirects())
+					.filter(arr -> ArrayUtils.contains(arr, singular))
+					.isPresent()
+			)
 			.findAny()
 			.orElseThrow(UnsupportedOperationException::new);
 	}
