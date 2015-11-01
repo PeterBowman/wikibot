@@ -904,7 +904,7 @@ public class Editor extends AbstractEditor {
 		);
 		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;\\d.+\" → \";\\d:.+\"", text ->
-			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^;\\s*?(\\d+?)\\s*(\\{\\{plm[\\|\\}][^:]+?|(?!\\s*?\\{\\{)[^:]+?)$", ";$1: $2")
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
 		String summary = null;
@@ -3456,7 +3456,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
 		
 		String text = null;
-		String title = "dies";
+		String title = "gato";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
