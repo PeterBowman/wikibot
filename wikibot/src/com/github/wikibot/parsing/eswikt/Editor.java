@@ -1871,10 +1871,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "añadiendo sección: "
-			: "añadiendo secciones: ";
-		summary += String.join(", ", set);
+		String summary = "añadiendo secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "addMissingSections", summary);
 	}
@@ -3001,10 +2998,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "eliminando sección vacía: "
-			: "eliminando secciones vacías: ";
-		summary += String.join(", ", set);
+		String summary = "eliminando secciones vacías: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteEmptySections", summary);
 	}
@@ -3080,10 +3074,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "eliminando sección: "
-			: "eliminando secciones: ";
-		summary += String.join(", ", set);
+		String summary = "eliminando secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteWrongSections", summary);
 	}
@@ -3206,8 +3197,6 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section)
 		);
 		
-		MutableInt count = new MutableInt(0);
-				
 		for (Section section : sections) {
 			String intro = section.getIntro();
 			
@@ -3236,7 +3225,6 @@ public class Editor extends AbstractEditor {
 					String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
 					
 					m.appendReplacement(sb, replacement);
-					count.increment();
 				}
 			);
 			
@@ -3245,16 +3233,8 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		if (count.intValue() == 0) {
-			return;
-		}
-		
 		String formatted = page.toString();
-		String summary = (count.intValue() == 1)
-			? "convirtiendo enlace a {{plm}}"
-			: "convirtiendo enlaces a {{plm}}";
-		
-		checkDifferences(formatted, "applyUcfTemplates", summary);
+		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
 	}
 	
 	public void strongWhitespaces() {
