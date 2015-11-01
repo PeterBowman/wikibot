@@ -2828,7 +2828,7 @@ public class Editor extends AbstractEditor {
 	
 	public void removeCategoryLinks() {
 		//String formatted = text;
-		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías superfluas");
+		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
 	}
 	
 	public void checkLangHeaderCodeCase() {
