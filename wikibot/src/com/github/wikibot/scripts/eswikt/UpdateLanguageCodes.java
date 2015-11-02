@@ -83,7 +83,7 @@ public final class UpdateLanguageCodes {
 		TsvParser parser = new TsvParser(settings);
 		
 		if (f_langs.exists()) {
-			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), "UTF8"))) {
+			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), "UTF-8"))) {
 				list = parser.parseAll(reader);
 			}
 			
