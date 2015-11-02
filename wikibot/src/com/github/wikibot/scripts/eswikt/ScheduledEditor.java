@@ -43,7 +43,7 @@ public final class ScheduledEditor {
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		wb.setThrottle(5000);
 		
 		if (args.length == 0) {

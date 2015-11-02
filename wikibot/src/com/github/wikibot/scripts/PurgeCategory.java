@@ -12,7 +12,7 @@ import com.github.wikibot.utils.Users;
 
 public final class PurgeCategory {
 	public static void main(String[] args) throws IOException, FailedLoginException {
-		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		
 		//String category = "Język nowogrecki - przymiotniki";
 		String category = "Język rosyjski – gwara pomorska";

@@ -45,7 +45,7 @@ public final class Edit implements Selectorizable {
 				getList();
 				break;
 			case '2':
-				wb = Login.retrieveSession(domain, Users.User1);
+				wb = Login.retrieveSession(domain, Users.USER1);
 				makeList();
 				Login.saveSession(wb);
 				break;
@@ -53,22 +53,22 @@ public final class Edit implements Selectorizable {
 				makeList2();
 				break;
 			case '4':
-				wb = Login.retrieveSession(domain, Users.User1);
+				wb = Login.retrieveSession(domain, Users.USER1);
 				makeList3();
 				Login.saveSession(wb);
 				break;
 			case 'd':
-				wb = Login.retrieveSession(domain, Users.User1);
+				wb = Login.retrieveSession(domain, Users.USER1);
 				getDiffs();
 				Login.saveSession(wb);
 				break;
 			case 'g':
-				wb = Login.retrieveSession(domain, Users.User1);
+				wb = Login.retrieveSession(domain, Users.USER1);
 				getContents();
 				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(domain, Users.User2);
+				wb = Login.retrieveSession(domain, Users.USER2);
 				edit();
 				Login.saveSession(wb);
 				break;

@@ -277,7 +277,7 @@ public final class Page extends AbstractPage<Section> {
 	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wiki = Login.retrieveSession(Domains.ESWIKT, Users.User1);
+		Wikibot wiki = Login.retrieveSession(Domains.ESWIKT, Users.USER1);
 		String text = wiki.getPageText("tamén");
 		Page page = Page.store("tamén", text);
 		System.out.println("");

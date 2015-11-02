@@ -49,7 +49,7 @@ public final class UpdateLanguageCodes {
 
 	public static void main(String[] args) throws IOException, LoginException {
 		Map<String, String> storedLangs = extractStoredLangs();
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
 		Map<String, String> fetchedLangs = extractFetchedLangs(pages);
 		

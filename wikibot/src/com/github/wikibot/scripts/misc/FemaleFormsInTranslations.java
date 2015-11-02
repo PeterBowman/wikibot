@@ -41,7 +41,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getLists();
 				Login.saveSession(wb);
 				break;
@@ -52,17 +52,17 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 				femWorklist();
 				break;
 			case '4':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getChanges();
 				Login.saveSession(wb);
 				break;
 			case 'm':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				editMasc();
 				Login.saveSession(wb);
 				break;
 			case 'f':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				editFem();
 				Login.saveSession(wb);
 				break;

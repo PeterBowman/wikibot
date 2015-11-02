@@ -134,7 +134,7 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		String text = wiki.getPageText("rescate");
 		Page page = Page.store("rescate", text);
 		Section esp = page.getSection("język hiszpański");

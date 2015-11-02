@@ -40,12 +40,12 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getLists();
 				Login.saveSession(wb);
 				break;
 			case 'r':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				review();
 				Login.saveSession(wb);
 				break;

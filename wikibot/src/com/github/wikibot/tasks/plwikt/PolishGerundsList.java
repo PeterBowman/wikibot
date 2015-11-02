@@ -42,17 +42,17 @@ public class PolishGerundsList implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				foreignGerunds();
 				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				//incorrectFormat();
 				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				makeLists();
 				Login.saveSession(wb);
 				break;
@@ -60,12 +60,12 @@ public class PolishGerundsList implements Selectorizable {
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				//writeFormat();
 				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				writeLists();
 				Login.saveSession(wb);
 				break;

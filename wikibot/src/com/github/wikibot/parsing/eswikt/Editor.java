@@ -3433,7 +3433,7 @@ public class Editor extends AbstractEditor {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
 		String title = "gato";

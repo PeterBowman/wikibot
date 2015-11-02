@@ -32,7 +32,7 @@ public class DevanagariIAST implements Selectorizable {
 		switch (op) {
 			case '1':
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getList(op == '2');
 				Login.saveSession(wb);
 				break;

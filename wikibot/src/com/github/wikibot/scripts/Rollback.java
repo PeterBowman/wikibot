@@ -20,7 +20,7 @@ public final class Rollback {
 	private static final String worklist = location + "worklist.txt";
 	
 	public static void main(String[] args) throws IOException, LoginException {
-		wb = Login.retrieveSession(domain, Users.User1);
+		wb = Login.retrieveSession(domain, Users.USER1);
 		wb.setThrottle(2000);
 		
 		String[] titles = IOUtils.loadFromFile(worklist, "", "UTF8");

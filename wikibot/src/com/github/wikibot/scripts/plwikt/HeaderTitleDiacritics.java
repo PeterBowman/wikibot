@@ -33,7 +33,7 @@ public final class HeaderTitleDiacritics {
 	public static void main(String[] args) throws IOException, LoginException, SAXException {
 		Collator collator = Misc.getCollator("pl");
 		Map<String, Collection<String[]>> map = Collections.synchronizedMap(new TreeMap<>(collator::compare));
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		
 		wb.readXmlDump(pc -> {
 			Page.wrap(pc).getAllSections().stream()

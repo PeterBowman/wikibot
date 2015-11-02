@@ -44,7 +44,7 @@ public final class SpanishCanonicalInflectedForms implements Selectorizable {
 		switch (op) {
 			case '1':
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getList(op == '2');
 				wb.logout();
 				break;

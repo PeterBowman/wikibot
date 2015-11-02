@@ -35,17 +35,17 @@ public class JyddishIpa implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getList(false, false);
 				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getList(true, false);
 				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getList(true, true);
 				Login.saveSession(wb);
 				break;

@@ -66,7 +66,7 @@ public final class ShortCommas implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getList();
 				Login.saveSession(wb);
 				break;
@@ -74,12 +74,12 @@ public final class ShortCommas implements Selectorizable {
 				stripCommas();
 				break;
 			case 's':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getShorts();
 				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit();
 				Login.saveSession(wb);
 				break;

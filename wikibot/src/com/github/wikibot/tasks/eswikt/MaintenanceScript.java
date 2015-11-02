@@ -60,7 +60,7 @@ public final class MaintenanceScript {
 			gap = 0;
 		}
 		
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		Calendar startCal = Calendar.getInstance();
 		startCal.setTime(DATE_FORMAT.parse(startTimestamp));

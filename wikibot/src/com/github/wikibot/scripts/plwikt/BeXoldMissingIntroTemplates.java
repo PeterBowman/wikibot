@@ -32,7 +32,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getList();
 				Login.saveSession(wb);
 				break;
@@ -41,7 +41,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 				break;
 			case 'e':
 				wb = new PLWikt();
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit();
 				Login.saveSession(wb);
 				break;
