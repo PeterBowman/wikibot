@@ -31,8 +31,8 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public final class HeaderTitleDiacritics {
-	private static final String LOCATION = "./data/tasks.plwikt/HeaderTitleDiacritics/";
+public final class InconsistentHeaderTitles {
+	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nagłówki";
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -102,8 +102,8 @@ public final class HeaderTitleDiacritics {
 			IOUtils.writeToFile(text, LOCATION + "stored_titles.txt");
 		}
 		
-		com.github.wikibot.parsing.Page page = makePageText(map);
-
+		com.github.wikibot.parsing.Page page = makePage(map);
+		
 		IOUtils.writeToFile(page.toString(), LOCATION + "page.txt");
 		
 		wb.setMarkBot(false);
@@ -134,7 +134,7 @@ public final class HeaderTitleDiacritics {
 		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, Wiki.MAIN_NAMESPACE);
 		
-		// store current timestamp for next iteration
+		// store current timestamp for the next iteration
 		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
 		
 		return Stream.of(revs)
@@ -165,7 +165,7 @@ public final class HeaderTitleDiacritics {
 		}
 		
 		page.getAllSections().stream()
-			.filter(HeaderTitleDiacritics::filterSections)
+			.filter(InconsistentHeaderTitles::filterSections)
 			.forEach(section -> {
 				String lang = section.getLangShort();
 				String headerTitle = section.getHeaderTitle().replace("&#", "&amp;#");
@@ -188,7 +188,7 @@ public final class HeaderTitleDiacritics {
 		}
 	}
 	
-	private static com.github.wikibot.parsing.Page makePageText(Map<String, Collection<Item>> map) {
+	private static com.github.wikibot.parsing.Page makePage(Map<String, Collection<Item>> map) {
 		List<String> values = map.values().stream()
 			.flatMap(coll -> coll.stream().map(item -> item.page))
 			.collect(Collectors.toList());
@@ -201,9 +201,10 @@ public final class HeaderTitleDiacritics {
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(String.format(
-			"Znaleziono %s (%s). Aktualizacja: ~~~~~.{{TOCright}}",
-			Misc.makePluralPL(total, "hasła", "haseł"),
-			Misc.makePluralPL(unique, "jednakowe", "jednakowych")
+			"Znaleziono %s (%s) w %s. Aktualizacja: ~~~~~.{{TOCright}}",
+			Misc.makePluralPL(total, "hasło", "hasła", "haseł"),
+			Misc.makePluralPL(unique, "strona", "strony", "stron"),
+			Misc.makePluralPL(map.keySet().size(), "języku", "językach", "językach")
 		));
 		
 		com.github.wikibot.parsing.Section[] sections = map.entrySet().stream()
