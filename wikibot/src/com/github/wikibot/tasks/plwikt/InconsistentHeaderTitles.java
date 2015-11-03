@@ -67,7 +67,7 @@ public final class InconsistentHeaderTitles {
 				String[] newTitles = extractRecentChanges();
 				String[] storedTitles = extractStoredTitles();
 				
-				if (newTitles.length == 0 && storedTitles.length == 0) {
+				if (newTitles.length == 0 || storedTitles.length == 0) {
 					System.out.println("No entries found/extracted.");
 					return;
 				}
@@ -95,11 +95,11 @@ public final class InconsistentHeaderTitles {
 			return;
 		} else {
 			Misc.serialize(map.hashCode(), fHash);
-			String text = map.values().stream()
+			String[] arr = map.values().stream()
 				.flatMap(coll -> coll.stream().map(item -> item.page))
 				.distinct()
-				.collect(Collectors.joining("\n"));
-			IOUtils.writeToFile(text, LOCATION + "stored_titles.txt");
+				.toArray(String[]::new);
+			Misc.serialize(arr, LOCATION + "stored_titles.ser");
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage(map);
@@ -147,8 +147,8 @@ public final class InconsistentHeaderTitles {
 		String[] titles;
 		
 		try {
-			titles = IOUtils.loadFromFile(LOCATION + "stored_titles.txt", "", "UTF8");
-		} catch (FileNotFoundException e) {
+			titles = Misc.deserialize(LOCATION + "stored_titles.ser");
+		} catch (ClassNotFoundException | IOException e) {
 			titles = new String[]{};
 		}
 		
