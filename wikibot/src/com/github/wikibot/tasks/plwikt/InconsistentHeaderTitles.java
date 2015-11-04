@@ -231,9 +231,7 @@ public final class InconsistentHeaderTitles {
 					sb.append("}}");
 				}
 				
-				sb.append("{{język linków}}");
 				section.setIntro(sb.toString());
-				
 				return section;
 			})
 			.toArray(com.github.wikibot.parsing.Section[]::new);
