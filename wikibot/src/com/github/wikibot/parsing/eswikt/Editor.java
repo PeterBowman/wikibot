@@ -889,9 +889,9 @@ public class Editor extends AbstractEditor {
 		// TODO: detect comment tags
 		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
 		
-		formatted = applyReplacementFunction(formatted, setLog, "\"^[.,:;*#]$\" → \"\"", text -> {
-			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[.,:;*#]+\n", "\n\n");
-			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[.,:;*#]+\n", "");
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[.,:;*#\\[\\]{}()]$\" → \"\"", text -> {
+			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[.,:;*#\\[\\]{}()]+\n", "\n\n");
+			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[.,:;*#\\[\\]{}()]+\n", "");
 			return text;
 		});
 		
@@ -3436,7 +3436,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "gato";
+		String title = "coleta";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
