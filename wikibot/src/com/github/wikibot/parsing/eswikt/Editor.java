@@ -1482,6 +1482,8 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
+			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
+			
 			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
 			header = header.replaceFirst("(?i)^Forma (?:de )?verb(?:o|al)$", "Forma verbal");
 			header = header.replaceFirst("(?i)^Forma (?:de )?adjetiv[oa]$", "Forma adjetiva");
@@ -3086,43 +3088,42 @@ public class Editor extends AbstractEditor {
 					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
 				);
 			
-			if (langSection.langCodeEqualsTo("es") && (hasNonFlexHeaders || !hasFlexHeaders)) {
-				continue;
-			}
-			
 			// delete empty translations Section in non-Spanish LangSections or flexive forms
 			
-			langSection.findSubSectionsWithHeader("Traducciones").forEach(section -> {
-				String intro = section.getIntro();
-				intro = removeCommentsAndNoWikiText(intro);
-				intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
-				intro = intro.trim();
-				
-				if (intro.isEmpty() && section.getChildSections() == null) {
-					section.detachOnlySelf();
-					set.add(section.getStrippedHeader());
-				}
-			});
+			if (
+				!langSection.langCodeEqualsTo("es") ||
+				(!hasNonFlexHeaders && hasFlexHeaders)
+			) {
+				langSection.findSubSectionsWithHeader("Traducciones").forEach(section -> {
+					String intro = section.getIntro();
+					intro = removeCommentsAndNoWikiText(intro);
+					intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+					intro = intro.trim();
+					
+					if (intro.isEmpty() && section.getChildSections() == null) {
+						section.detachOnlySelf();
+						set.add(section.getStrippedHeader());
+					}
+				});
+			}
 			
 			// delete empty etymology Section in flexive forms or NO_ETYM_TERMS_CHECK == true
 			
 			if (
-				(hasNonFlexHeaders || !hasFlexHeaders) &&
-				!NO_ETYM_TERMS_CHECK.test(langSection)
+				(!hasNonFlexHeaders && hasFlexHeaders) ||
+				NO_ETYM_TERMS_CHECK.test(langSection)
 			) {
-				continue;
+				langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
+					String intro = section.getIntro();
+					intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+					intro = intro.trim();
+					
+					if (intro.isEmpty() && section.getChildSections() == null) {
+						section.detachOnlySelf();
+						set.add(section.getStrippedHeader());
+					}
+				});
 			}
-			
-			langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
-				String intro = section.getIntro();
-				intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
-				intro = intro.trim();
-				
-				if (intro.isEmpty() && section.getChildSections() == null) {
-					section.detachOnlySelf();
-					set.add(section.getStrippedHeader());
-				}
-			});
 		}
 		
 		if (set.isEmpty()) {
