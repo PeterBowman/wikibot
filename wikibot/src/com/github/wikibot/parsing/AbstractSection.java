@@ -412,6 +412,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			}
 			
 			containingPage.buildSectionTree();
+			containingPage = null;
 		} else if (parentSection != null) {
 			parentSection.childSections.remove(this);
 			
@@ -422,6 +423,8 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			} else {
 				parentSection.childSections = null;
 			}
+			
+			parentSection = null;
 		}
 	}
 	
@@ -432,6 +435,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		
 		containingPage.sections.remove(this);
 		containingPage.buildSectionTree();
+		containingPage = null;
 	}
 	
 	public void pushLevels(int diff) {
