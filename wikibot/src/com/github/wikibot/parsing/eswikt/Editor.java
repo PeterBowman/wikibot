@@ -998,24 +998,21 @@ public class Editor extends AbstractEditor {
 		// References section(s)
 		
 		List<Section> references = page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?");
+		references.forEach(AbstractSection::detachOnlySelf);
 		references.forEach(section -> section.setHeader("Referencias y notas"));
 		references.forEach(section -> section.setLevel(2));
-		references.forEach(AbstractSection::detachOnlySelf);
 		
 		// Push down old-structure sections
+		// TODO: use pushLevels()
 		
-		page.filterSections(section ->
-				section.getLevel() < 3 &&
-				!(section instanceof LangSection)
-			)
-			.forEach(section -> section.setLevel(section.getLevel() + 1));
-		
-		// Needs Section reparsing
-		/*for (Section section : page.getAllSections()) {
+		for (Section section : page.getAllSections()) {
+			// workaround that benefits from the lack of Section reparsing 
 			if (section.getLangSectionParent() == null) {
-				section.setLevel(section.getLevel() + 1);
+				try {
+					section.setLevel(section.getLevel() + 1);
+				} catch (IllegalArgumentException e) {}
 			}
-		}*/
+		}
 		
 		// TODO: add a method to reparse all Sections?
 		page = Page.store(page.getTitle(), page.toString());
