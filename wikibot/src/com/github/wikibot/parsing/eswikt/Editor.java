@@ -3075,18 +3075,18 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			long flex = childSections.stream()
+			boolean hasFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE));
 			
-			long nonFlex = childSections.stream()
+			boolean hasNonFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> !STANDARD_HEADERS.contains(header))
-				.filter(header -> !header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header ->
+					!STANDARD_HEADERS.contains(header) &&
+					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
+				);
 			
-			if (langSection.langCodeEqualsTo("es") && (nonFlex != 0 || flex == 0)) {
+			if (langSection.langCodeEqualsTo("es") && (hasNonFlexHeaders || !hasFlexHeaders)) {
 				continue;
 			}
 			
@@ -3104,9 +3104,12 @@ public class Editor extends AbstractEditor {
 				}
 			});
 			
-			// delete empty etymology Section in flexive forms
+			// delete empty etymology Section in flexive forms or NO_ETYM_TERMS_CHECK == true
 			
-			if (nonFlex != 0 || flex == 0) {
+			if (
+				(hasNonFlexHeaders || !hasFlexHeaders) &&
+				!NO_ETYM_TERMS_CHECK.test(langSection)
+			) {
 				continue;
 			}
 			
@@ -3489,7 +3492,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "coleta";
+		String title = "del";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
