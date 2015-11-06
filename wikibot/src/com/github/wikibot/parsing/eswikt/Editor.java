@@ -113,6 +113,10 @@ public class Editor extends AbstractEditor {
 		"chono" // https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
 	);
 	
+	private static final List<String> NO_ETYM_TMPLS = Arrays.asList(
+		"grafía", "grafía obsoleta", "variante", "variante obsoleta", "contracción"
+	);
+	
 	private static final List<Pattern> COMMENT_PATT_LIST;
 	private static final List<String> LS_SPLITTER_LIST;
 	private static final List<String> BS_SPLITTER_LIST;
@@ -122,6 +126,8 @@ public class Editor extends AbstractEditor {
 	private static final String HAS_FLEXIVE_FORM_HEADER_RE = "([Ff]orma|\\{\\{forma) .+";
 	
 	private static final Predicate<LangSection> FLEXIVE_FORM_CHECK;
+	
+	private static final Predicate<Section> NO_ETYM_TERMS_CHECK;
 	
 	private boolean isOldStructure;
 	
@@ -252,6 +258,45 @@ public class Editor extends AbstractEditor {
 		COMMENT_PATT_LIST = pCommentsList.stream()
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
+		
+		NO_ETYM_TERMS_CHECK = section -> {
+			List<Section> childSections = section.getChildSections();
+			
+			if (childSections.isEmpty()) {
+				return false;
+			}
+			
+			List<Section> targetSections = childSections.stream()
+				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
+				.collect(Collectors.toList());
+			
+			if (targetSections.isEmpty()) {
+				return false;
+			}
+			
+			boolean hasStandardTerm = false;
+			boolean hasSpecialTerm = false;
+			
+			for (Section targetSection : targetSections) {
+				String text = removeCommentsAndNoWikiText(targetSection.getIntro());
+				Matcher m = P_TERM.matcher(text);
+				
+				while (m.find()) {
+					String term = m.group();
+					boolean anyMatch = NO_ETYM_TMPLS.stream()
+						.anyMatch(template -> !getTemplates(template, term).isEmpty());
+					
+					hasStandardTerm |= !anyMatch;
+					hasSpecialTerm |= anyMatch;
+					
+					if (hasStandardTerm && hasSpecialTerm) {
+						return false;
+					}
+				}
+			}
+			
+			return !hasStandardTerm && hasSpecialTerm;
+		};
 		
 		FLEXIVE_FORM_CHECK = langSection -> {
 			List<Section> allSubsections = AbstractSection.flattenSubSections(langSection);
@@ -1042,6 +1087,11 @@ public class Editor extends AbstractEditor {
 			) {
 				continue;
 			} else if (
+				section instanceof LangSection &&
+				NO_ETYM_TERMS_CHECK.test((LangSection) section)
+			) {
+				continue;
+			} else if (
 				etymologySections.isEmpty() ||
 				hasAdditionalEtymSections(section.nextSection(), etymologySections)
 			) {
@@ -1787,7 +1837,8 @@ public class Editor extends AbstractEditor {
 				langSection.getChildSections() == null ||
 				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
-				RECONSTRUCTED_LANGS.contains(langSection.getLangCode())
+				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
+				NO_ETYM_TERMS_CHECK.test(langSection)
 			) {
 				continue;
 			}
@@ -2689,7 +2740,8 @@ public class Editor extends AbstractEditor {
 					getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 					getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					// TODO: review
-					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
+					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
+					!NO_ETYM_TERMS_CHECK.test(etymologySection)
 				) {
 					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 					etymologySection.setIntro(etymologyIntro);
@@ -2702,7 +2754,8 @@ public class Editor extends AbstractEditor {
 					if (
 						getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
-						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
+						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
+						!NO_ETYM_TERMS_CHECK.test(etymologySection)
 					) {
 						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
@@ -3022,18 +3075,18 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			long flex = childSections.stream()
+			boolean hasFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE));
 			
-			long nonFlex = childSections.stream()
+			boolean hasNonFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> !STANDARD_HEADERS.contains(header))
-				.filter(header -> !header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header ->
+					!STANDARD_HEADERS.contains(header) &&
+					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
+				);
 			
-			if (langSection.langCodeEqualsTo("es") && (nonFlex != 0 || flex == 0)) {
+			if (langSection.langCodeEqualsTo("es") && (hasNonFlexHeaders || !hasFlexHeaders)) {
 				continue;
 			}
 			
@@ -3051,9 +3104,12 @@ public class Editor extends AbstractEditor {
 				}
 			});
 			
-			// delete empty etymology Section in flexive forms
+			// delete empty etymology Section in flexive forms or NO_ETYM_TERMS_CHECK == true
 			
-			if (nonFlex != 0 || flex == 0) {
+			if (
+				(hasNonFlexHeaders || !hasFlexHeaders) &&
+				!NO_ETYM_TERMS_CHECK.test(langSection)
+			) {
 				continue;
 			}
 			
@@ -3436,7 +3492,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "coleta";
+		String title = "del";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
