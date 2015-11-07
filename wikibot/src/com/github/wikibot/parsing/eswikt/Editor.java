@@ -944,6 +944,10 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^\\* ?\\[\\[\\]\\]$", "")
 		);
 		
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[(){}\\[\\]]+$\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^[(){}\\[\\]]+$", "")
+		);
+		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;[2-9]:$\" → \"\"", text ->
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?[2-9]: ?\\.?$", "")
 		);
@@ -3496,7 +3500,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "palmares";
+		String title = "fresón";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
