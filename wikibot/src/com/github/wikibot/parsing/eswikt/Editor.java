@@ -1471,6 +1471,7 @@ public class Editor extends AbstractEditor {
 			
 			header = StringUtils.strip(header, "=").trim();
 			header = header.replaceFirst("(?i)^Etimolog[íi]a", "Etimología");
+			header = header.replaceFirst("(?i)^Pronunciaci[óo]n\\b", "Pronunciación");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceFirst("(?i)^Locuciones", "Locuciones");
 			header = header.replaceFirst("(?i)^(?:Refranes|Dichos?)", "Refranes");
@@ -1708,6 +1709,11 @@ public class Editor extends AbstractEditor {
 		}
 		
 		page.normalizeChildLevels();
+		
+		for (Section pronGrafSection : page.findSectionsWithHeader("Pronunciación y escritura")) {
+			Optional.ofNullable(pronGrafSection.getChildSections())
+				.ifPresent(chs -> chs.forEach(s -> s.pushLevels(-1)));
+		}
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
@@ -3490,7 +3496,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "del";
+		String title = "encore mieux";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
