@@ -507,13 +507,15 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 		
 		int index = containingPage.sections.indexOf(this);
+		AbstractPage<T> page = containingPage;
 		this.detach();
-		containingPage.sections.add(index, section);
+		// containingPage has been set to null
+		page.sections.add(index, section);
 		
 		if (section.childSections != null) {
 			section.propagateTree();
 		} else {
-			containingPage.buildSectionTree();
+			page.buildSectionTree();
 		}
 	}
 	

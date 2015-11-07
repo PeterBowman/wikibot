@@ -1810,7 +1810,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(formatted, "removePronGrafSection", "eliminando título de pronunciación");
+		checkDifferences(formatted, "removePronGrafSection", "eliminando títulos de pronunciación");
 	}
 
 	public void sortLangSections() {
@@ -3496,7 +3496,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "encore mieux";
+		String title = "palmares";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
