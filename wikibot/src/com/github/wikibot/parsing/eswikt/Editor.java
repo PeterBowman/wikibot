@@ -36,6 +36,10 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -391,6 +395,7 @@ public class Editor extends AbstractEditor {
 		deleteWrongSections();
 		manageClearElements();
 		applyUcfTemplates();
+		groupReferences();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -609,7 +614,7 @@ public class Editor extends AbstractEditor {
 	
 	public void joinLines() {
 		Range<Integer>[] tags = Utils.findRanges(text, P_TAGS);
-		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref\\b([^>]*?)(?<!/ ?)>.*?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		Range<Integer>[] templates = Utils.findRanges(text, "{{", "}}");
 		Range<Integer>[] wikitables = Utils.findRanges(text, "{|", "|}");
 		
@@ -907,6 +912,8 @@ public class Editor extends AbstractEditor {
 		Set<String> setFileAlias = new HashSet<>();
 		Set<String> setLog = new LinkedHashSet<>();
 		
+		// sanitize image links
+		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
 			(m, sb) -> {
 				int startOffset = m.start(1) - m.start();
@@ -957,7 +964,20 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
-		Page page = Page.store(title, formatted);
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>]+?)>", "<$1references$2>");
+		
+		// trim contents of <ref> tags
+		
+		Document doc = Jsoup.parseBodyFragment(formatted);
+		doc.outputSettings().prettyPrint(false);
+		
+		doc.getElementsByTag("ref").stream()
+			.filter(ref -> !ref.tag().isSelfClosing())
+			.forEach(ref -> ref.html(ref.html().trim()));
+		
+		Page page = Page.store(title, doc.body().html());
+		
+		// remove trailing newlines from the last Section
 		
 		try {
 			List<Section> sections = page.getAllSections();
@@ -3328,6 +3348,95 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
 	}
 	
+	public void groupReferences() {
+		// TODO: same "name" attribute, different content, no self-closing tags
+		
+		Document doc = Jsoup.parseBodyFragment(text);
+		doc.outputSettings().prettyPrint(false);
+		
+		Elements refs = doc.getElementsByTag("ref").stream()
+			.filter(ref -> !ref.tag().isSelfClosing())
+			.filter(ref -> !ref.hasAttr("group"))
+			.filter(ref -> !ref.html().isEmpty())
+			.collect(Collectors.toCollection(Elements::new));
+		
+		if (refs.isEmpty() || (
+			doc.getElementsByTag("references").size() +
+			getTemplates("título referencias", text).size() > 1
+		)) {
+			return;
+		}
+		
+		MutableInt refId = new MutableInt(1);
+		
+		// multiple non-empty <ref> tags with the same content
+		refs.stream()
+			.collect(Collectors.groupingBy(
+				Element::html,
+				LinkedHashMap::new,
+				Collectors.toCollection(Elements::new)
+			))
+			.values().stream()
+			.filter(elements -> elements.size() > 1)
+			.forEach(elements -> {
+				final String name;
+				String temp = elements.attr("name");
+				
+				if (!temp.isEmpty()) {
+					// pick the first non-empty "name" attribute as a candidate
+					Elements els = doc.select(String.format("ref[name=%s]", temp));
+					els.removeIf(elements::contains);
+					
+					if (els.removeIf(el -> el.tag().isSelfClosing()) && !els.isEmpty()) {
+						// there were already some self-closing <ref>s with that "name" attribute
+						return;
+					} else if (!els.isEmpty()) {
+						// other non-self-closing <refs> present, generate a new attribute
+						name = String.format("auto_ref_id_%d", refId.intValue());
+						refId.increment();
+					} else {
+						name = temp;
+					}
+				} else {
+					// generate a new "name" attribute
+					name = String.format("auto_ref_id_%d", refId.intValue());
+					refId.increment();
+				}
+				
+				// <refs> with a differente "name" attribute to be discarded
+				boolean abort = elements.stream()
+					.filter(el -> el.hasAttr("name") && !el.attr("name").equals(name))
+					.map(el -> doc.select(String.format("ref[name=\"%s\"]", el.attr("name"))))
+					.anyMatch(els -> {
+						// select those with a different content
+						els.removeIf(elements::contains);
+						
+						if (els.removeIf(el -> !el.tag().isSelfClosing()) && !els.isEmpty()) {
+							// ambiguous, cannot convert to the new name
+							return true;
+						} else {
+							// only self-closing tags
+							els.forEach(el -> el.attr("name", name));
+							return false;
+						}
+					});
+				
+				if (abort) {
+					return;
+				}
+				
+				elements.attr("name", name);
+				elements.remove(0);
+				
+				// hacky, convert all <refs> but the first one to self-closing tags
+				elements.forEach(el -> el.after(String.format("<ref%s />", el.attributes())));
+				elements.forEach(Element::remove);
+			});
+		
+		String formatted = doc.body().html();
+		checkDifferences(formatted, "groupReferences", "agrupando referencias");
+	}
+	
 	public void strongWhitespaces() {
 		// TODO: don't collide with removeComments() 
 		String initial = text;
@@ -3527,7 +3636,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "aceites";
+		String title = "palpabile";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
