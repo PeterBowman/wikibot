@@ -2386,7 +2386,7 @@ public class Editor extends AbstractEditor {
 							newParams.put("alt", par3);
 						}
 						
-						newParams.put("pron", "latín clásico");
+						newParams.put("pron", "clásico");
 						
 						if (par1 != null && !par1.isEmpty()) {
 							newParams.put("fone", par1);
