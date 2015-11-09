@@ -34,6 +34,7 @@ import com.github.wikibot.utils.Users;
 public final class InconsistentHeaderTitles {
 	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nagłówki";
+	private static final String PAGE_INTRO;
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
@@ -43,6 +44,18 @@ public final class InconsistentHeaderTitles {
 	private static PLWikt wb;
 	
 	static {
+		StringBuilder sb = new StringBuilder(350);
+		sb.append("Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej.");
+		sb.append(" ");
+		sb.append("Odświeżany jest automatycznie przy użyciu wewnętrzej listy ostatnio przenalizowanych stron.");
+		sb.append(" ");
+		sb.append("Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota.");
+		sb.append("\n");
+		sb.append("__NOEDITSECTION__");
+		sb.append("\n");
+		sb.append("{{TOCright}}");
+		
+		PAGE_INTRO = sb.toString();
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
@@ -100,6 +113,7 @@ public final class InconsistentHeaderTitles {
 				.distinct()
 				.toArray(String[]::new);
 			Misc.serialize(arr, LOCATION + "stored_titles.ser");
+			System.out.printf("%d titles stored.%n", arr.length);
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage(map);
@@ -148,6 +162,7 @@ public final class InconsistentHeaderTitles {
 		
 		try {
 			titles = Misc.deserialize(LOCATION + "stored_titles.ser");
+			System.out.printf("%d titles extracted.%n", titles.length);
 		} catch (ClassNotFoundException | IOException e) {
 			titles = new String[]{};
 		}
@@ -169,9 +184,17 @@ public final class InconsistentHeaderTitles {
 			.forEach(section -> {
 				String lang = section.getLangShort();
 				String headerTitle = section.getHeaderTitle().replace("&#", "&amp;#");
-				Collection<Item> coll = map.getOrDefault(lang, new ConcurrentSkipListSet<>());
-				coll.add(new Item(pc.getTitle(), headerTitle));
-				map.putIfAbsent(lang, coll);
+				Item item = new Item(pc.getTitle(), headerTitle);
+				
+				// http://stackoverflow.com/a/10743710
+				Collection<Item> coll = map.get(lang);
+				
+				if (coll == null) {
+					map.putIfAbsent(lang, new ConcurrentSkipListSet<>());
+					coll = map.get(lang);
+				}
+				
+				coll.add(item);
 			});
 	}
 	
@@ -201,7 +224,8 @@ public final class InconsistentHeaderTitles {
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(String.format(
-			"Znaleziono %s (%s) w %s. Aktualizacja: ~~~~~.{{TOCright}}",
+			"%s%nZnaleziono %s (%s) w %s. Aktualizacja: ~~~~~.",
+			PAGE_INTRO,
 			Misc.makePluralPL(total, "hasło", "hasła", "haseł"),
 			Misc.makePluralPL(unique, "strona", "strony", "stron"),
 			Misc.makePluralPL(map.keySet().size(), "języku", "językach", "językach")
@@ -210,10 +234,9 @@ public final class InconsistentHeaderTitles {
 		com.github.wikibot.parsing.Section[] sections = map.entrySet().stream()
 			.map(entry -> {
 				boolean useColumns = entry.getValue().size() > COLUMN_ELEMENT_THRESHOLD;
-				String header = String.format("%s (%d)", entry.getKey(), entry.getValue().size());
 				
 				com.github.wikibot.parsing.Section section =
-					com.github.wikibot.parsing.Section.create(header, 2);
+					com.github.wikibot.parsing.Section.create(entry.getKey(), 2);
 				
 				StringBuilder sb = new StringBuilder(entry.getValue().size() * 35);
 				sb.append(String.format("{{język linków|%s}}", entry.getKey()));
