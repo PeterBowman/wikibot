@@ -1855,7 +1855,7 @@ public class Editor extends AbstractEditor {
 				// TODO: discuss with the community
 				title.contains(" ") ||
 				langSection.getChildSections() == null ||
-				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
+				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
 				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
 				NO_ETYM_TERMS_CHECK.test(langSection)
@@ -1904,7 +1904,8 @@ public class Editor extends AbstractEditor {
 			if (etymologySections.size() == 1) {
 				if (
 					etymologySections.get(0).getLevel() == 3 &&
-					spanishSection.findSubSectionsWithHeader("Traducciones").isEmpty()
+					!spanishSection.hasSubSectionWithHeader("Traducciones") &&
+					!spanishSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 				) {
 					Section translationsSection = Section.create("Traducciones", 3);
 					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
@@ -1916,7 +1917,9 @@ public class Editor extends AbstractEditor {
 				for (Section etymologySection : etymologySections) {
 					if (
 						etymologySection.getLevel() == 3 &&
-						etymologySection.findSubSectionsWithHeader("Traducciones").isEmpty()
+						!etymologySection.hasSubSectionWithHeader("Traducciones") &&
+						// TODO: this won't happen with the current restrictions (see checkFlexiveFormHeaders())
+						!etymologySection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 					) {
 						Section translationsSection = Section.create("Traducciones", 4);
 						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
@@ -3511,7 +3514,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "vicies";
+		String title = "personas";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
