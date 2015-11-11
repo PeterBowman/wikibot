@@ -944,8 +944,8 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^\\* ?\\[\\[\\]\\]$", "")
 		);
 		
-		formatted = applyReplacementFunction(formatted, setLog, "\"^[(){}\\[\\]]+$\" → \"\"", text ->
-			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^[(){}\\[\\]]+$", "")
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[(){}\\[\\]]$\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^[(){}\\[\\]]$", "")
 		);
 		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;[2-9]:$\" → \"\"", text ->
