@@ -956,13 +956,24 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
+		Page page = Page.store(title, formatted);
+		
+		try {
+			List<Section> sections = page.getAllSections();
+			Section lastSection = sections.get(sections.size() - 1);
+			
+			if (lastSection.getTrailingNewlines() > 1) {
+				lastSection.setTrailingNewlines(1);
+			}
+		} catch (IndexOutOfBoundsException e) {}
+		
 		String summary = null;
 		
 		if (!setLog.isEmpty()) {
 			summary = String.join(", ", setLog);
 		}
 		
-		checkDifferences(formatted, "minorSanitizing", summary);
+		checkDifferences(page.toString(), "minorSanitizing", summary);
 	}
 	
 	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
@@ -3500,7 +3511,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "dedal de oro";
+		String title = "vicies";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
