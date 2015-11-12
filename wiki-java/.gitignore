@@ -1,4 +1,4 @@
 /build/
 /dist/
 /bin/
-/javax.servlet-api.jar
+/target/

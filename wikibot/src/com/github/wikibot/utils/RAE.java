@@ -12,7 +12,7 @@ public class RAE extends OnlineDict<RAE> {
 	protected boolean exists = false;
 	protected boolean isRedirect = false;
 	protected boolean isStandAloneVerbForm = false;
-	private final WebClient webClient = new WebClient(BrowserVersion.FIREFOX_24);
+	private final WebClient webClient = new WebClient(BrowserVersion.FIREFOX_38);
 		
     public RAE(String entry) {
     	super(entry, "http://lema.rae.es/drae/srv/search?val=", "UTF-8");
