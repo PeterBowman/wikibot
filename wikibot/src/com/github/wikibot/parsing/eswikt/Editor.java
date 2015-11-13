@@ -3115,10 +3115,11 @@ public class Editor extends AbstractEditor {
 				!langSection.langCodeEqualsTo("es") ||
 				(!hasNonFlexHeaders && hasFlexHeaders)
 			) {
-				langSection.findSubSectionsWithHeader("Traducciones").forEach(section -> {
+				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").forEach(section -> {
 					String intro = section.getIntro();
 					intro = removeCommentsAndNoWikiText(intro);
 					intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+					intro = intro.replace("{{clear}}", "");
 					intro = intro.trim();
 					
 					if (intro.isEmpty() && section.getChildSections() == null) {
@@ -3514,7 +3515,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "personas";
+		String title = "sits";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
