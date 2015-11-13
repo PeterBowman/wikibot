@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -2062,7 +2063,12 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				!intro.contains("{{inflect.") ||
-				!getTemplates("participio", intro).isEmpty()
+				!getTemplates("participio", intro).isEmpty() ||
+				getTemplates("forma", intro).stream()
+					.map(template -> getTemplateParametersWithValue(template))
+					.map(params -> params.get("ParamWithoutName2"))
+					.filter(Objects::nonNull)
+					.anyMatch(param -> param.matches("(?i).*?participio.*"))
 			) {
 				continue;
 			}
