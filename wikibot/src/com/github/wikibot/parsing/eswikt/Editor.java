@@ -3282,18 +3282,22 @@ public class Editor extends AbstractEditor {
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF,
 				(m, sb) -> {
 					String target = m.group(2).trim();
-					String pipe = Optional.ofNullable(m.group(3)).orElse("").trim();
+					String pipe = m.group(3);
 					String trail = m.group(4);
 					
 					if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
 						return;
 					}
 					
-					if (
-						pipe.isEmpty() ||
-						!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
-					) {
-						return;
+					if (pipe != null) {
+						pipe = pipe.trim();
+						
+						if (
+							pipe.isEmpty() ||
+							!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
+						) {
+							return;
+						}
 					}
 					
 					if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
@@ -3515,7 +3519,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "sits";
+		String title = "à";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
