@@ -2928,6 +2928,7 @@ public class Editor extends AbstractEditor {
 		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
 		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
 		text = text.replaceAll("\\[\\[(?i:category|categoría):[^\\[\\{\\}]+?\\]\\]", "");
+		text = text.replace("{{clear}}", "");
 		
 		return text.trim();
 	}
@@ -3165,6 +3166,7 @@ public class Editor extends AbstractEditor {
 				langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
 					String intro = section.getIntro();
 					intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+					intro = intro.replace("{{clear}}", "");
 					intro = intro.trim();
 					
 					if (intro.isEmpty() && section.getChildSections() == null) {
@@ -3555,7 +3557,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "à";
+		String title = "aceites";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
