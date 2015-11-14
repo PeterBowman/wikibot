@@ -3116,46 +3116,25 @@ public class Editor extends AbstractEditor {
 					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
 				);
 			
-			// delete empty translations Section(s) in non-Spanish LangSections or flexive forms
+			// delete empty translations Section in non-Spanish LangSections or flexive forms
 			
 			if (
 				!langSection.langCodeEqualsTo("es") ||
 				(!hasNonFlexHeaders && hasFlexHeaders)
 			) {
-				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").stream()
-					.filter(Editor::isEmptyTranslationsSection)
-					.filter(section -> section.getChildSections() == null)
-					.forEach(section -> {
+				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").forEach(section -> {
+					String intro = section.getIntro();
+					intro = removeCommentsAndNoWikiText(intro);
+					intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+					intro = intro.replace("{{clear}}", "");
+					intro = intro.trim();
+					
+					if (intro.isEmpty() && section.getChildSections() == null) {
 						section.detachOnlySelf();
 						set.add(section.getStrippedHeader());
-					});
-			}
-			
-			// delete repeated and empty translations Section(s)
-			
-			langSection.findSubSectionsWithHeader("Traducci(ón|ones)").stream()
-				.map(AbstractSection::getSiblingSections)
-				.distinct()
-				.map(sections -> sections.stream()
-					.filter(section -> section.getStrippedHeader().matches("Traducci(ón|ones)"))
-					.collect(Collectors.toList())
-				)
-				.filter(sections -> sections.size() > 1)
-				.forEach(sections -> {
-					List<Section> targets = sections.stream()
-						.filter(Editor::isEmptyTranslationsSection)
-						.filter(section -> section.getChildSections() == null)
-						.collect(Collectors.toList());
-					
-					if (targets.size() == sections.size()) {
-						targets.remove(0);
 					}
-					
-					targets.forEach(section -> {
-						section.detachOnlySelf();
-						set.add(section.getStrippedHeader());
-					});
 				});
+			}
 			
 			// delete empty etymology Section in flexive forms or NO_ETYM_TERMS_CHECK == true
 			
@@ -3185,15 +3164,6 @@ public class Editor extends AbstractEditor {
 		String summary = "eliminando secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteWrongSections", summary);
-	}
-	
-	private static boolean isEmptyTranslationsSection(Section section) {
-		String text = section.getIntro();
-		text = removeCommentsAndNoWikiText(text);
-		text = text.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
-		text = text.replace("{{clear}}", "");
-		text = text.trim();
-		return text.isEmpty();
 	}
 	
 	public void manageClearElements() {
