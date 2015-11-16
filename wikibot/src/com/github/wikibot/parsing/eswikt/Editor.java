@@ -395,6 +395,7 @@ public class Editor extends AbstractEditor {
 		deleteWrongSections();
 		manageClearElements();
 		applyUcfTemplates();
+		sanitizeReferences();
 		groupReferences();
 		strongWhitespaces();
 		weakWhitespaces();
@@ -3348,9 +3349,36 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
 	}
 	
-	public void groupReferences() {
-		// TODO: same "name" attribute, different content, no self-closing tags
+	public void sanitizeReferences() {
+		Document doc = Jsoup.parseBodyFragment(text);
+		doc.outputSettings().prettyPrint(false);
 		
+		doc.select("ref[name]").stream()
+			.collect(Collectors.groupingBy(
+				ref -> ref.attr("name"),
+				LinkedHashMap::new,
+				Collectors.toCollection(Elements::new)
+			))
+			.values().stream()
+			.filter(elements -> elements.size() > 1)
+			.filter(elements -> elements.stream().allMatch(el -> !el.tag().isSelfClosing()))
+			.filter(elements -> elements.stream().map(Element::html).distinct().count() > 1)
+			.forEach(elements -> elements.stream()
+				.collect(Collectors.groupingBy(
+					Element::html,
+					LinkedHashMap::new,
+					Collectors.toCollection(Elements::new)
+				))
+				.values().stream()
+				.filter(els -> els.size() == 1) // let groupReferences() handle the rest
+				.forEach(els -> els.removeAttr("name"))
+			);
+		
+		String formatted = doc.body().html();
+		checkDifferences(formatted, "sanitizeReferences", "corrigiendo referencias");
+	}
+	
+	public void groupReferences() {
 		Document doc = Jsoup.parseBodyFragment(text);
 		doc.outputSettings().prettyPrint(false);
 		
@@ -3403,9 +3431,10 @@ public class Editor extends AbstractEditor {
 					refId.increment();
 				}
 				
-				// <refs> with a differente "name" attribute to be discarded
+				// <ref>s with a differente "name" attribute to be discarded
 				boolean abort = elements.stream()
 					.filter(el -> el.hasAttr("name") && !el.attr("name").equals(name))
+					// quotes are mandatory since el.attr("name") might be empty
 					.map(el -> doc.select(String.format("ref[name=\"%s\"]", el.attr("name"))))
 					.anyMatch(els -> {
 						// select those with a different content
