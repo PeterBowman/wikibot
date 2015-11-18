@@ -118,7 +118,7 @@ public class Editor extends AbstractEditor {
 		"chono" // https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
 	);
 	
-	private static final List<String> NO_ETYM_TMPLS = Arrays.asList(
+	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
 		"grafía", "grafía obsoleta", "variante", "variante obsoleta", "contracción"
 	);
 	
@@ -132,7 +132,7 @@ public class Editor extends AbstractEditor {
 	
 	private static final Predicate<LangSection> FLEXIVE_FORM_CHECK;
 	
-	private static final Predicate<Section> NO_ETYM_TERMS_CHECK;
+	private static final Predicate<Section> SOFT_REDIR_TERMS_CHECK;
 	
 	private boolean isOldStructure;
 	
@@ -264,7 +264,7 @@ public class Editor extends AbstractEditor {
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
 		
-		NO_ETYM_TERMS_CHECK = section -> {
+		SOFT_REDIR_TERMS_CHECK = section -> {
 			List<Section> childSections = section.getChildSections();
 			
 			if (childSections.isEmpty()) {
@@ -288,7 +288,7 @@ public class Editor extends AbstractEditor {
 				
 				while (m.find()) {
 					String term = m.group();
-					boolean anyMatch = NO_ETYM_TMPLS.stream()
+					boolean anyMatch = SOFT_REDIR_TMPLS.stream()
 						.anyMatch(template -> !getTemplates(template, term).isEmpty());
 					
 					hasStandardTerm |= !anyMatch;
@@ -1126,7 +1126,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			} else if (
 				section instanceof LangSection &&
-				NO_ETYM_TERMS_CHECK.test((LangSection) section)
+				SOFT_REDIR_TERMS_CHECK.test((LangSection) section)
 			) {
 				continue;
 			} else if (
@@ -1884,7 +1884,7 @@ public class Editor extends AbstractEditor {
 				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
 				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
-				NO_ETYM_TERMS_CHECK.test(langSection)
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			) {
 				continue;
 			}
@@ -1923,7 +1923,8 @@ public class Editor extends AbstractEditor {
 		if (
 			spanishSection != null &&
 			// TODO: discuss with the community
-			getTemplates("apellido", spanishSection.toString()).isEmpty()
+			getTemplates("apellido", spanishSection.toString()).isEmpty() &&
+			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
 		) {
 			List<Section> etymologySections = spanishSection.findSubSectionsWithHeader("Etimología.*");
 			
@@ -2795,7 +2796,7 @@ public class Editor extends AbstractEditor {
 					getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					// TODO: review
 					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
-					!NO_ETYM_TERMS_CHECK.test(etymologySection)
+					!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
 				) {
 					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 					etymologySection.setIntro(etymologyIntro);
@@ -2809,7 +2810,7 @@ public class Editor extends AbstractEditor {
 						getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
-						!NO_ETYM_TERMS_CHECK.test(etymologySection)
+						!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
 					) {
 						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
@@ -2833,7 +2834,10 @@ public class Editor extends AbstractEditor {
 		
 		// Translations
 		
-		if (spanishSection != null) {
+		if (
+			spanishSection != null &&
+			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
+		) {
 			List<Section> translations = spanishSection.findSubSectionsWithHeader("Traducciones");
 			
 			if (translations.size() == 1) {
@@ -3141,11 +3145,12 @@ public class Editor extends AbstractEditor {
 					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
 				);
 			
-			// delete empty translations Section in non-Spanish LangSections or flexive forms
+			// empty translations Sections
 			
 			if (
 				!langSection.langCodeEqualsTo("es") ||
-				(!hasNonFlexHeaders && hasFlexHeaders)
+				(!hasNonFlexHeaders && hasFlexHeaders) ||
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			) {
 				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").forEach(section -> {
 					String intro = section.getIntro();
@@ -3161,11 +3166,11 @@ public class Editor extends AbstractEditor {
 				});
 			}
 			
-			// delete empty etymology Section in flexive forms or NO_ETYM_TERMS_CHECK == true
+			// empty etymology Sections
 			
 			if (
 				(!hasNonFlexHeaders && hasFlexHeaders) ||
-				NO_ETYM_TERMS_CHECK.test(langSection)
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			) {
 				langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
 					String intro = section.getIntro();
@@ -3677,7 +3682,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "badana";
+		String title = "excessivamente";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
