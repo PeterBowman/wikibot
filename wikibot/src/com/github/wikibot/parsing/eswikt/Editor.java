@@ -3356,8 +3356,16 @@ public class Editor extends AbstractEditor {
 	public void sanitizeReferences() {
 		Document doc = Jsoup.parseBodyFragment(text);
 		doc.outputSettings().prettyPrint(false);
+		Elements refs = doc.select("ref[name]").not("[group]");
 		
-		doc.select("ref[name]").stream()
+		if (refs.isEmpty() || (
+			doc.getElementsByTag("references").size() +
+			getTemplates("título referencias", text).size() > 1
+		)) {
+			return;
+		}
+		
+		refs.stream()
 			.collect(Collectors.groupingBy(
 				ref -> ref.attr("name"),
 				LinkedHashMap::new,
