@@ -967,6 +967,10 @@ public class Editor extends AbstractEditor {
 		
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>]+?)>", "<$1references$2>");
 		
+		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
+		// automatically converting them to non-self-closing <ref name="a/">
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<ref ([^>].+?)(?<! )/>", "<ref $1 />");
+		
 		// trim contents of <ref> tags
 		
 		Document doc = Jsoup.parseBodyFragment(formatted);
@@ -3665,7 +3669,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "palpabile";
+		String title = "agachadera";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
