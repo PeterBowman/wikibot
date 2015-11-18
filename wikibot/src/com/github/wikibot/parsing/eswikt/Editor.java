@@ -980,7 +980,7 @@ public class Editor extends AbstractEditor {
 			.filter(ref -> !ref.tag().isSelfClosing())
 			.forEach(ref -> ref.html(ref.html().trim()));
 		
-		Page page = Page.store(title, doc.body().html());
+		Page page = Page.store(title, Utils.decodeHtmlDocument(doc));
 		
 		// remove trailing newlines from the last Section
 		
@@ -3378,7 +3378,7 @@ public class Editor extends AbstractEditor {
 				.forEach(els -> els.removeAttr("name"))
 			);
 		
-		String formatted = doc.body().html();
+		String formatted = Utils.decodeHtmlDocument(doc);
 		checkDifferences(formatted, "sanitizeReferences", "corrigiendo referencias");
 	}
 	
@@ -3466,7 +3466,7 @@ public class Editor extends AbstractEditor {
 				elements.forEach(Element::remove);
 			});
 		
-		String formatted = doc.body().html();
+		String formatted = Utils.decodeHtmlDocument(doc);
 		checkDifferences(formatted, "groupReferences", "agrupando referencias");
 	}
 	
@@ -3669,7 +3669,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "agachadera";
+		String title = "badana";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
