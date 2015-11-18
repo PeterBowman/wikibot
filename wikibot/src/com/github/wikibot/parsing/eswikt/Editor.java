@@ -3161,7 +3161,7 @@ public class Editor extends AbstractEditor {
 					
 					if (intro.isEmpty() && section.getChildSections() == null) {
 						section.detachOnlySelf();
-						set.add(section.getStrippedHeader());
+						set.add("Traducciones");
 					}
 				});
 			}
@@ -3180,7 +3180,7 @@ public class Editor extends AbstractEditor {
 					
 					if (intro.isEmpty() && section.getChildSections() == null) {
 						section.detachOnlySelf();
-						set.add(section.getStrippedHeader());
+						set.add("Etimología");
 					}
 				});
 			}
