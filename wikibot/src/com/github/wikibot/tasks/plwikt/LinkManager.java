@@ -64,7 +64,7 @@ public final class LinkManager implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getRequest();
 				Login.saveSession(wb);
 				break;
@@ -76,13 +76,13 @@ public final class LinkManager implements Selectorizable {
 				Misc.serialize(375, f_stats);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit(null, 0);
 				Login.saveSession(wb);
 				break;
 			case 'p':
 				try {
-					wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+					wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 					patrol();
 					Login.saveSession(wb);
 				} catch (IOException e) {
@@ -575,7 +575,7 @@ public final class LinkManager implements Selectorizable {
 				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
 				
 				for (Revision rev : revs) {
-					if (rev.getUser().equals(Users.User2.getUsername())) {
+					if (rev.getUser().equals(Users.USER2.getUsername())) {
 						break;
 					}
 					

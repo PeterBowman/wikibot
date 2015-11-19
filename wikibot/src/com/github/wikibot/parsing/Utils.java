@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.Range;
+import org.jsoup.nodes.Document;
 import org.wikiutils.ParseUtils;
 
 public final class Utils {
@@ -221,5 +222,13 @@ public final class Utils {
 		}
 
 		return index;
+	}
+	
+	public static String decodeHtmlDocument(Document doc) {
+		return doc.body().html()
+			.replace("&#xa0;", "&nbsp;")
+			.replace("&lt;", "<")
+			.replace("&gt;", ">")
+			.replace("&amp;", "&");
 	}
 }

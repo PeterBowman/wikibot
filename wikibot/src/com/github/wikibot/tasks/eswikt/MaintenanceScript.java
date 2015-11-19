@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.wikipedia.Wiki.LogEntry;
 import org.wikipedia.Wiki.Revision;
 import org.wikiutils.IOUtils;
 
@@ -49,6 +51,8 @@ public final class MaintenanceScript {
 	private static final int THREAD_CHECK_SECS = 5;
 	private static volatile RuntimeException threadExecutionException;
 	
+	private static ESWikt wb;
+	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
 		
@@ -60,7 +64,7 @@ public final class MaintenanceScript {
 			gap = 0;
 		}
 		
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		Calendar startCal = Calendar.getInstance();
 		startCal.setTime(DATE_FORMAT.parse(startTimestamp));
@@ -79,9 +83,16 @@ public final class MaintenanceScript {
 		int rcoptions = Wikibot.HIDE_REDIRECT | Wikibot.HIDE_BOT;
 		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		
-		List<String> titles = Stream
-			.of(wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wikibot.MAIN_NAMESPACE))
-			.collect(new RevisionCollector(gapCal));
+		Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wikibot.MAIN_NAMESPACE);
+		LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wikibot.MOVE_LOG, "move", null, "", Wikibot.ALL_NAMESPACES);
+		
+		List<String> titles = Stream.of(
+				Stream.of(revs).collect(new RevisionCollector(gapCal)),
+				Stream.of(logs).collect(new LogCollector(gapCal))
+			)
+			.flatMap(Collection::stream)
+			.distinct()
+			.collect(Collectors.toList());
 		
 		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(new String[titles.size()])))
 			// TODO: implement a Comparator in PageContainer so this is not necessary anymore
@@ -216,48 +227,93 @@ public final class MaintenanceScript {
 			threadExecutionException = new RuntimeException(e.getMessage());
 		}
 	}
-}
 
-class RevisionCollector implements Collector<Revision, HashMap<String, Revision>, List<String>> {
-	// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
-	// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
+	private static class RevisionCollector implements Collector<Revision, HashMap<String, Revision>, List<String>> {
+		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
+		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
+		
+		private Calendar cal;
 	
-	private Calendar cal;
-
-	public RevisionCollector(Calendar cal) {
-		this.cal = cal;
-	}
+		public RevisionCollector(Calendar cal) {
+			this.cal = cal;
+		}
+		
+		@Override
+		public Supplier<HashMap<String, Revision>> supplier() {
+			return HashMap::new;
+		}
 	
-	@Override
-	public Supplier<HashMap<String, Revision>> supplier() {
-		return HashMap::new;
-	}
-
-	@Override
-	public BiConsumer<HashMap<String, Revision>, Revision> accumulator() {
-		return (accum, rev) -> {
-			accum.put(rev.getPage(), rev);
-		};
-	}
-
-	@Override
-	public BinaryOperator<HashMap<String, Revision>> combiner() {
-		return null;
-	}
-
-	@Override
-	public Function<HashMap<String, Revision>, List<String>> finisher() {
-		return accum -> {
-			return accum.values().stream()
+		@Override
+		public BiConsumer<HashMap<String, Revision>, Revision> accumulator() {
+			return (accum, rev) -> accum.put(rev.getPage(), rev);
+		}
+	
+		@Override
+		public BinaryOperator<HashMap<String, Revision>> combiner() {
+			return null;
+		}
+	
+		@Override
+		public Function<HashMap<String, Revision>, List<String>> finisher() {
+			return accum -> accum.values().stream()
 				.filter(rev -> rev.getTimestamp().before(cal))
 				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
 				.map(Revision::getPage)
 				.collect(Collectors.toList());
-		};
+		}
+	
+		@Override
+		public Set<Characteristics> characteristics() {
+			return Collections.emptySet();
+		}
 	}
-
-	@Override
-	public Set<java.util.stream.Collector.Characteristics> characteristics() {
-		return Collections.emptySet();
+	
+	private static class LogCollector implements Collector<LogEntry, HashMap<String, LogEntry>, List<String>> {
+		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
+		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
+		
+		private Calendar cal;
+	
+		public LogCollector(Calendar cal) {
+			this.cal = cal;
+		}
+		
+		@Override
+		public Supplier<HashMap<String, LogEntry>> supplier() {
+			return HashMap::new;
+		}
+	
+		@Override
+		public BiConsumer<HashMap<String, LogEntry>, LogEntry> accumulator() {
+			return (accum, log) -> accum.putIfAbsent((String) log.getDetails(), log);
+		}
+	
+		@Override
+		public BinaryOperator<HashMap<String, LogEntry>> combiner() {
+			return null;
+		}
+	
+		@Override
+		public Function<HashMap<String, LogEntry>, List<String>> finisher() {
+			return accum -> accum.values().stream()
+				.filter(log -> log.getTimestamp().before(cal))
+				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
+				.map(log -> (String) log.getDetails())
+				.filter(title -> {
+					int ns;
+					try {
+						ns = wb.namespace(title);
+					} catch (Exception e) {
+						return false;
+					}
+					return ns == Wikibot.MAIN_NAMESPACE;
+				})
+				.collect(Collectors.toList());
+		}
+	
+		@Override
+		public Set<Characteristics> characteristics() {
+			return Collections.emptySet();
+		}
 	}
 }

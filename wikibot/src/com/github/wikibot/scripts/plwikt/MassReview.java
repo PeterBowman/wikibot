@@ -31,7 +31,7 @@ public final class MassReview {
 	private static final String F_ERRORS = LOCATION + "errors.txt";
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		wb.setThrottle(5000);
 		
 		List<String[]> list = extractList();

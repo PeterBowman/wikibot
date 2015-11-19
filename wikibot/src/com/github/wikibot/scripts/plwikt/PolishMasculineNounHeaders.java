@@ -45,12 +45,12 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				//getList();
 				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getContents();
 				Login.saveSession(wb);
 				break;
@@ -62,7 +62,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				//Misc.serialize(1508, f_stats);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit();
 				Login.saveSession(wb);
 				break;

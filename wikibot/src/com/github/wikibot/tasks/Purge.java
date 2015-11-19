@@ -22,7 +22,7 @@ public final class Purge {
 		
 		Domains domain = Domains.findDomain(args[0]);
 		Objects.requireNonNull(domain);
-		Wikibot wb = Login.retrieveSession(domain, Users.User1);
+		Wikibot wb = Login.retrieveSession(domain, Users.USER1);
 		
 		int opts = Integer.parseInt(args[1]);
 		String[] titles = Arrays.copyOfRange(args, 2, args.length);

@@ -1,0 +1,16 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.github.wikibot</groupId>
+  <artifactId>wikibot-maven</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <modules>
+  	<module>wiki-java</module>
+  	<module>wikibot</module>
+  </modules>
+  <scm>
+  	<url>https://github.com/PeterBowman/wikibot</url>
+  	<developerConnection>Peter Bowman</developerConnection>
+  	<connection>scm:git:git://github.com/PeterBowman/wikibot.git</connection>
+  </scm>
+</project>

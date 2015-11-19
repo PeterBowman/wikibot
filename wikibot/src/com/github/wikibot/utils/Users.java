@@ -3,13 +3,13 @@ package com.github.wikibot.utils;
 import java.util.stream.Stream;
 
 public enum Users {
-	User1 (
+	USER1 (
 			"Peter Bowman",
 			"peterbowman",
 			new Domains[] {Domains.PLWIKT, Domains.ESWIKT},
 			new Domains[] {}
 		),
-	User2 (
+	USER2 (
 			"PBbot",
 			"pbbot",
 			new Domains[] {},

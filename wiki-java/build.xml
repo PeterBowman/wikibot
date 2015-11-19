@@ -9,15 +9,21 @@
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.7"/>
     <property name="source" value="1.7"/>
+    <path id="Maven Dependencies.libraryclasspath">
+        <pathelement location="../../../.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar"/>
+    </path>
     <path id="wiki-java.classpath">
         <pathelement location="bin"/>
-        <pathelement location="javax.servlet-api.jar"/>
+        <path refid="Maven Dependencies.libraryclasspath"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
+                <include name="**/*.java"/>
                 <exclude name="**/*.java"/>
+                <exclude name="org/wikipedia/servlets/**/*.java"/>
+                <exclude name="org/wikipedia/tools/**/*.java"/>
             </fileset>
         </copy>
     </target>
@@ -31,6 +37,9 @@
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
             <src path="src"/>
+            <include name="**/*.java"/>
+            <exclude name="org/wikipedia/servlets/**/*.java"/>
+            <exclude name="org/wikipedia/tools/**/*.java"/>
             <classpath refid="wiki-java.classpath"/>
         </javac>
     </target>

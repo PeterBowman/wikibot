@@ -18,7 +18,7 @@ import com.github.wikibot.utils.Users;
 public class OrphanTalkPages {
 	@SuppressWarnings({ "rawtypes" })
 	public static void main(String[] args) throws IOException, LoginException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		Integer[] namespaces = new Integer[]{
 			PLWikt.TALK_NAMESPACE,
 			//PLWikt.USER_TALK_NAMESPACE,

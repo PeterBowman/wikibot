@@ -851,7 +851,7 @@ public class Wikibot extends WMFWiki {
         XMLReader xmlReader = saxParser.getXMLReader();
         xmlReader.setContentHandler(handler);
     	
-    	try (Reader reader = new InputStreamReader(new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(matching[0]))))) {
+    	try (Reader reader = new InputStreamReader(new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(matching[0]))), "UTF-8")) {
     		xmlReader.parse(new InputSource(reader));
 		}
     }

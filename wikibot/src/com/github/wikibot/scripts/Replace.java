@@ -47,12 +47,12 @@ public final class Replace implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
-				wb = Login.retrieveSession(domain, Users.User1);
+				wb = Login.retrieveSession(domain, Users.USER1);
 				getDiffs();
 				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(domain, Users.User2);
+				wb = Login.retrieveSession(domain, Users.USER2);
 				edit();
 				Login.saveSession(wb);
 				break;

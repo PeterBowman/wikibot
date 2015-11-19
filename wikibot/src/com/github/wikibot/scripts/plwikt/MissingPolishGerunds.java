@@ -42,12 +42,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				checkGerunds();
 				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				getMissing();
 				Login.saveSession(wb);
 				break;
@@ -55,12 +55,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 				makeArrayLists();
 				break;
 			case '8':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				writeAff();
 				Login.saveSession(wb);
 				break;
 			case '9':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				writeNeg();
 				Login.saveSession(wb);
 				break;

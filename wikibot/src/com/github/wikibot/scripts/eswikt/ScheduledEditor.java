@@ -43,7 +43,7 @@ public final class ScheduledEditor {
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		wb.setThrottle(5000);
 		
 		if (args.length == 0) {
@@ -88,7 +88,7 @@ public final class ScheduledEditor {
 			
 			try {
 				pages = wb.listPagesContent(lastEntry, BATCH, ESWikt.MAIN_NAMESPACE);
-			} catch (IOException e) {
+			} catch (IOException | UnknownError e) {
 				e.printStackTrace();
 				sleep();
 				continue;
@@ -232,7 +232,7 @@ public final class ScheduledEditor {
 		try {
 			wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 			System.out.println(editor.getLogs());
-		} catch (IOException e) {
+		} catch (IOException | UnknownError e) {
 			sleep();
 			editEntry(pc, editor);
 			return;

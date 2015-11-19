@@ -107,7 +107,7 @@ public class MorfeuszLookup {
 	}
 	
 	private static void wrapParser(Consumer<Reader> cons) {
-		try (Reader r = new InputStreamReader(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(f))))) {
+		try (Reader r = new InputStreamReader(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(f))), "UTF-8")) {
 			cons.accept(r);
 		} catch (IOException e) {}
 	}

@@ -47,7 +47,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			case '1':
 			case '2':
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, op != '3' ? Users.User1 : Users.User2);
+				wb = Login.retrieveSession(Domains.PLWIKT, op != '3' ? Users.USER1 : Users.USER2);
 				process(op == '1', op != '3');
 				Login.saveSession(wb);
 				break;

@@ -1,5 +1,10 @@
 package com.github.wikibot.parsing.eswikt;
 
+import static org.wikiutils.ParseUtils.getTemplateParametersWithValue;
+import static org.wikiutils.ParseUtils.getTemplates;
+import static org.wikiutils.ParseUtils.removeCommentsAndNoWikiText;
+import static org.wikiutils.ParseUtils.templateFromMap;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +19,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -30,7 +36,10 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.wikiutils.ParseUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -51,6 +60,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_INFLECT_TMPLS = Pattern.compile("\\{\\{(inflect\\..+?)[\\|\\}]");
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
 	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?)[:;#]*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
@@ -109,6 +119,10 @@ public class Editor extends AbstractEditor {
 		"chono" // https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
 	);
 	
+	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
+		"grafía", "grafía obsoleta", "variante", "variante obsoleta", "contracción"
+	);
+	
 	private static final List<Pattern> COMMENT_PATT_LIST;
 	private static final List<String> LS_SPLITTER_LIST;
 	private static final List<String> BS_SPLITTER_LIST;
@@ -118,6 +132,8 @@ public class Editor extends AbstractEditor {
 	private static final String HAS_FLEXIVE_FORM_HEADER_RE = "([Ff]orma|\\{\\{forma) .+";
 	
 	private static final Predicate<LangSection> FLEXIVE_FORM_CHECK;
+	
+	private static final Predicate<Section> SOFT_REDIR_TERMS_CHECK;
 	
 	private boolean isOldStructure;
 	
@@ -249,6 +265,45 @@ public class Editor extends AbstractEditor {
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
 		
+		SOFT_REDIR_TERMS_CHECK = section -> {
+			List<Section> childSections = section.getChildSections();
+			
+			if (childSections.isEmpty()) {
+				return false;
+			}
+			
+			List<Section> targetSections = childSections.stream()
+				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
+				.collect(Collectors.toList());
+			
+			if (targetSections.isEmpty()) {
+				return false;
+			}
+			
+			boolean hasStandardTerm = false;
+			boolean hasSpecialTerm = false;
+			
+			for (Section targetSection : targetSections) {
+				String text = removeCommentsAndNoWikiText(targetSection.getIntro());
+				Matcher m = P_TERM.matcher(text);
+				
+				while (m.find()) {
+					String term = m.group();
+					boolean anyMatch = SOFT_REDIR_TMPLS.stream()
+						.anyMatch(template -> !getTemplates(template, term).isEmpty());
+					
+					hasStandardTerm |= !anyMatch;
+					hasSpecialTerm |= anyMatch;
+					
+					if (hasStandardTerm && hasSpecialTerm) {
+						return false;
+					}
+				}
+			}
+			
+			return !hasStandardTerm && hasSpecialTerm;
+		};
+		
 		FLEXIVE_FORM_CHECK = langSection -> {
 			List<Section> allSubsections = AbstractSection.flattenSubSections(langSection);
 			allSubsections.remove(langSection);
@@ -278,16 +333,16 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private void checkOldStructure(String text) {
-		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		text = removeCommentsAndNoWikiText(text);
 		Matcher m = P_XX_ES_TEMPLATE.matcher(text);
 		
 		if (
 			m.find() ||
-			!ParseUtils.getTemplates("ES", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
-			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
-			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
+			!getTemplates("ES", text).isEmpty() ||
+			!getTemplates("TRANSLIT", text).isEmpty() ||
+			!getTemplates("TRANS", text).isEmpty() ||
+			!getTemplates("TAXO", text).isEmpty() ||
+			!getTemplates("carácter oriental", text).isEmpty()
 		) {
 			isOldStructure = true;
 		} else {
@@ -312,16 +367,16 @@ public class Editor extends AbstractEditor {
 		splitLines();
 		minorSanitizing();
 		transformToNewStructure();
+		normalizeSectionHeaders();
+		substituteReferencesTemplate();
+		duplicateReferencesSection();
+		moveReferencesSection();
 		
 		// TODO
 		if (!checkFlexiveFormHeaders()) {
 			throw new UnsupportedOperationException("checkFlexiveFormHeaders()");
 		}
 		
-		normalizeSectionHeaders();
-		substituteReferencesTemplate();
-		duplicateReferencesSection();
-		moveReferencesSection();
 		normalizeEtymologyHeaders();
 		normalizeSectionLevels();
 		removePronGrafSection();
@@ -342,6 +397,8 @@ public class Editor extends AbstractEditor {
 		deleteWrongSections();
 		manageClearElements();
 		applyUcfTemplates();
+		sanitizeReferences();
+		groupReferences();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -560,7 +617,7 @@ public class Editor extends AbstractEditor {
 	
 	public void joinLines() {
 		Range<Integer>[] tags = Utils.findRanges(text, P_TAGS);
-		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref[ >].+?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref\\b([^>]*?)(?<!/ ?)>.*?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
 		Range<Integer>[] templates = Utils.findRanges(text, "{{", "}}");
 		Range<Integer>[] wikitables = Utils.findRanges(text, "{|", "|}");
 		
@@ -590,7 +647,7 @@ public class Editor extends AbstractEditor {
 				
 				String replacement = null;
 				
-				if (ParseUtils.removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
+				if (removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
 					if (isRefRange) {
 						replacement = m.group(1).replaceFirst("^[ \n]+", "");
 						replacement = Matcher.quoteReplacement(replacement);
@@ -603,7 +660,7 @@ public class Editor extends AbstractEditor {
 				
 				int index = text.substring(0, m.start()).lastIndexOf("\n");
 				String previousLine = text.substring(index + 1, m.start());
-				previousLine = ParseUtils.removeCommentsAndNoWikiText(previousLine);
+				previousLine = removeCommentsAndNoWikiText(previousLine);
 				
 				final String[] arr = isRefRange
 					? new String[]{":", ";", "*", "#"}
@@ -858,6 +915,8 @@ public class Editor extends AbstractEditor {
 		Set<String> setFileAlias = new HashSet<>();
 		Set<String> setLog = new LinkedHashSet<>();
 		
+		// sanitize image links
+		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
 			(m, sb) -> {
 				int startOffset = m.start(1) - m.start();
@@ -896,13 +955,45 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^\\* ?\\[\\[\\]\\]$", "")
 		);
 		
+		formatted = applyReplacementFunction(formatted, setLog, "\"^[(){}\\[\\]]$\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^[(){}\\[\\]]$", "")
+		);
+		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;[2-9]:$\" → \"\"", text ->
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?[2-9]: ?\\.?$", "")
 		);
 		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;\\d.+\" → \";\\d:.+\"", text ->
-			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^;\\s*?(\\d+?)\\s*(\\{\\{plm[\\|\\}][^:]+?|(?!\\s*?\\{\\{)[^:]+?)$", ";$1: $2")
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
+		
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>]+?)>", "<$1references$2>");
+		
+		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
+		// automatically converting them to non-self-closing <ref name="a/">
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<ref ([^>].+?)(?<! )/>", "<ref $1 />");
+		
+		// trim contents of <ref> tags
+		
+		Document doc = Jsoup.parseBodyFragment(formatted);
+		doc.outputSettings().prettyPrint(false);
+		
+		doc.getElementsByTag("ref").stream()
+			.filter(ref -> !ref.tag().isSelfClosing())
+			.forEach(ref -> ref.html(ref.html().trim()));
+		
+		Page page = Page.store(title, Utils.decodeHtmlDocument(doc));
+		
+		// remove trailing newlines from the last Section
+		
+		try {
+			List<Section> sections = page.getAllSections();
+			Section lastSection = sections.get(sections.size() - 1);
+			
+			if (lastSection.getTrailingNewlines() > 1) {
+				lastSection.setTrailingNewlines(1);
+			}
+		} catch (IndexOutOfBoundsException e) {}
 		
 		String summary = null;
 		
@@ -910,7 +1001,7 @@ public class Editor extends AbstractEditor {
 			summary = String.join(", ", setLog);
 		}
 		
-		checkDifferences(formatted, "minorSanitizing", summary);
+		checkDifferences(page.toString(), "minorSanitizing", summary);
 	}
 	
 	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
@@ -929,10 +1020,10 @@ public class Editor extends AbstractEditor {
 		
 		if (
 			!isOldStructure ||
-			!ParseUtils.getTemplates("TRANSLIT", text).isEmpty() ||
-			!ParseUtils.getTemplates("TRANS", text).isEmpty() ||
-			!ParseUtils.getTemplates("TAXO", text).isEmpty() ||
-			!ParseUtils.getTemplates("carácter oriental", text).isEmpty()
+			!getTemplates("TRANSLIT", text).isEmpty() ||
+			!getTemplates("TRANS", text).isEmpty() ||
+			!getTemplates("TAXO", text).isEmpty() ||
+			!getTemplates("carácter oriental", text).isEmpty()
 		) {
 			return;
 		}
@@ -947,19 +1038,23 @@ public class Editor extends AbstractEditor {
 		
 		page = Page.store(page.getTitle(), formatted);
 		
-		// Push down old-structure sections
-		
-		for (Section section : page.getAllSections()) {
-			if (section.getLangSectionParent() == null) {
-				section.setLevel(section.getLevel() + 1);
-			}
-		}
-		
 		// References section(s)
 		
-		for (Section section : page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?")) {
-			section.setHeader("Referencias y notas");
-			section.setLevel(2);
+		List<Section> references = page.findSectionsWithHeader("(<small *?>)? *?[Rr]eferencias.*?(<small *?/ *?>)?");
+		references.forEach(AbstractSection::detachOnlySelf);
+		references.forEach(section -> section.setHeader("Referencias y notas"));
+		references.forEach(section -> section.setLevel(2));
+		
+		// Push down old-structure sections
+		// TODO: use pushLevels()
+		
+		for (Section section : page.getAllSections()) {
+			// workaround that benefits from the lack of Section reparsing 
+			if (section.getLangSectionParent() == null) {
+				try {
+					section.setLevel(section.getLevel() + 1);
+				} catch (IllegalArgumentException e) {}
+			}
 		}
 		
 		// TODO: add a method to reparse all Sections?
@@ -1008,8 +1103,8 @@ public class Editor extends AbstractEditor {
 				etymologySections.isEmpty() &&
 				section instanceof LangSection &&
 				RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) &&
-				ParseUtils.getTemplates("etimología", section.getIntro()).isEmpty() &&
-				ParseUtils.getTemplates("etimología2", section.getIntro()).isEmpty()
+				getTemplates("etimología", section.getIntro()).isEmpty() &&
+				getTemplates("etimología2", section.getIntro()).isEmpty()
 			) {
 				continue;
 			}
@@ -1025,7 +1120,15 @@ public class Editor extends AbstractEditor {
 				}
 			} else if (
 				section instanceof LangSection &&
-				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
+				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
+				!Optional.ofNullable(section.nextSiblingSection())
+					.filter(s -> s.getHeader().startsWith("ETYM "))
+					.isPresent()
+			) {
+				continue;
+			} else if (
+				section instanceof LangSection &&
+				SOFT_REDIR_TERMS_CHECK.test((LangSection) section)
 			) {
 				continue;
 			} else if (
@@ -1053,8 +1156,8 @@ public class Editor extends AbstractEditor {
 					etymologySection.getIntro().isEmpty() &&
 					// see addMissingElements()
 					(
-						!ParseUtils.getTemplates("etimología", section.getIntro()).isEmpty() ||
-						!ParseUtils.getTemplates("etimología2", section.getIntro()).isEmpty()
+						!getTemplates("etimología", section.getIntro()).isEmpty() ||
+						!getTemplates("etimología2", section.getIntro()).isEmpty()
 					)
 				) {
 					HashMap<String, String> params = new LinkedHashMap<>();
@@ -1069,7 +1172,7 @@ public class Editor extends AbstractEditor {
 						}
 					}
 					
-					String template = ParseUtils.templateFromMap(params);
+					String template = templateFromMap(params);
 					etymologySection.setIntro(template + ".");
 				}
 				
@@ -1084,7 +1187,7 @@ public class Editor extends AbstractEditor {
 			) {
 				String templateName = "estructura";
 				
-				if (ParseUtils.getTemplates(templateName, text).isEmpty()) {
+				if (getTemplates(templateName, text).isEmpty()) {
 					insertStructureTemplate(templateName, page);
 					String log = String.format("{{%s}}", templateName);
 					checkDifferences(page.toString(), "transformToNewStructure", log);
@@ -1148,6 +1251,9 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
+		// Reattach references Sections
+		page.appendSections(references.toArray(new Section[references.size()]));
+		
 		formatted = page.toString();
 		isOldStructure = false;
 		
@@ -1178,7 +1284,7 @@ public class Editor extends AbstractEditor {
 				String template = m.group(2);
 				String post = m.group(3);
 				
-				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				HashMap<String, String> params = getTemplateParametersWithValue(template);
 				String name = params.get("templateName");
 				
 				if (name.equals("lengua") || name.equals("translit")) {
@@ -1220,7 +1326,7 @@ public class Editor extends AbstractEditor {
 					m.appendReplacement(sb, replacement);
 				} else {
 					sortTemplateParamsMap(params);
-					String newTemplate = ParseUtils.templateFromMap(params);
+					String newTemplate = templateFromMap(params);
 					String replacement = String.format("%s=%s=%s", pre, newTemplate, post);
 					m.appendReplacement(sb, replacement);
 				}
@@ -1244,7 +1350,7 @@ public class Editor extends AbstractEditor {
 			section instanceof LangSection &&
 			RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode())
 		) {
-			if (ParseUtils.removeCommentsAndNoWikiText(alt).isEmpty()) {
+			if (removeCommentsAndNoWikiText(alt).isEmpty()) {
 				Map<String, String> params = ((LangSection) section).getTemplateParams();
 				params.remove("alt");
 				((LangSection) section).setTemplateParams(params);
@@ -1254,25 +1360,25 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String intro = section.getIntro();
-		List<String> pronLaTmpls = ParseUtils.getTemplates("pron.la", intro);
+		List<String> pronLaTmpls = getTemplates("pron.la", intro);
 		
 		if (pronLaTmpls.size() == 1) {
 			String pronLaTmpl = pronLaTmpls.get(0);
-			HashMap<String, String> pronLaParams = ParseUtils.getTemplateParametersWithValue(pronLaTmpl);
+			HashMap<String, String> pronLaParams = getTemplateParametersWithValue(pronLaTmpl);
 			
 			if (!pronLaParams.containsKey("alt")) {
 				pronLaParams.put("alt", alt);
-				intro = intro.replace(pronLaTmpl, ParseUtils.templateFromMap(pronLaParams));
+				intro = intro.replace(pronLaTmpl, templateFromMap(pronLaParams));
 				section.setIntro(intro);
 			}
 		} else if (
-			ParseUtils.getTemplates("diacrítico", intro).isEmpty() &&
+			getTemplates("diacrítico", intro).isEmpty() &&
 			!intro.contains("Diacrítico:")
 		) {
 			HashMap<String, String> params = new LinkedHashMap<>();
 			params.put("templateName", "diacrítico");
 			params.put("ParamWithoutName1", alt);
-			String template = ParseUtils.templateFromMap(params);
+			String template = templateFromMap(params);
 			section.setIntro(intro + "\n" + template + ".");
 		} else {
 			insertAltComment(section, alt);
@@ -1379,7 +1485,7 @@ public class Editor extends AbstractEditor {
 			return false;
 		}
 		
-		line = ParseUtils.removeCommentsAndNoWikiText(line);
+		line = removeCommentsAndNoWikiText(line);
 		line = line.replaceAll("<ref [^>]+?(?<=/ ?)>", "");
 		
 		for (int i = 0; i < arr1.length; i++) {
@@ -1408,6 +1514,7 @@ public class Editor extends AbstractEditor {
 			
 			header = StringUtils.strip(header, "=").trim();
 			header = header.replaceFirst("(?i)^Etimolog[íi]a", "Etimología");
+			header = header.replaceFirst("(?i)^Pronunciaci[óo]n\\b", "Pronunciación");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceFirst("(?i)^Locuciones", "Locuciones");
 			header = header.replaceFirst("(?i)^(?:Refranes|Dichos?)", "Refranes");
@@ -1415,6 +1522,8 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^Informaci[óo]n (?:adicional|avanzada)", "Información adicional");
 			header = header.replaceFirst("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
+			
+			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
 			
 			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
 			header = header.replaceFirst("(?i)^Forma (?:de )?verb(?:o|al)$", "Forma verbal");
@@ -1524,7 +1633,7 @@ public class Editor extends AbstractEditor {
 			Section section = iterator.next();
 			String content = section.getIntro();
 			
-			content = ParseUtils.removeCommentsAndNoWikiText(content); 
+			content = removeCommentsAndNoWikiText(content); 
 			content = content.replaceAll("<references *?/ *?>", "");
 			// TODO: review transclusions of {{listaref}}
 			//content = content.replaceAll("\\{\\{ *?listaref *?\\}\\}", "");
@@ -1644,6 +1753,11 @@ public class Editor extends AbstractEditor {
 		
 		page.normalizeChildLevels();
 		
+		for (Section pronGrafSection : page.findSectionsWithHeader("Pronunciación y escritura")) {
+			Optional.ofNullable(pronGrafSection.getChildSections())
+				.ifPresent(chs -> chs.forEach(s -> s.pushLevels(-1)));
+		}
+		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
 				continue;
@@ -1739,7 +1853,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		checkDifferences(formatted, "removePronGrafSection", "eliminando título de pronunciación");
+		checkDifferences(formatted, "removePronGrafSection", "eliminando títulos de pronunciación");
 	}
 
 	public void sortLangSections() {
@@ -1769,9 +1883,10 @@ public class Editor extends AbstractEditor {
 				// TODO: discuss with the community
 				title.contains(" ") ||
 				langSection.getChildSections() == null ||
-				!langSection.findSubSectionsWithHeader("Etimología.*").isEmpty() ||
+				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
-				RECONSTRUCTED_LANGS.contains(langSection.getLangCode())
+				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			) {
 				continue;
 			}
@@ -1797,7 +1912,7 @@ public class Editor extends AbstractEditor {
 				params.put("leng", langSection.getLangCode());
 			}
 			
-			String template = ParseUtils.templateFromMap(params);
+			String template = templateFromMap(params);
 			etymologySection.setIntro(template + ".");
 			langSection.prependSections(etymologySection);
 			set.add("Etimología");
@@ -1810,14 +1925,16 @@ public class Editor extends AbstractEditor {
 		if (
 			spanishSection != null &&
 			// TODO: discuss with the community
-			ParseUtils.getTemplates("apellido", spanishSection.toString()).isEmpty()
+			getTemplates("apellido", spanishSection.toString()).isEmpty() &&
+			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
 		) {
 			List<Section> etymologySections = spanishSection.findSubSectionsWithHeader("Etimología.*");
 			
 			if (etymologySections.size() == 1) {
 				if (
 					etymologySections.get(0).getLevel() == 3 &&
-					spanishSection.findSubSectionsWithHeader("Traducciones").isEmpty()
+					!spanishSection.hasSubSectionWithHeader("Traducciones") &&
+					!spanishSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 				) {
 					Section translationsSection = Section.create("Traducciones", 3);
 					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
@@ -1829,7 +1946,9 @@ public class Editor extends AbstractEditor {
 				for (Section etymologySection : etymologySections) {
 					if (
 						etymologySection.getLevel() == 3 &&
-						etymologySection.findSubSectionsWithHeader("Traducciones").isEmpty()
+						!etymologySection.hasSubSectionWithHeader("Traducciones") &&
+						// TODO: this won't happen with the current restrictions (see checkFlexiveFormHeaders())
+						!etymologySection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 					) {
 						Section translationsSection = Section.create("Traducciones", 4);
 						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
@@ -1855,10 +1974,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "añadiendo sección: "
-			: "añadiendo secciones: ";
-		summary += String.join(", ", set);
+		String summary = "añadiendo secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "addMissingSections", summary);
 	}
@@ -1881,7 +1997,7 @@ public class Editor extends AbstractEditor {
 		final Pattern pReferenceTags = Pattern.compile("<references *?/? *?>");
 		
 		if (
-			ParseUtils.getTemplates("listaref", str).isEmpty() &&
+			getTemplates("listaref", str).isEmpty() &&
 			str.equals(pReferenceTags.matcher(str).replaceAll(""))
 		) {
 			return;
@@ -1930,10 +2046,8 @@ public class Editor extends AbstractEditor {
 		String referencesIntro = references.getIntro();
 		
 		if (
-			!ParseUtils
-				.getTemplates("listaref", referencesIntro).isEmpty() ||
-			pReferenceTags
-				.matcher(ParseUtils.removeCommentsAndNoWikiText(referencesIntro)).find()
+			!getTemplates("listaref", referencesIntro).isEmpty() ||
+			pReferenceTags.matcher(removeCommentsAndNoWikiText(referencesIntro)).find()
 		) {
 			summary = String.format("eliminando %s", String.join(", ", set));
 		} else {
@@ -1977,13 +2091,31 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				!intro.contains("{{inflect.") ||
-				!ParseUtils.getTemplates("participio", intro).isEmpty()
+				!getTemplates("participio", intro).isEmpty() ||
+				getTemplates("forma", intro).stream()
+					.map(template -> getTemplateParametersWithValue(template))
+					.map(params -> params.get("ParamWithoutName2"))
+					.filter(Objects::nonNull)
+					.anyMatch(param -> param.matches("(?i).*?participio.*"))
 			) {
 				continue;
 			}
 			
-			intro = Utils.replaceWithStandardIgnoredRanges(intro, "\\{\\{inflect\\..+?\\}\\}", "");
-			section.setIntro(intro);
+			List<String> list = new ArrayList<>();
+			
+			Utils.replaceWithStandardIgnoredRanges(intro, P_INFLECT_TMPLS,
+				(m, sb) -> list.add(m.group(1))
+			);
+			
+			String temp = intro;
+			
+			for (String templateName : list) {
+				temp = Utils.replaceTemplates(temp, templateName, match -> "");
+			}
+			
+			if (!temp.equals(intro)) {
+				section.setIntro(temp);
+			}
 		}
 		
 		String formatted = page.toString();
@@ -1993,14 +2125,14 @@ public class Editor extends AbstractEditor {
 	public void manageAnnotationTemplates() {
 		final String annotationTemplateName = "anotación";
 		
-		if (isOldStructure || ParseUtils.getTemplates(annotationTemplateName, text).isEmpty()) {
+		if (isOldStructure || getTemplates(annotationTemplateName, text).isEmpty()) {
 			return;
 		}
 		
 		// Remove empty templates
 		
 		String formatted = Utils.replaceTemplates(text, annotationTemplateName, match -> {
-			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
+			Map<String, String> params = getTemplateParametersWithValue(match);
 			
 			long count = params.values().stream()
 				.filter(value -> value != null && !value.isEmpty())
@@ -2022,7 +2154,7 @@ public class Editor extends AbstractEditor {
 		
 		if (
 			isOldStructure ||
-			ParseUtils.getTemplates(disambigTemplateName, text).isEmpty() ||
+			getTemplates(disambigTemplateName, text).isEmpty() ||
 			!Page.store(title, text).hasSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)
 		) {
 			return;
@@ -2031,7 +2163,7 @@ public class Editor extends AbstractEditor {
 		// Remove empty templates
 		
 		String formatted = Utils.replaceTemplates(text, disambigTemplateName, match -> {
-			Map<String, String> params = ParseUtils.getTemplateParametersWithValue(match);
+			Map<String, String> params = getTemplateParametersWithValue(match);
 			
 			long count = params.values().stream()
 				.filter(value -> value != null && !value.isEmpty())
@@ -2071,7 +2203,7 @@ public class Editor extends AbstractEditor {
 			if (
 				langSection == null || content.isEmpty() ||
 				// TODO: review
-				!ParseUtils.getTemplates("pron-graf", content).isEmpty()
+				!getTemplates("pron-graf", content).isEmpty()
 			) {
 				continue;
 			}
@@ -2144,14 +2276,14 @@ public class Editor extends AbstractEditor {
 					continue;
 				}
 				
-				List<String> templates = ParseUtils.getTemplates(templateName, line);
+				List<String> templates = getTemplates(templateName, line);
 				
 				if (templates.isEmpty() || templates.size() > 1) {
 					editedLines.add(origLine);
 					continue;
 				}
 				
-				Map<String, String> params = ParseUtils.getTemplateParametersWithValue(templates.get(0));
+				Map<String, String> params = getTemplateParametersWithValue(templates.get(0));
 				Map<String, String> newParams = new LinkedHashMap<>();
 				
 				switch (templateName) {
@@ -2302,7 +2434,7 @@ public class Editor extends AbstractEditor {
 							newParams.put("alt", par3);
 						}
 						
-						newParams.put("pron", "latín clásico");
+						newParams.put("pron", "clásico");
 						
 						if (par1 != null && !par1.isEmpty()) {
 							newParams.put("fone", par1);
@@ -2413,7 +2545,7 @@ public class Editor extends AbstractEditor {
 				newMap.putAll(entry.getValue());
 			}
 			
-			editedLines.add(0, ParseUtils.templateFromMap(newMap));
+			editedLines.add(0, templateFromMap(newMap));
 			
 			if (!amboxTemplates.isEmpty()) {
 				editedLines.addAll(0, amboxTemplates);
@@ -2576,7 +2708,7 @@ public class Editor extends AbstractEditor {
 				String template = m2.group(1);
 				String trail = m2.group(2);
 				
-				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+				HashMap<String, String> params = getTemplateParametersWithValue(template);
 				
 				if (!params.getOrDefault("templateName", "").matches("l\\+?")) {
 					return null;
@@ -2612,7 +2744,7 @@ public class Editor extends AbstractEditor {
 		
 		return leadingComments +
 			(!leadingComments.isEmpty() ? "\n" : "") +
-			ParseUtils.templateFromMap(map) + "." +
+			templateFromMap(map) + "." +
 			trailingComments;
 	}
 	
@@ -2638,11 +2770,11 @@ public class Editor extends AbstractEditor {
 			if (
 				etymologySections.isEmpty() &&
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
-				ParseUtils.getTemplates("pron-graf", langSection.getIntro()).isEmpty()
+				getTemplates("pron-graf", langSection.getIntro()).isEmpty()
 			) {
 				String langSectionIntro = langSection.getIntro();
 				
-				if (ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty()) {
+				if (getTemplates("pron-graf", langSectionIntro).isEmpty()) {
 					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
 					langSection.setIntro(langSectionIntro);
 					set.add("{{pron-graf}}");
@@ -2653,8 +2785,8 @@ public class Editor extends AbstractEditor {
 				String etymologyIntro = etymologySection.getIntro();
 				
 				if (
-					ParseUtils.getTemplates("pron-graf", langSectionIntro).isEmpty() &&
-					ParseUtils.getTemplates("pron-graf", etymologyIntro).isEmpty()
+					getTemplates("pron-graf", langSectionIntro).isEmpty() &&
+					getTemplates("pron-graf", etymologyIntro).isEmpty()
 				) {
 					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
 					langSection.setIntro(langSectionIntro);
@@ -2662,10 +2794,11 @@ public class Editor extends AbstractEditor {
 				}
 				
 				if (
-					ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
-					ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
+					getTemplates("etimología", langSection.getIntro()).isEmpty() &&
+					getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					// TODO: review
-					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
+					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
+					!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
 				) {
 					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 					etymologySection.setIntro(etymologyIntro);
@@ -2676,9 +2809,10 @@ public class Editor extends AbstractEditor {
 					String etymologyIntro = etymologySection.getIntro();
 					
 					if (
-						ParseUtils.getTemplates("etimología", langSection.getIntro()).isEmpty() &&
-						ParseUtils.getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
-						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty())
+						getTemplates("etimología", langSection.getIntro()).isEmpty() &&
+						getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
+						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
+						!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
 					) {
 						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
@@ -2687,8 +2821,8 @@ public class Editor extends AbstractEditor {
 					}
 					
 					if (
-						ParseUtils.getTemplates("pron-graf", langSection.getIntro()).isEmpty() &&
-						ParseUtils.getTemplates("pron-graf", etymologyIntro).isEmpty()
+						getTemplates("pron-graf", langSection.getIntro()).isEmpty() &&
+						getTemplates("pron-graf", etymologyIntro).isEmpty()
 					) {
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "pron-graf", "{{%s}}");
 						etymologySection.setIntro(etymologyIntro);
@@ -2702,7 +2836,10 @@ public class Editor extends AbstractEditor {
 		
 		// Translations
 		
-		if (spanishSection != null) {
+		if (
+			spanishSection != null &&
+			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
+		) {
 			List<Section> translations = spanishSection.findSubSectionsWithHeader("Traducciones");
 			
 			if (translations.size() == 1) {
@@ -2710,10 +2847,10 @@ public class Editor extends AbstractEditor {
 				String intro = section.getIntro();
 				
 				if (
-					ParseUtils.getTemplates("trad-arriba", intro).isEmpty() &&
-					ParseUtils.getTemplates("trad", intro).isEmpty() &&
-					ParseUtils.getTemplates("t+", intro).isEmpty() &&
-					ParseUtils.getTemplates("véase", intro).isEmpty() &&
+					getTemplates("trad-arriba", intro).isEmpty() &&
+					getTemplates("trad", intro).isEmpty() &&
+					getTemplates("t+", intro).isEmpty() &&
+					getTemplates("véase", intro).isEmpty() &&
 					!intro.matches("(?i).*?\\b(v[ée]an?se|ver)\\b.*")
 				) {
 					if (intro.matches("(\\[\\[(?i:category|categoría):.+?\\]\\]\\s*)+")) {
@@ -2748,9 +2885,9 @@ public class Editor extends AbstractEditor {
 			.filter(langSection -> !langSection.getLangName().equals("chono"))
 			.forEach(langSection -> {
 				String content = langSection.toString();
-				content = ParseUtils.removeCommentsAndNoWikiText(content);
+				content = removeCommentsAndNoWikiText(content);
 				
-				if (!ParseUtils.getTemplates(reconstructedTmpl, content).isEmpty()) {
+				if (!getTemplates(reconstructedTmpl, content).isEmpty()) {
 					return;
 				}
 				
@@ -2805,7 +2942,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static String removeBlockTemplates(String text) {
-		text = ParseUtils.removeCommentsAndNoWikiText(text);
+		text = removeCommentsAndNoWikiText(text);
 		
 		List<String> list = new ArrayList<>(PRON_TMPLS.size() + AMBOX_TMPLS.size() + 1);
 		list.addAll(PRON_TMPLS);
@@ -2813,7 +2950,7 @@ public class Editor extends AbstractEditor {
 		list.add("pron-graf");
 		
 		for (String target : list) {
-			for (String template : ParseUtils.getTemplates(target, text)) {
+			for (String template : getTemplates(target, text)) {
 				text = text.replace(template, "");
 			}
 		}
@@ -2822,6 +2959,7 @@ public class Editor extends AbstractEditor {
 		text = P_CATEGORY_LINKS.matcher(text).replaceAll("");
 		text = text.replaceAll("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", "");
 		text = text.replaceAll("(?m)^[\\s.,:;*#]*$", "");
+		text = text.replace("{{clear}}", "");
 		
 		return text.trim();
 	}
@@ -2873,7 +3011,7 @@ public class Editor extends AbstractEditor {
 				
 				String temp = Utils.replaceWithStandardIgnoredRanges(content, patt,
 					(m, sb) -> {
-						HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(m.group());
+						HashMap<String, String> params = getTemplateParametersWithValue(m.group());
 						String leng = params.get("leng");
 						boolean occurrenceModified = false;
 						
@@ -2902,7 +3040,7 @@ public class Editor extends AbstractEditor {
 						}
 						
 						if (occurrenceModified) {
-							String newTemplate = ParseUtils.templateFromMap(params);
+							String newTemplate = templateFromMap(params);
 							newTemplate = Matcher.quoteReplacement(newTemplate);
 							m.appendReplacement(sb, newTemplate);
 							templateModified.setTrue();
@@ -2948,7 +3086,7 @@ public class Editor extends AbstractEditor {
 			}
 			
 			String intro = section.getIntro();
-			intro = ParseUtils.removeCommentsAndNoWikiText(intro);
+			intro = removeCommentsAndNoWikiText(intro);
 			intro = intro.replaceAll("<br.*?>", "");
 			intro = intro.replace("{{clear}}", "");
 			intro = P_CATEGORY_LINKS.matcher(intro).replaceAll("");
@@ -2979,10 +3117,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "eliminando sección vacía: "
-			: "eliminando secciones vacías: ";
-		summary += String.join(", ", set);
+		String summary = "eliminando secciones vacías: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteEmptySections", summary);
 	}
@@ -3006,51 +3141,56 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			long flex = childSections.stream()
+			boolean hasFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE));
 			
-			long nonFlex = childSections.stream()
+			boolean hasNonFlexHeaders = childSections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.filter(header -> !STANDARD_HEADERS.contains(header))
-				.filter(header -> !header.matches(HAS_FLEXIVE_FORM_HEADER_RE))
-				.count();
+				.anyMatch(header ->
+					!STANDARD_HEADERS.contains(header) &&
+					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
+				);
 			
-			if (langSection.langCodeEqualsTo("es") && (nonFlex != 0 || flex == 0)) {
-				continue;
+			// empty translations Sections
+			
+			if (
+				!langSection.langCodeEqualsTo("es") ||
+				(!hasNonFlexHeaders && hasFlexHeaders) ||
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
+			) {
+				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").forEach(section -> {
+					String intro = section.getIntro();
+					intro = removeCommentsAndNoWikiText(intro);
+					intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+					intro = intro.replace("{{clear}}", "");
+					intro = intro.trim();
+					
+					if (intro.isEmpty() && section.getChildSections() == null) {
+						section.detachOnlySelf();
+						set.add("Traducciones");
+					}
+				});
 			}
 			
-			// delete empty translations Section in non-Spanish LangSections or flexive forms
+			// empty etymology Sections
 			
-			langSection.findSubSectionsWithHeader("Traducciones").forEach(section -> {
-				String intro = section.getIntro();
-				intro = ParseUtils.removeCommentsAndNoWikiText(intro);
-				intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
-				intro = intro.trim();
-				
-				if (intro.isEmpty() && section.getChildSections() == null) {
-					section.detachOnlySelf();
-					set.add(section.getStrippedHeader());
-				}
-			});
-			
-			// delete empty etymology Section in flexive forms
-			
-			if (nonFlex != 0 || flex == 0) {
-				continue;
+			if (
+				(!hasNonFlexHeaders && hasFlexHeaders) ||
+				SOFT_REDIR_TERMS_CHECK.test(langSection)
+			) {
+				langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
+					String intro = section.getIntro();
+					intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+					intro = intro.replace("{{clear}}", "");
+					intro = intro.trim();
+					
+					if (intro.isEmpty() && section.getChildSections() == null) {
+						section.detachOnlySelf();
+						set.add("Etimología");
+					}
+				});
 			}
-			
-			langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
-				String intro = section.getIntro();
-				intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
-				intro = intro.trim();
-				
-				if (intro.isEmpty() && section.getChildSections() == null) {
-					section.detachOnlySelf();
-					set.add(section.getStrippedHeader());
-				}
-			});
 		}
 		
 		if (set.isEmpty()) {
@@ -3058,10 +3198,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String formatted = page.toString();
-		String summary = (set.size() == 1)
-			? "eliminando sección: "
-			: "eliminando secciones: ";
-		summary += String.join(", ", set);
+		String summary = "eliminando secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteWrongSections", summary);
 	}
@@ -3085,7 +3222,7 @@ public class Editor extends AbstractEditor {
 			}
 			
 			String sectionIntro = section.getIntro();
-			String sanitizedNextSectionIntro = ParseUtils.removeCommentsAndNoWikiText(nextSection.getIntro());
+			String sanitizedNextSectionIntro = removeCommentsAndNoWikiText(nextSection.getIntro());
 			
 			if (
 				StringUtils.startsWithAny(sanitizedNextSectionIntro, arr) ||
@@ -3094,8 +3231,8 @@ public class Editor extends AbstractEditor {
 					!nextSection.getStrippedHeader().equals("Etimología 1")
 				)
 			) {
-				List<String> templates = ParseUtils.getTemplates("clear", sectionIntro);
-				String sanitizedSectionIntro = ParseUtils.removeCommentsAndNoWikiText(sectionIntro);
+				List<String> templates = getTemplates("clear", sectionIntro);
+				String sanitizedSectionIntro = removeCommentsAndNoWikiText(sectionIntro);
 				
 				if (templates.size() == 1 && sanitizedSectionIntro.endsWith("{{clear}}")) {
 					continue;
@@ -3184,14 +3321,12 @@ public class Editor extends AbstractEditor {
 			!STANDARD_HEADERS.contains(section)
 		);
 		
-		MutableInt count = new MutableInt(0);
-				
 		for (Section section : sections) {
 			String intro = section.getIntro();
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF,
 				(m, sb) -> {
-					String target = m.group(2);
+					String target = m.group(2).trim();
 					String pipe = m.group(3);
 					String trail = m.group(4);
 					
@@ -3199,11 +3334,15 @@ public class Editor extends AbstractEditor {
 						return;
 					}
 					
-					if (pipe != null && (
-						pipe.isEmpty() ||
-						!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
-					)) {
-						return;
+					if (pipe != null) {
+						pipe = pipe.trim();
+						
+						if (
+							pipe.isEmpty() ||
+							!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
+						) {
+							return;
+						}
 					}
 					
 					if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
@@ -3214,7 +3353,6 @@ public class Editor extends AbstractEditor {
 					String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
 					
 					m.appendReplacement(sb, replacement);
-					count.increment();
 				}
 			);
 			
@@ -3223,16 +3361,133 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		if (count.intValue() == 0) {
+		String formatted = page.toString();
+		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
+	}
+	
+	public void sanitizeReferences() {
+		Document doc = Jsoup.parseBodyFragment(text);
+		doc.outputSettings().prettyPrint(false);
+		Elements refs = doc.select("ref[name]").not("[group]");
+		
+		if (refs.isEmpty() || (
+			doc.getElementsByTag("references").size() +
+			getTemplates("título referencias", text).size() > 1
+		)) {
 			return;
 		}
 		
-		String formatted = page.toString();
-		String summary = (count.intValue() == 1)
-			? "convirtiendo enlace a {{plm}}"
-			: "convirtiendo enlaces a {{plm}}";
+		refs.stream()
+			.collect(Collectors.groupingBy(
+				ref -> ref.attr("name"),
+				LinkedHashMap::new,
+				Collectors.toCollection(Elements::new)
+			))
+			.values().stream()
+			.filter(elements -> elements.size() > 1)
+			.filter(elements -> elements.stream().allMatch(el -> !el.tag().isSelfClosing()))
+			.filter(elements -> elements.stream().map(Element::html).distinct().count() > 1)
+			.forEach(elements -> elements.stream()
+				.collect(Collectors.groupingBy(
+					Element::html,
+					LinkedHashMap::new,
+					Collectors.toCollection(Elements::new)
+				))
+				.values().stream()
+				.filter(els -> els.size() == 1) // let groupReferences() handle the rest
+				.forEach(els -> els.removeAttr("name"))
+			);
 		
-		checkDifferences(formatted, "applyUcfTemplates", summary);
+		String formatted = Utils.decodeHtmlDocument(doc);
+		checkDifferences(formatted, "sanitizeReferences", "corrigiendo referencias");
+	}
+	
+	public void groupReferences() {
+		Document doc = Jsoup.parseBodyFragment(text);
+		doc.outputSettings().prettyPrint(false);
+		
+		Elements refs = doc.getElementsByTag("ref").stream()
+			.filter(ref -> !ref.tag().isSelfClosing())
+			.filter(ref -> !ref.hasAttr("group"))
+			.filter(ref -> !ref.html().isEmpty())
+			.collect(Collectors.toCollection(Elements::new));
+		
+		if (refs.isEmpty() || (
+			doc.getElementsByTag("references").size() +
+			getTemplates("título referencias", text).size() > 1
+		)) {
+			return;
+		}
+		
+		MutableInt refId = new MutableInt(1);
+		
+		// multiple non-empty <ref> tags with the same content
+		refs.stream()
+			.collect(Collectors.groupingBy(
+				Element::html,
+				LinkedHashMap::new,
+				Collectors.toCollection(Elements::new)
+			))
+			.values().stream()
+			.filter(elements -> elements.size() > 1)
+			.forEach(elements -> {
+				final String name;
+				String temp = elements.attr("name");
+				
+				if (!temp.isEmpty()) {
+					// pick the first non-empty "name" attribute as a candidate
+					Elements els = doc.select(String.format("ref[name=%s]", temp));
+					els.removeIf(elements::contains);
+					
+					if (els.removeIf(el -> el.tag().isSelfClosing()) && !els.isEmpty()) {
+						// there were already some self-closing <ref>s with that "name" attribute
+						return;
+					} else if (!els.isEmpty()) {
+						// other non-self-closing <refs> present, generate a new attribute
+						name = String.format("auto_ref_id_%d", refId.intValue());
+						refId.increment();
+					} else {
+						name = temp;
+					}
+				} else {
+					// generate a new "name" attribute
+					name = String.format("auto_ref_id_%d", refId.intValue());
+					refId.increment();
+				}
+				
+				// <ref>s with a differente "name" attribute to be discarded
+				boolean abort = elements.stream()
+					.filter(el -> el.hasAttr("name") && !el.attr("name").equals(name))
+					// quotes are mandatory since el.attr("name") might be empty
+					.map(el -> doc.select(String.format("ref[name=\"%s\"]", el.attr("name"))))
+					.anyMatch(els -> {
+						// select those with a different content
+						els.removeIf(elements::contains);
+						
+						if (els.removeIf(el -> !el.tag().isSelfClosing()) && !els.isEmpty()) {
+							// ambiguous, cannot convert to the new name
+							return true;
+						} else {
+							// only self-closing tags
+							els.forEach(el -> el.attr("name", name));
+							return false;
+						}
+					});
+				
+				if (abort) {
+					return;
+				}
+				
+				elements.attr("name", name);
+				elements.remove(0);
+				
+				// hacky, convert all <refs> but the first one to self-closing tags
+				elements.forEach(el -> el.after(String.format("<ref%s />", el.attributes())));
+				elements.forEach(Element::remove);
+			});
+		
+		String formatted = Utils.decodeHtmlDocument(doc);
+		checkDifferences(formatted, "groupReferences", "agrupando referencias");
 	}
 	
 	public void strongWhitespaces() {
@@ -3258,7 +3513,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String pageIntro = page.getIntro();
-		String strippedPageIntro = ParseUtils.removeCommentsAndNoWikiText(pageIntro);
+		String strippedPageIntro = removeCommentsAndNoWikiText(pageIntro);
 		
 		if (
 			page.getTrailingNewlines() == 1 &&
@@ -3341,7 +3596,7 @@ public class Editor extends AbstractEditor {
 			page.setTrailingNewlines(0);
 		}
 		
-		String strippedPageIntro = ParseUtils.removeCommentsAndNoWikiText(pageIntro);
+		String strippedPageIntro = removeCommentsAndNoWikiText(pageIntro);
 		
 		if (
 			!pageIntro.isEmpty() && page.getTrailingNewlines() == 0 &&
@@ -3431,10 +3686,10 @@ public class Editor extends AbstractEditor {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.User2);
+		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "alcahuetería";
+		String title = "excessivamente";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

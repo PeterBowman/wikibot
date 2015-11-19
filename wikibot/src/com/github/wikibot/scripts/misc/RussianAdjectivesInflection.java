@@ -37,7 +37,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				extract_adj();
 				Login.saveSession(wb);
 				break;
@@ -45,7 +45,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 				analyze_adj(false);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 				analyze_adj(true);
 				Login.saveSession(wb);
 				break;

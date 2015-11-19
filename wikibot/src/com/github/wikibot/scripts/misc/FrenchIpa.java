@@ -20,7 +20,7 @@ import com.github.wikibot.utils.Users;
 
 public class FrenchIpa {
 	public static void main (String[] args) throws IOException, FailedLoginException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.User1);
+		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		
 		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
 			.filter(title -> (
