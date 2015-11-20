@@ -1,6 +1,7 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -9,88 +10,180 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.wikiutils.IOUtils;
 
-public class Catgram {
-	private Catgram() {}
+public final class Catgram {
+	private Data firstMember, secondMember, thirdMember;
+	private Conjunction conj;
+	
+	private Catgram(Data firstMember, Data secondMember, Data thirdMember, Conjunction conj) {
+		this.firstMember = firstMember;
+		this.secondMember = secondMember;
+		this.thirdMember = thirdMember;
+		this.conj = conj;
+	}
+	
+	public static Catgram make(Data firstMember) {
+		return new Catgram(
+			assertMembers(firstMember, true),
+			null, null, null
+		);
+	}
+	
+	public static Catgram make(Data firstMember, Data secondMember) {
+		return new Catgram(
+			assertMembers(firstMember, true),
+			assertMembers(secondMember, false),
+			null, null
+		);
+	}
+	
+	public static Catgram make(Data firstMember, Data secondMember, Data thirdMember, Conjunction conj) {
+		return new Catgram(
+			assertMembers(firstMember, true),
+			assertMembers(secondMember, false),
+			assertMembers(thirdMember, false),
+			Objects.requireNonNull(conj)
+		);
+	}
+	
+	public static Catgram make(String firstMember) {
+		return new Catgram(
+			assertMembers(Data.queryData(firstMember), true),
+			null, null, null
+		);
+	}
+	
+	public static Catgram make(String firstMember, String secondMember) {
+		return new Catgram(
+			assertMembers(Data.queryData(firstMember), true),
+			assertMembers(Data.queryData(secondMember), false),
+			null, null
+		);
+	}
+	
+	public static Catgram make(String firstMember, String secondMember, String thirdMember, String conj) {
+		Conjunction conjItem = Stream.of(Conjunction.values())
+			.filter(value -> getConjunctionString(thirdMember, value).equals(conj))
+			.findFirst()
+			.orElse(null);
+		
+		return new Catgram(
+			assertMembers(Data.queryData(firstMember), true),
+			assertMembers(Data.queryData(secondMember), false),
+			assertMembers(Data.queryData(thirdMember), false),
+			Objects.requireNonNull(conjItem)
+		);
+	}
+	
+	private static Data assertMembers(Data member, boolean enforceNonQualifier) {
+		switch (Objects.requireNonNull(member).getType()) {
+			case MASCULINE_NOUN:
+			case FEMININE_NOUN:
+			case COMPOUND:
+				break;
+			case QUALIFIER:
+			case INVARIANT_QUALIFIER:
+				if (enforceNonQualifier) {
+					throw new IllegalArgumentException();
+				}
+				break;
+			default:
+				throw new IllegalArgumentException();
+		}
+		
+		return member;
+	}
 	
 	public enum Data {
-		ABBREVIATION (null),
-		ADJECTIVE (null),
-		NUMERAL_ADJECTIVE (null),
-		POSSESSIVE_ADJECTIVE (null),
-		ADVERB (null),
-		AFFIX (null),
-		ANIMATE (null),
-		ARTICLE (null),
-		AUXILIARY (null),
-		CARDINAL (null),
-		COLLECTIVE (null),
-		COMPARATIVE (null),
-		COMMON (null),
-		CONJUNCTION (null),
-		COPULATIVE (null),
-		OF_ABLATIVE (null),
-		OF_ACCUSATIVE (null),
-		OF_ACCUSATIVE_OR_ABLATIVE (null),
-		OF_AFFIRMATION (null),
-		OF_QUANTITY (null),
-		OF_DATIVE (null),
-		OF_DOUBT (null),
-		OF_GENITIVE (null),
-		OF_INDICATIVE (null),
-		OF_PLACE (null),
-		OF_MOOD (null),
-		OF_NEGATION (null),
-		OF_SEQUENCE (null),
-		OF_TIME (null),
-		DEMONSTRATIVE (null),
-		DEFINITE_ALT (null),
-		DUAL (null),
-		DIGRAPH (null),
-		EXCLAMATIVE (null),
-		FEMININE (null),
-		VERB_FORM (null),
-		IMPERFECTIVE (null),
-		IMPERSONAL (null),
-		INANIMATE (null),
-		INDECLINABLE (null),
-		INDEFINITE (null),
-		INDEFINITE_ALT (null),
-		INFIX (null),
-		INTERJECTION (null),
-		INTERROGATIVE (null),
-		INTRANSITIVE (null),
-		LETTER (null),
-		PHRASE (null),
-		MASCULINE (null),
-		MODAL (null),
-		NEUTER (null),
-		NUMERAL (null),
-		ORDINAL (null),
-		PARTICLE (null),
-		PERSONAL (null),
-		PLURAL (null),
-		POSSESSIVE (null),
-		POSTPOSITION (null),
-		PREFIX (null),
-		PREPOSITION (null),
-		PRONOUN (null),
-		POSSESSIVE_PRONOUN (null),
-		PROPER (null),
-		PROVERB (null),
-		RELATIVE (null),
-		ACRONYM (null),
-		SINGULAR (null),
-		SUFFIX (null),
-		FLEXIVE_SUFFIX (null),
-		NOUN (null),
-		PROPER_NOUN (null),
-		TRANSITIVE (null),
-		VERB (null);
+		ABBREVIATION,
+		ADJECTIVE,
+		NUMERAL_ADJECTIVE,
+		POSSESSIVE_ADJECTIVE,
+		ADVERB,
+		AFFIX,
+		ANIMATE,
+		ARTICLE,
+		AUXILIARY,
+		CARDINAL,
+		COLLECTIVE,
+		COMPARATIVE,
+		COMMON,
+		CONJUNCTION,
+		COPULATIVE,
+		OF_ABLATIVE,
+		OF_ACCUSATIVE,
+		OF_ACCUSATIVE_OR_ABLATIVE,
+		OF_AFFIRMATION,
+		OF_QUANTITY,
+		OF_DATIVE,
+		OF_DOUBT,
+		OF_GENITIVE,
+		OF_INDICATIVE,
+		OF_PLACE,
+		OF_MOOD,
+		OF_NEGATION,
+		OF_SEQUENCE,
+		OF_TIME,
+		DEMONSTRATIVE,
+		DEFINITE_ALT,
+		DUAL,
+		DIGRAPH,
+		EXCLAMATIVE,
+		FEMININE,
+		VERB_FORM,
+		IMPERFECTIVE,
+		IMPERSONAL,
+		INANIMATE,
+		INDECLINABLE,
+		INDEFINITE,
+		INDEFINITE_ALT,
+		INFIX,
+		INTERJECTION,
+		INTERROGATIVE,
+		INTRANSITIVE,
+		LETTER,
+		PHRASE,
+		MASCULINE,
+		MODAL,
+		NEUTER,
+		NUMERAL,
+		ORDINAL,
+		PARTICLE,
+		PERSONAL,
+		PLURAL,
+		POSSESSIVE,
+		POSTPOSITION,
+		PREFIX,
+		PREPOSITION,
+		PRONOUN,
+		POSSESSIVE_PRONOUN,
+		PROPER,
+		PROVERB,
+		RELATIVE,
+		ACRONYM,
+		SINGULAR,
+		SUFFIX,
+		FLEXIVE_SUFFIX,
+		NOUN,
+		PROPER_NOUN,
+		TRANSITIVE,
+		VERB;
+		
+		private static class Properties {
+			Type type;
+			String singular;
+			String plural;
+			String mascSingularAdj;
+			String femSingularAdj;
+			String mascPluralAdj;
+			String femPluralAdj;
+			Data[] compoundTerms;
+			String[] redirects;
+		}
 		
 		private Properties properties;
 		
-		private Data(Properties properties) {
-			this.properties = new Properties();
+		private Data() {
+			properties = new Properties();
 		}
 		
 		public Type getType() {
@@ -99,7 +192,7 @@ public class Catgram {
 		
 		public String getSingular() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getSingular());
+				return retrieveCompoundData(Data::getSingular);
 			} else {
 				return properties.singular;
 			}
@@ -107,7 +200,7 @@ public class Catgram {
 		
 		public String getPlural() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getPlural());
+				return retrieveCompoundData(Data::getPlural);
 			}
 			
 			if (properties.type == Type.INVARIANT_QUALIFIER) {
@@ -123,7 +216,7 @@ public class Catgram {
 		
 		public String getMasculineSingularAdjective() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getMasculineSingularAdjective());
+				return retrieveCompoundData(Data::getMasculineSingularAdjective);
 			}
 			
 			if (properties.type == Type.INVARIANT_QUALIFIER) {
@@ -139,7 +232,7 @@ public class Catgram {
 		
 		public String getFeminineSingularAdjective() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getFeminineSingularAdjective());
+				return retrieveCompoundData(Data::getFeminineSingularAdjective);
 			}
 			
 			if (properties.type == Type.INVARIANT_QUALIFIER) {
@@ -155,7 +248,7 @@ public class Catgram {
 		
 		public String getMasculinePluralAdjective() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getMasculinePluralAdjective());
+				return retrieveCompoundData(Data::getMasculinePluralAdjective);
 			}
 			
 			if (properties.type == Type.INVARIANT_QUALIFIER) {
@@ -175,7 +268,7 @@ public class Catgram {
 		
 		public String getFemininePluralAdjective() {
 			if (properties.type == Type.COMPOUND) {
-				return retrieveCompoundData(data -> data.getFemininePluralAdjective());
+				return retrieveCompoundData(Data::getFemininePluralAdjective);
 			}
 			
 			if (properties.type == Type.INVARIANT_QUALIFIER) {
@@ -193,11 +286,11 @@ public class Catgram {
 			}
 		}
 		
-		public Data[] getCompoundTerms() {
+		private Data[] getCompoundTerms() {
 			return properties.compoundTerms;
 		}
 		
-		public String[] getRedirects() {
+		private String[] getRedirects() {
 			return properties.redirects;
 		}
 		
@@ -206,6 +299,30 @@ public class Catgram {
 				.map(mapper)
 				.collect(Collectors.joining(" "));
 		}
+		
+		public Catgram make() {
+			return new Catgram(assertMembers(this, true), null, null, null);
+		}
+		
+		public static Data queryData(String singular) {
+			return Stream.of(Data.values())
+				.filter(data ->
+					data.getSingular().equals(singular) ||
+					Optional.ofNullable(data.getRedirects())
+						.filter(arr -> ArrayUtils.contains(arr, singular))
+						.isPresent()
+				)
+				.findAny()
+				.orElse(null);
+		}
+	}
+	
+	public enum Type {
+		MASCULINE_NOUN,
+		FEMININE_NOUN,
+		QUALIFIER, // TODO: default gender: masculine?
+		INVARIANT_QUALIFIER,
+		COMPOUND // TODO: extract gender from the first element?
 	}
 	
 	static {
@@ -515,36 +632,88 @@ public class Catgram {
 		Data.VERB.properties.redirects = new String[]{"verbos"};
 	}
 	
-	private static class Properties {
-		Type type;
-		String singular;
-		String plural;
-		String mascSingularAdj;
-		String femSingularAdj;
-		String mascPluralAdj;
-		String femPluralAdj;
-		Data[] compoundTerms;
-		String[] redirects;
+	public enum Conjunction {
+		AND,
+		OR
 	}
 	
-	public enum Type {
-		MASCULINE_NOUN,
-		FEMININE_NOUN,
-		QUALIFIER, // TODO: default gender: masculine?
-		INVARIANT_QUALIFIER,
-		COMPOUND // TODO: extract gender from the first element?
+	public String getSingular() {
+		if (secondMember == null) {
+			return firstMember.getSingular();
+		} else {
+			Function<Data, String> func = getQualifierFunc(firstMember, false);
+			return firstMember.getSingular() + " " + buildQualifierString(func);
+		}
 	}
 	
-	public static Data queryData(String singular) {
-		return Stream.of(Data.values())
-			.filter(data ->
-				data.getSingular().equals(singular) ||
-				Optional.ofNullable(data.getRedirects())
-					.filter(arr -> ArrayUtils.contains(arr, singular))
-					.isPresent()
-			)
-			.findAny()
-			.orElseThrow(UnsupportedOperationException::new);
+	public String getPlural() {
+		if (secondMember == null) {
+			return firstMember.getPlural();
+		} else {
+			Function<Data, String> func = getQualifierFunc(firstMember, true);
+			return firstMember.getPlural() + " " + buildQualifierString(func);
+		}
+	}
+	
+	private static Function<Data, String> getQualifierFunc(Data member, boolean isPlural) {
+		boolean isMasculine;
+		
+		if (member.getType() != Type.COMPOUND) {
+			isMasculine = member.getType() == Type.MASCULINE_NOUN;
+		} else {
+			isMasculine = member.getCompoundTerms()[0].getType() == Type.MASCULINE_NOUN;
+		}
+		
+		if (isMasculine && !isPlural) {
+			return Data::getMasculineSingularAdjective;
+		} else if (!isMasculine && !isPlural) {
+			return Data::getFeminineSingularAdjective;
+		} else if (isMasculine && isPlural) {
+			return Data::getMasculinePluralAdjective;
+		} else /*if (!isMasculine && isPlural)*/ {
+			return Data::getFemininePluralAdjective;
+		}
+	}
+	
+	private String buildQualifierString(Function<Data, String> func) {
+		StringBuilder sb = new StringBuilder(func.apply(secondMember));
+		
+		if (thirdMember != null) {
+			String third = func.apply(thirdMember);
+			String conjunction = getConjunctionString(third, conj);
+			sb.append(" ").append(conjunction).append(" ").append(third);
+		}
+		
+		return sb.toString();
+	}
+	
+	private static String getConjunctionString(String member, Conjunction conj) {
+		switch (conj) {
+			case AND:
+				// http://lema.rae.es/dpd/srv/search?id=9n8R9ghyFD6fcqFIBx
+				return member.matches("^h?[ií](?![aeiouáéíóú]).+") ? "e" : "y";
+			case OR:
+				// http://lema.rae.es/dpd/srv/search?id=7wb3ECfmhD6reWjGRa
+				return member.matches("^h?[oó].+") ? "u" : "o";
+			default:
+				throw new UnsupportedOperationException();
+		}
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(firstMember);
+		
+		if (secondMember != null) {
+			sb.append(" ").append(secondMember);
+			
+			if (thirdMember != null) {
+				sb.append(" ").append(conj).append(" ").append(thirdMember);
+			}
+		}
+		
+		return sb.toString();
 	}
 	
 	public static void main(String[] args) throws IOException {
