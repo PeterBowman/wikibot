@@ -65,7 +65,10 @@ public abstract class AbstractEditor {
 	}
 
 	protected void checkDifferences(String formatted, String caller, String log) {
-		if (formatted != null && !formatted.equals(text)) {
+		if (
+			formatted != null &&
+			!formatted.replaceFirst("\\s+$", "").equals(text.replaceFirst("\\s+$", ""))
+		) {
 			logger.add(caller);
 			text = formatted;
 			
