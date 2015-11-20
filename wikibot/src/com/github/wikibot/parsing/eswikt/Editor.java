@@ -123,10 +123,30 @@ public class Editor extends AbstractEditor {
 		"grafía", "grafía obsoleta", "variante", "variante obsoleta", "contracción"
 	);
 	
+	private static final List<String> SECTION_TMPLS = Arrays.asList(
+		"abreviatura", "adjetivo", "adjetivo cardinal", "adjetivo numeral", "adjetivo ordinal",
+		"adjetivo posesivo", "adverbio", "adverbio de afirmación", "adverbio de cantidad",
+		"adverbio de duda", "adverbio de lugar", "adverbio de modo", "adverbio de negación",
+		"adverbio de orden", "adverbio de tiempo", "adverbio interrogativo", "adverbio relativo",
+		"afijo", "artículo", "artículo determinado", "artículo indeterminado", "conjunción", "dígrafo",
+		"interjección", "letra", "locución", "locución adjetiva", "locución adverbial",
+		"locución conjuntiva", "locución interjectiva", "locución prepositiva", "locución sustantiva",
+		"locución verbal", "numeral", "onomatopeya", "partícula", "postposición", "prefijo", "preposición",
+		"preposición de ablativo", "preposición de acusativo", "preposición de acusativo o ablativo",
+		"preposición de genitivo", "pronombre", "pronombre interrogativo", "pronombre personal",
+		"pronombre relativo", "refrán", "sigla", "sufijo", "sufijo flexivo", "sustantivo",
+		"sustantivo ambiguo", "sustantivo animado", "sustantivo ambg", "sustantivo femenino",
+		"sustantivo femenino y masculino", "sustantivo inanimado", "sustantivo masculino",
+		"sustantivo neutro", "sustantivo propio", "sustantivo común", "símbolo", "traducciones", "verbo",
+		"verbo impersonal", "verbo intransitivo", "verbo pronominal", "verbo transitivo"
+	);
+	
 	private static final List<Pattern> COMMENT_PATT_LIST;
 	private static final List<String> LS_SPLITTER_LIST;
 	private static final List<String> BS_SPLITTER_LIST;
 	private static final List<String> STANDARD_HEADERS;
+	
+	private static final Map<String, List<Catgram.Data>> SECTION_DATA_MAP;
 	
 	private static final String TRANSLATIONS_TEMPLATE;
 	private static final String HAS_FLEXIVE_FORM_HEADER_RE = "([Ff]orma|\\{\\{forma) .+";
@@ -264,6 +284,50 @@ public class Editor extends AbstractEditor {
 		COMMENT_PATT_LIST = pCommentsList.stream()
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
+		
+		SECTION_DATA_MAP = new HashMap<>(50, 1);
+		SECTION_DATA_MAP.put("adjetivo cardinal",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.CARDINAL));
+		SECTION_DATA_MAP.put("adjetivo numeral",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.NUMERAL));
+		SECTION_DATA_MAP.put("adjetivo ordinal",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.ORDINAL));
+		SECTION_DATA_MAP.put("adjetivo posesivo",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.POSSESSIVE));
+		SECTION_DATA_MAP.put("adverbio de afirmación",   Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_AFFIRMATION));
+		SECTION_DATA_MAP.put("adverbio de cantidad",     Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_QUANTITY));
+		SECTION_DATA_MAP.put("adverbio de duda",         Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_DOUBT));
+		SECTION_DATA_MAP.put("adverbio de lugar",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_PLACE));
+		SECTION_DATA_MAP.put("adverbio de modo",         Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_MOOD));
+		SECTION_DATA_MAP.put("adverbio de negación",     Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_NEGATION));
+		SECTION_DATA_MAP.put("adverbio de orden",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_SEQUENCE));
+		SECTION_DATA_MAP.put("adverbio de tiempo",       Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_TIME));
+		SECTION_DATA_MAP.put("adverbio interrogativo",   Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.INTERROGATIVE));
+		SECTION_DATA_MAP.put("adverbio relativo",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.RELATIVE));
+		SECTION_DATA_MAP.put("artículo determinado",     Arrays.asList(Catgram.Data.ARTICLE, Catgram.Data.DETERMINATE));
+		SECTION_DATA_MAP.put("artículo indeterminado",   Arrays.asList(Catgram.Data.ARTICLE, Catgram.Data.INDETERMINATE));
+		SECTION_DATA_MAP.put("locución adjetiva",        Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.ADJECTIVE));
+		SECTION_DATA_MAP.put("locución adverbial",       Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.ADVERB));
+		SECTION_DATA_MAP.put("locución conjuntiva",      Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.CONJUNCTION));
+		SECTION_DATA_MAP.put("locución interjectiva",    Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.INTERJECTION));
+		SECTION_DATA_MAP.put("locución preposicional",   Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.PREPOSITION));
+		SECTION_DATA_MAP.put("locución sustantiva",      Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.NOUN));
+		SECTION_DATA_MAP.put("locución verbal",          Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.VERB));
+		SECTION_DATA_MAP.put("preposición de ablativo",  Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ABLATIVE));
+		SECTION_DATA_MAP.put("preposición de acusativo", Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ACCUSATIVE));
+		SECTION_DATA_MAP.put("preposición de acusativo o ablativo", Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ACCUSATIVE_OR_ABLATIVE));
+		SECTION_DATA_MAP.put("preposición de genitivo",  Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_GENITIVE));
+		SECTION_DATA_MAP.put("pronombre interrogativo",  Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.INTERROGATIVE));
+		SECTION_DATA_MAP.put("pronombre personal",       Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.PERSONAL));
+		SECTION_DATA_MAP.put("pronombre relativo",       Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.RELATIVE));
+		SECTION_DATA_MAP.put("sustantivo ambiguo",       Arrays.asList(Catgram.Data.NOUN, Catgram.Data.AMBIGUOUS));
+		SECTION_DATA_MAP.put("sustantivo animado",       Arrays.asList(Catgram.Data.NOUN, Catgram.Data.ANIMATE));
+		SECTION_DATA_MAP.put("sustantivo femenino",      Arrays.asList(Catgram.Data.NOUN, Catgram.Data.FEMININE));
+		SECTION_DATA_MAP.put("sustantivo inanimado",     Arrays.asList(Catgram.Data.NOUN, Catgram.Data.INANIMATE));
+		SECTION_DATA_MAP.put("sustantivo masculino",     Arrays.asList(Catgram.Data.NOUN, Catgram.Data.MASCULINE));
+		SECTION_DATA_MAP.put("sustantivo neutro",        Arrays.asList(Catgram.Data.NOUN, Catgram.Data.NEUTER));
+		SECTION_DATA_MAP.put("sustantivo propio",        Arrays.asList(Catgram.Data.NOUN, Catgram.Data.PROPER));
+		SECTION_DATA_MAP.put("sustantivo común",         Arrays.asList(Catgram.Data.NOUN, Catgram.Data.COMMON));
+		SECTION_DATA_MAP.put("verbo impersonal",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.IMPERSONAL));
+		SECTION_DATA_MAP.put("verbo intransitivo",       Arrays.asList(Catgram.Data.VERB, Catgram.Data.INTRANSITIVE));
+		SECTION_DATA_MAP.put("verbo pronominal",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.PRONOUN));
+		SECTION_DATA_MAP.put("verbo transitivo",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.TRANSITIVE));
 		
 		SOFT_REDIR_TERMS_CHECK = section -> {
 			List<Section> childSections = section.getChildSections();
@@ -707,6 +771,8 @@ public class Editor extends AbstractEditor {
 		map.put("Anagramas", "anagrama");
 		map.put("Parónimos", "parónimo");
 		map.put("tit ref", "título referencias");
+		map.put("sustantivo masculino y femenino", "sustantivo femenino y masculino");
+		map.put("acrónimo", "sigla");
 		
 		map.put("DRAE1914", "DLC1914");
 		map.put("DUE", "MaríaMoliner");
@@ -2964,11 +3030,6 @@ public class Editor extends AbstractEditor {
 		return text.trim();
 	}
 	
-	public void removeCategoryLinks() {
-		//String formatted = text;
-		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
-	}
-	
 	public void checkLangHeaderCodeCase() {
 		if (isOldStructure) {
 			return;
@@ -3062,6 +3123,11 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
+	}
+	
+	public void removeCategoryLinks() {
+		//String formatted = text;
+		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
 	}
 	
 	public void deleteEmptySections() {

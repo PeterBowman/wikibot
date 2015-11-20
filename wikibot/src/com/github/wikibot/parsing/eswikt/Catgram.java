@@ -100,6 +100,7 @@ public final class Catgram {
 		POSSESSIVE_ADJECTIVE,
 		ADVERB,
 		AFFIX,
+		AMBIGUOUS,
 		ANIMATE,
 		ARTICLE,
 		AUXILIARY,
@@ -124,7 +125,7 @@ public final class Catgram {
 		OF_SEQUENCE,
 		OF_TIME,
 		DEMONSTRATIVE,
-		DEFINITE_ALT,
+		DETERMINATE,
 		DUAL,
 		DIGRAPH,
 		EXCLAMATIVE,
@@ -135,7 +136,7 @@ public final class Catgram {
 		INANIMATE,
 		INDECLINABLE,
 		INDEFINITE,
-		INDEFINITE_ALT,
+		INDETERMINATE,
 		INFIX,
 		INTERJECTION,
 		INTERROGATIVE,
@@ -351,6 +352,10 @@ public final class Catgram {
 		Data.AFFIX.properties.singular = "afijo";
 		Data.AFFIX.properties.femSingularAdj = "afija";
 		
+		Data.AMBIGUOUS.properties.type = Type.QUALIFIER;
+		Data.AMBIGUOUS.properties.singular = "ambiguo";
+		Data.AMBIGUOUS.properties.femSingularAdj = "ambigua";
+		
 		Data.ANIMATE.properties.type = Type.QUALIFIER;
 		Data.ANIMATE.properties.singular = "animado";
 		Data.ANIMATE.properties.femSingularAdj = "animada";
@@ -436,9 +441,9 @@ public final class Catgram {
 		Data.DEMONSTRATIVE.properties.singular = "demostrativo";
 		Data.DEMONSTRATIVE.properties.femSingularAdj = "demostrativa";
 		
-		Data.DEFINITE_ALT.properties.type = Type.QUALIFIER;
-		Data.DEFINITE_ALT.properties.singular = "determinado";
-		Data.DEFINITE_ALT.properties.femSingularAdj = "determinada";
+		Data.DETERMINATE.properties.type = Type.QUALIFIER;
+		Data.DETERMINATE.properties.singular = "determinado";
+		Data.DETERMINATE.properties.femSingularAdj = "determinada";
 		
 		Data.DUAL.properties.type = Type.QUALIFIER;
 		Data.DUAL.properties.singular = "dual";
@@ -481,9 +486,9 @@ public final class Catgram {
 		Data.INDEFINITE.properties.singular = "indefinido";
 		Data.INDEFINITE.properties.femSingularAdj = "indefinida";
 		
-		Data.INDEFINITE_ALT.properties.type = Type.QUALIFIER;
-		Data.INDEFINITE_ALT.properties.singular = "indeterminado";
-		Data.INDEFINITE_ALT.properties.femSingularAdj = "indeterminada";
+		Data.INDETERMINATE.properties.type = Type.QUALIFIER;
+		Data.INDETERMINATE.properties.singular = "indeterminado";
+		Data.INDETERMINATE.properties.femSingularAdj = "indeterminada";
 		
 		Data.INFIX.properties.type = Type.MASCULINE_NOUN;
 		Data.INFIX.properties.singular = "infijo";
