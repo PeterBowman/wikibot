@@ -22,42 +22,47 @@ public final class Catgram {
 	}
 	
 	public static Catgram make(Data firstMember) {
-		return new Catgram(
-			assertMembers(firstMember, true),
-			null, null, null
-		);
+		try {
+			return new Catgram(
+				assertMembers(firstMember, true),
+				null, null, null
+			);
+		} catch (NullPointerException | IllegalArgumentException e) {
+			return null;
+		}
 	}
 	
 	public static Catgram make(Data firstMember, Data secondMember) {
-		return new Catgram(
-			assertMembers(firstMember, true),
-			assertMembers(secondMember, false),
-			null, null
-		);
+		try {
+			return new Catgram(
+				assertMembers(firstMember, true),
+				assertMembers(secondMember, false),
+				null, null
+			);
+		} catch (NullPointerException | IllegalArgumentException e) {
+			return make(firstMember);
+		}
 	}
 	
 	public static Catgram make(Data firstMember, Data secondMember, Data thirdMember, Conjunction conj) {
-		return new Catgram(
-			assertMembers(firstMember, true),
-			assertMembers(secondMember, false),
-			assertMembers(thirdMember, false),
-			Objects.requireNonNull(conj)
-		);
+		try {
+			return new Catgram(
+				assertMembers(firstMember, true),
+				assertMembers(secondMember, false),
+				assertMembers(thirdMember, false),
+				Objects.requireNonNull(conj)
+			);
+		} catch (NullPointerException | IllegalArgumentException e) {
+			return make(firstMember, secondMember);
+		}
 	}
 	
 	public static Catgram make(String firstMember) {
-		return new Catgram(
-			assertMembers(Data.queryData(firstMember), true),
-			null, null, null
-		);
+		return make(Data.queryData(firstMember));
 	}
 	
 	public static Catgram make(String firstMember, String secondMember) {
-		return new Catgram(
-			assertMembers(Data.queryData(firstMember), true),
-			assertMembers(Data.queryData(secondMember), false),
-			null, null
-		);
+		return make(Data.queryData(firstMember), Data.queryData(secondMember));
 	}
 	
 	public static Catgram make(String firstMember, String secondMember, String thirdMember, String conj) {
@@ -66,11 +71,11 @@ public final class Catgram {
 			.findFirst()
 			.orElse(null);
 		
-		return new Catgram(
-			assertMembers(Data.queryData(firstMember), true),
-			assertMembers(Data.queryData(secondMember), false),
-			assertMembers(Data.queryData(thirdMember), false),
-			Objects.requireNonNull(conjItem)
+		return make(
+			Data.queryData(firstMember),
+			Data.queryData(secondMember),
+			Data.queryData(thirdMember),
+			conjItem
 		);
 	}
 	
@@ -302,7 +307,7 @@ public final class Catgram {
 		}
 		
 		public Catgram make() {
-			return new Catgram(assertMembers(this, true), null, null, null);
+			return Catgram.make(this);
 		}
 		
 		public static Data queryData(String singular) {
@@ -701,8 +706,24 @@ public final class Catgram {
 				// http://lema.rae.es/dpd/srv/search?id=7wb3ECfmhD6reWjGRa
 				return member.matches("^h?[oó].+") ? "u" : "o";
 			default:
-				throw new UnsupportedOperationException();
+				throw new UnsupportedOperationException(); // unreachable
 		}
+	}
+	
+	public Data getFirstMember() {
+		return firstMember;
+	}
+	
+	public Data getSecondMember() {
+		return secondMember;
+	}
+	
+	public Data getThirdMember() {
+		return thirdMember;
+	}
+	
+	public Conjunction getConjunction() {
+		return conj;
 	}
 	
 	@Override

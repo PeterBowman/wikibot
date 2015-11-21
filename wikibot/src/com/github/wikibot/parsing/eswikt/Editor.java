@@ -1,5 +1,9 @@
 package com.github.wikibot.parsing.eswikt;
 
+import static org.apache.commons.lang3.StringUtils.capitalize;
+import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.startsWithAny;
+import static org.apache.commons.lang3.StringUtils.strip;
 import static org.wikiutils.ParseUtils.getTemplateParametersWithValue;
 import static org.wikiutils.ParseUtils.getTemplates;
 import static org.wikiutils.ParseUtils.removeCommentsAndNoWikiText;
@@ -22,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -74,7 +79,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
-	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?:[^\\[\\{\\}]+?\\]\\]");
+	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
@@ -129,7 +134,7 @@ public class Editor extends AbstractEditor {
 		"adverbio de duda", "adverbio de lugar", "adverbio de modo", "adverbio de negación",
 		"adverbio de orden", "adverbio de tiempo", "adverbio interrogativo", "adverbio relativo",
 		"afijo", "artículo", "artículo determinado", "artículo indeterminado", "conjunción", "dígrafo",
-		"interjección", "letra", "locución", "locución adjetiva", "locución adverbial",
+		/*"forma verbal",*/ "interjección", "letra", "locución", "locución adjetiva", "locución adverbial",
 		"locución conjuntiva", "locución interjectiva", "locución prepositiva", "locución sustantiva",
 		"locución verbal", "numeral", "onomatopeya", "partícula", "postposición", "prefijo", "preposición",
 		"preposición de ablativo", "preposición de acusativo", "preposición de acusativo o ablativo",
@@ -137,7 +142,7 @@ public class Editor extends AbstractEditor {
 		"pronombre relativo", "refrán", "sigla", "sufijo", "sufijo flexivo", "sustantivo",
 		"sustantivo ambiguo", "sustantivo animado", "sustantivo ambg", "sustantivo femenino",
 		"sustantivo femenino y masculino", "sustantivo inanimado", "sustantivo masculino",
-		"sustantivo neutro", "sustantivo propio", "sustantivo común", "símbolo", "traducciones", "verbo",
+		"sustantivo neutro", "sustantivo propio", "sustantivo común", /*"símbolo",*/ "traducciones", "verbo",
 		"verbo impersonal", "verbo intransitivo", "verbo pronominal", "verbo transitivo"
 	);
 	
@@ -454,9 +459,9 @@ public class Editor extends AbstractEditor {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
-		removeCategoryLinks();
 		checkLangHeaderCodeCase();
 		langTemplateParams();
+		removeCategoryLinks();
 		deleteEmptySections();
 		deleteWrongSections();
 		manageClearElements();
@@ -730,7 +735,7 @@ public class Editor extends AbstractEditor {
 					? new String[]{":", ";", "*", "#"}
 					: new String[]{" ", ":", ";", "*", "#"};
 				
-				if (!previousLine.isEmpty() && StringUtils.startsWithAny(previousLine, arr)) {
+				if (!previousLine.isEmpty() && startsWithAny(previousLine, arr)) {
 					return;
 				}
 				
@@ -1136,7 +1141,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+			if (!containsAny(alt, '{', '}', '[', ']', '(', ')')) {
 				extractAltParameter(langSection, alt);
 			}
 		}
@@ -1149,7 +1154,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			if (!StringUtils.containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+			if (!containsAny(alt, '{', '}', '[', ']', '(', ')')) {
 				extractAltParameter(section, alt);
 			} else {
 				insertAltComment(section, alt);
@@ -1578,7 +1583,7 @@ public class Editor extends AbstractEditor {
 			
 			String header = section.getHeader();
 			
-			header = StringUtils.strip(header, "=").trim();
+			header = strip(header, "=").trim();
 			header = header.replaceFirst("(?i)^Etimolog[íi]a", "Etimología");
 			header = header.replaceFirst("(?i)^Pronunciaci[óo]n\\b", "Pronunciación");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
@@ -2426,9 +2431,9 @@ public class Editor extends AbstractEditor {
 							}
 						} else {
 							if (
-								StringUtils.containsAny(param1, '{', '}', '<', '>') ||
+								containsAny(param1, '{', '}', '<', '>') ||
 								(
-									StringUtils.containsAny(param1, '(', ')') &&
+									containsAny(param1, '(', ')') &&
 									// only allow single characters inside parens
 									Pattern.compile("\\([^\\)]{2,}\\)").matcher(param1).find()
 								)
@@ -2460,7 +2465,7 @@ public class Editor extends AbstractEditor {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fone" + num, param);
 									}
-								} else if (StringUtils.containsAny(param1, '[', ']', '/')) {
+								} else if (containsAny(param1, '[', ']', '/')) {
 									editedLines.add(origLine);
 									continue linesLoop;
 								} else {
@@ -2476,13 +2481,13 @@ public class Editor extends AbstractEditor {
 										String num = (i != 1) ? Integer.toString(i) : "";
 										newParams.put("fono" + num, param);
 									}
-								} else if (StringUtils.containsAny(param1, '[', ']', '/')) {
+								} else if (containsAny(param1, '[', ']', '/')) {
 									editedLines.add(origLine);
 									continue linesLoop;
 								} else {
 									newParams.put("fono", param1);
 								}
-							} else if (!StringUtils.containsAny(param1, '[', ']', '/')) {
+							} else if (!containsAny(param1, '[', ']', '/')) {
 								newParams.put("fone", param1);
 							} else {
 								editedLines.add(origLine);
@@ -2520,7 +2525,7 @@ public class Editor extends AbstractEditor {
 								params.containsKey("ParamWithoutName2") &&
 								!params.get("ParamWithoutName2").isEmpty() &&
 								!(
-									StringUtils.strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio") ||
+									strip(params.get("ParamWithoutName2"), " ':").matches("(?i)audio") ||
 									params.get("ParamWithoutName2").equalsIgnoreCase(title)
 								)
 							)
@@ -2549,7 +2554,7 @@ public class Editor extends AbstractEditor {
 					case "diacrítico":
 						param1 = params.get("ParamWithoutName1");
 						
-						if (StringUtils.containsAny(param1, '[', ']', '{', '}', '(', ')')) {
+						if (containsAny(param1, '[', ']', '{', '}', '(', ')')) {
 							editedLines.add(origLine);
 							continue linesLoop;
 						}
@@ -2594,7 +2599,7 @@ public class Editor extends AbstractEditor {
 			Map<String, String> langTemplateParams = langSection.getTemplateParams();
 			String altParam = langTemplateParams.get("alt");
 			
-			if (altParam != null && !StringUtils.containsAny(altParam, '{', '}', '[', ']', '(', ')')) {
+			if (altParam != null && !containsAny(altParam, '{', '}', '[', ']', '(', ')')) {
 				langTemplateParams.remove("alt");
 				newMap.put("alt", altParam);
 				langSection.setTemplateParams(langTemplateParams);
@@ -2700,7 +2705,7 @@ public class Editor extends AbstractEditor {
 			return null;
 		}
 		
-		name = StringUtils.strip(name, " ':");
+		name = strip(name, " ':");
 		
 		if (aliases.contains(name)) {
 			name = templates.get(aliases.indexOf(name));
@@ -2717,8 +2722,8 @@ public class Editor extends AbstractEditor {
 		
 		// TODO: allow plain-text content (no link/template)
 		if (
-			!StringUtils.containsAny(content, '[', ']', '{', '}') ||
-			StringUtils.containsAny(content, '<', '>')
+			!containsAny(content, '[', ']', '{', '}') ||
+			containsAny(content, '<', '>')
 		) {
 			return null;
 		}
@@ -2738,7 +2743,7 @@ public class Editor extends AbstractEditor {
 			String term = lterms.get(i - 1);
 			String param = "ParamWithoutName" + i;
 			
-			if (StringUtils.containsAny(term, '[', ']')) {
+			if (containsAny(term, '[', ']')) {
 				Matcher m2 = P_LINK.matcher(term);
 				
 				if (!m2.matches()) {
@@ -2748,23 +2753,23 @@ public class Editor extends AbstractEditor {
 				map.put(param, m2.group(1));
 				String trail = m2.group(3);
 				
-				if (!trail.isEmpty() && StringUtils.containsAny(trail, '(', ')')) {
+				if (!trail.isEmpty() && containsAny(trail, '(', ')')) {
 					Matcher m3 = P_PARENS.matcher(trail);
 					
-					if (!m3.matches() || StringUtils.containsAny(m3.group(1), '[', ']')) {
+					if (!m3.matches() || containsAny(m3.group(1), '[', ']')) {
 						return null;
 					} else {
 						trail = m3.group(1).trim();
 						map.put("nota" + i, m3.group(2));
 					}
-				} else if (StringUtils.containsAny(trail, '[', ']')) {
+				} else if (containsAny(trail, '[', ']')) {
 					return null;
 				}
 				
 				if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
 					map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
 				}
-			} else if (StringUtils.containsAny(term, '{', '}')) {
+			} else if (containsAny(term, '{', '}')) {
 				Matcher m2 = P_LINK_TMPLS.matcher(term);
 				
 				if (!m2.matches()) {
@@ -3031,6 +3036,8 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void checkLangHeaderCodeCase() {
+		// TODO: also check section templates like {{sustantivo|ES}}
+		
 		if (isOldStructure) {
 			return;
 		}
@@ -3126,8 +3133,69 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeCategoryLinks() {
-		//String formatted = text;
-		//checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
+		Set<String> targetCategories = new HashSet<>();
+		
+		BiConsumer<String, String> addString = (code, plural) -> targetCategories
+			.add(String.format("%s:%s", code.toUpperCase(), capitalize(plural)));
+		
+		for (String templateName : SECTION_TMPLS) {
+			for (String template : getTemplates(templateName, text)) {
+				Map<String, String> map = getTemplateParametersWithValue(template);
+				String langCode = map.get("ParamWithoutName1");
+				
+				if (langCode == null || langCode.isEmpty()) {
+					continue;
+				}
+				
+				final Catgram catgram;
+				
+				if (SECTION_DATA_MAP.containsKey(map.get("templateName"))) {
+					List<Catgram.Data> data = SECTION_DATA_MAP.get(map.get("templateName"));
+					catgram = Catgram.make(data.get(0), data.get(1));
+				} else {
+					catgram = Catgram.make(map.get("templateName"), map.get("ParamWithoutName2"));
+				}
+				
+				if (catgram == null) {
+					continue;
+				}
+				
+				addString.accept(langCode, catgram.getPlural());
+				
+				if (catgram.getSecondMember() != null) {
+					addString.accept(langCode, catgram.getFirstMember().getPlural());
+					
+					if (catgram.getFirstMember() == Catgram.Data.PHRASE) {
+						addString.accept(langCode, catgram.getSecondMember().getPlural());
+					}
+				}
+			}
+		}
+		
+		if (targetCategories.isEmpty()) {
+			return;
+		}
+		
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_CATEGORY_LINKS, (m, sb) -> {
+			String content = m.group(1);
+			String[] pipeSeparator = content.split("\\|", 0);
+			
+			if (pipeSeparator.length > 1) {
+				String pipe = pipeSeparator[1];
+				
+				if (pipe.equals(title) || pipe.equals("{{PAGENAME}}")) {
+					content = pipeSeparator[0].trim();
+				} else {
+					return;
+				}
+			}
+			
+			if (targetCategories.contains(content)) {
+				m.appendReplacement(sb, "");
+			}
+		});
+		
+		checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
 	}
 	
 	public void deleteEmptySections() {
@@ -3291,7 +3359,7 @@ public class Editor extends AbstractEditor {
 			String sanitizedNextSectionIntro = removeCommentsAndNoWikiText(nextSection.getIntro());
 			
 			if (
-				StringUtils.startsWithAny(sanitizedNextSectionIntro, arr) ||
+				startsWithAny(sanitizedNextSectionIntro, arr) ||
 				(
 					nextSection.getStrippedHeader().matches("Etimología \\d+") &&
 					!nextSection.getStrippedHeader().equals("Etimología 1")
