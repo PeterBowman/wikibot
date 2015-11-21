@@ -13,6 +13,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -461,6 +462,7 @@ public class Editor extends AbstractEditor {
 		addMissingElements();
 		checkLangHeaderCodeCase();
 		langTemplateParams();
+		addSectionTemplates();
 		removeCategoryLinks();
 		deleteEmptySections();
 		deleteWrongSections();
@@ -1594,6 +1596,7 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
+			// substantivo, acrónimo (sigla)...
 			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
 			
 			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
@@ -3132,6 +3135,73 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
 	}
 	
+	public void addSectionTemplates() {
+		Page page = Page.store(title, text);
+		
+		page.getAllLangSections().stream()
+			.map(AbstractSection::getChildSections)
+			.filter(Objects::nonNull)
+			.map(AbstractSection::flattenSubSections)
+			.flatMap(Collection::stream)
+			.filter(section -> !section.getHeader().isEmpty())
+			.filter(section -> !containsAny(section.getHeader(), '{', '}', '[', ']', '<', '>'))
+			.forEach(section -> {
+				String header = section.getHeader().toLowerCase();
+				String langCode = section.getLangSectionParent().getLangCode();
+				
+				String newHeader = SECTION_DATA_MAP.keySet().stream()
+					.filter(header::startsWith)
+					.map(key -> header.replaceFirst(key, String.format("{{%s|%s}}", key, langCode)))
+					.findAny()
+					.orElseGet(() -> SECTION_TMPLS.stream()
+						.filter(tmpl -> !SECTION_DATA_MAP.containsKey(tmpl))
+						.filter(header::startsWith)
+						.map(tmpl -> sectionTemplateMapper(header, langCode, tmpl))
+						.filter(Objects::nonNull)
+						.findAny()
+						.orElse(null)
+					);
+				
+				if (newHeader != null) {
+					section.setHeader(newHeader);
+				}
+			});
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "addSectionTemplates", "añadiendo plantillas de sección");
+	}
+
+	private static String sectionTemplateMapper(String header, String langCode, String template) {
+		final String standardTemplate = String.format("{{%s|%s}}", template, langCode);
+		
+		if (header.equals(template)) {
+			return standardTemplate;
+		} else if (!header.contains(" ")) {
+			return null;
+		} else {
+			String[] tokens = header.split(" +");
+			Catgram.Data firstMember = Catgram.Data.queryData(tokens[0]);
+			
+			if (firstMember == null) { // should not happen
+				return header.replaceFirst(
+					tokens[0],
+					standardTemplate
+				);
+			} else {
+				return Stream.of(Catgram.Data.values())
+					.map(secondMember -> Catgram.make(firstMember, secondMember))
+					.filter(Objects::nonNull)
+					.filter(catgram -> header.startsWith(catgram.getSingular()))
+					.map(catgram -> header.replaceFirst(catgram.getSingular(), String.format(
+						"{{%s|%s|%s}}",
+						template, langCode, catgram.getSecondMember().getSingular()
+					)))
+					.findAny()
+					.orElse(header.replaceFirst(template, standardTemplate));
+			}
+		}
+	}
+	
 	public void removeCategoryLinks() {
 		Set<String> targetCategories = new HashSet<>();
 		
@@ -3823,7 +3893,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "excessivamente";
+		String title = "dokument";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
