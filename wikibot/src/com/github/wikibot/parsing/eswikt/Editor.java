@@ -142,10 +142,10 @@ public class Editor extends AbstractEditor {
 		"preposición de ablativo", "preposición de acusativo", "preposición de acusativo o ablativo",
 		"preposición de genitivo", "pronombre", "pronombre interrogativo", "pronombre personal",
 		"pronombre relativo", "refrán", "sigla", "sufijo", "sufijo flexivo", "sustantivo",
-		"sustantivo ambiguo", "sustantivo animado", "sustantivo ambg", "sustantivo femenino",
-		"sustantivo femenino y masculino", "sustantivo inanimado", "sustantivo masculino",
-		"sustantivo neutro", "sustantivo propio", "sustantivo común", /*"símbolo",*/ "traducciones", "verbo",
-		"verbo impersonal", "verbo intransitivo", "verbo pronominal", "verbo transitivo"
+		"sustantivo ambiguo", "sustantivo animado", "sustantivo femenino", "sustantivo femenino y masculino",
+		"sustantivo inanimado", "sustantivo masculino", "sustantivo neutro", "sustantivo propio",
+		"sustantivo común", /*"símbolo",*/ "verbo", "verbo impersonal", "verbo intransitivo",
+		"verbo pronominal", "verbo transitivo"
 	);
 	
 	private static final List<Pattern> COMMENT_PATT_LIST;
@@ -461,7 +461,7 @@ public class Editor extends AbstractEditor {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
-		checkLangHeaderCodeCase();
+		checkLangCodeCase();
 		langTemplateParams();
 		addSectionTemplates();
 		removeCategoryLinks();
@@ -3039,24 +3039,41 @@ public class Editor extends AbstractEditor {
 		return text.trim();
 	}
 	
-	public void checkLangHeaderCodeCase() {
-		// TODO: also check section templates like {{sustantivo|ES}}
-		
-		if (isOldStructure) {
-			return;
-		}
-		
+	public void checkLangCodeCase() {
 		Page page = Page.store(title, text);
 		
-		for (LangSection langSection : page.getAllLangSections()) {
-			String langCode = langSection.getLangCode(false);
-			
-			if (!langCode.equals(langSection.getLangCode(true))) {
-				langSection.setLangCode(langCode.toLowerCase());
-			}
-		}
+		// language section templates: {{lengua|xx}}
 		
-		checkDifferences(page.toString(), "checkLangHeaderCodeCase", null);
+		page.getAllLangSections().stream()
+			.filter(langSection -> !langSection.getLangCode(false).equals(langSection.getLangCode(true)))
+			.forEach(langSection -> langSection.setLangCode(langSection.getLangCode(true)));
+		
+		// term section templates: {{sustantivo|xx}}
+		
+		page.getAllLangSections().stream()
+			.map(AbstractSection::getChildSections)
+			.filter(Objects::nonNull)
+			.map(AbstractSection::flattenSubSections)
+			.flatMap(Collection::stream)
+			.forEach(section -> SECTION_TMPLS.stream()
+				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
+				.map(template -> getTemplateParametersWithValue(template))
+				.filter(params -> !params.getOrDefault("ParamWithoutName1", "").isEmpty())
+				.filter(params -> !params.get("ParamWithoutName1").toLowerCase()
+					.equals(params.get("ParamWithoutName1"))
+				)
+				.forEach(params -> {
+					params.compute("ParamWithoutName1", (k, v) -> v.toLowerCase());
+					String header = Utils.replaceTemplates(
+						section.getHeader(),
+						params.get("templateName"),
+						template -> templateFromMap(params)
+					);
+					section.setHeader(header);
+				})
+			);
+		
+		checkDifferences(page.toString(), "checkLangCodeCase", null);
 	}
 	
 	public void langTemplateParams() {
