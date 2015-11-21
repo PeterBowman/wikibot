@@ -2,6 +2,8 @@ package com.github.wikibot.parsing.eswikt;
 
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.countMatches;
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.commons.lang3.StringUtils.startsWithAny;
 import static org.apache.commons.lang3.StringUtils.strip;
 import static org.wikiutils.ParseUtils.getTemplateParametersWithValue;
@@ -39,7 +41,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang3.Range;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jsoup.Jsoup;
@@ -505,8 +506,8 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static boolean hasUnpairedBrackets(String text, String open, String close) {
-		int left = StringUtils.countMatches(text, open);
-		int right = StringUtils.countMatches(text, close);
+		int left = countMatches(text, open);
+		int right = countMatches(text, close);
 		
 		return left != right;
 	}
@@ -539,7 +540,7 @@ public class Editor extends AbstractEditor {
 		
 		while (m.find()) {
 			ranges.add(Range.between(m.start(), m.end()));
-			String replacement = StringUtils.repeat('-', m.group().length());
+			String replacement = repeat('-', m.group().length());
 			m.appendReplacement(sb, replacement);
 		}
 		
@@ -1596,7 +1597,8 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
-			// substantivo, acrónimo (sigla)...
+			header = header.replaceFirst("(?i)^Acr[óo]nimo\\b$", "Sigla");
+			header = header.replaceFirst("(?i)^Sub?stantivo\\b$", "Sustantivo");
 			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
 			
 			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
@@ -1605,7 +1607,6 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^Forma (?:de )?(?:pronombre|pronominal)$", "Forma pronominal");
 			header = header.replaceFirst("(?i)^Forma (?:de )?(?:preposición|prepositiv[oa])$", "Forma prepositiva");
 			header = header.replaceFirst("(?i)^Forma (?:de )?adverbi(?:o|al)$", "Forma adverbial");
-			
 			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa] (masculin|femenin|neutr)[oa]$", "Forma sustantiva $1a");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
