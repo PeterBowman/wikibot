@@ -3098,8 +3098,13 @@ public class Editor extends AbstractEditor {
 						leng = Optional.ofNullable(leng).orElse(param1);
 					}
 					
-					if (langSection.langCodeEqualsTo("es") && leng != null) {
-						params.remove("leng"); // TODO: is this necessary?
+					if (langSection.langCodeEqualsTo("es")) {
+						if (leng != null) {
+							params.remove("leng");
+							return templateFromMap(params);
+						} else {
+							return template;
+						}
 					} else if (leng == null) {
 						@SuppressWarnings("unchecked")
 						Map<String, String> tempMap = (Map<String, String>) params.clone();
@@ -3107,13 +3112,13 @@ public class Editor extends AbstractEditor {
 						params.put("templateName", tempMap.remove("templateName"));
 						params.put("leng", langSection.getLangCode());
 						params.putAll(tempMap);
+						return templateFromMap(params);
 					} else if (!langSection.langCodeEqualsTo(leng)) {
 						params.put("leng", langSection.getLangCode());
+						return templateFromMap(params);
 					} else {
 						return template;
 					}
-					
-					return templateFromMap(params);
 				});
 			}
 			
@@ -4000,7 +4005,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "dokument";
+		String title = "a mano abierta";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
