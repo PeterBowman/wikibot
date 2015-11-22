@@ -463,6 +463,7 @@ public class Editor extends AbstractEditor {
 		addMissingElements();
 		checkLangCodeCase();
 		langTemplateParams();
+		manageSectionTemplates();
 		addSectionTemplates();
 		removeCategoryLinks();
 		deleteEmptySections();
@@ -3055,6 +3056,7 @@ public class Editor extends AbstractEditor {
 			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
+			.filter(section -> !section.getHeader().isEmpty())
 			.forEach(section -> SECTION_TMPLS.stream()
 				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
 				.map(template -> getTemplateParametersWithValue(template))
@@ -3131,6 +3133,7 @@ public class Editor extends AbstractEditor {
 			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
+			.filter(section -> !section.getHeader().isEmpty())
 			.forEach(section -> SECTION_TMPLS.stream()
 				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
 				.map(template -> getTemplateParametersWithValue(template))
@@ -3150,6 +3153,93 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
+	}
+	
+	public void manageSectionTemplates() {
+		Page page = Page.store(title, text);
+		
+		page.getAllLangSections().stream()
+			.map(AbstractSection::getChildSections)
+			.filter(Objects::nonNull)
+			.map(AbstractSection::flattenSubSections)
+			.flatMap(Collection::stream)
+			.filter(section -> !section.getHeader().isEmpty())
+			.filter(section -> !containsAny(section.getHeader(), '[', ']', '<', '>'))
+			.forEach(section -> SECTION_TMPLS.stream()
+				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
+				.filter(template -> !SECTION_DATA_MAP.containsKey(template))
+				.map(template -> getTemplateParametersWithValue(template))
+				.filter(params -> section.getHeader().startsWith(templateFromMap(params)))
+				.forEach(params -> processHeaderTemplates(section, params))
+			);
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "manageSectionTemplates", "revisando plantillas de sección");
+	}
+	
+	private static void processHeaderTemplates(Section section, HashMap<String, String> params) {
+		String header = section.getHeader();
+		String template = templateFromMap(params);
+		String templateName = params.get("templateName");
+		
+		// {{sustantivo|xx}} masculino -> {{sustantivo|xx|masculino}}
+		
+		if (
+			params.containsKey("ParamWithoutName1") &&
+			params.size() == 2 && // ParamWithoutName2 was not set
+			!header.equals(template) &&
+			header.charAt(template.length()) == ' '
+		) {
+			String temp = templateName + header.substring(template.length());
+			Catgram.Data firstMember = Catgram.Data.queryData(templateName);
+			
+			String temp2 = Stream.of(Catgram.Data.values())
+				.map(secondMember -> Catgram.make(firstMember, secondMember))
+				.filter(Objects::nonNull)
+				.filter(catgram -> temp.startsWith(catgram.getSingular()))
+				.map(catgram -> temp.replaceFirst(catgram.getSingular(), String.format(
+					"{{%s|%s|%s}}",
+					templateName,
+					section.getLangSectionParent().getLangCode(),
+					catgram.getSecondMember().getSingular()
+				)))
+				.findAny()
+				.orElse(null);
+			
+			if (temp2 != null) {
+				header = temp2;
+				template = getTemplates(templateName, header).get(0);
+				params = getTemplateParametersWithValue(template);
+			}
+		}
+		
+		// {{sustantivo|xx|masculino}} -> {{sustantivo masculino|xx}}
+		
+		if (
+			params.containsKey("ParamWithoutName2") &&
+			!params.containsKey("ParamWithoutName3")
+		) {
+			Catgram.Data firstMember = Catgram.Data.queryData(templateName);
+			Catgram.Data secondMember = Catgram.Data.queryData(params.get("ParamWithoutName2"));
+			List<Catgram.Data> list = Arrays.asList(firstMember, secondMember);
+			
+			String compoundTemplate = SECTION_DATA_MAP.entrySet().stream()
+				.filter(entry -> entry.getValue().equals(list))
+				.map(Map.Entry::getKey)
+				.findAny()
+				.orElse(null);
+			
+			if (compoundTemplate != null) {
+				params.put("templateName", compoundTemplate);
+				params.remove("ParamWithoutName2");
+				header = Pattern.compile(template, Pattern.LITERAL).matcher(header)
+					.replaceFirst(templateFromMap(params));
+			}
+		}
+		
+		if (!section.getHeader().equals(header)) {
+			section.setHeader(header);
+		}
 	}
 	
 	public void addSectionTemplates() {
