@@ -339,7 +339,7 @@ public class Editor extends AbstractEditor {
 		SOFT_REDIR_TERMS_CHECK = section -> {
 			List<Section> childSections = section.getChildSections();
 			
-			if (childSections.isEmpty()) {
+			if (childSections == null) {
 				return false;
 			}
 			
@@ -4007,7 +4007,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "sazonaría";
+		String title = "timorato";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
