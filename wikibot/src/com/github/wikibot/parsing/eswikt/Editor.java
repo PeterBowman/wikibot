@@ -278,7 +278,7 @@ public class Editor extends AbstractEditor {
 			"<!-- ?¿flexión?: mira en .*?-->",
 			"<!-- ?\\{\\{inflect.sust.sg-pl\\|AQUÍ EL SINGULAR.*?-->",
 			"<!---? ?\\{\\{pronunciación(\\|leng=.*?)?\\|?(\\[ ?(ˈ|eˈxem.plo) ?\\])?\\}\\}.*?-->",
-			"<!-- ?\\{\\{pronunciación\\|(\\[.+?\\]| ˈ )\\}\\} \\|-\\|c=.+?\\|s=.+?(\\}\\}|\\|) *?-->",
+			"<!-- ?\\{\\{pronunciación\\|(\\[?.+?\\]?| ˈ )\\}\\} \\|-\\|c=.+?\\|s=.+?(\\}\\}|\\|) *?-->",
 			"<!-- ?en general, no se indica la etimología .*?-->",
 			"<!-- ?si vas a insertar una nueva sección de etimología o de idioma.*?-->",
 			"<!-- ?si se trata de un país,? por favor,? pon.*?-->",
@@ -3315,6 +3315,8 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void removeCategoryLinks() {
+		// TODO: remove categories inserted for {{Matemáticas}}-like templates
+		
 		Set<String> targetCategories = new HashSet<>();
 		
 		BiConsumer<String, String> addString = (code, plural) -> targetCategories
@@ -4005,7 +4007,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "a mano abierta";
+		String title = "sazonaría";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
