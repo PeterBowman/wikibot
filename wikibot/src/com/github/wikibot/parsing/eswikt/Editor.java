@@ -3077,77 +3077,76 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void langTemplateParams() {
-		// TODO: lang code as unnamed parameter ({{sustantivo}})
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
-		
-		if (isOldStructure) {
-			return;
-		}
 		
 		Page page = Page.store(title, text);
 		
+		// {{sinónimo}}, {{derivad}}...
+		
 		for (LangSection langSection : page.getAllLangSections()) {
 			String content = langSection.toString();
-			MutableBoolean sectionModified = new MutableBoolean(false);
 			
-			for (String template : LENG_PARAM_TMPLS) {
-				Pattern patt = Pattern.compile(
-					"\\{\\{ *?" + template + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}",
-					Pattern.DOTALL
-				);
-				
-				MutableBoolean templateModified = new MutableBoolean(false);
-				
-				String temp = Utils.replaceWithStandardIgnoredRanges(content, patt,
-					(m, sb) -> {
-						HashMap<String, String> params = getTemplateParametersWithValue(m.group());
-						String leng = params.get("leng");
-						boolean occurrenceModified = false;
-						
-						if (template.equals("ampliable")) {
-							String param1 = params.remove("ParamWithoutName1");
-							leng = Optional.ofNullable(leng).orElse(param1);
-						}
-						
-						if (langSection.langCodeEqualsTo("es")) {
-							// TODO: is this necessary?
-							if (leng != null) {
-								params.remove("leng");
-								occurrenceModified = true;
-							}
-						} else if (leng == null) {
-							@SuppressWarnings("unchecked")
-							Map<String, String> tempMap = (Map<String, String>) params.clone();
-							params.clear();
-							params.put("templateName", tempMap.remove("templateName"));
-							params.put("leng", langSection.getLangCode());
-							params.putAll(tempMap);
-							occurrenceModified = true;
-						} else if (!langSection.langCodeEqualsTo(leng)) {
-							params.put("leng", langSection.getLangCode());
-							occurrenceModified = true;
-						}
-						
-						if (occurrenceModified) {
-							String newTemplate = templateFromMap(params);
-							newTemplate = Matcher.quoteReplacement(newTemplate);
-							m.appendReplacement(sb, newTemplate);
-							templateModified.setTrue();
-						}
+			for (String templateName : LENG_PARAM_TMPLS) {
+				content = Utils.replaceTemplates(content, templateName, template -> {
+					HashMap<String, String> params = getTemplateParametersWithValue(template);
+					String leng = params.get("leng");
+					
+					if (templateName.equals("ampliable")) {
+						String param1 = params.remove("ParamWithoutName1");
+						leng = Optional.ofNullable(leng).orElse(param1);
 					}
-				);
-				
-				if (templateModified.booleanValue()) {
-					content = temp;
-					sectionModified.setTrue();
-				}
+					
+					if (langSection.langCodeEqualsTo("es") && leng != null) {
+						params.remove("leng"); // TODO: is this necessary?
+					} else if (leng == null) {
+						@SuppressWarnings("unchecked")
+						Map<String, String> tempMap = (Map<String, String>) params.clone();
+						params.clear();
+						params.put("templateName", tempMap.remove("templateName"));
+						params.put("leng", langSection.getLangCode());
+						params.putAll(tempMap);
+					} else if (!langSection.langCodeEqualsTo(leng)) {
+						params.put("leng", langSection.getLangCode());
+					} else {
+						return template;
+					}
+					
+					return templateFromMap(params);
+				});
 			}
 			
-			if (sectionModified.booleanValue()) {
+			if (!content.equals(langSection.toString())) {
 				LangSection newLangSection = LangSection.parse(content);
 				langSection.replaceWith(newLangSection);
 			}
 		}
+		
+		// section templates: {{sustantivo|xx}}
+		
+		// TODO: reparse Page?
+		page = Page.store(title, page.toString());
+		
+		page.getAllLangSections().stream()
+			.map(AbstractSection::getChildSections)
+			.filter(Objects::nonNull)
+			.map(AbstractSection::flattenSubSections)
+			.flatMap(Collection::stream)
+			.forEach(section -> SECTION_TMPLS.stream()
+				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
+				.map(template -> getTemplateParametersWithValue(template))
+				.filter(params -> !params.getOrDefault("ParamWithoutName1", "")
+					.equalsIgnoreCase(section.getLangSectionParent().getLangCode())
+				)
+				.forEach(params -> {
+					params.put("ParamWithoutName1", section.getLangSectionParent().getLangCode());
+					String header = Utils.replaceTemplates(
+						section.getHeader(),
+						params.get("templateName"),
+						template -> templateFromMap(params)
+					);
+					section.setHeader(header);
+				})
+			);
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "langTemplateParams", "códigos de idioma");
