@@ -195,6 +195,7 @@ public class Editor extends AbstractEditor {
 		LS_SPLITTER_LIST.addAll(PRON_TMPLS);
 		LS_SPLITTER_LIST.addAll(TERM_TMPLS);
 		LS_SPLITTER_LIST.addAll(tempListLS);
+		LS_SPLITTER_LIST.add("ejemplo");
 		LS_SPLITTER_LIST.remove("audio");
 		
 		String tempListLSGroup = LS_SPLITTER_LIST.stream()
