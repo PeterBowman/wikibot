@@ -1043,7 +1043,8 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>]+?)>", "<$1references$2>");
+		// TODO: use Jsoup?
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>=]+?)>", "<$1references$2>");
 		
 		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
 		// automatically converting them to non-self-closing <ref name="a/">
