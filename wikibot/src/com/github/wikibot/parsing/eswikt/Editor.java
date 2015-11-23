@@ -469,6 +469,7 @@ public class Editor extends AbstractEditor {
 		removeCategoryLinks();
 		deleteEmptySections();
 		deleteWrongSections();
+		removeEtymologyTemplates();
 		manageClearElements();
 		applyUcfTemplates();
 		sanitizeReferences();
@@ -3443,8 +3444,6 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void deleteWrongSections() {
-		// TODO: move elements (category links, {{clear}}, maybe images too?) to the preceding section
-		
 		Page page = Page.store(title, text);
 		List<LangSection> langSections = page.getAllLangSections();
 		
@@ -3454,64 +3453,35 @@ public class Editor extends AbstractEditor {
 		
 		Set<String> set = new HashSet<>();
 		
-		for (LangSection langSection : langSections) {
-			List<Section> childSections = langSection.getChildSections();
-			
-			if (childSections == null) {
-				continue;
-			}
-			
-			boolean hasFlexHeaders = childSections.stream()
-				.map(AbstractSection::getStrippedHeader)
-				.anyMatch(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE));
-			
-			boolean hasNonFlexHeaders = childSections.stream()
-				.map(AbstractSection::getStrippedHeader)
-				.anyMatch(header ->
-					!STANDARD_HEADERS.contains(header) &&
-					!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
-				);
-			
-			// empty translations Sections
-			
-			if (
+		// empty translations Sections
+		
+		langSections.stream()
+			.filter(langSection -> langSection.getChildSections() != null)
+			.filter(langSection ->
 				!langSection.langCodeEqualsTo("es") ||
-				(!hasNonFlexHeaders && hasFlexHeaders) ||
+				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
-			) {
-				langSection.findSubSectionsWithHeader("Traducci(ón|ones)").forEach(section -> {
-					String intro = section.getIntro();
-					intro = removeCommentsAndNoWikiText(intro);
-					intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
-					intro = intro.replace("{{clear}}", "");
-					intro = intro.trim();
-					
-					if (intro.isEmpty() && section.getChildSections() == null) {
-						section.detachOnlySelf();
-						set.add("Traducciones");
-					}
-				});
-			}
-			
-			// empty etymology Sections
-			
-			if (
-				(!hasNonFlexHeaders && hasFlexHeaders) ||
+			)
+			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)").stream())
+			.filter(section -> section.getChildSections() == null)
+			.filter(Editor::isEmptyTranslationsSection)
+			.peek(dummy -> set.add("Traducciones"))
+			.forEach(AbstractSection::detachOnlySelf);
+		
+		// empty etymology Sections
+		
+		langSections.stream()
+			.filter(langSection -> langSection.getChildSections() != null)
+			.filter(langSection ->
+				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
-			) {
-				langSection.findSubSectionsWithHeader("Etimología").forEach(section -> {
-					String intro = section.getIntro();
-					intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
-					intro = intro.replace("{{clear}}", "");
-					intro = intro.trim();
-					
-					if (intro.isEmpty() && section.getChildSections() == null) {
-						section.detachOnlySelf();
-						set.add("Etimología");
-					}
-				});
-			}
-		}
+			)
+			// TODO: move image and category links to the previous section
+			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Etimología").stream())
+			.filter(section -> section.getChildSections() == null)
+			.filter(Editor::isEmptyEtymologySection)
+			.peek(dummy -> set.add("Etimología"))
+			.forEach(AbstractSection::detachOnlySelf);
 		
 		if (set.isEmpty()) {
 			return;
@@ -3521,6 +3491,103 @@ public class Editor extends AbstractEditor {
 		String summary = "eliminando secciones: " + String.join(", ", set);
 		
 		checkDifferences(formatted, "deleteWrongSections", summary);
+	}
+	
+	private static boolean hasFlexiveHeaders(Section section) {
+		return section.getChildSections().stream()
+			.map(AbstractSection::getStrippedHeader)
+			.anyMatch(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE));
+	}
+	
+	private static boolean hasNonFlexiveHeaders(Section section) {
+		return section.getChildSections().stream()
+			.map(AbstractSection::getStrippedHeader)
+			.anyMatch(header ->
+				!STANDARD_HEADERS.contains(header) &&
+				!header.matches(HAS_FLEXIVE_FORM_HEADER_RE)
+			);
+	}
+	
+	private static boolean isEmptyTranslationsSection(Section section) {
+		String intro = section.getIntro();
+		intro = removeCommentsAndNoWikiText(intro);
+		intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+		intro = intro.replace("{{clear}}", "");
+		intro = intro.trim();
+		return intro.isEmpty();
+	}
+	
+	private static boolean isEmptyEtymologySection(Section section) {
+		String intro = section.getIntro();
+		intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+		intro = intro.replace("{{clear}}", "");
+		intro = intro.trim();
+		return intro.isEmpty();
+	}
+
+	public void removeEtymologyTemplates() {
+		Page page = Page.store(title, text);
+		List<LangSection> langSections = page.getAllLangSections();
+		
+		if (isOldStructure || langSections.isEmpty()) {
+			return;
+		}
+		
+		Stream.concat(
+			// no etymology Section
+			langSections.stream()
+				.filter(langSection -> langSection.getChildSections() != null)
+				.filter(langSection -> langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()),
+			// two or more etymology Sections
+			langSections.stream()
+				.flatMap(langSection -> langSection.findSubSectionsWithHeader("Etimología \\d+").stream())
+		)
+		.filter(section ->
+			(!hasNonFlexiveHeaders(section) && hasFlexiveHeaders(section)) ||
+			SOFT_REDIR_TERMS_CHECK.test(section)
+		)
+		.filter(section ->
+			!getTemplates("etimología", section.getIntro()).isEmpty() ||
+			!getTemplates("etimología2", section.getIntro()).isEmpty()
+		)
+		.forEach(Editor::processEtymologyTemplates);
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "removeEtymologyTemplates", "eliminando plantillas de etimología");
+	}
+	
+	private static void processEtymologyTemplates(Section section) {
+		String temp = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), P_ETYM_TMPL, (m, sb) -> {
+			String line = m.group(1);
+			String trailingText = m.group(2);
+			String template = line;
+			
+			if (!trailingText.isEmpty()) {
+				if (trailingText.equals(".")) {
+					template = line.substring(0, line.lastIndexOf(trailingText));
+				} else {
+					return;
+				}
+			}
+			
+			Map<String, String> params = getTemplateParametersWithValue(template);
+			params.remove("templateName");
+			params.remove("leng");
+			params.values().removeIf(String::isEmpty);
+			
+			if (params.isEmpty()) {
+				m.appendReplacement(sb, "");
+			} else if (params.size() > 1 || !params.containsKey("ParamWithoutName1")) {
+				return;
+			} else {
+				// TODO: remove non-empty etymology templates in flexive form entries
+				return;
+			}
+		});
+		
+		if (!temp.equals(section.getIntro())) {
+			section.setIntro(temp);
+		}
 	}
 	
 	public void manageClearElements() {
