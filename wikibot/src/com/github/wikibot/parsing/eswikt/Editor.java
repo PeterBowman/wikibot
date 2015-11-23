@@ -82,6 +82,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
+	private static final Pattern P_FLEX_ETYM = Pattern.compile("([Dd]e|[Vv]éase|[Dd]el verbo|[Ff]lexión de) (?<quot>''|\"|)(\\[{2}[^\\]]+\\]{2}|\\{{2}l\\|[\\w-]+\\|[^|}]+\\}{2})\\k<quot>(  y (de )?\\[{2}(-ed|-ing)\\]{2})?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
@@ -3519,6 +3520,7 @@ public class Editor extends AbstractEditor {
 	
 	private static boolean isEmptyEtymologySection(Section section) {
 		String intro = section.getIntro();
+		intro = removeCommentsAndNoWikiText(intro);
 		intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
 		intro = intro.replace("{{clear}}", "");
 		intro = intro.trim();
@@ -3571,16 +3573,26 @@ public class Editor extends AbstractEditor {
 			}
 			
 			Map<String, String> params = getTemplateParametersWithValue(template);
-			params.remove("templateName");
+			String templateName = params.remove("templateName");
 			params.remove("leng");
 			params.values().removeIf(String::isEmpty);
+			String param1 = params.get("ParamWithoutName1");
 			
 			if (params.isEmpty()) {
 				m.appendReplacement(sb, "");
-			} else if (params.size() > 1 || !params.containsKey("ParamWithoutName1")) {
-				return;
+			} else if (
+				templateName.equals("etimología") &&
+				param1 != null &&
+				(param1.equals("plural") || param1.equals("femenino") || param1.equals("sufijo"))
+			) {
+				m.appendReplacement(sb, "");
+			} else if (
+				templateName.equals("etimología2") &&
+				param1 != null &&
+				P_FLEX_ETYM.matcher(param1).matches()
+			) {
+				m.appendReplacement(sb, "");
 			} else {
-				// TODO: remove non-empty etymology templates in flexive form entries
 				return;
 			}
 		});
