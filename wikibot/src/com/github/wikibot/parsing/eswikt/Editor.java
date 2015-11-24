@@ -130,7 +130,8 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
-		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "contracción"
+		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "contracción",
+		"redirección suave"
 	);
 	
 	private static final List<String> SECTION_TMPLS = Arrays.asList(
@@ -320,6 +321,7 @@ public class Editor extends AbstractEditor {
 		TMPL_ALIAS_MAP.put("tit ref", "título referencias");
 		TMPL_ALIAS_MAP.put("sustantivo masculino y femenino", "sustantivo femenino y masculino");
 		TMPL_ALIAS_MAP.put("acrónimo", "sigla");
+		TMPL_ALIAS_MAP.put("redireccion suave", "redirección suave");
 		
 		TMPL_ALIAS_MAP.put("DRAE1914", "DLC1914");
 		TMPL_ALIAS_MAP.put("DUE", "MaríaMoliner");
@@ -4043,7 +4045,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "timorato";
+		String title = "-trofo";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
