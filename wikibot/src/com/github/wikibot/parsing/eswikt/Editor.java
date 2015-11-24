@@ -91,7 +91,10 @@ public class Editor extends AbstractEditor {
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación",
-		"diacrítico", "ampliable"
+		"diacrítico", "ampliable", "variante", "variante obsoleta", "grafía obsoleta", "grafía rara",
+		"sustantivo de verbo", "sustantivo de adjetivo", "antropónimo masculino", "antropónimo femenino",
+		"adjetivo de padecimiento", "adjetivo de sustantivo", "adjetivo de verbo", "adverbio de adjetivo",
+		"adverbio de sustantivo"
 	);
 	
 	private static final List<String> PRON_TMPLS = Arrays.asList(
@@ -128,7 +131,7 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
-		"grafía", "grafía obsoleta", "variante", "variante obsoleta", "contracción"
+		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "contracción"
 	);
 	
 	private static final List<String> SECTION_TMPLS = Arrays.asList(
