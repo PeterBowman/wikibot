@@ -3986,11 +3986,7 @@ public class Editor extends AbstractEditor {
 				section.setHeaderFormat("%1$s %1$s");
 			}
 			
-			if (
-				section instanceof LangSection &&
-				!sectionIntro.isEmpty() &&
-				section.getLeadingNewlines() == 1
-			) {
+			if (section.getLeadingNewlines() == 1) {
 				section.setLeadingNewlines(0);
 			}
 		}
