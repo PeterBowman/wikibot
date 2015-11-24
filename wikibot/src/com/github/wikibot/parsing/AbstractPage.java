@@ -250,6 +250,16 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 		}
 		
 		traverseSiblingSections(sections, 1);
+		
+		for (T section : sections) {
+			if (section.siblingSections == null) {
+				section.siblingSections = new ArrayList<>(0);
+			}
+			
+			if (section.childSections == null) {
+				section.childSections = new ArrayList<>(0);
+			}
+		}
 	}
 
 	private List<T> traverseSiblingSections(List<T> sections, final int tocLevel) {

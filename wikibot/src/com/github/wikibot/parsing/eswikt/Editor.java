@@ -339,13 +339,7 @@ public class Editor extends AbstractEditor {
 		SECTION_DATA_MAP.put("verbo transitivo",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.TRANSITIVE));
 		
 		SOFT_REDIR_TERMS_CHECK = section -> {
-			List<Section> childSections = section.getChildSections();
-			
-			if (childSections == null) {
-				return false;
-			}
-			
-			List<Section> targetSections = childSections.stream()
+			List<Section> targetSections = section.getChildSections().stream()
 				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
 				.collect(Collectors.toList());
 			
@@ -1190,7 +1184,7 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				section.getIntro().isEmpty() &&
-				section.getChildSections() == null
+				section.getChildSections().isEmpty()
 			) {
 				if (!(section instanceof LangSection)) {
 					section.detachOnlySelf();
@@ -1288,7 +1282,7 @@ public class Editor extends AbstractEditor {
 		// Detach empty LangSections
 		
 		page.getAllLangSections().stream()
-			.filter(ls -> ls.getIntro().isEmpty() && ls.getChildSections() == null)
+			.filter(ls -> ls.getIntro().isEmpty() && ls.getChildSections().isEmpty())
 			.forEach(AbstractSection::detachOnlySelf);
 		
 		page.normalizeChildLevels();
@@ -1304,23 +1298,12 @@ public class Editor extends AbstractEditor {
 			
 			if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);
-				List<Section> etymologyChildren = etymologySection.getChildSections();
-				
-				if (etymologyChildren == null) {
-					continue;
-				}
-				
-				for (Section child : etymologyChildren) {
-					child.pushLevels(-1);
-				}
-				
+				etymologySection.getChildSections().forEach(s -> s.pushLevels(-1));
 				etymologySection.setHeader("Etimología");
 			} else {
-				for (Section sibling : langSection.getChildSections()) {
-					if (!etymologySections.contains(sibling)) {
-						sibling.pushLevels(1);
-					}
-				}
+				langSection.getChildSections().stream()
+					.filter(s -> !etymologySections.contains(s))
+					.forEach(s -> s.pushLevels(1));
 				
 				for (int i = 1; i <= etymologySections.size(); i++) {
 					Section etymologySection = etymologySections.get(i - 1);
@@ -1834,8 +1817,7 @@ public class Editor extends AbstractEditor {
 		page.normalizeChildLevels();
 		
 		for (Section pronGrafSection : page.findSectionsWithHeader("Pronunciación y escritura")) {
-			Optional.ofNullable(pronGrafSection.getChildSections())
-				.ifPresent(chs -> chs.forEach(s -> s.pushLevels(-1)));
+			pronGrafSection.getChildSections().forEach(s -> s.pushLevels(-1));
 		}
 		
 		for (LangSection langSection : page.getAllLangSections()) {
@@ -1850,27 +1832,14 @@ public class Editor extends AbstractEditor {
 			}
 			
 			if (etymologySections.size() == 1) {
-				List<Section> etymologyChildren = etymologySections.get(0).getChildSections();
-				
-				if (etymologyChildren != null) {
-					for (Section child : etymologyChildren) {
-						child.pushLevels(-1);
-					}
-				}
-				
+				etymologySections.get(0).getChildSections().forEach(s -> s.pushLevels(-1));
 				pushStandardSections(langSection.getChildSections(), 3);
 			} else {
-				for (Section sibling : langSection.getChildSections()) {
-					if (etymologySections.contains(sibling)) {
-						continue;
-					}
-					
-					sibling.pushLevels(1);
-				}
+				langSection.getChildSections().stream()
+					.filter(s -> !etymologySections.contains(s))
+					.forEach(s -> s.pushLevels(1));
 				
-				for (Section etymologySection : etymologySections) {
-					pushStandardSections(etymologySection.getChildSections(), 4);
-				}
+				etymologySections.forEach(s -> pushStandardSections(s.getChildSections(), 4));
 			}
 		}
 		
@@ -1879,11 +1848,6 @@ public class Editor extends AbstractEditor {
 	}
 
 	private static void pushStandardSections(List<Section> sections, int level) {
-		// TODO: get rid of those null checks, find a better way
-		if (sections == null) {
-			return;
-		}
-		
 		AbstractSection.flattenSubSections(sections).stream()
 			.filter(s -> Section.BOTTOM_SECTIONS.contains(s.getStrippedHeader()))
 			.filter(s -> s.getLevel() > level)
@@ -1904,7 +1868,7 @@ public class Editor extends AbstractEditor {
 			// TODO: pull up child sections or place before normalizeSectionLevels()
 			// https://es.wiktionary.org/w/index.php?title=ni_fu_ni_fa&oldid=2899086
 			
-			if (parentSection == null || section.getChildSections() != null) {
+			if (parentSection == null || !section.getChildSections().isEmpty()) {
 				continue;
 			}
 			
@@ -1962,7 +1926,7 @@ public class Editor extends AbstractEditor {
 			if (
 				// TODO: discuss with the community
 				title.contains(" ") ||
-				langSection.getChildSections() == null ||
+				langSection.getChildSections().isEmpty() ||
 				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
 				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
@@ -3057,7 +3021,6 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllLangSections().stream()
 			.map(AbstractSection::getChildSections)
-			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
@@ -3139,7 +3102,6 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllLangSections().stream()
 			.map(AbstractSection::getChildSections)
-			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
@@ -3169,7 +3131,6 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllLangSections().stream()
 			.map(AbstractSection::getChildSections)
-			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
@@ -3256,7 +3217,6 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllLangSections().stream()
 			.map(AbstractSection::getChildSections)
-			.filter(Objects::nonNull)
 			.map(AbstractSection::flattenSubSections)
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
@@ -3397,11 +3357,10 @@ public class Editor extends AbstractEditor {
 		
 		for (Section section : page.getAllSections()) {
 			String header = section.getStrippedHeader();
-			List<Section> childSections = section.getChildSections();
 			
 			if (
 				header.startsWith("Etimología") || // TODO: review
-				(childSections != null && !childSections.isEmpty()) ||
+				!section.getChildSections().isEmpty() ||
 				!STANDARD_HEADERS.contains(header)
 			) {
 				continue;
@@ -3457,14 +3416,14 @@ public class Editor extends AbstractEditor {
 		// empty translations Sections
 		
 		langSections.stream()
-			.filter(langSection -> langSection.getChildSections() != null)
+			.filter(langSection -> !langSection.getChildSections().isEmpty())
 			.filter(langSection ->
 				!langSection.langCodeEqualsTo("es") ||
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			)
 			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)").stream())
-			.filter(section -> section.getChildSections() == null)
+			.filter(section -> section.getChildSections().isEmpty())
 			.filter(Editor::isEmptyTranslationsSection)
 			.peek(dummy -> set.add("Traducciones"))
 			.forEach(AbstractSection::detachOnlySelf);
@@ -3472,14 +3431,14 @@ public class Editor extends AbstractEditor {
 		// empty etymology Sections
 		
 		langSections.stream()
-			.filter(langSection -> langSection.getChildSections() != null)
+			.filter(langSection -> !langSection.getChildSections().isEmpty())
 			.filter(langSection ->
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			)
 			// TODO: move image and category links to the previous section
 			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Etimología").stream())
-			.filter(section -> section.getChildSections() == null)
+			.filter(section -> section.getChildSections().isEmpty())
 			.filter(Editor::isEmptyEtymologySection)
 			.peek(dummy -> set.add("Etimología"))
 			.forEach(AbstractSection::detachOnlySelf);
@@ -3538,7 +3497,7 @@ public class Editor extends AbstractEditor {
 		Stream.concat(
 			// no etymology Section
 			langSections.stream()
-				.filter(langSection -> langSection.getChildSections() != null)
+				.filter(langSection -> !langSection.getChildSections().isEmpty())
 				.filter(langSection -> langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()),
 			// two or more etymology Sections
 			langSections.stream()

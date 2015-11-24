@@ -67,7 +67,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	void sortSections() {
-		if (childSections == null || hasDuplicatedChildSections()) {
+		if (childSections.isEmpty() || hasDuplicatedChildSections()) {
 			return;
 		}
 

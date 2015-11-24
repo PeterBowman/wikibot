@@ -171,7 +171,7 @@ public class LangSection extends Section {
 	}
 	
 	void sortSections() {
-		if (childSections == null) {
+		if (childSections.isEmpty()) {
 			return;
 		}
 		

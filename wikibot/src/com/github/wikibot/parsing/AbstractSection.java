@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -43,8 +42,9 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		headerLeadingComments = "";
 		headerTrailingComments = "";
 		parentSection = null;
-		siblingSections = null;
-		childSections = null;
+		// these fields will be usually overwritten by Page's parsing methods
+		siblingSections = new ArrayList<>(0);
+		childSections = new ArrayList<>(0);
 		containingPage = null;
 		uuid = UUID.randomUUID();
 		
@@ -211,15 +211,11 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public List<T> getSiblingSections() {
-		return Objects.nonNull(siblingSections)
-			? Collections.unmodifiableList(new ArrayList<>(siblingSections))
-			: null;
+		return Collections.unmodifiableList(new ArrayList<>(siblingSections));
 	}
 	
 	public List<T> getChildSections() {
-		return Objects.nonNull(childSections)
-			? Collections.unmodifiableList(new ArrayList<>(childSections))
-			: null;
+		return Collections.unmodifiableList(new ArrayList<>(childSections));
 	}
 	
 	public T nextSection() {
@@ -255,7 +251,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
 		
-		if (siblingSections == null) {
+		if (siblingSections.isEmpty()) {
 			throw new UnsupportedOperationException("No sibling Sections attached");
 		}
 		
@@ -273,7 +269,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
 		
-		if (siblingSections == null) {
+		if (siblingSections.isEmpty()) {
 			throw new UnsupportedOperationException("No sibling Sections attached");
 		}
 		
@@ -300,7 +296,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		if (containingPage != null) {
 			List<T> flattened = flattenSubSections(Arrays.asList(sections));
 			
-			if (childSections != null) {
+			if (!childSections.isEmpty()) {
 				T lastChild = childSections.get(childSections.size() - 1);
 				int index = containingPage.sections.indexOf(lastChild);
 				containingPage.sections.addAll(index + 1, flattened);
@@ -311,10 +307,6 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			
 			containingPage.buildSectionTree();
 		} else {
-			if (childSections == null) {
-				childSections = new ArrayList<>();
-			}
-			
 			Collections.addAll(childSections, sections);
 		}
 	}
@@ -336,10 +328,6 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			containingPage.sections.addAll(index + 1, flattened);
 			containingPage.buildSectionTree();
 		} else {
-			if (childSections == null) {
-				childSections = new ArrayList<>();
-			}
-			
 			childSections.addAll(0, Arrays.asList(sections));
 		}
 	}
@@ -406,7 +394,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		if (containingPage != null) {
 			containingPage.sections.remove(this);
 			
-			if (childSections != null) {
+			if (!childSections.isEmpty()) {
 				List<T> flattened = flattenSubSections(childSections);
 				containingPage.sections.removeAll(flattened);
 			}
@@ -416,12 +404,8 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		} else if (parentSection != null) {
 			parentSection.childSections.remove(this);
 			
-			if (!parentSection.childSections.isEmpty()) {
-				for (T sibling : parentSection.childSections) {
-					sibling.siblingSections.remove(this);
-				}
-			} else {
-				parentSection.childSections = null;
+			for (T sibling : parentSection.childSections) {
+				sibling.siblingSections.remove(this);
 			}
 			
 			parentSection = null;
@@ -451,7 +435,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			throw new IllegalArgumentException("New level out of accepted range (SectionBase.pushLevels)");
 		}
 		
-		if (childSections != null) {
+		if (!childSections.isEmpty()) {
 			List<T> subSections = flattenSubSections(childSections);
 			
 			if (diff > 0) {
@@ -475,7 +459,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public boolean hasSubSectionWithHeader(String regex) {
-		if (childSections != null) {
+		if (!childSections.isEmpty()) {
 			return flattenSubSections(childSections).stream()
 				.anyMatch(section -> section.getStrippedHeader().matches(regex));
 		} else {
@@ -484,7 +468,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	public List<T> filterSubSections(Predicate<T> predicate) {
-		if (childSections != null) {
+		if (!childSections.isEmpty()) {
 			return flattenSubSections(childSections).stream()
 				.filter(predicate)
 				.collect(Collectors.toList());
@@ -512,7 +496,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		// containingPage has been set to null
 		page.sections.add(index, section);
 		
-		if (section.childSections != null) {
+		if (!section.childSections.isEmpty()) {
 			section.propagateTree();
 		} else {
 			page.buildSectionTree();
@@ -520,7 +504,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	protected void propagateTree() {
-		if (containingPage == null || childSections == null) {
+		if (containingPage == null || childSections.isEmpty()) {
 			return;
 		}
 		
@@ -542,7 +526,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		for (U section : sections) {
 			list.add(section);
 			
-			if (section.childSections != null) {
+			if (!section.childSections.isEmpty()) {
 				list.addAll(flattenSubSections(section.childSections));
 			}
 		}
@@ -590,7 +574,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		sb.append(intro);
 		sb.append(StringUtils.repeat('\n', trailingNewlines));
 		
-		if (childSections != null) {
+		if (!childSections.isEmpty()) {
 			sb.append("\n");
 			
 			for (T subSection : childSections) {
