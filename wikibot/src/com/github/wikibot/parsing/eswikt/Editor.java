@@ -25,7 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -157,6 +156,7 @@ public class Editor extends AbstractEditor {
 	private static final List<String> BS_SPLITTER_LIST;
 	private static final List<String> STANDARD_HEADERS;
 	
+	private static final Map<String, String> TMPL_ALIAS_MAP;
 	private static final Map<String, List<Catgram.Data>> SECTION_DATA_MAP;
 	
 	private static final String TRANSLATIONS_TEMPLATE;
@@ -297,7 +297,147 @@ public class Editor extends AbstractEditor {
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
 		
+		// TODO: expand per [[Especial:TodasLasRedirecciones]]
+		// TODO: delete obsolete templates
+		
+		TMPL_ALIAS_MAP = new HashMap<>(150, 1);
+		
+		TMPL_ALIAS_MAP.put("Pronunciación", "pronunciación");
+		TMPL_ALIAS_MAP.put("Etimología", "etimología");
+		TMPL_ALIAS_MAP.put("etimologia", "etimología");
+		TMPL_ALIAS_MAP.put("etyl", "etimología");
+		TMPL_ALIAS_MAP.put("Desambiguación", "desambiguación");
+		TMPL_ALIAS_MAP.put("Desambiguacion", "desambiguación");
+		TMPL_ALIAS_MAP.put("desambiguacion", "desambiguación");
+		TMPL_ALIAS_MAP.put("desamb", "desambiguación");
+		TMPL_ALIAS_MAP.put("Desambig", "desambiguación");
+		TMPL_ALIAS_MAP.put("Notadesambiguación", "desambiguación");
+		TMPL_ALIAS_MAP.put("Desambiguado", "desambiguación");
+		TMPL_ALIAS_MAP.put("grafías alternativas", "grafía alternativa");
+		TMPL_ALIAS_MAP.put("ucf", "plm");
+		TMPL_ALIAS_MAP.put("Anagramas", "anagrama");
+		TMPL_ALIAS_MAP.put("Parónimos", "parónimo");
+		TMPL_ALIAS_MAP.put("tit ref", "título referencias");
+		TMPL_ALIAS_MAP.put("sustantivo masculino y femenino", "sustantivo femenino y masculino");
+		TMPL_ALIAS_MAP.put("acrónimo", "sigla");
+		
+		TMPL_ALIAS_MAP.put("DRAE1914", "DLC1914");
+		TMPL_ALIAS_MAP.put("DUE", "MaríaMoliner");
+		TMPL_ALIAS_MAP.put("Moliner", "MaríaMoliner");
+		TMPL_ALIAS_MAP.put("NDLC1866", "Labernia1866");
+		TMPL_ALIAS_MAP.put("dlc1914", "DLC1914");
+		TMPL_ALIAS_MAP.put("dme1831", "DME1831");
+		TMPL_ALIAS_MAP.put("dme1864", "DME1864");
+		TMPL_ALIAS_MAP.put("dp2002", "DP2002");
+		TMPL_ALIAS_MAP.put("drae1914", "DLC1914");
+		
+		// TODO: these are not transcluded, analyze "leng" params instead
+		// TODO: move to langTemplateParams()
+		
+		TMPL_ALIAS_MAP.put("aka", "ak");
+		TMPL_ALIAS_MAP.put("allentiac", "qbt");
+		TMPL_ALIAS_MAP.put("arg", "an");
+		TMPL_ALIAS_MAP.put("aus-dar", "0hk");
+		TMPL_ALIAS_MAP.put("ava", "av");
+		TMPL_ALIAS_MAP.put("ave", "ae");
+		TMPL_ALIAS_MAP.put("bak", "ba");
+		TMPL_ALIAS_MAP.put("bam", "bm");
+		TMPL_ALIAS_MAP.put("bat-smg", "sgs");
+		TMPL_ALIAS_MAP.put("be-x-old", "be");
+		TMPL_ALIAS_MAP.put("bod", "bo");
+		TMPL_ALIAS_MAP.put("ces", "cs");
+		TMPL_ALIAS_MAP.put("cha", "ch");
+		TMPL_ALIAS_MAP.put("che", "ce");
+		TMPL_ALIAS_MAP.put("chu", "cu");
+		TMPL_ALIAS_MAP.put("chv", "cv");
+		TMPL_ALIAS_MAP.put("cor", "kw");
+		TMPL_ALIAS_MAP.put("cos", "co");
+		TMPL_ALIAS_MAP.put("cre", "cr");
+		TMPL_ALIAS_MAP.put("cym", "cy");
+		TMPL_ALIAS_MAP.put("div", "dv");
+		TMPL_ALIAS_MAP.put("ewe", "ee");
+		TMPL_ALIAS_MAP.put("fas", "fa");
+		TMPL_ALIAS_MAP.put("fiu-vro", "vro");
+		TMPL_ALIAS_MAP.put("ful", "ff");
+		TMPL_ALIAS_MAP.put("gkm", "qgk");
+		TMPL_ALIAS_MAP.put("gla", "gd");
+		TMPL_ALIAS_MAP.put("gle", "ga");
+		TMPL_ALIAS_MAP.put("glv", "gv");
+		TMPL_ALIAS_MAP.put("her", "hz");
+		TMPL_ALIAS_MAP.put("hmo", "ho");
+		TMPL_ALIAS_MAP.put("hrv", "hr");
+		TMPL_ALIAS_MAP.put("hye", "hy");
+		TMPL_ALIAS_MAP.put("ind", "id");
+		TMPL_ALIAS_MAP.put("jav", "jv");
+		TMPL_ALIAS_MAP.put("kal", "kl");
+		TMPL_ALIAS_MAP.put("kat", "ka");
+		TMPL_ALIAS_MAP.put("lzh", "zh-classical");
+		TMPL_ALIAS_MAP.put("mah", "mh");
+		TMPL_ALIAS_MAP.put("mlt", "mt");
+		TMPL_ALIAS_MAP.put("mri", "mi");
+		TMPL_ALIAS_MAP.put("nb", "no");
+		TMPL_ALIAS_MAP.put("nrm", "nrf");
+		TMPL_ALIAS_MAP.put("oji", "oj");
+		TMPL_ALIAS_MAP.put("ood", "nai");
+		TMPL_ALIAS_MAP.put("protoindoeuropeo", "ine");
+		TMPL_ALIAS_MAP.put("prv", "oc");
+		TMPL_ALIAS_MAP.put("roa-oca", "oca");
+		TMPL_ALIAS_MAP.put("roa-rup", "rup");
+		TMPL_ALIAS_MAP.put("roa-tara", "roa-tar");
+		TMPL_ALIAS_MAP.put("roh", "rm");
+		TMPL_ALIAS_MAP.put("sna", "sn");
+		TMPL_ALIAS_MAP.put("srd", "sc");
+		TMPL_ALIAS_MAP.put("srp", "sr");
+		TMPL_ALIAS_MAP.put("ssw", "ss");
+		TMPL_ALIAS_MAP.put("tsz", "pua");
+		TMPL_ALIAS_MAP.put("yue", "zh-yue");
+		TMPL_ALIAS_MAP.put("zh-cn", "zh");
+		TMPL_ALIAS_MAP.put("zh-min-nan", "nan");
+		TMPL_ALIAS_MAP.put("zh-wuu", "wuu");
+		
+		TMPL_ALIAS_MAP.put("AR", "AR-ES");
+		TMPL_ALIAS_MAP.put("CA", "CA-ES");
+		TMPL_ALIAS_MAP.put("CHN", "CMN-ES");
+		TMPL_ALIAS_MAP.put("EN", "EN-ES");
+		TMPL_ALIAS_MAP.put("EU", "EU-ES");
+		TMPL_ALIAS_MAP.put("FR", "FR-ES");
+		TMPL_ALIAS_MAP.put("GL", "GL-ES");
+		TMPL_ALIAS_MAP.put("IT", "IT-ES");
+		TMPL_ALIAS_MAP.put("LA", "LA-ES");
+		TMPL_ALIAS_MAP.put("MN", "MN-ES");
+		TMPL_ALIAS_MAP.put("PL", "PL-ES");
+		TMPL_ALIAS_MAP.put("PT", "PT-ES");
+		TMPL_ALIAS_MAP.put("QU", "QU-ES");
+		
+		TMPL_ALIAS_MAP.put("Allentiac-ES", "QBT-ES");
+		TMPL_ALIAS_MAP.put("BAT-SMG-ES", "SGS-ES");
+		TMPL_ALIAS_MAP.put("CYM-ES", "CY-ES");
+		TMPL_ALIAS_MAP.put("FIU-VRO-ES", "VRO-ES");
+		TMPL_ALIAS_MAP.put("FRS-ES", "STQ-ES");
+		TMPL_ALIAS_MAP.put("LZH-ES", "ZH-CLASSICAL-ES");
+		TMPL_ALIAS_MAP.put("MYA-ES", "MY-ES");
+		TMPL_ALIAS_MAP.put("NLD-ES", "NL-ES");
+		TMPL_ALIAS_MAP.put("OFR-ES", "FRO-ES");
+		TMPL_ALIAS_MAP.put("PROTOPOLINESIO-ES", "POZ-POL-ES");
+		TMPL_ALIAS_MAP.put("Protopolinesio-ES", "POZ-POL-ES");
+		TMPL_ALIAS_MAP.put("PRV-ES", "OC-ES");
+		TMPL_ALIAS_MAP.put("TGL-ES", "TL-ES");
+		TMPL_ALIAS_MAP.put("TOG-ES", "TO-ES");
+		TMPL_ALIAS_MAP.put("TSZ-ES", "PUA-ES");
+		TMPL_ALIAS_MAP.put("YUE-ES", "ZH-YUE-ES");
+		TMPL_ALIAS_MAP.put("ZH-ES", "CMN-ES");
+		
+		TMPL_ALIAS_MAP.put("Indoeuropeo", "INE-ES");
+		TMPL_ALIAS_MAP.put("castellanoantiguo", "OSP-ES");
+		TMPL_ALIAS_MAP.put("Aymará-Español", "AY-ES");
+		TMPL_ALIAS_MAP.put("Guaraní-Español", "GN-ES");
+		TMPL_ALIAS_MAP.put("Náhuatl-Español", "NAH-ES");
+		TMPL_ALIAS_MAP.put("Quechua-Español", "QU-ES");
+		
+		TMPL_ALIAS_MAP.put("Caracter oriental", "Carácter oriental");
+		
 		SECTION_DATA_MAP = new HashMap<>(50, 1);
+		
 		SECTION_DATA_MAP.put("adjetivo cardinal",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.CARDINAL));
 		SECTION_DATA_MAP.put("adjetivo numeral",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.NUMERAL));
 		SECTION_DATA_MAP.put("adjetivo ordinal",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.ORDINAL));
@@ -759,163 +899,24 @@ public class Editor extends AbstractEditor {
 	
 	public void normalizeTemplateNames() {
 		String formatted = text;
-		Map<String, String> map = new HashMap<>(150, 1);
-		
-		// TODO: expand per [[Especial:TodasLasRedirecciones]]
-		// TODO: delete obsolete templates
-		
-		map.put("Pronunciación", "pronunciación");
-		map.put("Etimología", "etimología");
-		map.put("etimologia", "etimología");
-		map.put("etyl", "etimología");
-		map.put("Desambiguación", "desambiguación");
-		map.put("Desambiguacion", "desambiguación");
-		map.put("desambiguacion", "desambiguación");
-		map.put("desamb", "desambiguación");
-		map.put("Desambig", "desambiguación");
-		map.put("Notadesambiguación", "desambiguación");
-		map.put("Desambiguado", "desambiguación");
-		map.put("grafías alternativas", "grafía alternativa");
-		map.put("ucf", "plm");
-		map.put("Anagramas", "anagrama");
-		map.put("Parónimos", "parónimo");
-		map.put("tit ref", "título referencias");
-		map.put("sustantivo masculino y femenino", "sustantivo femenino y masculino");
-		map.put("acrónimo", "sigla");
-		
-		map.put("DRAE1914", "DLC1914");
-		map.put("DUE", "MaríaMoliner");
-		map.put("Moliner", "MaríaMoliner");
-		map.put("NDLC1866", "Labernia1866");
-		map.put("dlc1914", "DLC1914");
-		map.put("dme1831", "DME1831");
-		map.put("dme1864", "DME1864");
-		map.put("dp2002", "DP2002");
-		map.put("drae1914", "DLC1914");
-		
-		// TODO: these are not transcluded, analyze "leng" params instead
-		// TODO: move to langTemplateParams()
-		
-		map.put("aka", "ak");
-		map.put("allentiac", "qbt");
-		map.put("arg", "an");
-		map.put("aus-dar", "0hk");
-		map.put("ava", "av");
-		map.put("ave", "ae");
-		map.put("bak", "ba");
-		map.put("bam", "bm");
-		map.put("bat-smg", "sgs");
-		map.put("be-x-old", "be");
-		map.put("bod", "bo");
-		map.put("ces", "cs");
-		map.put("cha", "ch");
-		map.put("che", "ce");
-		map.put("chu", "cu");
-		map.put("chv", "cv");
-		map.put("cor", "kw");
-		map.put("cos", "co");
-		map.put("cre", "cr");
-		map.put("cym", "cy");
-		map.put("div", "dv");
-		map.put("ewe", "ee");
-		map.put("fas", "fa");
-		map.put("fiu-vro", "vro");
-		map.put("ful", "ff");
-		map.put("gkm", "qgk");
-		map.put("gla", "gd");
-		map.put("gle", "ga");
-		map.put("glv", "gv");
-		map.put("her", "hz");
-		map.put("hmo", "ho");
-		map.put("hrv", "hr");
-		map.put("hye", "hy");
-		map.put("ind", "id");
-		map.put("jav", "jv");
-		map.put("kal", "kl");
-		map.put("kat", "ka");
-		map.put("lzh", "zh-classical");
-		map.put("mah", "mh");
-		map.put("mlt", "mt");
-		map.put("mri", "mi");
-		map.put("nb", "no");
-		map.put("nrm", "nrf");
-		map.put("oji", "oj");
-		map.put("ood", "nai");
-		map.put("protoindoeuropeo", "ine");
-		map.put("prv", "oc");
-		map.put("roa-oca", "oca");
-		map.put("roa-rup", "rup");
-		map.put("roa-tara", "roa-tar");
-		map.put("roh", "rm");
-		map.put("sna", "sn");
-		map.put("srd", "sc");
-		map.put("srp", "sr");
-		map.put("ssw", "ss");
-		map.put("tsz", "pua");
-		map.put("yue", "zh-yue");
-		map.put("zh-cn", "zh");
-		map.put("zh-min-nan", "nan");
-		map.put("zh-wuu", "wuu");
-		
-		map.put("AR", "AR-ES");
-		map.put("CA", "CA-ES");
-		map.put("CHN", "CMN-ES");
-		map.put("EN", "EN-ES");
-		map.put("EU", "EU-ES");
-		map.put("FR", "FR-ES");
-		map.put("GL", "GL-ES");
-		map.put("IT", "IT-ES");
-		map.put("LA", "LA-ES");
-		map.put("MN", "MN-ES");
-		map.put("PL", "PL-ES");
-		map.put("PT", "PT-ES");
-		map.put("QU", "QU-ES");
-		
-		map.put("Allentiac-ES", "QBT-ES");
-		map.put("BAT-SMG-ES", "SGS-ES");
-		map.put("CYM-ES", "CY-ES");
-		map.put("FIU-VRO-ES", "VRO-ES");
-		map.put("FRS-ES", "STQ-ES");
-		map.put("LZH-ES", "ZH-CLASSICAL-ES");
-		map.put("MYA-ES", "MY-ES");
-		map.put("NLD-ES", "NL-ES");
-		map.put("OFR-ES", "FRO-ES");
-		map.put("PROTOPOLINESIO-ES", "POZ-POL-ES");
-		map.put("Protopolinesio-ES", "POZ-POL-ES");
-		map.put("PRV-ES", "OC-ES");
-		map.put("TGL-ES", "TL-ES");
-		map.put("TOG-ES", "TO-ES");
-		map.put("TSZ-ES", "PUA-ES");
-		map.put("YUE-ES", "ZH-YUE-ES");
-		map.put("ZH-ES", "CMN-ES");
-		
-		map.put("Indoeuropeo", "INE-ES");
-		map.put("castellanoantiguo", "OSP-ES");
-		map.put("Aymará-Español", "AY-ES");
-		map.put("Guaraní-Español", "GN-ES");
-		map.put("Náhuatl-Español", "NAH-ES");
-		map.put("Quechua-Español", "QU-ES");
-		
-		map.put("Caracter oriental", "Carácter oriental");
-		
 		List<String> found = new ArrayList<>();
 		
-		for (Entry<String, String> entry : map.entrySet()) {
-			final String target = entry.getKey();
-			final String replacement = entry.getValue();
-			
-			final Pattern patt = Pattern.compile(
-				"\\{\\{ *?" + target + " *?(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}",
-				Pattern.DOTALL
-			);
-			
-			String temp = Utils.replaceWithStandardIgnoredRanges(formatted, patt,
-				(m, sb) -> m.appendReplacement(sb, "{{" + replacement + "$1}}")
-			);
+		for (Map.Entry<String, String> entry : TMPL_ALIAS_MAP.entrySet()) {
+			String temp = Utils.replaceTemplates(formatted, entry.getKey(), template -> {
+				HashMap<String, String> params = getTemplateParametersWithValue(template);
+				
+				// ParseUtils's template methods are case-insensitive
+				if (params.get("templateName").equals(entry.getKey())) {
+					params.put("templateName", entry.getValue());
+					return templateFromMap(params);
+				} else {
+					return template;
+				}
+			});
 			
 			if (!temp.equals(formatted)) {
 				formatted = temp;
-				found.add(target);
+				found.add(String.format("{{%s}} → {{%s}}", entry.getKey(), entry.getValue()));
 			}
 		}
 		
@@ -926,11 +927,7 @@ public class Editor extends AbstractEditor {
 		// Must check again due to {{XX}} -> {{XX-ES}} replacements
 		checkOldStructure(formatted);
 		
-		String summary = found.stream()
-			.map(target -> String.format("{{%s}} → {{%s}}", target, map.get(target)))
-			.collect(Collectors.joining(", "));
-		
-		checkDifferences(formatted, "normalizeTemplateNames", summary);
+		checkDifferences(formatted, "normalizeTemplateNames", String.join(", ", found));
 	}
 	
 	public void splitLines() {
@@ -2588,7 +2585,7 @@ public class Editor extends AbstractEditor {
 				newMap.putAll(tempMap.remove("pronunciación"));
 			}
 			
-			for (Entry<String, Map<String, String>> entry : tempMap.entrySet()) {
+			for (Map.Entry<String, Map<String, String>> entry : tempMap.entrySet()) {
 				newMap.putAll(entry.getValue());
 			}
 			
@@ -2628,10 +2625,10 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		Iterator<Entry<String, String>> iterator = targetMap.entrySet().iterator();
+		Iterator<Map.Entry<String, String>> iterator = targetMap.entrySet().iterator();
 		
 		while (iterator.hasNext()) {
-			Entry<String, String> entry = iterator.next();
+			Map.Entry<String, String> entry = iterator.next();
 			
 			if (entry.getValue() == null || entry.getValue().isEmpty()) {
 				iterator.remove();
