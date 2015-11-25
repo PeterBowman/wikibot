@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
@@ -27,8 +28,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
-import org.wikipedia.Wiki.LogEntry;
-import org.wikipedia.Wiki.Revision;
+import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -80,11 +80,11 @@ public final class MaintenanceScript {
 			return;
 		}
 		
-		int rcoptions = Wikibot.HIDE_REDIRECT | Wikibot.HIDE_BOT;
+		int rcoptions = Wikibot.HIDE_REDIRECT | Wiki.HIDE_BOT;
 		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		
-		Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wikibot.MAIN_NAMESPACE);
-		LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wikibot.MOVE_LOG, "move", null, "", Wikibot.ALL_NAMESPACES);
+		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wiki.MAIN_NAMESPACE);
+		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
 		
 		List<String> titles = Stream.of(
 				Stream.of(revs).collect(new RevisionCollector(gapCal)),
@@ -228,7 +228,7 @@ public final class MaintenanceScript {
 		}
 	}
 
-	private static class RevisionCollector implements Collector<Revision, HashMap<String, Revision>, List<String>> {
+	private static class RevisionCollector implements Collector<Wiki.Revision, Map<String, Wiki.Revision>, List<String>> {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
@@ -239,26 +239,26 @@ public final class MaintenanceScript {
 		}
 		
 		@Override
-		public Supplier<HashMap<String, Revision>> supplier() {
+		public Supplier<Map<String, Wiki.Revision>> supplier() {
 			return HashMap::new;
 		}
 	
 		@Override
-		public BiConsumer<HashMap<String, Revision>, Revision> accumulator() {
+		public BiConsumer<Map<String, Wiki.Revision>, Wiki.Revision> accumulator() {
 			return (accum, rev) -> accum.put(rev.getPage(), rev);
 		}
 	
 		@Override
-		public BinaryOperator<HashMap<String, Revision>> combiner() {
+		public BinaryOperator<Map<String, Wiki.Revision>> combiner() {
 			return null;
 		}
 	
 		@Override
-		public Function<HashMap<String, Revision>, List<String>> finisher() {
+		public Function<Map<String, Wiki.Revision>, List<String>> finisher() {
 			return accum -> accum.values().stream()
 				.filter(rev -> rev.getTimestamp().before(cal))
 				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
-				.map(Revision::getPage)
+				.map(Wiki.Revision::getPage)
 				.collect(Collectors.toList());
 		}
 	
@@ -268,7 +268,7 @@ public final class MaintenanceScript {
 		}
 	}
 	
-	private static class LogCollector implements Collector<LogEntry, HashMap<String, LogEntry>, List<String>> {
+	private static class LogCollector implements Collector<Wiki.LogEntry, Map<String, Wiki.LogEntry>, List<String>> {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
@@ -279,34 +279,32 @@ public final class MaintenanceScript {
 		}
 		
 		@Override
-		public Supplier<HashMap<String, LogEntry>> supplier() {
+		public Supplier<Map<String, Wiki.LogEntry>> supplier() {
 			return HashMap::new;
 		}
 	
 		@Override
-		public BiConsumer<HashMap<String, LogEntry>, LogEntry> accumulator() {
+		public BiConsumer<Map<String, Wiki.LogEntry>, Wiki.LogEntry> accumulator() {
 			return (accum, log) -> accum.putIfAbsent((String) log.getDetails(), log);
 		}
 	
 		@Override
-		public BinaryOperator<HashMap<String, LogEntry>> combiner() {
+		public BinaryOperator<Map<String, Wiki.LogEntry>> combiner() {
 			return null;
 		}
 	
 		@Override
-		public Function<HashMap<String, LogEntry>, List<String>> finisher() {
+		public Function<Map<String, Wiki.LogEntry>, List<String>> finisher() {
 			return accum -> accum.values().stream()
 				.filter(log -> log.getTimestamp().before(cal))
 				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
 				.map(log -> (String) log.getDetails())
 				.filter(title -> {
-					int ns;
 					try {
-						ns = wb.namespace(title);
+						return wb.namespace(title) == Wiki.MAIN_NAMESPACE;
 					} catch (Exception e) {
 						return false;
 					}
-					return ns == Wikibot.MAIN_NAMESPACE;
 				})
 				.collect(Collectors.toList());
 		}

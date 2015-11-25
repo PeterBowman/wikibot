@@ -91,10 +91,10 @@ public final class InconsistentHeaderTitles {
 					.toArray(String[]::new);
 				
 				PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
-				Stream.of(pages).parallel().forEach(pc -> findErrors(map, pc));
+				Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
 				break;
 			case 'd': // read from dump file, TODO: only local environment
-				wb.readXmlDump(pc -> findErrors(map, pc));
+				wb.readXmlDump(pc -> findErrors(pc, map));
 				break;
 			default:
 				System.out.printf("Unrecognized argument: %c%n.", op);
@@ -147,14 +147,22 @@ public final class InconsistentHeaderTitles {
 		
 		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, Wiki.MAIN_NAMESPACE);
+		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
 		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
 		
-		return Stream.of(revs)
-			.map(Wiki.Revision::getPage)
-			.distinct()
-			.toArray(String[]::new);
+		return Stream.concat(
+			Stream.of(revs).map(Wiki.Revision::getPage),
+			Stream.of(logs).map(Wiki.LogEntry::getDetails)
+				.filter(targetTitle -> {
+					try {
+						return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
+					} catch (Exception e) {
+						return false;
+					}
+				})
+		).distinct().toArray(String[]::new);
 	}
 	
 	private static String[] extractStoredTitles() {
@@ -170,7 +178,7 @@ public final class InconsistentHeaderTitles {
 		return titles;
 	}
 	
-	private static void findErrors(Map<String, Collection<Item>> map, PageContainer pc) {
+	private static void findErrors(PageContainer pc, Map<String, Collection<Item>> map) {
 		Page page;
 		
 		try {
@@ -284,11 +292,7 @@ public final class InconsistentHeaderTitles {
 		
 		@Override
 		public boolean equals(Object o) {
-			if (!(o instanceof Item)) {
-				return true;
-			}
-			
-			if (o == this) {
+			if (!(o instanceof Item) || o == this) {
 				return true;
 			}
 			
