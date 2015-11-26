@@ -3684,37 +3684,38 @@ public class Editor extends AbstractEditor {
 		for (Section section : sections) {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF,
-				(m, sb) -> {
-					String target = m.group(2).trim();
-					String pipe = m.group(3);
-					String trail = m.group(4);
-					
-					if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
-						return;
-					}
-					
-					if (pipe != null) {
-						pipe = pipe.trim();
-						
-						if (
-							pipe.isEmpty() ||
-							!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
-						) {
-							return;
-						}
-					}
-					
-					if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
-						return;
-					}
-					
-					String template = String.format("{{plm|%s}}", target);
-					String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
-					
-					m.appendReplacement(sb, replacement);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF, (m, sb) -> {
+				String target = m.group(2).trim().replaceFirst("#Español$", "");
+				String pipe = m.group(3);
+				String trail = m.group(4);
+				
+				if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
+					return;
 				}
-			);
+				
+				if (pipe != null) {
+					pipe = pipe.trim();
+					
+					if (
+						pipe.isEmpty() ||
+						!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
+					) {
+						return;
+					}
+				}
+				
+				if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
+					return;
+				}
+				
+				String template = target.equals(title)
+					? "{{plm}}"
+					: String.format("{{plm|%s}}", target);
+				
+				String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
+				
+				m.appendReplacement(sb, replacement);
+			});
 			
 			if (!temp.equals(intro)) {
 				section.setIntro(temp);
@@ -4045,7 +4046,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "-trofo";
+		String title = "hamaca";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
