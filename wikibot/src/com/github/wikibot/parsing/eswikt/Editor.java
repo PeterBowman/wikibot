@@ -60,6 +60,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_PREFIXED_TEMPLATE;
 	private static final Pattern P_TAGS = Pattern.compile("<(\\w+?)[^>]*?(?<!/ ?)>.+?</\\1+? ?>", Pattern.DOTALL);
+	private static final Pattern P_REFS = Pattern.compile("<ref\\b([^>]*?)(?<!/ ?)>.*?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_LINE_JOINER;
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
@@ -832,7 +833,7 @@ public class Editor extends AbstractEditor {
 	
 	public void joinLines() {
 		Range<Integer>[] tags = Utils.findRanges(text, P_TAGS);
-		Range<Integer>[] refs = Utils.findRanges(text, Pattern.compile("<ref\\b([^>]*?)(?<!/ ?)>.*?</ref *?>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE));
+		Range<Integer>[] refs = Utils.findRanges(text, P_REFS);
 		Range<Integer>[] templates = Utils.findRanges(text, "{{", "}}");
 		Range<Integer>[] wikitables = Utils.findRanges(text, "{|", "|}");
 		
@@ -841,60 +842,76 @@ public class Editor extends AbstractEditor {
 		List<Range<Integer>> templateRanges = Utils.getCombinedRanges(templates);
 		List<Range<Integer>> wikitableRanges = Utils.getCombinedRanges(wikitables);
 		
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_JOINER,
-			(m, sb) -> {
-				boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
-				
-				if (
-					!isRefRange &&
-					// assume <ref> regions cannot contain these elements 
-					(
-						Utils.containedInRanges(tagRanges, m.start()) ||
-						Utils.containedInRanges(templateRanges, m.start()) ||
-						Utils.containedInRanges(wikitableRanges, m.start())
-					)
-				) {
-					return;
-				}
-				
-				// TODO: review reference tags
-				// https://es.wiktionary.org/w/index.php?title=casa&diff=2912203&oldid=2906951
-				
-				String replacement = null;
-				
-				if (removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
-					if (isRefRange) {
-						replacement = m.group(1).replaceFirst("^[ \n]+", "");
-						replacement = Matcher.quoteReplacement(replacement);
-					} else {
-						return;
-					}
-				} else {
-					replacement = "$1";
-				}
-				
-				int index = text.substring(0, m.start()).lastIndexOf("\n");
-				String previousLine = text.substring(index + 1, m.start());
-				previousLine = removeCommentsAndNoWikiText(previousLine);
-				
-				final String[] arr = isRefRange
-					? new String[]{":", ";", "*", "#"}
-					: new String[]{" ", ":", ";", "*", "#"};
-				
-				if (!previousLine.isEmpty() && startsWithAny(previousLine, arr)) {
-					return;
-				}
-				
-				index = text.indexOf("\n", m.start(1));
-				String thisLine = text.substring(m.start(1), index != -1 ? index : text.length());
-				
-				if (thisLine.startsWith(" |")) { // template parameters and wikitable rows
-					return;
-				}
-				
-				m.appendReplacement(sb, " " + replacement);
+		// P_LINE_JOINER
+		
+		String temp = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_JOINER, (m, sb) -> {
+			boolean isRefRange = Utils.containedInRanges(refRanges, m.start());
+			
+			if (!isRefRange && (
+				// assume <ref> regions cannot contain these elements 
+				Utils.containedInRanges(tagRanges, m.start()) ||
+				Utils.containedInRanges(templateRanges, m.start()) ||
+				Utils.containedInRanges(wikitableRanges, m.start())
+			)) {
+				return;
 			}
-		);
+			
+			// TODO: review reference tags
+			// https://es.wiktionary.org/w/index.php?title=casa&diff=2912203&oldid=2906951
+			
+			String replacement = null;
+			
+			if (removeCommentsAndNoWikiText(m.group(1)).startsWith(" ")) {
+				if (isRefRange) {
+					replacement = m.group(1).replaceFirst("^[ \n]+", "");
+					replacement = Matcher.quoteReplacement(replacement);
+				} else {
+					return;
+				}
+			} else {
+				replacement = "$1";
+			}
+			
+			int index = text.substring(0, m.start()).lastIndexOf("\n");
+			String previousLine = text.substring(index + 1, m.start());
+			previousLine = removeCommentsAndNoWikiText(previousLine);
+			
+			final String[] arr = isRefRange
+				? new String[]{":", ";", "*", "#"}
+				: new String[]{" ", ":", ";", "*", "#"};
+			
+			if (!previousLine.isEmpty() && startsWithAny(previousLine, arr)) {
+				return;
+			}
+			
+			index = text.indexOf("\n", m.start(1));
+			String thisLine = text.substring(m.start(1), index != -1 ? index : text.length());
+			
+			if (thisLine.startsWith(" |")) { // template parameters and wikitable rows
+				return;
+			}
+			
+			m.appendReplacement(sb, " " + replacement);
+		});
+		
+		// P_TERM 
+		
+		final String token = "<<<P_TERM_REPLACEMENT>>>";
+		
+		String formatted = Utils.replaceWithStandardIgnoredRanges(temp, P_TERM, (m, sb) -> {
+			String term = m.group(4);
+			
+			if (term.isEmpty() && temp.substring(m.end(4)).startsWith("\n:")) {
+				String replacement = Matcher.quoteReplacement(m.group());
+				replacement += token;
+				m.appendReplacement(sb, replacement);
+			}
+		});
+		
+		// couldn't find an easier way to use Matcher outside its .find() regions
+		if (!formatted.equals(temp)) {
+			formatted = formatted.replace(token + "\n:", "");
+		}
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
 	}
@@ -4046,7 +4063,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "hamaca";
+		String title = "dromedario";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
