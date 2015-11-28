@@ -129,6 +129,7 @@ public final class Catgram {
 		OF_NEGATION,
 		OF_SEQUENCE,
 		OF_TIME,
+		DEFECTIVE,
 		DEMONSTRATIVE,
 		DETERMINATE,
 		DUAL,
@@ -306,6 +307,10 @@ public final class Catgram {
 			
 			Data.OF_TIME.properties.type = Type.INVARIANT_QUALIFIER;
 			Data.OF_TIME.properties.singular = "de tiempo";
+			
+			Data.DEFECTIVE.properties.type = Type.QUALIFIER;
+			Data.DEFECTIVE.properties.singular = "defectivo";
+			Data.DEFECTIVE.properties.femSingularAdj = "defectiva";
 			
 			Data.DEMONSTRATIVE.properties.type = Type.QUALIFIER;
 			Data.DEMONSTRATIVE.properties.singular = "demostrativo";
