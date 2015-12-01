@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,7 +18,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
@@ -30,13 +28,15 @@ import org.wikipedia.Wiki.User;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.Users;
 import com.github.wikibot.utils.Misc.MyRandom;
+import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.Users;
 
 public final class LinkManager implements Selectorizable {
 	private static PLWikt wb;
@@ -66,7 +66,7 @@ public final class LinkManager implements Selectorizable {
 			case '1':
 				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				getRequest();
-				Login.saveSession(wb);
+				wb.logout();
 				break;
 			case '2':
 				int stats = Misc.deserialize(f_stats);
@@ -78,13 +78,13 @@ public final class LinkManager implements Selectorizable {
 			case 'e':
 				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit(null, 0);
-				Login.saveSession(wb);
+				wb.logout();
 				break;
 			case 'p':
 				try {
 					wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 					patrol();
-					Login.saveSession(wb);
+					wb.logout();
 				} catch (IOException e) {
 					e.printStackTrace();
 					Thread.sleep(10 * 60 * 1000);
@@ -204,12 +204,17 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!fetchlist.isEmpty()) {
-				Stream.of(wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]), 400))
-					.map(Page::wrap)
-					.forEach(p -> {
-						Section s = p.getSection(entry.lang, true);
-						contents.putIfAbsent(p.getTitle(), s != null ? s.toString() : p.toString());
-					});
+				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]), 400);
+				
+				for (PageContainer page : temp) {
+					try {
+						Page p = Page.wrap(page);
+						Section s = p.getSection(entry.lang, false);
+						contents.putIfAbsent(p.getTitle(), s.toString());
+					} catch (Exception e) {
+						contents.putIfAbsent(page.getTitle(), Utils.sanitizeWhitespaces(page.getText()));
+					}
+				}
 				
 				for (String fetched : fetchlist) {
 					contentscache.put(fetched + "-" + entry.lang, contents.get(fetched));
@@ -347,13 +352,14 @@ public final class LinkManager implements Selectorizable {
 		
 		wb.setThrottle(4000);
 		int edited = 0;
+		int iter = 0;
 		boolean assertion = true;
 		Map<String, String[]> errormap = new LinkedHashMap<>();
-		String errnotfound = "nie udało się wyszukać ciągu znaków „<nowiki>$1</nowiki>”";
+		final String errnotfound = "nie udało się wyszukać ciągu znaków „<nowiki>$1</nowiki>”";
 		
 		outer:
 		for (Entry<String, List<LinkDiff>> entry : pagemap.entrySet()) {
-			if (edited % assertbatch == 0) {
+			if (iter % assertbatch == 0) {
 				assertion = assertBot();
 				
 				if (!assertion) {
@@ -361,32 +367,30 @@ public final class LinkManager implements Selectorizable {
 				}
 			}
 			
+			iter++;
 			String page = entry.getKey();
 			List<LinkDiff> list = entry.getValue();
 			Set<String> difflist = new HashSet<>();
-			
 			String pagetext = wb.getPageText(page);
-			Map<Integer, LineInfo> linemap = new TreeMap<>(new Comparator<Integer>() {
-				public int compare(Integer arg0, Integer arg1) {
-					return Integer.compare(arg1, arg0);
-				}
-			});
+			pagetext = Utils.sanitizeWhitespaces(pagetext);
+			Map<Integer, LineInfo> linemap = new TreeMap<>(Integer::compare);
 			
 			int lineindex = 0;
 			
 			for (LinkDiff diff : list) {
-				if (diff.lang != null) {
+				if (diff.lang != null && !diff.lang.isEmpty()) {
 					Section section = Page.store("temp", pagetext).getSection(diff.lang);
 					
 					if (section == null) {
 						errormap.put(page, new String[]{
-								String.format("nie znaleziono sekcji językowej „%s”", diff.lang),
-								diff.newlink
-							});
+							String.format("nie znaleziono sekcji językowej „%s”", diff.lang),
+							diff.newlink
+						});
 						continue outer;
 					}
 					
-					lineindex = pagetext.indexOf(section.toString()) + diff.linestart;
+					lineindex = pagetext.indexOf(section.toString());
+					lineindex += diff.linestart;
 				} else {
 					lineindex = diff.linestart;
 				}
@@ -402,17 +406,17 @@ public final class LinkManager implements Selectorizable {
 					match = line.substring(diff.diffstart, diff.diffstart + diff.oldlink.length());
 				} catch (StringIndexOutOfBoundsException e) {
 					errormap.put(page, new String[]{ 
-							String.format("%s<!-- %s -->", errnotfound.replace("$1", diff.oldlink), line),
-							diff.newlink
-						});
+						String.format("%s<!-- %s -->", errnotfound.replace("$1", diff.oldlink), line),
+						diff.newlink
+					});
 					continue outer;
 				}
 				
 				if (!match.equals(diff.oldlink)) {
 					errormap.put(page, new String[]{
-							String.format("%s<!-- %s/%s -->", errnotfound.replace("$1", diff.oldlink), diff.oldlink, match),
-							diff.newlink
-						});
+						String.format("%s<!-- %s/%s -->", errnotfound.replace("$1", diff.oldlink), diff.oldlink, match),
+						diff.newlink
+					});
 					continue outer;
 				}
 				
@@ -440,9 +444,9 @@ public final class LinkManager implements Selectorizable {
 						newline = newline.substring(0, diff.diffstart) + diff.newlink + newline.substring(diff.diffstart + diff.oldlink.length());
 					} catch (StringIndexOutOfBoundsException e) {
 						errormap.put(page, new String[]{
-								String.format("%s<!-- %s/%s -->", errnotfound.replace("$1", diff.oldlink), newline, diff.oldlink),
-								diff.newlink
-							});
+							String.format("%s<!-- %s/%s -->", errnotfound.replace("$1", diff.oldlink), newline, diff.oldlink),
+							diff.newlink
+						});
 						continue outer;
 					}
 				}
@@ -478,16 +482,15 @@ public final class LinkManager implements Selectorizable {
 		f_codes.delete();
 		f_timestamps.delete();
 		
-		int stats = 0;
+		int stats = Misc.deserialize(f_stats);
 		
 		if (edited != 0) {
-			stats = Misc.deserialize(f_stats);
 			stats += edited;
 			Misc.serialize(stats, f_stats);
 			System.out.printf("Nuevo total: %d%n", stats);
 		}
 		
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(1000);
 		
 		if (!assertion) {
 			sb.append("'''Wstrzymano pracę bota'''\n\n");
@@ -506,7 +509,7 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		if (!errormap.isEmpty()) {
-			sb.append(String.format("'''Błędów: %d'''%n", errormap.size()));
+			sb.append(String.format(", '''błędów: %d'''%n", errormap.size()));
 			
 			for (Entry<String, String[]> error : errormap.entrySet()) {
 				sb.append(String.format("* [[%s]] (%s): %s%n", error.getKey(), error.getValue()[1], error.getValue()[0]));
@@ -938,98 +941,86 @@ public final class LinkManager implements Selectorizable {
 			Misc.runScheduledSelector(new LinkManager(), args[0]);
 		}
 	}
-}
 
-class LinkData implements Serializable {
-	private static final long serialVersionUID = 1L;
-	
-	String target;
-	boolean isUpperCase;
-	String lang = "";
-	
-	
-	String[] links = null;
-	String[] forms = null;
-	
-	Map<String, String> lowerLinksMap;
-	Map<String, String> upperLinksMap;
-	
-	String templatelinker = null;
-	List<String> linkedFormsLower;
-	List<String> linkedFormsUpper;
-	
-	boolean hasDash = false;
-	
-	Map<String, List<LinkDiff>> diffmap = null;
-	
-	LinkData(String target) {
-		this.target = target;
-		isUpperCase = !target.substring(0, 1).toLowerCase().equals(target.substring(0, 1));
+	private static class LinkData implements Serializable {
+		private static final long serialVersionUID = 1L;
 		
-		if (!isUpperCase) {
-			linkedFormsLower = new ArrayList<>();
-			linkedFormsUpper = new ArrayList<>();
+		String target;
+		boolean isUpperCase;
+		String lang = "";
+		
+		String[] links;
+		String[] forms;
+		
+		Map<String, String> lowerLinksMap;
+		Map<String, String> upperLinksMap;
+		
+		String templatelinker;
+		List<String> linkedFormsLower;
+		List<String> linkedFormsUpper;
+		
+		boolean hasDash = false;
+		
+		Map<String, List<LinkDiff>> diffmap;
+		
+		LinkData(String target) {
+			this.target = target;
+			isUpperCase = !target.substring(0, 1).toLowerCase().equals(target.substring(0, 1));
 			
-			lowerLinksMap = new HashMap<>();
-			upperLinksMap = new HashMap<>();
-		} else {
-			linkedFormsLower = null;
-			linkedFormsUpper = new ArrayList<>();
-			
-			lowerLinksMap = null;
-			upperLinksMap = new HashMap<>();
+			if (!isUpperCase) {
+				linkedFormsLower = new ArrayList<>();
+				linkedFormsUpper = new ArrayList<>();
+				
+				lowerLinksMap = new HashMap<>();
+				upperLinksMap = new HashMap<>();
+			} else {
+				linkedFormsLower = null;
+				linkedFormsUpper = new ArrayList<>();
+				
+				lowerLinksMap = null;
+				upperLinksMap = new HashMap<>();
+			}
 		}
 	}
-}
 
-class LineInfo implements Serializable {
-	private static final long serialVersionUID = 1L;
-	String line;
-	Map<Integer, LinkDiff> diffmap;
-	
-	LineInfo(String line) {
-		this.line = line;
+	private static class LineInfo implements Serializable {
+		private static final long serialVersionUID = 1L;
+		String line;
+		Map<Integer, LinkDiff> diffmap;
 		
-		diffmap = new TreeMap<>(new Comparator<Integer>() {
-			public int compare(Integer o1, Integer o2) {
-				if (o1 > o2) {
-					return -1;
-				} else if (o1 < o2) {
-					return 1;
-				} else {
-					return 0;
-				}
-			}
-		});
+		LineInfo(String line) {
+			this.line = line;
+			diffmap = new TreeMap<>((x, y) -> -Integer.compare(x, y));
+		}
 	}
-}
 
-class LinkDiff implements Serializable {
-	private static final long serialVersionUID = 1L;
-	String page;
-	String targetlink;
-	String lang;
-	String oldlink;
-	String newlink;
-	String highlighted;
-	int linestart;
-	int diffstart;
-	
-	LinkDiff(String oldlink, String newlink) {
-		this.oldlink = oldlink;
-		this.newlink = newlink;
+	private static class LinkDiff implements Serializable {
+		private static final long serialVersionUID = 1L;
+		String page;
+		String targetlink;
+		String lang;
+		String oldlink;
+		String newlink;
+		String highlighted;
+		int linestart;
+		int diffstart;
+		
+		LinkDiff(String oldlink, String newlink) {
+			this.oldlink = oldlink;
+			this.newlink = newlink;
+		}
 	}
-}
 
-class RequestInfo implements Serializable {
-	private static final long serialVersionUID = 7152292260065134851L;
-	long currentId;
-	String currentRequest;
-	Calendar currentTimestamp;
-	
-	RequestInfo(long id, String request, Calendar timestamp) {
-		currentId = id;
-		currentRequest = request;
-		currentTimestamp = timestamp;
+	private static class RequestInfo implements Serializable {
+		private static final long serialVersionUID = 7152292260065134851L;
+		long currentId;
+		String currentRequest;
+		Calendar currentTimestamp;
+		
+		RequestInfo(long id, String request, Calendar timestamp) {
+			currentId = id;
+			currentRequest = request;
+			currentTimestamp = timestamp;
+		}
 	}
 }
