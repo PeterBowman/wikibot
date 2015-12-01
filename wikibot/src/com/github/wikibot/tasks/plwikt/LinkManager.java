@@ -475,7 +475,7 @@ public final class LinkManager implements Selectorizable {
 			} catch(CredentialException e) {
 				errormap.put(page, new String[]{"strona zabezpieczona", difflistmod});
 			} catch (UnknownError | UnsupportedOperationException e) {
-				errormap.put(page, new String[]{"prawdopodobnie konflikt edycji", difflistmod});
+				errormap.put(page, new String[]{"prawdopodobnie nastąpił konflikt edycji", difflistmod});
     		}
 		}
 		
@@ -505,11 +505,11 @@ public final class LinkManager implements Selectorizable {
 		if (edited != 0) {
 			sb.append(" (<span class=\"plainlinks\">[https://pl.wiktionary.org/w/index.php?limit=" + edited + "&tagfilter=&title=Specjalna%3AWkład&contribs=user&target=PBbot&namespace=0 wkład bota]</span>)\n\n");
 		} else {
-			sb.append("\n");
+			sb.append("\n\n");
 		}
 		
 		if (!errormap.isEmpty()) {
-			sb.append(String.format(", '''błędów: %d'''%n", errormap.size()));
+			sb.append(String.format("'''Błędów: %d'''%n", errormap.size()));
 			
 			for (Entry<String, String[]> error : errormap.entrySet()) {
 				sb.append(String.format("* [[%s]] (%s): %s%n", error.getKey(), error.getValue()[1], error.getValue()[0]));
