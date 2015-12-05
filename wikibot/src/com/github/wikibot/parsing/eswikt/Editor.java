@@ -3044,7 +3044,8 @@ public class Editor extends AbstractEditor {
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
 			.forEach(section -> SECTION_TMPLS.stream()
-				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
+				.map(template -> getTemplates(template, section.getHeader()))
+				.flatMap(Collection::stream)
 				.map(template -> getTemplateParametersWithValue(template))
 				.filter(params -> !params.getOrDefault("ParamWithoutName1", "").isEmpty())
 				.filter(params -> !params.get("ParamWithoutName1").toLowerCase()
@@ -3125,7 +3126,8 @@ public class Editor extends AbstractEditor {
 			.flatMap(Collection::stream)
 			.filter(section -> !section.getHeader().isEmpty())
 			.forEach(section -> SECTION_TMPLS.stream()
-				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
+				.map(template -> getTemplates(template, section.getHeader()))
+				.flatMap(Collection::stream)
 				.map(template -> getTemplateParametersWithValue(template))
 				.filter(params -> !params.getOrDefault("ParamWithoutName1", "")
 					.equalsIgnoreCase(section.getLangSectionParent().getLangCode())
@@ -3155,10 +3157,18 @@ public class Editor extends AbstractEditor {
 			.filter(section -> !section.getHeader().isEmpty())
 			.filter(section -> !containsAny(section.getHeader(), '[', ']', '<', '>'))
 			.forEach(section -> SECTION_TMPLS.stream()
-				.flatMap(template -> getTemplates(template, section.getHeader()).stream())
-				.filter(template -> !SECTION_DATA_MAP.containsKey(template))
+				.map(template -> getTemplates(template, section.getHeader()))
+				.flatMap(Collection::stream)
+				.filter(section.getHeader()::startsWith)
 				.map(template -> getTemplateParametersWithValue(template))
-				.filter(params -> section.getHeader().startsWith(templateFromMap(params)))
+				// TODO: this line assumes that compound section templates (like {{locución sustantiva}})
+				// never accept a first parameter, but there could be some exceptions
+				// (see edit history of {{adjetivo numeral}}, {{adjetivo posesivo}} and {{sustantivo propio}}).
+				// Once processHeaderTemplates() and addSectionTemplates are properly adapted,
+				// add proper parameter handling for these and more future cases.
+				// See https://es.wiktionary.org/w/index.php?diff=3772161
+				// See TODO in removeCategoryLinks()
+				.filter(params -> !SECTION_DATA_MAP.containsKey(params.get("templateName")))
 				.forEach(params -> processHeaderTemplates(section, params))
 			);
 		
@@ -3316,6 +3326,7 @@ public class Editor extends AbstractEditor {
 				
 				final Catgram catgram;
 				
+				// See TODO in manageSectionTemplates()
 				if (SECTION_DATA_MAP.containsKey(map.get("templateName"))) {
 					List<Catgram.Data> data = SECTION_DATA_MAP.get(map.get("templateName"));
 					catgram = Catgram.make(data.get(0), data.get(1));
@@ -3328,18 +3339,6 @@ public class Editor extends AbstractEditor {
 				}
 				
 				addString.accept(langCode, catgram.getPlural());
-				
-				switch (catgram.getFirstMember()) {
-					case NUMERAL_ADJECTIVE:
-					case POSSESSIVE_ADJECTIVE:
-						addString.accept(langCode, Catgram.Data.ADJECTIVE.getPlural());
-						break;
-					case PROPER_NOUN:
-						addString.accept(langCode, Catgram.Data.NOUN.getPlural());
-						break;
-					default:
-						break; // avoids a compiler warning
-				}
 				
 				if (catgram.getSecondMember() != null) {
 					addString.accept(langCode, catgram.getFirstMember().getPlural());
@@ -3453,7 +3452,8 @@ public class Editor extends AbstractEditor {
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			)
-			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)").stream())
+			.map(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)"))
+			.flatMap(Collection::stream)
 			.filter(section -> section.getChildSections().isEmpty())
 			.filter(Editor::isEmptyTranslationsSection)
 			.peek(dummy -> set.add("Traducciones"))
@@ -3468,7 +3468,8 @@ public class Editor extends AbstractEditor {
 				SOFT_REDIR_TERMS_CHECK.test(langSection)
 			)
 			// TODO: move image and category links to the previous section
-			.flatMap(langSection -> langSection.findSubSectionsWithHeader("Etimología").stream())
+			.map(langSection -> langSection.findSubSectionsWithHeader("Etimología"))
+			.flatMap(Collection::stream)
 			.filter(section -> section.getChildSections().isEmpty())
 			.filter(Editor::isEmptyEtymologySection)
 			.peek(dummy -> set.add("Etimología"))
@@ -3532,7 +3533,8 @@ public class Editor extends AbstractEditor {
 				.filter(langSection -> langSection.findSubSectionsWithHeader("Etimología.*").isEmpty()),
 			// two or more etymology Sections
 			langSections.stream()
-				.flatMap(langSection -> langSection.findSubSectionsWithHeader("Etimología \\d+").stream())
+				.map(langSection -> langSection.findSubSectionsWithHeader("Etimología \\d+"))
+				.flatMap(Collection::stream)
 		)
 		.filter(section ->
 			(!hasNonFlexiveHeaders(section) && hasFlexiveHeaders(section)) ||
