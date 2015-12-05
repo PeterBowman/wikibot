@@ -3329,6 +3329,18 @@ public class Editor extends AbstractEditor {
 				
 				addString.accept(langCode, catgram.getPlural());
 				
+				switch (catgram.getFirstMember()) {
+					case NUMERAL_ADJECTIVE:
+					case POSSESSIVE_ADJECTIVE:
+						addString.accept(langCode, Catgram.Data.ADJECTIVE.getPlural());
+						break;
+					case PROPER_NOUN:
+						addString.accept(langCode, Catgram.Data.NOUN.getPlural());
+						break;
+					default:
+						break; // avoids a compiler warning
+				}
+				
 				if (catgram.getSecondMember() != null) {
 					addString.accept(langCode, catgram.getFirstMember().getPlural());
 					

@@ -495,11 +495,8 @@ public final class Catgram {
 			Data.NOUN.properties.femSingularAdj = "sustantiva";
 			Data.NOUN.properties.redirects = new String[]{"sustantivos"};
 			
-			Data.PROPER_NOUN.properties.type = Type.MASCULINE_NOUN;
-			Data.PROPER_NOUN.properties.singular = "sustantivo propio";
-			Data.PROPER_NOUN.properties.plural = "sustantivos propios";
-			Data.PROPER_NOUN.properties.femSingularAdj = "sustantiva propia";
-			Data.PROPER_NOUN.properties.femPluralAdj = "sustantivas propias";
+			Data.PROPER_NOUN.properties.type = Type.COMPOUND;
+			Data.PROPER_NOUN.properties.compoundTerms = new Data[]{Data.NOUN, Data.PROPER};
 			
 			Data.TRANSITIVE.properties.type = Type.QUALIFIER;
 			Data.TRANSITIVE.properties.singular = "transitivo";
