@@ -591,6 +591,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		normalizeEtymologyHeaders();
+		pullUpForeignTranslationsSections();
 		normalizeSectionLevels();
 		removePronGrafSection();
 		sortLangSections();
@@ -1785,6 +1786,24 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "normalizeEtymologyHeaders", "normalizando encabezamientos de etimología");
+	}
+	
+	public void pullUpForeignTranslationsSections() {
+		Page page = Page.store(title, text);
+		
+		page.getAllLangSections().stream()
+			.filter(langSection -> !langSection.langCodeEqualsTo("es"))
+			.map(langSection -> langSection.findSubSectionsWithHeader("Traducción"))
+			.flatMap(Collection::stream)
+			.filter(section -> section.getIntro().isEmpty()) // detect comments, catlinks, {{clear}}...?
+			.filter(section -> !section.getChildSections().isEmpty())
+			.forEach(section -> {
+				section.pushLevels(-1);
+				section.detachOnlySelf();
+			});
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "pullUpForeignTranslationsSections", "subiendo subsecciones de \"Traducción\"");
 	}
 	
 	public void normalizeSectionLevels() {
@@ -4077,7 +4096,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "dromedario";
+		String title = "allqu";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
