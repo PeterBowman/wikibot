@@ -580,6 +580,7 @@ public class Editor extends AbstractEditor {
 		splitLines();
 		minorSanitizing();
 		transformToNewStructure();
+		insertLangSectionTemplates();
 		normalizeSectionHeaders();
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
@@ -1579,6 +1580,27 @@ public class Editor extends AbstractEditor {
 		}
 		
 		return true;
+	}
+	
+	public void insertLangSectionTemplates() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
+		Section references = page.getReferencesSection();
+		
+		page.getAllSections().stream()
+			.filter(section -> section.getLevel() == 2 && section.getTocLevel() == 1)
+			.filter(section -> !(section instanceof LangSection) && section != references)
+			.forEach(section -> Page.CODE_TO_LANG.entrySet().stream()
+				.filter(entry -> entry.getValue().equalsIgnoreCase(section.getHeader()))
+				.findAny()
+				.ifPresent(entry -> section.setHeader(String.format("{{lengua|%s}}", entry.getKey())))
+			);
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "insertLangSectionTemplates", "insertando plantillas de encabezamiento");
 	}
 	
 	public void normalizeSectionHeaders() {
