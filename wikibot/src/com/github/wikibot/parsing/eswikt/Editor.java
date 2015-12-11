@@ -1817,15 +1817,38 @@ public class Editor extends AbstractEditor {
 			.filter(langSection -> !langSection.langCodeEqualsTo("es"))
 			.map(langSection -> langSection.findSubSectionsWithHeader("Traducción"))
 			.flatMap(Collection::stream)
-			.filter(section -> section.getIntro().isEmpty()) // detect comments, catlinks, {{clear}}...?
+			.filter(Editor::isEmptyOrInvisible)
 			.filter(section -> !section.getChildSections().isEmpty())
 			.forEach(section -> {
+				if (!section.getIntro().isEmpty()) {
+					Section previousSection = section.previousSection();
+					String previousIntro = previousSection.getIntro();
+					previousIntro += "\n" + section.getIntro();
+					previousSection.setIntro(previousIntro);
+				}
+				
 				section.pushLevels(-1);
 				section.detachOnlySelf();
 			});
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "pullUpForeignTranslationsSections", "subiendo subsecciones de \"Traducción\"");
+	}
+	
+	private static boolean isEmptyOrInvisible(Section section) {
+		String intro = section.getIntro();
+		
+		if (intro.isEmpty()) {
+			return true;
+		}
+		
+		intro = removeCommentsAndNoWikiText(intro);
+		intro = intro.replace("{{clear}}", "");
+		intro = intro.replaceAll("(?i)<br\\b.*?>", "");
+		intro = P_IMAGES.matcher(intro).replaceAll("");
+		intro = P_CATEGORY_LINKS.matcher(intro).replaceAll("");
+		
+		return intro.trim().isEmpty();
 	}
 	
 	public void normalizeSectionLevels() {
@@ -3426,43 +3449,27 @@ public class Editor extends AbstractEditor {
 		
 		Set<String> set = new HashSet<>();
 		
-		for (Section section : page.getAllSections()) {
-			String header = section.getStrippedHeader();
-			
-			if (
-				header.startsWith("Etimología") || // TODO: review
-				!section.getChildSections().isEmpty() ||
-				!STANDARD_HEADERS.contains(header)
-			) {
-				continue;
-			}
-			
-			String intro = section.getIntro();
-			intro = removeCommentsAndNoWikiText(intro);
-			intro = intro.replaceAll("<br.*?>", "");
-			intro = intro.replace("{{clear}}", "");
-			intro = P_CATEGORY_LINKS.matcher(intro).replaceAll("");
-			intro = intro.trim();
-			
-			if (!intro.isEmpty()) {
-				continue;
-			}
-			
-			if (!section.getIntro().isEmpty()) {
-				Section previousSection = section.previousSection();
-				
-				if (previousSection == null) {
-					continue;
+		page.getAllSections().stream()
+			.filter(section -> !section.getStrippedHeader().startsWith("Etimología")) // TODO: review
+			.filter(section -> section.getChildSections().isEmpty())
+			.filter(section -> STANDARD_HEADERS.contains(section.getStrippedHeader()))
+			.filter(Editor::isEmptyOrInvisible)
+			.forEach(section -> {
+				if (!section.getIntro().isEmpty()) {
+					Section previousSection = section.previousSection();
+					
+					if (previousSection == null) {
+						return;
+					}
+					
+					String previousIntro = previousSection.getIntro();
+					previousIntro += "\n" + section.getIntro();
+					previousSection.setIntro(previousIntro);
 				}
 				
-				String previousIntro = previousSection.getIntro();
-				previousIntro += "\n" + section.getIntro();
-				previousSection.setIntro(previousIntro);
-			}
-			
-			section.detachOnlySelf();
-			set.add(header);
-		}
+				section.detachOnlySelf();
+				set.add(section.getStrippedHeader());
+			});
 		
 		if (set.isEmpty()) {
 			return;
@@ -4118,7 +4125,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text = null;
-		String title = "allqu";
+		String title = "fue";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
