@@ -2260,20 +2260,90 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = Utils.replaceTemplates(text, annotationTemplateName, match -> {
 			Map<String, String> params = getTemplateParametersWithValue(match);
-			
-			long count = params.values().stream()
-				.filter(value -> value != null && !value.isEmpty())
-				.count();
-			
-			return count > 1 ? match : "";
+			params.values().removeIf(String::isEmpty);
+			return params.size() > 1 ? match : "";
 		});
 		
-		if (formatted.equals(text)) {
+		// Convert annotations to their corresponding templates
+		
+		Page page = Page.store(title, formatted);
+		Set<String> set = new LinkedHashSet<>();
+		
+		page.getAllLangSections().stream()
+			.map(langSection -> langSection.findSubSectionsWithHeader(HAS_FLEXIVE_FORM_HEADER_RE))
+			.flatMap(Collection::stream)
+			.forEach(section -> processAnnotationTemplates(section, set, annotationTemplateName));
+		
+		if (!formatted.equals(text)) {
+			set.add("eliminando plantillas vacías");
+		} else if (set.isEmpty()) {
 			return;
 		}
 		
-		String summary = String.format("{{%s}} → eliminando plantillas vacías", annotationTemplateName);
+		formatted = page.toString();
+		String summary = String.format("{{%s}} → %s", annotationTemplateName, String.join(", ", set));
+		
 		checkDifferences(formatted, "manageAnnotationTemplates", summary);
+	}
+	
+	private static void processAnnotationTemplates(Section section, Set<String> set, String templateName) {
+		String temp = Utils.replaceTemplates(section.getIntro(), templateName, template -> {
+			HashMap<String, String> params = getTemplateParametersWithValue(template);
+			
+			if (
+				// TODO: usually {{uso}} annotations; include as first parameter? ~1160 entries
+				// https://es.wiktionary.org/w/index.php?title=suspended&oldid=2630232
+				!params.getOrDefault("link", "").isEmpty() ||
+				// TODO: disable categorization? ({{uso|anticuado}}); ~60k entries
+				params.getOrDefault("tit", params.getOrDefault("tít", "")).equalsIgnoreCase("uso") ||
+				!convertAnnotationTemplateParams(params)
+			) {
+				return template;
+			}
+			
+			String newTemplateName = params.get("templateName");
+			String newTemplate = templateFromMap(params) + ".";
+			set.add(String.format("{{%s}}", newTemplateName));
+			
+			if (PRON_TMPLS.contains(newTemplateName)) {
+				LangSection langSection = section.getLangSectionParent();
+				String langSectionIntro = langSection.getIntro();
+				langSectionIntro += "\n" + newTemplate;
+				langSection.setIntro(langSectionIntro);
+				return "";
+			} else {
+				return newTemplate;
+			}
+		});
+		
+		if (!temp.equals(section.getIntro())) {
+			section.setIntro(temp);
+		}
+	}
+	
+	private static boolean convertAnnotationTemplateParams(HashMap<String, String> params) {
+		String templateType = params.getOrDefault("tit", params.getOrDefault("tít", "relacionado"));
+		templateType = templateType.toLowerCase();
+		
+		if (PRON_TMPLS_ALIAS.contains(templateType)) {
+			templateType = PRON_TMPLS.get(PRON_TMPLS_ALIAS.indexOf(templateType));
+		} else if (TERM_TMPLS_ALIAS.contains(templateType)) {
+			templateType = TERM_TMPLS.get(TERM_TMPLS_ALIAS.indexOf(templateType));
+		} else if (
+			!PRON_TMPLS.contains(templateType) &&
+			!TERM_TMPLS.contains(templateType)
+		) {
+			return false;
+		}
+		
+		params.put("templateName", templateType);
+		params.remove("tit");
+		params.remove("tít");
+		
+		params.values().removeIf(Objects::isNull);
+		params.values().removeIf(String::isEmpty);
+		
+		return true;
 	}
 	
 	public void manageDisambigTemplates() {
@@ -2370,11 +2440,6 @@ public class Editor extends AbstractEditor {
 				String origLine = line;
 				
 				if (m.matches()) {
-					// FIXME
-					if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
-						throw new UnsupportedOperationException("adaptPronunciationTemplates()");
-					}
-					
 					line = makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
 					
 					if (line == null) {
