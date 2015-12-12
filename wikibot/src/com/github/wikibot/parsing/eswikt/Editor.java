@@ -1379,19 +1379,20 @@ public class Editor extends AbstractEditor {
 					return;
 				}
 				
-				String altGraf = "";
+				String altGraf = params.getOrDefault("ParamWithoutName1", "");
 				
 				if (name.equals("TRANSLIT")) {
 					name = params.get("ParamWithoutName2");
 					params.put("templateName", "translit");
 				} else if (name.equals("TRANS")) {
-					params.clear();
 					name = "trans";
 					params.put("templateName", "lengua");
 					params.put("ParamWithoutName1", name);
+					params.remove("ParamWithoutName2");
+					params.remove("num");
+					params.remove("núm");
 				} else {
 					name = name.replace("-ES", "").toLowerCase();
-					altGraf = params.getOrDefault("ParamWithoutName1", "");
 					params.put("templateName", "lengua");
 					params.put("ParamWithoutName1", name);
 					params.remove("ParamWithoutName2");
