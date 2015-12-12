@@ -82,7 +82,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
-	private static final Pattern P_FLEX_ETYM = Pattern.compile("([Dd]e|[Vv]éase|[Dd]el verbo|[Ff]lexión de) (?<quot>''|\"|)(\\[{2}[^\\]]+\\]{2}|\\{{2}l\\|[\\w-]+\\|[^|}]+\\}{2})\\k<quot>(  y (de )?\\[{2}(-ed|-ing)\\]{2})?");
+	private static final Pattern P_FLEX_ETYM = Pattern.compile("([Dd]e|[Vv]éase|[Dd]el verbo|[Ff]lexión de) (?<quot>''|\"|)(\\[{2}[^\\]]+\\]{2}|\\{{2}l\\|[\\w-]+\\|[^|}]+\\}{2})\\k<quot>( y (de )?\\[{2}(-ed|-ing)\\]{2})?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
@@ -518,16 +518,16 @@ public class Editor extends AbstractEditor {
 		};
 		
 		FLEXIVE_FORM_CHECK = langSection -> {
-			// just check the first level subsections, fail on multiple etymology
-			List<String> allHeaders = langSection.getChildSections().stream()
+			List<Section> allSubsections = AbstractSection.flattenSubSections(langSection);
+			allSubsections.remove(langSection);
+			
+			List<String> allHeaders = allSubsections.stream()
 				.map(AbstractSection::getStrippedHeader)
 				.collect(Collectors.toList());
 			
-			// TODO: temp hack, should catch simultaneous 'Etimología' and 'Forma flexiva' sections
-			if (allHeaders.contains("Forma flexiva")) {
-				return false;
-			}
-			
+			// TODO: https://es.wiktionary.org/w/index.php?title=edere&oldid=3774065
+			// TODO: https://es.wiktionary.org/w/index.php?title=consultum&diff=3774086&oldid=3773900
+						
 			if (!allHeaders.removeIf(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))) {
 				return true;
 			}
@@ -2962,10 +2962,10 @@ public class Editor extends AbstractEditor {
 			if (
 				etymologySections.isEmpty() &&
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
-				getTemplates("pron-graf", langSection.getIntro()).isEmpty() &&
-				// https://es.wiktionary.org/w/index.php?title=edere&diff=3774065&oldid=3774057
-				AbstractSection.flattenSubSections(langSection.getChildSections()).stream()
-					.allMatch(section -> section.getChildSections().isEmpty())
+				getTemplates("pron-graf", langSection.getIntro()).isEmpty()
+				// TODO: https://es.wiktionary.org/w/index.php?title=edere&diff=3774065&oldid=3774057
+				/*AbstractSection.flattenSubSections(langSection.getChildSections()).stream()
+					.allMatch(section -> section.getChildSections().isEmpty())*/
 			) {
 				String langSectionIntro = langSection.getIntro();
 				
@@ -4192,7 +4192,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "edere";
+		String title = "earning";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
