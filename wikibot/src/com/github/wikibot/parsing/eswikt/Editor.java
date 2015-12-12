@@ -518,19 +518,21 @@ public class Editor extends AbstractEditor {
 		};
 		
 		FLEXIVE_FORM_CHECK = langSection -> {
-			List<Section> allSubsections = AbstractSection.flattenSubSections(langSection);
-			allSubsections.remove(langSection);
-			
-			List<String> allHeaders = allSubsections.stream()
+			// just check the first level subsections, fail on multiple etymology
+			List<String> allHeaders = langSection.getChildSections().stream()
 				.map(AbstractSection::getStrippedHeader)
 				.collect(Collectors.toList());
 			
-			allHeaders.removeIf(STANDARD_HEADERS::contains);
+			// TODO: temp hack, should catch simultaneous 'Etimología' and 'Forma flexiva' sections
+			if (allHeaders.contains("Forma flexiva")) {
+				return false;
+			}
 			
 			if (!allHeaders.removeIf(header -> header.matches(HAS_FLEXIVE_FORM_HEADER_RE))) {
 				return true;
 			}
 			
+			allHeaders.removeIf(STANDARD_HEADERS::contains);
 			return allHeaders.isEmpty();
 		};
 	}
@@ -1001,7 +1003,7 @@ public class Editor extends AbstractEditor {
 	
 	public void minorSanitizing() {
 		// TODO: perrichines (comment close tag)
-		// TODO: trailing period after {{etimología}} and {{pron-graf}}
+		// TODO: trailing period after {{etimología}}
 		// TODO: catch open comment tags in arbitrary Sections - [[Especial:PermaLink/2709606]]
 		
 		final String preferredFileNSAlias = "Archivo";
@@ -1631,13 +1633,14 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^Sub?stantivo\\b$", "Sustantivo");
 			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
 			
-			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa]$", "Forma sustantiva");
-			header = header.replaceFirst("(?i)^Forma (?:de )?verb(?:o|al)$", "Forma verbal");
-			header = header.replaceFirst("(?i)^Forma (?:de )?adjetiv[oa]$", "Forma adjetiva");
-			header = header.replaceFirst("(?i)^Forma (?:de )?(?:pronombre|pronominal)$", "Forma pronominal");
-			header = header.replaceFirst("(?i)^Forma (?:de )?(?:preposición|prepositiv[oa])$", "Forma prepositiva");
-			header = header.replaceFirst("(?i)^Forma (?:de )?adverbi(?:o|al)$", "Forma adverbial");
-			header = header.replaceFirst("(?i)^Forma (?:de )?sub?stantiv[oa] (masculin|femenin|neutr)[oa]$", "Forma sustantiva $1a");
+			header = header.replaceFirst("(?i)^Formas? flexivas?$", "Forma flexiva");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?sub?stantiv[oa]s?$", "Forma sustantiva");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?verb(?:os?|al(?:es)?)$", "Forma verbal");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?adjetiv[oa]s?$", "Forma adjetiva");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?(?:pronombres?|pronominal(?:es)?)$", "Forma pronominal");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?(?:preposici(?:ón|ones)|prepositiv(?:o|as?))$", "Forma prepositiva");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?adverbi(?:os?|al(?:es)?)$", "Forma adverbial");
+			header = header.replaceFirst("(?i)^Formas? (?:de )?sub?stantiv[oa]s? (masculin|femenin|neutr)[oa]s?$", "Forma sustantiva $1a");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
 			LangSection langSection = section.getLangSectionParent();
@@ -1947,9 +1950,6 @@ public class Editor extends AbstractEditor {
 		
 		for (Section section : sections) {
 			Section parentSection = section.getParentSection();
-			
-			// TODO: pull up child sections or place before normalizeSectionLevels()
-			// https://es.wiktionary.org/w/index.php?title=ni_fu_ni_fa&oldid=2899086
 			
 			if (parentSection == null || !section.getChildSections().isEmpty()) {
 				continue;
@@ -2962,7 +2962,10 @@ public class Editor extends AbstractEditor {
 			if (
 				etymologySections.isEmpty() &&
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
-				getTemplates("pron-graf", langSection.getIntro()).isEmpty()
+				getTemplates("pron-graf", langSection.getIntro()).isEmpty() &&
+				// https://es.wiktionary.org/w/index.php?title=edere&diff=3774065&oldid=3774057
+				AbstractSection.flattenSubSections(langSection.getChildSections()).stream()
+					.allMatch(section -> section.getChildSections().isEmpty())
 			) {
 				String langSectionIntro = langSection.getIntro();
 				
@@ -3715,7 +3718,6 @@ public class Editor extends AbstractEditor {
 		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
-		// TODO: sanitize templates to avoid inner spaces like in "{{ arriba..."
 		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba", "{{derivados"};
 		
 		for (Section section : page.getAllSections()) {
@@ -4189,8 +4191,8 @@ public class Editor extends AbstractEditor {
 	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
-		String text = null;
-		String title = "fue";
+		String text;
+		String title = "edere";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
