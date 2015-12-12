@@ -3444,6 +3444,8 @@ public class Editor extends AbstractEditor {
 		
 		Set<String> targetCategories = new HashSet<>();
 		
+		// section templates: {{sustantivo|xx}} -> [[Categoría:XX:Sustantivos]]
+		
 		BiConsumer<String, String> addString = (code, plural) -> targetCategories
 			.add(String.format("%s:%s", code.toUpperCase(), capitalize(plural)));
 		
@@ -3480,6 +3482,23 @@ public class Editor extends AbstractEditor {
 					}
 				}
 			}
+		}
+		
+		Page page = Page.store(title, text);
+		
+		// language sections: {{lengua|xx}} -> [[Categoría:Xx:Español]]
+		
+		page.getAllLangSections().stream()
+			.filter(langSection -> !langSection.langCodeEqualsTo("es"))
+			.map(LangSection::getLangCode)
+			.map(Page.CODE_TO_LANG::get)
+			.filter(Objects::nonNull)
+			.filter(langName -> !langName.isEmpty())
+			.map(langName -> String.format("%s-Español", capitalize(langName)))
+			.forEach(targetCategories::add);
+		
+		if (page.hasLangSection("es")) {
+			targetCategories.add("Español");
 		}
 		
 		if (targetCategories.isEmpty()) {
