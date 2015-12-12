@@ -66,7 +66,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_LINE_SPLITTER_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
-	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANS|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_INFLECT_TMPLS = Pattern.compile("\\{\\{(inflect\\..+?)[\\|\\}]");
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
@@ -1117,7 +1117,6 @@ public class Editor extends AbstractEditor {
 		if (
 			!isOldStructure ||
 			!getTemplates("TRANSLIT", text).isEmpty() ||
-			!getTemplates("TRANS", text).isEmpty() ||
 			!getTemplates("TAXO", text).isEmpty() ||
 			!getTemplates("carácter oriental", text).isEmpty()
 		) {
@@ -1380,13 +1379,19 @@ public class Editor extends AbstractEditor {
 					return;
 				}
 				
-				String altGraf = params.getOrDefault("ParamWithoutName1", "");
+				String altGraf = "";
 				
 				if (name.equals("TRANSLIT")) {
 					name = params.get("ParamWithoutName2");
 					params.put("templateName", "translit");
+				} else if (name.equals("TRANS")) {
+					params.clear();
+					name = "trans";
+					params.put("templateName", "lengua");
+					params.put("ParamWithoutName1", name);
 				} else {
 					name = name.replace("-ES", "").toLowerCase();
+					altGraf = params.getOrDefault("ParamWithoutName1", "");
 					params.put("templateName", "lengua");
 					params.put("ParamWithoutName1", name);
 					params.remove("ParamWithoutName2");
