@@ -78,7 +78,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_BR_STYLE = Pattern.compile("style *?=[^=]*?\\bclear *?:.+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
-	private static final Pattern P_LINK = Pattern.compile("\\[\\[(.+?)(?:(?:#.+?)?\\|([^\\]]+?))?\\]\\](.*)");
+	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\](.*)"); // from Linker::formatLinksInComment in Linker.php
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
@@ -2440,7 +2440,7 @@ public class Editor extends AbstractEditor {
 				String origLine = line;
 				
 				if (m.matches()) {
-					line = makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
+					line = processTemplateLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS);
 					
 					if (line == null) {
 						editedLines.add(origLine);
@@ -2794,8 +2794,8 @@ public class Editor extends AbstractEditor {
 			m -> m.start(2),
 			(m, sb) -> {
 				String line = Optional
-					.ofNullable(makeTmplLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
-					.orElse(makeTmplLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
+					.ofNullable(processTemplateLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
+					.orElse(processTemplateLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
 				
 				if (line == null) {
 					return;
@@ -2816,13 +2816,20 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
-	private static String makeTmplLine(Matcher m, List<String> templates, List<String> aliases) {
+	private static String processTemplateLine(Matcher m, List<String> templates, List<String> aliases) {
+		String line = m.group(0);
 		String leadingComments = m.group(1).trim();
 		String name = m.group(2).trim().toLowerCase();
 		String content = m.group(3).trim();
 		String trailingComments = m.group(4).trim();
 		
-		if (name.isEmpty() || content.isEmpty()) {
+		if (
+			name.isEmpty() || content.isEmpty() ||
+			// https://es.wiktionary.org/w/index.php?diff=2996325
+			hasUnpairedBrackets(line, "{{", "}}") ||
+			hasUnpairedBrackets(line, "[[", "]]") ||
+			hasUnpairedBrackets(line, "(", ")")
+		) {
 			return null;
 		}
 		
@@ -2850,11 +2857,40 @@ public class Editor extends AbstractEditor {
 		}
 		
 		// http://stackoverflow.com/a/2787064
-		Matcher msep = P_LIST_ARGS.matcher(content);
+		Matcher mSep = P_LIST_ARGS.matcher(content);
 		List<String> lterms = new ArrayList<>();
 		
-		while (msep.find()) {
-			lterms.add(msep.group().trim());
+		while (mSep.find()) {
+			String term = mSep.group().trim();
+			
+			if (
+				// https://es.wiktionary.org/w/index.php?diff=3032370
+				// https://es.wiktionary.org/w/index.php?diff=3020098 - actually this doesn't work, see below
+				hasUnpairedBrackets(term, "{{", "}}") ||
+				hasUnpairedBrackets(term, "[[", "]]") ||
+				hasUnpairedBrackets(term, "(", ")")
+			) {
+				return null;
+			} else {
+				lterms.add(term);
+			}
+		}
+		
+		String copy = content;
+		
+		for (String term : lterms) {
+			int start = copy.indexOf(term);
+			
+			try {
+				copy = copy.substring(0, start) + copy.substring(start + term.length());
+			} catch (IndexOutOfBoundsException e) {
+				return null;
+			}
+		}
+		
+		// https://es.wiktionary.org/w/index.php?diff=3020098
+		if (!copy.replace(",", "").trim().isEmpty()) {
+			return null;
 		}
 		
 		HashMap<String, String> map = new LinkedHashMap<>(lterms.size(), 1);
@@ -2862,82 +2898,119 @@ public class Editor extends AbstractEditor {
 		
 		for (int i = 1; i <= lterms.size(); i++) {
 			String term = lterms.get(i - 1);
-			String param = "ParamWithoutName" + i;
 			
 			if (containsAny(term, '[', ']')) {
-				Matcher m2 = P_LINK.matcher(term);
-				
-				if (!m2.matches()) {
+				if (!extractLinkParam(map, i, term)) {
 					return null;
-				}
-				
-				map.put(param, m2.group(1));
-				String trail = m2.group(3);
-				
-				if (!trail.isEmpty() && containsAny(trail, '(', ')')) {
-					Matcher m3 = P_PARENS.matcher(trail);
-					
-					if (!m3.matches() || containsAny(m3.group(1), '[', ']')) {
-						return null;
-					} else {
-						trail = m3.group(1).trim();
-						map.put("nota" + i, m3.group(2));
-					}
-				} else if (containsAny(trail, '[', ']')) {
-					return null;
-				}
-				
-				if (!trail.isEmpty() || (m2.group(2) != null && !m2.group(2).equals(m2.group(1)))) {
-					map.put("alt" + i, (m2.group(2) != null ? m2.group(2) : m2.group(1)) + trail);
 				}
 			} else if (containsAny(term, '{', '}')) {
-				Matcher m2 = P_LINK_TMPLS.matcher(term);
-				
-				if (!m2.matches()) {
+				if (!extractTemplateParam(map, i, term)) {
 					return null;
-				}
-				
-				String template = m2.group(1);
-				String trail = m2.group(2);
-				
-				HashMap<String, String> params = getTemplateParametersWithValue(template);
-				
-				if (!params.getOrDefault("templateName", "").matches("l\\+?")) {
-					return null;
-				}
-				
-				if (params.containsKey("glosa")) {
-					return null;
-				}
-				
-				map.put(param, params.get("ParamWithoutName2"));
-				
-				if (params.containsKey("ParamWithoutName3")) {
-					map.put("alt" + i, params.get("ParamWithoutName3"));
-				}
-				
-				if (params.containsKey("num") || params.containsKey("núm")) {
-					map.put("num" + i, params.getOrDefault("num", params.get("núm")));
-				}
-				
-				if (params.containsKey("tr")) {
-					map.put("tr" + i, params.get("tr"));
-				}
-				
-				if (trail != null && !trail.isEmpty()) {
-					map.put("nota" + i, trail.trim());
 				}
 			} else {
 				return null;
 			}
 		}
 		
+		// TODO: expand with other templates and forbidden/unused parameters
+		if (
+			(name.equals("uso") || name.equals("ámbito")) &&
+			map.keySet().stream().anyMatch(key -> key.contains("alt"))
+		) {
+			return null;
+		}
+		
 		leadingComments = leadingComments.replaceAll(" *?(<!--.*?-->) *", "$1");
 		
-		return leadingComments +
+		return
+			leadingComments +
 			(!leadingComments.isEmpty() ? "\n" : "") +
 			templateFromMap(map) + "." +
 			trailingComments;
+	}
+	
+	private static boolean extractLinkParam(Map<String, String> map, int i, String term) {
+		Matcher m = P_LINK.matcher(term);
+		
+		if (!m.matches()) {
+			return false;
+		}
+		
+		String link = m.group(1).trim();
+		String pipe = Optional.ofNullable(m.group(2)).orElse("").trim();
+		String trail = m.group(3);
+		
+		if (link.startsWith("#")) {
+			return false;
+		}
+		
+		if (link.contains("#")) {
+			link = link.substring(0, link.indexOf("#"));
+		}
+		
+		map.put("ParamWithoutName" + i, link);
+		
+		if (containsAny(trail, '(', ')')) {
+			Matcher m2 = P_PARENS.matcher(trail);
+			
+			if (m2.matches()) {
+				trail = m2.group(1);
+				map.put("nota" + i, m2.group(2));
+			}
+		}
+		
+		// braces: test{{-sub|N}} - OK, test{{cita requerida}} - error
+		if (containsAny(trail, '[', ']', '{', '}', '(', ')')) {
+			return false;
+		}
+		
+		if (!trail.isEmpty() || (!pipe.isEmpty() && !pipe.equals(link))) {
+			map.put("alt" + i, (!pipe.isEmpty() ? pipe : link) + trail);
+		}
+		
+		return true;
+	}
+	
+	private static boolean extractTemplateParam(Map<String, String> map, int i, String term) {
+		Matcher m = P_LINK_TMPLS.matcher(term);
+		
+		if (!m.matches()) {
+			return false;
+		}
+		
+		String template = m.group(1);
+		String trail = m.group(2);
+		
+		HashMap<String, String> params = getTemplateParametersWithValue(template);
+		
+		if (!params.getOrDefault("templateName", "").matches("l\\+?")) {
+			return false;
+		}
+		
+		// TODO: add support por "glosa" and "glosa-alt" parameters?
+		if (params.containsKey("glosa")) {
+			return false;
+		}
+		
+		map.put("ParamWithoutName" + i, params.get("ParamWithoutName2"));
+		
+		if (params.containsKey("ParamWithoutName3")) {
+			map.put("alt" + i, params.get("ParamWithoutName3"));
+		}
+		
+		if (params.containsKey("num") || params.containsKey("núm")) {
+			map.put("num" + i, params.getOrDefault("num", params.get("núm")));
+		}
+		
+		if (params.containsKey("tr")) {
+			map.put("tr" + i, params.get("tr"));
+		}
+		
+		if (trail != null && !trail.isEmpty()) {
+			map.put("nota" + i, trail.trim());
+		}
+		
+		return true;
 	}
 	
 	public void addMissingElements() {
