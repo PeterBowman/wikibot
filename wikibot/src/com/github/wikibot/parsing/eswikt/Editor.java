@@ -166,7 +166,7 @@ public class Editor extends AbstractEditor {
 	
 	private static final Predicate<LangSection> FLEXIVE_FORM_CHECK;
 	
-	private static final Predicate<Section> SOFT_REDIR_TERMS_CHECK;
+	private static final Predicate<Section> REDUCED_SECTION_CHECK;
 	
 	private boolean isOldStructure;
 	
@@ -242,7 +242,9 @@ public class Editor extends AbstractEditor {
 		);
 		
 		TRANSLATIONS_TEMPLATE = String.join("\n", translationsTemplate);
-		
+	}
+	
+	static {
 		final List<String> pCommentsList = Arrays.asList(
 			"<!--( *?|\n*?)-->",
 			"<!-- ?si hay términos que se diferencian .*?-->",
@@ -298,7 +300,9 @@ public class Editor extends AbstractEditor {
 		COMMENT_PATT_LIST = pCommentsList.stream()
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
-		
+	}
+	
+	static {
 		// TODO: expand per [[Especial:TodasLasRedirecciones]]
 		// TODO: delete obsolete templates
 		
@@ -438,7 +442,9 @@ public class Editor extends AbstractEditor {
 		TMPL_ALIAS_MAP.put("Quechua-Español", "QU-ES");
 		
 		TMPL_ALIAS_MAP.put("Caracter oriental", "Carácter oriental");
-		
+	}
+	
+	static {
 		SECTION_DATA_MAP = new HashMap<>(50, 1);
 		
 		SECTION_DATA_MAP.put("adjetivo cardinal",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.CARDINAL));
@@ -483,8 +489,17 @@ public class Editor extends AbstractEditor {
 		SECTION_DATA_MAP.put("verbo intransitivo",       Arrays.asList(Catgram.Data.VERB, Catgram.Data.INTRANSITIVE));
 		SECTION_DATA_MAP.put("verbo pronominal",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.PRONOUN));
 		SECTION_DATA_MAP.put("verbo transitivo",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.TRANSITIVE));
-		
-		SOFT_REDIR_TERMS_CHECK = section -> {
+	}
+	
+	static {
+		REDUCED_SECTION_CHECK = section -> {
+			if (
+				section instanceof LangSection &&
+				((LangSection) section).langCodeEqualsTo("trans")
+			) {
+				return true;
+			}
+			
 			List<Section> targetSections = section.getChildSections().stream()
 				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
 				.collect(Collectors.toList());
@@ -1223,7 +1238,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			} else if (
 				section instanceof LangSection &&
-				SOFT_REDIR_TERMS_CHECK.test((LangSection) section)
+				REDUCED_SECTION_CHECK.test((LangSection) section)
 			) {
 				continue;
 			} else if (
@@ -2019,7 +2034,7 @@ public class Editor extends AbstractEditor {
 				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
 				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
-				SOFT_REDIR_TERMS_CHECK.test(langSection)
+				REDUCED_SECTION_CHECK.test(langSection)
 			) {
 				continue;
 			}
@@ -2059,7 +2074,7 @@ public class Editor extends AbstractEditor {
 			spanishSection != null &&
 			// TODO: discuss with the community
 			getTemplates("apellido", spanishSection.toString()).isEmpty() &&
-			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
+			!REDUCED_SECTION_CHECK.test(spanishSection)
 		) {
 			List<Section> etymologySections = spanishSection.findSubSectionsWithHeader("Etimología.*");
 			
@@ -2999,7 +3014,7 @@ public class Editor extends AbstractEditor {
 					getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					// TODO: review
 					(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
-					!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
+					!REDUCED_SECTION_CHECK.test(etymologySection)
 				) {
 					etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
 					etymologySection.setIntro(etymologyIntro);
@@ -3013,7 +3028,7 @@ public class Editor extends AbstractEditor {
 						getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
-						!SOFT_REDIR_TERMS_CHECK.test(etymologySection)
+						!REDUCED_SECTION_CHECK.test(etymologySection)
 					) {
 						// TODO: ensure that it's inserted after {{pron-graf}}
 						etymologyIntro = insertTemplate(etymologyIntro, langCode, "etimología", "{{%s}}.");
@@ -3039,7 +3054,7 @@ public class Editor extends AbstractEditor {
 		
 		if (
 			spanishSection != null &&
-			!SOFT_REDIR_TERMS_CHECK.test(spanishSection)
+			!REDUCED_SECTION_CHECK.test(spanishSection)
 		) {
 			List<Section> translations = spanishSection.findSubSectionsWithHeader("Traducciones");
 			
@@ -3572,7 +3587,7 @@ public class Editor extends AbstractEditor {
 			.filter(langSection ->
 				!langSection.langCodeEqualsTo("es") ||
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
-				SOFT_REDIR_TERMS_CHECK.test(langSection)
+				REDUCED_SECTION_CHECK.test(langSection)
 			)
 			.map(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)"))
 			.flatMap(Collection::stream)
@@ -3587,7 +3602,7 @@ public class Editor extends AbstractEditor {
 			.filter(langSection -> !langSection.getChildSections().isEmpty())
 			.filter(langSection ->
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
-				SOFT_REDIR_TERMS_CHECK.test(langSection)
+				REDUCED_SECTION_CHECK.test(langSection)
 			)
 			// TODO: move image and category links to the previous section
 			.map(langSection -> langSection.findSubSectionsWithHeader("Etimología"))
@@ -3660,7 +3675,7 @@ public class Editor extends AbstractEditor {
 		)
 		.filter(section ->
 			(!hasNonFlexiveHeaders(section) && hasFlexiveHeaders(section)) ||
-			SOFT_REDIR_TERMS_CHECK.test(section)
+			REDUCED_SECTION_CHECK.test(section)
 		)
 		.filter(section ->
 			!getTemplates("etimología", section.getIntro()).isEmpty() ||
@@ -4198,7 +4213,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "earning";
+		String title = "v";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
