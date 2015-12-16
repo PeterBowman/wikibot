@@ -10,15 +10,19 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
@@ -40,6 +44,9 @@ public final class InconsistentHeaderTitles {
 	
 	private static final int COLUMN_ELEMENT_THRESHOLD = 50;
 	private static final int NUMBER_OF_COLUMNS = 3;
+	
+	// from Linker::formatLinksInComment in Linker.php
+	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]");
 	
 	private static PLWikt wb;
 	
@@ -208,15 +215,33 @@ public final class InconsistentHeaderTitles {
 	
 	private static boolean filterSections(Section section) {
 		String headerTitle = section.getHeaderTitle();
+		headerTitle = ParseUtils.removeCommentsAndNoWikiText(headerTitle);
 		
-		if (StringUtils.containsAny(headerTitle, '{', '}', '[', ']')) {
+		if (StringUtils.containsAny(headerTitle, '{', '}')) {
 			return false;
-		} else {
-			String pageTitle = section.getContainingPage().getTitle();
-			pageTitle = pageTitle.replace("ʼ", "'").replace("…", "...");
-			headerTitle = headerTitle.replace("ʼ", "'").replace("…", "...");
-			return !pageTitle.equals(headerTitle);
 		}
+		
+		if (StringUtils.containsAny(headerTitle, '[', ']')) {
+			headerTitle = stripWikiLinks(headerTitle);
+		}
+		
+		String pageTitle = section.getContainingPage().getTitle();
+		pageTitle = pageTitle.replace("ʼ", "'").replace("…", "...");
+		headerTitle = headerTitle.replace("ʼ", "'").replace("…", "...");
+		
+		return !pageTitle.equals(headerTitle);
+	}
+	
+	private static String stripWikiLinks(String text) {
+		Matcher m = P_LINK.matcher(text);
+		StringBuffer sb = new StringBuffer(text.length());
+		
+		while (m.find()) {
+			String target = Optional.ofNullable(m.group(2)).orElse(m.group(1));
+			m.appendReplacement(sb, target);
+		}
+		
+		return m.appendTail(sb).toString();
 	}
 	
 	private static com.github.wikibot.parsing.Page makePage(Map<String, Collection<Item>> map) {
