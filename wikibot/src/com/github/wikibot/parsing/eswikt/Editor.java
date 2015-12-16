@@ -2979,22 +2979,18 @@ public class Editor extends AbstractEditor {
 			List<Section> etymologySections = langSection.findSubSectionsWithHeader("Etimología.*");
 			String langCode = langSection.getLangCode();
 			
-			// FIXME
 			if (
 				etymologySections.isEmpty() &&
-				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
+				!langSection.langCodeEqualsTo("trans") && // exclusions
 				getTemplates("pron-graf", langSection.getIntro()).isEmpty()
 				// TODO: https://es.wiktionary.org/w/index.php?title=edere&diff=3774065&oldid=3774057
 				/*AbstractSection.flattenSubSections(langSection.getChildSections()).stream()
 					.allMatch(section -> section.getChildSections().isEmpty())*/
 			) {
 				String langSectionIntro = langSection.getIntro();
-				
-				if (getTemplates("pron-graf", langSectionIntro).isEmpty()) {
-					langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
-					langSection.setIntro(langSectionIntro);
-					set.add("{{pron-graf}}");
-				}
+				langSectionIntro = insertTemplate(langSectionIntro, langCode, "pron-graf", "{{%s}}");
+				langSection.setIntro(langSectionIntro);
+				set.add("{{pron-graf}}");
 			} else if (etymologySections.size() == 1) {
 				Section etymologySection = etymologySections.get(0);
 				String langSectionIntro = langSection.getIntro();
