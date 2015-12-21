@@ -24,6 +24,8 @@ import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
+import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.ParsingException;
@@ -99,9 +101,20 @@ public final class InconsistentHeaderTitles {
 				
 				PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
 				Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
+				
 				break;
 			case 'd': // read from dump file, TODO: only local environment
-				wb.readXmlDump(pc -> findErrors(pc, map));
+				XMLDumpReader reader = new XMLDumpReader(Domains.PLWIKT);
+				int size = wb.getSiteStatistics().get("pages");
+				
+				try (Stream<XMLRevision> stream = reader.getStAXReader().stream(size)) {
+					stream.parallel()
+						.filter(XMLRevision::isMainNamespace)
+						.filter(XMLRevision::nonRedirect)
+						.map(XMLRevision::toPageContainer)
+						.forEach(pc -> findErrors(pc, map));
+				}
+				
 				break;
 			default:
 				System.out.printf("Unrecognized argument: %c%n.", op);

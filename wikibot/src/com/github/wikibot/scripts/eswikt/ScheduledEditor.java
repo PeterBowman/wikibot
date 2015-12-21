@@ -14,9 +14,12 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
+import javax.xml.stream.XMLStreamException;
 
 import org.wikiutils.IOUtils;
 
+import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
@@ -59,6 +62,10 @@ public final class ScheduledEditor {
 					break;
 				case "-a":
 					processAllpages();
+					break;
+				case "-d":
+					XMLDumpReader reader = new XMLDumpReader(args[1]);
+					processDumpFile(reader);
 					break;
 				default:
 					System.out.println("Insufficient parameters supplied.");
@@ -115,6 +122,18 @@ public final class ScheduledEditor {
 			
 			lastEntry = pages[pages.length - 1].getTitle();
 			storeEntry(lastEntry);
+		}
+	}
+	
+	private static void processDumpFile(XMLDumpReader dumpReader) {
+		try (Stream<XMLRevision> r = dumpReader.getStAXReader().stream(wb.getSiteStatistics().get("pages"))) {
+			r.parallel()
+				.filter(XMLRevision::isMainNamespace)
+				.filter(XMLRevision::nonRedirect)
+				.map(XMLRevision::toPageContainer)
+				.forEach(ScheduledEditor::processPage); // TODO: review exit codes
+		} catch (XMLStreamException | IOException e) {
+			e.printStackTrace();
 		}
 	}
 	

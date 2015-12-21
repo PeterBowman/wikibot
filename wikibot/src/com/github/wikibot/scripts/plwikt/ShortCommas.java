@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,9 +18,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import javax.xml.stream.XMLStreamException;
+
 import org.wikiutils.IOUtils;
 import org.xml.sax.SAXException;
 
+import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.utils.Domains;
@@ -98,13 +103,22 @@ public final class ShortCommas implements Selectorizable {
 	
 	public static void getList() throws IOException, SAXException {
 		Set<String> wlh = new HashSet<>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
-		List<PageContainer> pages = new ArrayList<>(250);
+		List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
+		XMLDumpReader dumpReader = new XMLDumpReader(Domains.PLWIKT);
+		int size = wb.getSiteStatistics().get("pages");
 		
-		wb.readXmlDump(page -> {
-			if (wlh.contains(page.getTitle()) && patt.matcher(page.getText()).matches()) {
-				pages.add(page);
-			}
-		});
+		try (Stream<XMLRevision> stream = dumpReader.getStAXReader().stream(size)) {
+			stream.parallel()
+				.filter(XMLRevision::isMainNamespace)
+				.filter(XMLRevision::nonRedirect)
+				.filter(rev -> wlh.contains(rev.getTitle()))
+				.filter(rev -> patt.matcher(rev.getText()).matches())
+				.map(XMLRevision::toPageContainer)
+				.forEach(pages::add);
+		} catch (XMLStreamException e) {
+			e.printStackTrace();
+			return;
+		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
 		Misc.serialize(pages, info);

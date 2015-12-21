@@ -1,12 +1,6 @@
 package com.github.wikibot.main;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -18,25 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.wikipedia.WMFWiki;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
 
 import com.github.wikibot.utils.PageContainer;
 
@@ -58,8 +40,6 @@ public class Wikibot extends WMFWiki {
 	
 	// serial version
     private static final long serialVersionUID = -8745212681497644126L;
-    
-    private static final File dumpsPath = new File("./data/dumps");
     
     public Wikibot(String site) {
     	super(site);
@@ -831,32 +811,7 @@ public class Wikibot extends WMFWiki {
     	return list.toArray(new String[list.size()]);
     }
     
-    public void readXmlDump(String domain, Consumer<PageContainer> cons) throws IOException, SAXException {
-    	File[] matching = dumpsPath.listFiles((dir, name) -> name.startsWith(domain));
-    	
-    	if (matching.length == 0) {
-    		throw new FileNotFoundException("Dump file not found: " + domain);
-    	}
-    	
-    	System.out.printf("Reading from file: %s%n", matching[0].getName());
-    	
-    	SAXParserFactory factory = SAXParserFactory.newInstance();
-    	SAXParser saxParser = null;
-    	
-		try {
-			saxParser = factory.newSAXParser();
-		} catch (ParserConfigurationException e) {}
-		
-        SaxConcurrentPageHandler handler = new SaxConcurrentPageHandler(cons);
-        XMLReader xmlReader = saxParser.getXMLReader();
-        xmlReader.setContentHandler(handler);
-    	
-    	try (Reader reader = new InputStreamReader(new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(matching[0]))), "UTF-8")) {
-    		xmlReader.parse(new InputSource(reader));
-		}
-    }
-    
-	/**
+    /**
 	 *  Purges the server-side cache for various pages
 	 *  and updates the links tables recursively.
 	 *  @param titles the titles of the pages to purge
@@ -904,115 +859,4 @@ public class Wikibot extends WMFWiki {
 			}
     	} while (cont != null);
     }
-
-	class SaxConcurrentPageHandler extends DefaultHandler {
-		private Consumer<PageContainer> cons;
-		private ExecutorService executor;
-		private SaxConcurrentPageHandler.Page page;
-		private boolean acceptTitle;
-		private boolean acceptNs;
-		private boolean acceptTimestamp;
-		private boolean acceptText;
-		private StringBuilder sb;
-		
-		public SaxConcurrentPageHandler(Consumer<PageContainer> cons) {
-			this.cons = cons;
-		}
-		
-		public void startDocument() throws SAXException {
-			executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-		}
-		
-		public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
-			if (page == null) {
-				if (qName.equals("page")) {
-					page = new SaxConcurrentPageHandler.Page();
-				} else {
-					return;
-				}
-			} else {
-				switch (qName) {
-					case "title":
-						acceptTitle = true;
-						break;
-					case "ns":
-						acceptNs = true;
-						break;
-					case "timestamp":
-						acceptTimestamp = true;
-						break;
-					case "text":
-						acceptText = true;
-						break;
-					default:
-						return;
-				}
-				
-				sb = new StringBuilder(2000);
-			}
-		}
-		
-		public void characters(char[] ch, int start, int length) throws SAXException {
-			if (page == null) {
-				return;
-			}
-			
-			if (acceptTitle || acceptNs || acceptTimestamp || acceptText) {
-				sb.append(ch, start, length);
-			} else {
-				return;
-			}
-		}
-		
-		public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
-			if (page == null) {
-				return;
-			} else {
-				if (qName.equals("title") && acceptTitle) {
-					page.title = sb.toString();
-					acceptTitle = false;
-				} else if (qName.equals("ns") && acceptNs) {
-					String ns = sb.toString();
-					acceptNs = false;
-					
-					if (!ns.equals("0")) {
-						page = null;
-						return;
-					}
-				} else if (qName.equals("timestamp") && acceptTimestamp) {
-					page.timestamp = sb.toString();
-					acceptTimestamp = false;
-				} else if (qName.equals("text") && acceptText) {
-					page.text = sb.toString();
-					acceptText = false;
-				} else if (qName.equals("page")) {
-					executor.execute(makeCallback(page));
-					page = null;
-				} else {
-					return;
-				}
-			}
-		}
-		
-		public void endDocument() throws SAXException {
-			executor.shutdown();
-		}
-		
-		private Runnable makeCallback(SaxConcurrentPageHandler.Page page) {
-			return () -> {
-				PageContainer pc = new PageContainer(
-					decode(page.title),
-					decode(page.text),
-					timestampToCalendar(page.timestamp, true)
-				);
-				cons.accept(pc);
-			};
-		}
-		
-		class Page {
-			String title;
-			String timestamp;
-			String text;
-		}
-	}
 }
