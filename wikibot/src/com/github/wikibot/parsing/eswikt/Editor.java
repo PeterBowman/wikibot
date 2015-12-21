@@ -1084,6 +1084,9 @@ public class Editor extends AbstractEditor {
 		// automatically converting them to non-self-closing <ref name="a/">
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<ref ([^>].+?)(?<! )/>", "<ref $1 />");
 		
+		// Jsoup also attempts to replace HTML entities (&#38 -> &, even without a trailing semicolon)
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "&", "&amp;");
+		
 		// trim contents of <ref> tags
 		
 		Document doc = Jsoup.parseBodyFragment(formatted);
@@ -4302,7 +4305,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "v";
+		String title = "&";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
