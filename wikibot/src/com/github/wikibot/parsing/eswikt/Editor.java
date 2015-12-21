@@ -1212,7 +1212,10 @@ public class Editor extends AbstractEditor {
 			if (
 				etymologySections.isEmpty() &&
 				section instanceof LangSection &&
-				RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) &&
+				(
+					RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) ||
+					REDUCED_SECTION_CHECK.test((LangSection) section)
+				) &&
 				getTemplates("etimología", section.getIntro()).isEmpty() &&
 				getTemplates("etimología2", section.getIntro()).isEmpty()
 			) {
@@ -1234,11 +1237,6 @@ public class Editor extends AbstractEditor {
 				!Optional.ofNullable(section.nextSiblingSection())
 					.filter(s -> s.getHeader().startsWith("ETYM "))
 					.isPresent()
-			) {
-				continue;
-			} else if (
-				section instanceof LangSection &&
-				REDUCED_SECTION_CHECK.test((LangSection) section)
 			) {
 				continue;
 			} else if (
@@ -1417,7 +1415,8 @@ public class Editor extends AbstractEditor {
 				
 				if (
 					!altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&
-					!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'"))
+					!altGraf.replace("ʼ", "'").equals(title.replace("ʼ", "'")) &&
+					!altGraf.replaceAll("(?i)</?nowiki *>", "").equals(title)
 				) {
 					params.put("alt", altGraf);
 				} else {
@@ -3045,7 +3044,10 @@ public class Editor extends AbstractEditor {
 		// {{etimología}} and {{pron-graf}}
 		
 		for (LangSection langSection : page.getAllLangSections()) {
-			if (RECONSTRUCTED_LANGS.contains(langSection.getLangCode())) {
+			if (
+				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
+				langSection.langCodeEqualsTo("trans") // exclusions
+			) {
 				continue;
 			}
 			
@@ -3054,7 +3056,6 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				etymologySections.isEmpty() &&
-				!langSection.langCodeEqualsTo("trans") && // exclusions
 				getTemplates("pron-graf", langSection.getIntro()).isEmpty()
 				// TODO: https://es.wiktionary.org/w/index.php?title=edere&diff=3774065&oldid=3774057
 				/*AbstractSection.flattenSubSections(langSection.getChildSections()).stream()
