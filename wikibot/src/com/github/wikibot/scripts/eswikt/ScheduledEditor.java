@@ -142,7 +142,6 @@ public final class ScheduledEditor {
 		
 		return
 			getTemplates("TRANSLIT", text).isEmpty() &&
-			getTemplates("TRANS", text).isEmpty() &&
 			getTemplates("TAXO", text).isEmpty() &&
 			getTemplates("carácter oriental", text).isEmpty();
 	}

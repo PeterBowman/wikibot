@@ -199,6 +199,12 @@ public class LangSection extends Section {
 			return 0;
 		}
 		
+		if (langName.equals("translingüístico")) {
+			return -1;
+		} else if (targetLang.equals("translingüístico")) {
+			return 1;
+		}
+		
 		if (langName.equals("español")) {
 			return -1;
 		} else if (targetLang.equals("español")) {
