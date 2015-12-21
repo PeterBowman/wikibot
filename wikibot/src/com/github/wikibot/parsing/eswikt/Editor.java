@@ -1085,7 +1085,7 @@ public class Editor extends AbstractEditor {
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<ref ([^>].+?)(?<! )/>", "<ref $1 />");
 		
 		// Jsoup also attempts to replace HTML entities (&#38 -> &, even without a trailing semicolon)
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "&", "&amp;");
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "&", "%%AMP%%");
 		
 		// trim contents of <ref> tags
 		
@@ -1096,17 +1096,23 @@ public class Editor extends AbstractEditor {
 			.filter(ref -> !ref.tag().isSelfClosing())
 			.forEach(ref -> ref.html(ref.html().trim()));
 		
-		Page page = Page.store(title, Utils.decodeHtmlDocument(doc));
+		formatted = Utils.decodeHtmlDocument(doc);
+		
+		// Revert previous change
+		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "%%AMP%%", "&");
 		
 		// remove trailing newlines from the last Section
 		
 		try {
+			Page page = Page.store(title, formatted);
 			List<Section> sections = page.getAllSections();
 			Section lastSection = sections.get(sections.size() - 1);
 			
 			if (lastSection.getTrailingNewlines() > 1) {
 				lastSection.setTrailingNewlines(1);
 			}
+			
+			formatted = page.toString();
 		} catch (IndexOutOfBoundsException e) {}
 		
 		String summary = null;
@@ -1115,7 +1121,7 @@ public class Editor extends AbstractEditor {
 			summary = String.join(", ", setLog);
 		}
 		
-		checkDifferences(page.toString(), "minorSanitizing", summary);
+		checkDifferences(formatted, "minorSanitizing", summary);
 	}
 	
 	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
