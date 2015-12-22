@@ -1460,19 +1460,6 @@ public class Editor extends AbstractEditor {
 	}
 
 	private static void extractAltParameter(Section section, String alt) {
-		if (
-			section instanceof LangSection &&
-			RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode())
-		) {
-			if (removeCommentsAndNoWikiText(alt).isEmpty()) {
-				Map<String, String> params = ((LangSection) section).getTemplateParams();
-				params.remove("alt");
-				((LangSection) section).setTemplateParams(params);
-			}
-			
-			return;
-		}
-		
 		String intro = section.getIntro();
 		List<String> pronLaTmpls = getTemplates("pron.la", intro);
 		
