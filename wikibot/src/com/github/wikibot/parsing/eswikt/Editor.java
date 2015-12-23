@@ -3154,9 +3154,16 @@ public class Editor extends AbstractEditor {
 		
 		// <references />
 		
-		// TODO: check other elements (templates, manually introduced references...)
-		if (references != null && references.getIntro().isEmpty()) {
-			references.setIntro("<references />");
+		if (
+			references != null &&
+			(removeCommentsAndNoWikiText(references.getIntro()).isEmpty() || (
+				getTemplates("listaref", references.getIntro()).isEmpty() &&
+				!removeCommentsAndNoWikiText(references.getIntro()).matches(".*<references[^>]*>.*")
+			))
+		) {
+			String referencesIntro = references.getIntro();
+			referencesIntro += "\n<references />";
+			references.setIntro(referencesIntro);
 			set.add("<references>");
 		}
 		
@@ -4301,7 +4308,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "25";
+		String title = "aequus";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
