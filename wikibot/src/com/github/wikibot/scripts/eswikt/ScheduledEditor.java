@@ -1,7 +1,5 @@
 package com.github.wikibot.scripts.eswikt;
 
-import static org.wikiutils.IOUtils.loadFromFile;
-import static org.wikiutils.IOUtils.writeToFile;
 import static org.wikiutils.ParseUtils.getTemplates;
 
 import java.io.FileNotFoundException;
@@ -17,17 +15,20 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.wikiutils.IOUtils;
+
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class ScheduledEditor {
 	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
-	private static final String LAST_ENTRY = LOCATION + "last.txt";
+	private static final String LAST_ENTRY = LOCATION + "last.ser";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
 	private static final int BATCH = 500;
@@ -97,6 +98,7 @@ public final class ScheduledEditor {
 				break;
 			}
 			
+			// TODO: enable parallelization?
 			for (int i = 0; i < pages.length - 1; i++) {
 				PageContainer pc = pages[i];
 				
@@ -117,20 +119,16 @@ public final class ScheduledEditor {
 	}
 	
 	private static String retrieveLastEntry() {
-		String[] lines;
-		
 		try {
-			lines = loadFromFile(LAST_ENTRY, "", "UTF8");
-		} catch (FileNotFoundException e) {
-			return null;
+			return Misc.deserialize(LAST_ENTRY);
+		} catch (ClassNotFoundException | IOException e) {
+			return null; // TODO: review
 		}
-		
-		return lines[0];
 	}
 	
 	private static void storeEntry(String entry) {
 		try {
-			writeToFile(entry, LAST_ENTRY);
+			Misc.serialize(entry, LAST_ENTRY);
 			System.out.printf("Last entry: %s%n", entry);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -241,7 +239,7 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = loadFromFile(ERROR_LOG, "", "UTF8");
+			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
 		} catch (FileNotFoundException e) {
 			lines = new String[]{};
 		}
@@ -250,7 +248,7 @@ public final class ScheduledEditor {
 		list.add(log);
 		
 		try {
-			writeToFile(String.join("\n", list), ERROR_LOG);
+			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
 		} catch (IOException e) {}
 	}
 	
