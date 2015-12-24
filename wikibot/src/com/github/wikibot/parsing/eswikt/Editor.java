@@ -3190,10 +3190,12 @@ public class Editor extends AbstractEditor {
 		
 		if (
 			references != null &&
-			(removeCommentsAndNoWikiText(references.getIntro()).isEmpty() || (
+			removeCommentsAndNoWikiText(references.getIntro()).isEmpty()
+			// TODO: https://es.wiktionary.org/w/index.php?diff=3936926
+			/*(removeCommentsAndNoWikiText(references.getIntro()).isEmpty() || (
 				getTemplates("listaref", references.getIntro()).isEmpty() &&
 				!removeCommentsAndNoWikiText(references.getIntro()).matches("(?is).*<references[^>]*>.*")
-			))
+			))*/
 		) {
 			String referencesIntro = references.getIntro();
 			referencesIntro += "\n<references />";
