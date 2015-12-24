@@ -79,6 +79,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\](.*)"); // from Linker::formatLinksInComment in Linker.php
+	private static final Pattern P_LINK_TRAIL = Pattern.compile("^([a-záéíóúñ]+)(.*)"); // api.php?action=query&meta=siteinfo
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
@@ -591,6 +592,7 @@ public class Editor extends AbstractEditor {
 		
 		removeTemplatePrefixes();
 		sanitizeTemplates();
+		sanitizeLinks();
 		joinLines();
 		normalizeTemplateNames();
 		splitLines();
@@ -852,6 +854,122 @@ public class Editor extends AbstractEditor {
 			: null;
 		
 		checkDifferences(formatted, "sanitizeTemplates", summary);
+	}
+	
+	public void sanitizeLinks() {
+		final String reducedLinkFormat = "[[%s]]%s";
+		final String pipedLinkFormat = "[[%s|%s]]%s";
+		MutableBoolean publish = new MutableBoolean(false);
+		
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINK, (m, sb) -> {
+			String target = m.group(1).trim();
+			String pipe = m.group(2);
+			String trail = m.group(3);
+			
+			// ignore interwiki, language, category, file and non-main namespace links
+			if (target.contains(":")) {
+				return;
+			}
+			
+			String strippedTarget;
+			
+			// test#en -> test
+			if (target.contains("#")) {
+				strippedTarget = target.substring(0, target.indexOf("#"));
+			} else {
+				strippedTarget = target;
+			}
+			
+			String link;
+			
+			if (pipe == null) { // [[test]] or [[test]]s
+				if (!strippedTarget.equals(target)) { // [[test#xx]]s -> [[test#xx|tests]]
+					Matcher mTrail = P_LINK_TRAIL.matcher(trail);
+					
+					if (mTrail.matches()) {
+						strippedTarget += mTrail.group(1);
+						trail = mTrail.group(2);
+					}
+					
+					link = String.format(pipedLinkFormat, target, strippedTarget, trail);
+					publish.setTrue();
+				} else {
+					return;
+				}
+			} else if (pipe.trim().isEmpty()) { // this case wouldn't render an <a> link, just plain text
+				if (strippedTarget.equals(target)) { // [[test|]]s -> [[test]]s
+					link = String.format(reducedLinkFormat, target, trail);
+				} else { // [[test#xx|]]s -> [[test#xx|tests]]
+					Matcher mTrail = P_LINK_TRAIL.matcher(trail);
+					
+					if (mTrail.matches()) {
+						strippedTarget += mTrail.group(1);
+						trail = mTrail.group(2);
+					}
+					
+					link = String.format(pipedLinkFormat, target, strippedTarget, trail);
+				}
+				
+				publish.setTrue();
+			} else {
+				pipe = pipe.trim();
+				
+				if (pipe.equals(target)) {
+					if (!target.equals(strippedTarget)) { // [[test#xx|test#xx]]s
+						Matcher mTrail = P_LINK_TRAIL.matcher(trail);
+						
+						if (mTrail.matches()) {
+							strippedTarget += mTrail.group(1);
+							trail = mTrail.group(2);
+						}
+						
+						link = String.format(pipedLinkFormat, target, strippedTarget, trail);
+					} else { // [[test|test]]s -> [[test]]s
+						link = String.format(reducedLinkFormat, target, trail);
+					}
+					
+					publish.setTrue();
+				} else {
+					if (pipe.startsWith(target)) { // [[test|test...]]s
+						Matcher mTrail = P_LINK_TRAIL.matcher(trail);
+						boolean updated = false;
+						
+						if (mTrail.matches()) { // [[test|tests]]s -> [[test|testss]]
+							pipe += mTrail.group(1);
+							trail = mTrail.group(2);
+						}
+						
+						String trimmed = pipe.substring(target.length()) + trail;
+						Matcher mTrimmed = P_LINK_TRAIL.matcher(trimmed);
+						
+						if (mTrimmed.matches() && mTrimmed.group(2).isEmpty()) { // [[test|tests]] -> [[test]]s
+							trail = trimmed + trail;
+							link = String.format(reducedLinkFormat, target, trail);
+						} else if (updated) { // apply previous change (see mTrail)
+							link = String.format(pipedLinkFormat, target, pipe, trail);
+						} else {
+							return;
+						}
+					} else { // [[test|some]]thing -> [[test|something]]
+						Matcher mTrail = P_LINK_TRAIL.matcher(trail);
+						
+						if (mTrail.matches()) {
+							pipe += mTrail.group(1);
+							trail = mTrail.group(2);
+						} else {
+							return;
+						}
+						
+						link = String.format(pipedLinkFormat, target, pipe, trail);
+					}
+				}
+			}
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(link));
+		});
+		
+		String summary = publish.isTrue() ? "revisando enlaces" : null;
+		checkDifferences(formatted, "sanitizeLinks", summary);
 	}
 	
 	public void joinLines() {
@@ -3987,7 +4105,10 @@ public class Editor extends AbstractEditor {
 				String pipe = m.group(3);
 				String trail = m.group(4);
 				
-				if (target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())) {
+				if (
+					target.contains(":") ||
+					target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())
+				) {
 					return;
 				}
 				
@@ -4002,7 +4123,7 @@ public class Editor extends AbstractEditor {
 					}
 				}
 				
-				if (trail.matches("^[\\wáéíóúüñÁÉÍÓÚÜÑ]+.*")) {
+				if (P_LINK_TRAIL.matcher(trail).matches()) {
 					return;
 				}
 				
