@@ -169,6 +169,7 @@ public class Editor extends AbstractEditor {
 	private static final Predicate<Section> REDUCED_SECTION_CHECK;
 	
 	private boolean isOldStructure;
+	private boolean allowJsoup;
 	
 	static {
 		final List<String> templateNsAliases = Arrays.asList("Template", "Plantilla", "msg");
@@ -575,8 +576,6 @@ public class Editor extends AbstractEditor {
 			!getTemplates("carácter oriental", text).isEmpty()
 		) {
 			isOldStructure = true;
-		} else {
-			isOldStructure = false;
 		}
 	}
 	
@@ -800,48 +799,53 @@ public class Editor extends AbstractEditor {
 	public void sanitizeTemplates() {
 		MutableBoolean makeSummary = new MutableBoolean(false);
 		
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TEMPLATE,
-			(m, sb) -> {
-				String template = m.group();
-				String templateName = m.group(1);
-				templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
-				
-				int startOffset = m.start(1) - m.start();
-				int endOffset = startOffset + m.group(1).length();
-				
-				template = template.substring(0, startOffset) + templateName +
-					template.substring(endOffset);
-				
-				String[] lines = template.split("\n");
-				
-				if (lines.length == 2 && lines[1].trim().equals("}}")) {
-					template = lines[0].trim() + lines[1].trim();
-				}
-				
-				m.appendReplacement(sb, "");
-				templateName = templateName.trim();
-				
-				if (
-					templateName.startsWith("inflect.") ||
-					LS_SPLITTER_LIST.contains(templateName) ||
-					BS_SPLITTER_LIST.contains(templateName)
-				) {
-					String sbCopy = sb.toString();
-					
-					while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
-						sb.deleteCharAt(sb.length() - 1);
-					}
-					
-					String deletedString = sbCopy.substring(sb.length());
-					
-					if (!deletedString.trim().isEmpty()) {
-						makeSummary.setTrue();
-					}
-				}
-				
-				sb.append(template);
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TEMPLATE, (m, sb) -> {
+			String template = m.group();
+			String templateName = m.group(1);
+			templateName = templateName.replaceFirst("^\\s*(.+?) *$", "$1");
+			
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			template = template.substring(0, startOffset) + templateName +
+				template.substring(endOffset);
+			
+			String[] lines = template.split("\n");
+			
+			if (lines.length == 2 && lines[1].trim().equals("}}")) {
+				template = lines[0].trim() + lines[1].trim();
+			} else if (
+				lines.length > 2 &&
+				lines[lines.length - 1].trim().equals("}}") &&
+				lines[lines.length - 1].contains(" ")
+			) {
+				lines[lines.length - 1] = lines[lines.length - 1].trim();
+				template = String.join("\n", lines);
 			}
-		);
+			
+			m.appendReplacement(sb, "");
+			templateName = templateName.trim();
+			
+			if (
+				templateName.startsWith("inflect.") ||
+				LS_SPLITTER_LIST.contains(templateName) ||
+				BS_SPLITTER_LIST.contains(templateName)
+			) {
+				String sbCopy = sb.toString();
+				
+				while (sb.toString().matches("^(?s:.*\n)?[ :;*#]+?\n?$")) {
+					sb.deleteCharAt(sb.length() - 1);
+				}
+				
+				String deletedString = sbCopy.substring(sb.length());
+				
+				if (!deletedString.trim().isEmpty()) {
+					makeSummary.setTrue();
+				}
+			}
+			
+			sb.append(template);
+		});
 		
 		String summary = makeSummary.booleanValue()
 			? "\"\\n[:;*#]{{\" → \"\\n{{\""
@@ -1027,25 +1031,23 @@ public class Editor extends AbstractEditor {
 		
 		// sanitize image links
 		
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES,
-			(m, sb) -> {
-				int startOffset = m.start(1) - m.start();
-				int endOffset = startOffset + m.group(1).length();
-				
-				String file = m.group();
-				String alias = m.group(1);
-				
-				if (!alias.equals(preferredFileNSAlias)) {
-					setFileAlias.add(alias + ":");
-				}
-				
-				file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
-					+ preferredFileNSAlias
-					+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
-				
-				m.appendReplacement(sb, Matcher.quoteReplacement(file));
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES, (m, sb) -> {
+			int startOffset = m.start(1) - m.start();
+			int endOffset = startOffset + m.group(1).length();
+			
+			String file = m.group();
+			String alias = m.group(1);
+			
+			if (!alias.equals(preferredFileNSAlias)) {
+				setFileAlias.add(alias + ":");
 			}
-		);
+			
+			file = file.substring(0, startOffset).replaceFirst("\\s*$", "")
+				+ preferredFileNSAlias
+				+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(file));
+		});
 		
 		if (!setFileAlias.isEmpty()) {
 			String log = String.format("%s → %s:", String.join(", ", setFileAlias), preferredFileNSAlias);
@@ -1077,29 +1079,23 @@ public class Editor extends AbstractEditor {
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
-		// TODO: use Jsoup?
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<(/?)references\\b([^>=]+?)>", "<$1references$2>");
-		
 		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
 		// automatically converting them to non-self-closing <ref name="a/">
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "(?i)<ref ([^>].+?)(?<! )/>", "<ref $1 />");
 		
-		// Jsoup also attempts to replace HTML entities (&#38 -> &, even without a trailing semicolon)
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "&", "%%AMP%%");
+		// Jsoup automatically sanitizes malformed tags, but this could lead to errors in wikitext
+		testJsoupSanitizer(formatted);
 		
-		// trim contents of <ref> tags
-		
-		Document doc = Jsoup.parseBodyFragment(formatted);
-		doc.outputSettings().prettyPrint(false);
-		
-		doc.getElementsByTag("ref").stream()
-			.filter(ref -> !ref.tag().isSelfClosing())
-			.forEach(ref -> ref.html(ref.html().trim()));
-		
-		formatted = Utils.decodeHtmlDocument(doc);
-		
-		// Revert previous change
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "%%AMP%%", "&");
+		if (allowJsoup) {
+			// trim contents of <ref> tags
+			Document doc = getJsoupDocument(formatted);
+			
+			doc.getElementsByTag("ref").stream()
+				.filter(ref -> !ref.tag().isSelfClosing())
+				.forEach(ref -> ref.html(ref.html().trim()));
+			
+			formatted = recodeJsoupDocument(doc);
+		}
 		
 		// remove trailing newlines from the last Section
 		
@@ -1122,6 +1118,40 @@ public class Editor extends AbstractEditor {
 		}
 		
 		checkDifferences(formatted, "minorSanitizing", summary);
+	}
+	
+	private void testJsoupSanitizer(String text) {
+		Document doc = getJsoupDocument(text);
+		String newText = recodeJsoupDocument(doc);
+		
+		// Jsoup also normalizes some whitespaces: <tag/> -> <tag />
+		newText = newText.replace(" ", "");
+		text = text.replace(" ", "");
+		
+		// ...surrounds attributes with quotes (single quotes are converted to double)
+		newText = newText.replace("\"", "").replace("'", "");
+		text = text.replace("\"", "").replace("'", "");
+		
+		// ...and enforces lower case tag names
+		allowJsoup = newText.equalsIgnoreCase(text);
+	}
+	
+	private static Document getJsoupDocument(String text) {
+		// Jsoup attempts to replace HTML entities (&#38 -> &, even without a trailing semicolon)
+		text = text.replace("&", "%%AMP%%");
+		Document doc = Jsoup.parseBodyFragment(text);
+		doc.outputSettings().prettyPrint(false);
+		return doc;
+	}
+	
+	private static String recodeJsoupDocument(Document doc) {
+		String text = doc.body().html();
+		text = text.replace("&#xa0;", "&nbsp;");
+		text = text.replace("&lt;", "<");
+		text = text.replace("&gt;", ">");
+		text = text.replace("&amp;", "&");
+		text = text.replace("%%AMP%%", "&");
+		return text;
 	}
 	
 	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
@@ -1733,7 +1763,7 @@ public class Editor extends AbstractEditor {
 			page.setReferencesSection(references);
 		} else {
 			String intro = references.getIntro();
-			intro = intro.replaceAll("<references *?/ *?>", "").trim();
+			intro = intro.replaceAll("(?i)<references *?/ *?>", "").trim();
 			contents.addAll(Arrays.asList(intro.split("\n")));
 			contents.add("<references />");
 			references.setIntro(String.join("\n", contents));
@@ -1758,7 +1788,7 @@ public class Editor extends AbstractEditor {
 			String content = section.getIntro();
 			
 			content = removeCommentsAndNoWikiText(content); 
-			content = content.replaceAll("<references *?/ *?>", "");
+			content = content.replaceAll("(?i)<references *?/ *?>", "");
 			// TODO: review transclusions of {{listaref}}
 			//content = content.replaceAll("\\{\\{ *?listaref *?\\}\\}", "");
 			content = content.trim();
@@ -2137,7 +2167,7 @@ public class Editor extends AbstractEditor {
 		Page tempPage = Page.store(title, text);
 		tempPage.getReferencesSection().detachOnlySelf();
 		String str = tempPage.toString();
-		final Pattern pReferenceTags = Pattern.compile("<references *?/? *?>");
+		final Pattern pReferenceTags = Pattern.compile("(?i)<references *?/? *?>");
 		
 		if (
 			getTemplates("listaref", str).isEmpty() &&
@@ -3162,7 +3192,7 @@ public class Editor extends AbstractEditor {
 			references != null &&
 			(removeCommentsAndNoWikiText(references.getIntro()).isEmpty() || (
 				getTemplates("listaref", references.getIntro()).isEmpty() &&
-				!removeCommentsAndNoWikiText(references.getIntro()).matches("(?s).*<references[^>]*>.*")
+				!removeCommentsAndNoWikiText(references.getIntro()).matches("(?is).*<references[^>]*>.*")
 			))
 		) {
 			String referencesIntro = references.getIntro();
@@ -3993,8 +4023,11 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void sanitizeReferences() {
-		Document doc = Jsoup.parseBodyFragment(text);
-		doc.outputSettings().prettyPrint(false);
+		if (!allowJsoup) {
+			return;
+		}
+		
+		Document doc = getJsoupDocument(text);
 		Elements refs = doc.select("ref[name]").not("[group]");
 		
 		if (refs.isEmpty() || (
@@ -4025,13 +4058,16 @@ public class Editor extends AbstractEditor {
 				.forEach(els -> els.removeAttr("name"))
 			);
 		
-		String formatted = Utils.decodeHtmlDocument(doc);
+		String formatted = recodeJsoupDocument(doc);
 		checkDifferences(formatted, "sanitizeReferences", "corrigiendo referencias");
 	}
 	
 	public void groupReferences() {
-		Document doc = Jsoup.parseBodyFragment(text);
-		doc.outputSettings().prettyPrint(false);
+		if (!allowJsoup) {
+			return;
+		}
+		
+		Document doc = getJsoupDocument(text);
 		
 		Elements refs = doc.getElementsByTag("ref").stream()
 			.filter(ref -> !ref.tag().isSelfClosing())
@@ -4113,7 +4149,7 @@ public class Editor extends AbstractEditor {
 				elements.forEach(Element::remove);
 			});
 		
-		String formatted = Utils.decodeHtmlDocument(doc);
+		String formatted = recodeJsoupDocument(doc);
 		checkDifferences(formatted, "groupReferences", "agrupando referencias");
 	}
 	
@@ -4300,10 +4336,7 @@ public class Editor extends AbstractEditor {
 		
 		// miscellaneous
 		
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "<references *?/ *?>", "<references />");
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, " </ref>", "</ref>");
 		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "([^\n])\n{0,1}\\{\\{clear\\}\\}", "$1\n\n{{clear}}");
-		formatted = Utils.replaceWithStandardIgnoredRanges(formatted, "\n *?\\}\\}", "\n}}");
 		
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
