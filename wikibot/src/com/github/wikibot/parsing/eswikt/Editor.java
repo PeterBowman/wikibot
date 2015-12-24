@@ -2341,6 +2341,10 @@ public class Editor extends AbstractEditor {
 		String templateType = params.getOrDefault("tit", params.getOrDefault("tít", "relacionado"));
 		templateType = templateType.toLowerCase();
 		
+		if (templateType.isEmpty()) {
+			templateType = "relacionado";
+		}
+		
 		if (PRON_TMPLS_ALIAS.contains(templateType)) {
 			templateType = PRON_TMPLS.get(PRON_TMPLS_ALIAS.indexOf(templateType));
 		} else if (TERM_TMPLS_ALIAS.contains(templateType)) {
