@@ -3162,7 +3162,7 @@ public class Editor extends AbstractEditor {
 			references != null &&
 			(removeCommentsAndNoWikiText(references.getIntro()).isEmpty() || (
 				getTemplates("listaref", references.getIntro()).isEmpty() &&
-				!removeCommentsAndNoWikiText(references.getIntro()).matches(".*<references[^>]*>.*")
+				!removeCommentsAndNoWikiText(references.getIntro()).matches("(?s).*<references[^>]*>.*")
 			))
 		) {
 			String referencesIntro = references.getIntro();
@@ -4312,7 +4312,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "aequus";
+		String title = "cagar a trompadas";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
