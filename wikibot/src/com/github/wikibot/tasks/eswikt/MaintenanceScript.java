@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
 
@@ -92,6 +93,7 @@ public final class MaintenanceScript {
 			)
 			.flatMap(Collection::stream)
 			.distinct()
+			.filter(title -> !StringUtils.containsAny(title, '/', ':'))
 			.collect(Collectors.toList());
 		
 		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(new String[titles.size()])))
