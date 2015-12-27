@@ -70,7 +70,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_INFLECT_TMPLS = Pattern.compile("\\{\\{(inflect\\..+?)[\\|\\}]");
 	private static final Pattern P_ADAPT_PRON_TMPL;
 	private static final Pattern P_AMBOX_TMPLS;
-	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?)[:;#]*?\\* *?('{0,3}.+?:'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
+	private static final Pattern P_TMPL_LINE = Pattern.compile("((?:<!--.*?-->| *?)*?)[:;#]*?\\* *?('{0,3}.+?: *'{0,3})(.+?)(?: *?\\.)?((?:<!--.*?-->| *?)*)$", Pattern.MULTILINE);
 	private static final Pattern P_IMAGES;
 	private static final Pattern P_COMMENTS = Pattern.compile(" *?<!--.+-->");
 	private static final Pattern P_BR_TAGS = Pattern.compile("(\n*.*?)<br\\b([^>]*?)>(.*?\n+|.*?)", Pattern.CASE_INSENSITIVE);
@@ -4347,7 +4347,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "cagar a trompadas";
+		String title = "sientes";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
