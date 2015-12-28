@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.countMatches;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.commons.lang3.StringUtils.startsWithAny;
 import static org.apache.commons.lang3.StringUtils.strip;
+import static org.apache.commons.lang3.StringUtils.uncapitalize;
 import static org.wikiutils.ParseUtils.getTemplateParametersWithValue;
 import static org.wikiutils.ParseUtils.getTemplates;
 import static org.wikiutils.ParseUtils.removeCommentsAndNoWikiText;
@@ -4101,24 +4102,27 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			
 			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF, (m, sb) -> {
-				String target = m.group(2).trim().replaceFirst("#Español$", "");
+				String target = m.group(2).trim();
 				String pipe = m.group(3);
 				String trail = m.group(4);
 				
-				if (
-					target.contains(":") ||
-					target.substring(0, 1).equals(target.substring(0, 1).toUpperCase())
-				) {
+				if (target.contains(":") || capitalize(target).equals(target)) {
+					return;
+				}
+				
+				target = target.replaceFirst("#(Español|es)$", "");
+				
+				// target = [[#Español|...]] before replacement
+				if (target.isEmpty()) {
+					target = title;
+				} else if (target.contains("#")) {
 					return;
 				}
 				
 				if (pipe != null) {
 					pipe = pipe.trim();
 					
-					if (
-						pipe.isEmpty() ||
-						!(pipe.substring(0, 1).toLowerCase() + pipe.substring(1)).equals(target)
-					) {
+					if (pipe.isEmpty() || !uncapitalize(pipe).equals(target)) {
 						return;
 					}
 				}
@@ -4468,7 +4472,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "sientes";
+		String title = "sicilianu";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
