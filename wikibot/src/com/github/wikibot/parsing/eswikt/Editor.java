@@ -636,6 +636,7 @@ public class Editor extends AbstractEditor {
 		deleteWrongSections();
 		removeEtymologyTemplates();
 		manageClearElements();
+		convertHashedDefinitions();
 		applyUcfTemplates();
 		sanitizeReferences();
 		groupReferences();
@@ -4129,6 +4130,53 @@ public class Editor extends AbstractEditor {
 		return intro;
 	}
 	
+	public void convertHashedDefinitions() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		final Pattern pHash = Pattern.compile("^#(?![:;#*])", Pattern.MULTILINE);
+		Page page = Page.store(title, text);
+		
+		page.filterSections(s ->
+			s.getLangSectionParent() != null &&
+			Stream.of(removeCommentsAndNoWikiText(s.getIntro()).split("\n"))
+				.anyMatch(line -> line.startsWith("#")) &&
+			!P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find() &&
+			filterTermSections(s)
+		).forEach(section -> {
+			MutableInt defn = new MutableInt(1);
+			
+			String intro = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), pHash, (m, sb) -> {
+				String replacement = String.format(";%d:", defn.intValue());
+				m.appendReplacement(sb, replacement);
+				defn.increment();
+			});
+			
+			String[] lines = removeCommentsAndNoWikiText(intro).split("\n");
+			
+			// TODO: abort if nested lists are present ("#:")
+			// https://es.wiktionary.org/w/index.php?title=apple&oldid=3804168
+			if (!Stream.of(lines).anyMatch(line -> line.startsWith("#"))) {
+				section.setIntro(intro);
+			}
+		});
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "convertHashedDefinitions", "convirtiendo # a numeración continua");
+	}
+	
+	private static boolean filterTermSections(Section s) {
+		String header = s.getStrippedHeader();
+		
+		return
+			SECTION_DATA_MAP.keySet().stream()
+				.anyMatch(templateName -> !getTemplates(templateName, header).isEmpty()) ||
+			Stream.of(Catgram.Data.values())
+				.map(Catgram.Data::getSingular)
+				.anyMatch(templateName -> !getTemplates(templateName, header).isEmpty());
+	}
+	
 	public void applyUcfTemplates() {
 		Page page = Page.store(title, text);
 		
@@ -4518,7 +4566,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "correr la mano";
+		String title = "kość";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
