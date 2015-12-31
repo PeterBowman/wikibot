@@ -1362,6 +1362,7 @@ public class Editor extends AbstractEditor {
 				etymologySections.isEmpty() &&
 				section instanceof LangSection &&
 				(
+					title.contains(" ") ||
 					RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) ||
 					REDUCED_SECTION_CHECK.test((LangSection) section)
 				) &&
@@ -2163,8 +2164,7 @@ public class Editor extends AbstractEditor {
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (
-				// TODO: discuss with the community
-				title.contains(" ") ||
+				title.contains(" ") || // TODO: tweak this to detect {{locución}} templates?
 				langSection.getChildSections().isEmpty() ||
 				langSection.hasSubSectionWithHeader("Etimología.*") ||
 				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
@@ -3223,6 +3223,7 @@ public class Editor extends AbstractEditor {
 				}
 				
 				if (
+					!title.contains(" ") &&
 					getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 					getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 					// TODO: review
@@ -3238,6 +3239,7 @@ public class Editor extends AbstractEditor {
 					String etymologyIntro = etymologySection.getIntro();
 					
 					if (
+						!title.contains(" ") &&
 						getTemplates("etimología", langSection.getIntro()).isEmpty() &&
 						getTemplates("etimología2", langSection.getIntro()).isEmpty() &&
 						(etymologyIntro.isEmpty() || removeBlockTemplates(etymologyIntro).isEmpty()) &&
@@ -3892,7 +3894,8 @@ public class Editor extends AbstractEditor {
 			.filter(langSection -> !langSection.getChildSections().isEmpty())
 			.filter(langSection ->
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
-				REDUCED_SECTION_CHECK.test(langSection)
+				REDUCED_SECTION_CHECK.test(langSection) ||
+				title.contains(" ")
 			)
 			// TODO: move image and category links to the previous section
 			.map(langSection -> langSection.findSubSectionsWithHeader("Etimología"))
@@ -3965,7 +3968,8 @@ public class Editor extends AbstractEditor {
 		)
 		.filter(section ->
 			(!hasNonFlexiveHeaders(section) && hasFlexiveHeaders(section)) ||
-			REDUCED_SECTION_CHECK.test(section)
+			REDUCED_SECTION_CHECK.test(section) ||
+			title.contains(" ")
 		)
 		.filter(section ->
 			!getTemplates("etimología", section.getIntro()).isEmpty() ||
