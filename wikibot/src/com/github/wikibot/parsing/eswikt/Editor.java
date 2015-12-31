@@ -624,6 +624,7 @@ public class Editor extends AbstractEditor {
 		adaptPronunciationTemplates();
 		convertToTemplate();
 		addMissingElements();
+		moveAltPronGrafParams();
 		checkLangCodeCase();
 		langTemplateParams();
 		manageSectionTemplates();
@@ -1334,11 +1335,7 @@ public class Editor extends AbstractEditor {
 			Map<String, String> params = langSection.getTemplateParams();
 			String alt = params.getOrDefault("alt", "");
 			
-			if (alt.isEmpty()) {
-				continue;
-			}
-			
-			if (!containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+			if (!alt.isEmpty()) {
 				extractAltParameter(langSection, alt);
 			}
 		}
@@ -1347,14 +1344,8 @@ public class Editor extends AbstractEditor {
 			String header = section.getHeader();
 			String alt = header.replaceFirst(".+alt-(.*)", "$1");
 			
-			if (alt.isEmpty()) {
-				continue;
-			}
-			
-			if (!containsAny(alt, '{', '}', '[', ']', '(', ')')) {
+			if (!alt.isEmpty()) {
 				extractAltParameter(section, alt);
-			} else {
-				insertAltComment(section, alt);
 			}
 		}
 		
@@ -3411,6 +3402,55 @@ public class Editor extends AbstractEditor {
 		return text.trim();
 	}
 	
+	public void moveAltPronGrafParams() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
+		
+		for (LangSection langSection : page.getAllLangSections()) {
+			Map<String, String> lsParams = langSection.getTemplateParams();
+			final String alt = lsParams.getOrDefault("alt", "");
+			
+			if (alt.isEmpty()) {
+				continue;
+			}
+			
+			final String langSectionText = langSection.toString();
+			
+			String temp = Utils.replaceTemplates(langSectionText, "pron-graf", template -> {
+				HashMap<String, String> pgParams = getTemplateParametersWithValue(template);
+				
+				if (!pgParams.getOrDefault("alt", "").isEmpty()) {
+					return template;
+				}
+				
+				HashMap<String, String> newParams = new LinkedHashMap<>(pgParams.size() + 1, 1);
+				
+				if (pgParams.containsKey("leng")) {
+					newParams.put("leng", pgParams.remove("leng"));
+				}
+				
+				newParams.put("alt", alt);
+				newParams.putAll(pgParams);
+				
+				return templateFromMap(newParams);
+			});
+			
+			if (!temp.equals(langSectionText)) {
+				LangSection newLangSection = LangSection.parse(temp);
+				lsParams = newLangSection.getTemplateParams();
+				lsParams.remove("alt");
+				newLangSection.setTemplateParams(lsParams);
+				langSection.replaceWith(newLangSection);
+			}
+		}
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "moveAltPronGrafParams", "trasladando parámetros \"alt\" a {{pron-graf}}");
+	}
+	
 	public void checkLangCodeCase() {
 		Page page = Page.store(title, text);
 		
@@ -4472,7 +4512,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "sicilianu";
+		String title = "correr la mano";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
