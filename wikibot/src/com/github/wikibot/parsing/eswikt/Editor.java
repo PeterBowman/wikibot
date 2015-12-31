@@ -163,6 +163,7 @@ public class Editor extends AbstractEditor {
 	private static final Map<String, String> TMPL_ALIAS_MAP;
 	private static final Map<String, List<Catgram.Data>> SECTION_DATA_MAP;
 	
+	private static final String TRANSLATIONS_COMMENT = "<!-- formato: {{t+|idioma|<acepción#>|palabra|género}} p. ej. {{t+|fr|1|chose|f}} -->";
 	private static final String TRANSLATIONS_TEMPLATE;
 	private static final String HAS_FLEXIVE_FORM_HEADER_RE = "([Ff]orma|\\{\\{forma) .+";
 	
@@ -239,7 +240,7 @@ public class Editor extends AbstractEditor {
 		
 		List<String> translationsTemplate = Arrays.asList(
 			"{{trad-arriba}}",
-			"<!-- formato: {{t+|idioma|<acepción#>|palabra|género}} p. ej. {{t+|fr|1|chose|f}} -->",
+			TRANSLATIONS_COMMENT,
 			"{{trad-centro}}",
 			"{{trad-abajo}}"
 		);
@@ -640,6 +641,7 @@ public class Editor extends AbstractEditor {
 		applyUcfTemplates();
 		sanitizeReferences();
 		groupReferences();
+		addTranslationsExampleComment();
 		strongWhitespaces();
 		weakWhitespaces();
 	}
@@ -4170,6 +4172,7 @@ public class Editor extends AbstractEditor {
 		String header = s.getStrippedHeader();
 		
 		return
+			// TODO: some templates are not included here, e.g. {{sustantivo femenino y masculino}}
 			SECTION_DATA_MAP.keySet().stream()
 				.anyMatch(templateName -> !getTemplates(templateName, header).isEmpty()) ||
 			Stream.of(Catgram.Data.values())
@@ -4374,6 +4377,24 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "groupReferences", "agrupando referencias");
 	}
 	
+	public void addTranslationsExampleComment() {
+		Page page = Page.store(title, text);
+		
+		page.filterSections(s -> s.getStrippedHeader().equals("Traducciones")).stream()
+			.filter(s -> !getTemplates("trad-arriba", s.getIntro()).isEmpty())
+			.filter(s -> getTemplates("t+", s.getIntro()).isEmpty())
+			.forEach(s -> {
+				String intro = Utils.replaceTemplates(s.getIntro(), "trad-arriba", template -> {
+					return String.format("%s%n%s", template, TRANSLATIONS_COMMENT);
+				});
+				
+				s.setIntro(intro);
+			});
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "addTranslationsExampleComment", null);
+	}
+	
 	public void strongWhitespaces() {
 		// TODO: don't collide with removeComments() 
 		String initial = text;
@@ -4566,7 +4587,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "kość";
+		String title = "Estrella";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
