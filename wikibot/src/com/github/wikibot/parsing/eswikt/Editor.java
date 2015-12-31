@@ -297,7 +297,9 @@ public class Editor extends AbstractEditor {
 			"<!-- *?apellidos .*?-->",
 			"<!-- *?antropónimos .*?-->",
 			"<!-- *?apéndice .*?-->",
-			"<!-- ?(primera|segunda) locución ?-->"
+			"<!-- ?(primera|segunda) locución ?-->",
+			"<!---*\\s*(== ?Traducciones ?==)?(\\{\\{trad-(arriba|centro|abajo)\\}\\}|\\* ?\\{\\{(?<lang>\\w+)\\}\\}: \\{\\{trad\\|\\k<lang>\\|\\}\\}|\\s*)+-*?-->",
+			"<!---*\\s*== ?Locuciones ?==(\\* ?\\[\\[\\]\\][^\\n-]*?|\\s*)+-*?-->"
 		);
 		
 		COMMENT_PATT_LIST = pCommentsList.stream()
