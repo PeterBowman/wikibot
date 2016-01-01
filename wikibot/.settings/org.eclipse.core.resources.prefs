@@ -1,14 +1,2 @@
 eclipse.preferences.version=1
-encoding//src/com/github/wikibot/main/Test.java=UTF-8
-encoding//src/com/github/wikibot/main/Wikibot.java=UTF-8
-encoding//src/com/github/wikibot/scripts/PurgeCategory.java=UTF-8
-encoding//src/com/github/wikibot/scripts/PurgeRecentChanges.java=UTF-8
-encoding//src/com/github/wikibot/scripts/misc/JyddishIpa.java=UTF-8
-encoding//src/com/github/wikibot/scripts/misc/RussianAdjectivesInflection.java=UTF-8
-encoding//src/com/github/wikibot/scripts/misc/RussianAdjectivesRegex.java=UTF-8
-encoding//src/com/github/wikibot/scripts/plwikt/DevanagariIAST.java=UTF-8
-encoding//src/com/github/wikibot/scripts/plwikt/MissingPolishGerunds.java=UTF-8
-encoding//src/com/github/wikibot/tasks/plwikt/LinkManager.java=UTF-8
-encoding//src/com/github/wikibot/tasks/plwikt/PolishGerundsList.java=UTF-8
-encoding//src/com/github/wikibot/tasks/plwikt/SpanishCanonicalInflectedForms.java=UTF-8
-encoding//src/com/github/wikibot/tasks/plwikt/SpanishVerbFormsMaintenance.java=UTF-8
+encoding/<project>=UTF-8
