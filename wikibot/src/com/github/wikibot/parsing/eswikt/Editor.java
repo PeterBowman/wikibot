@@ -4426,6 +4426,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		page.filterSections(s -> s.getStrippedHeader().equals("Traducciones")).stream()
+			.filter(s -> !s.getIntro().contains("{{t+|")) // search inside comments, too
 			.filter(s -> !getTemplates("trad-arriba", s.getIntro()).isEmpty())
 			.filter(s -> getTemplates("t+", s.getIntro()).isEmpty())
 			.forEach(s -> {
