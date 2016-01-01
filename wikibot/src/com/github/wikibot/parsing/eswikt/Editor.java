@@ -749,18 +749,7 @@ public class Editor extends AbstractEditor {
 		String formatted;
 		
 		if (!selectedRanges.isEmpty()) {
-			StringBuilder sb = new StringBuilder(text.length());
-			Range<Integer> lastRange = null;
-			
-			for (Range<Integer> currentRange : selectedRanges) {
-				int start = (lastRange != null) ? lastRange.getMaximum() + 1 : 0;
-				int end = currentRange.getMinimum();
-				sb.append(text.substring(start, end));
-				lastRange = currentRange;
-			}
-			
-			sb.append(text.substring(lastRange.getMaximum() + 1));
-			formatted = sb.toString();
+			formatted = stripCommentsFromText(text, selectedRanges);
 		} else {
 			formatted = text;
 		}
@@ -777,6 +766,62 @@ public class Editor extends AbstractEditor {
 		
 		formatted = page.toString();
 		checkDifferences(formatted, "removeComments", "eliminando comentarios");
+	}
+	
+	private static String stripCommentsFromText(String text, List<Range<Integer>> ranges) {
+		StringBuilder sb = new StringBuilder(Utils.sanitizeWhitespaces(text));
+		int offset = 0;
+		
+		for (Range<Integer> range : ranges) {
+			int startPos = range.getMinimum() - offset;
+			int endPos = range.getMaximum() + 1 - offset; // getMaximum(): last char inclusive
+			
+			int startExtended = traverseChars(sb, startPos, i -> i - 1);
+			int endExtended = traverseChars(sb, endPos, i -> i + 1);
+			
+			if (startExtended != -1 && endExtended != -1) {
+				if (startExtended == 0 || endExtended == sb.length()) {
+					sb.replace(startExtended, endExtended, "");
+					offset += endExtended - startExtended;
+				} else {
+					sb.replace(startExtended, endExtended, "\n");
+					offset += endExtended - startExtended - 1;
+				}
+			} else {
+				sb.replace(startPos, endPos, "");
+				offset += endPos - startPos;
+			}
+		}
+		
+		return sb.toString();
+	}
+	
+	private static int traverseChars(CharSequence text, int pos, Function<Integer, Integer> op) {
+		char ch;
+		int nextPos = pos;
+		
+		try {
+			while (true) {
+				nextPos = op.apply(nextPos);
+				
+				if (nextPos < pos) { // decrement
+					ch = text.charAt(nextPos);
+				} else { // increment
+					ch = text.charAt(pos);
+				}
+				
+				if (ch != ' ') {
+					break;
+				}
+				
+				pos = nextPos; // consume character
+			}
+		} catch (IndexOutOfBoundsException e) {
+			// document boundary, either pos = 0 or pos = length() - 1
+			return pos;
+		}
+		
+		return ch == '\n' ? op.apply(pos) : -1;
 	}
 	
 	public void removeTemplatePrefixes() {
@@ -4396,7 +4441,6 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void strongWhitespaces() {
-		// TODO: don't collide with removeComments() 
 		String initial = text;
 		
 		// &nbsp; replacements
@@ -4587,7 +4631,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "Estrella";
+		String title = "wikcionarista";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
