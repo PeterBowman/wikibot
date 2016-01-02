@@ -1257,12 +1257,26 @@ public class Editor extends AbstractEditor {
 		testJsoupSanitizer(formatted);
 		
 		if (allowJsoup) {
-			// trim contents of <ref> tags
 			Document doc = getJsoupDocument(formatted);
+			List<Element> refs = doc.getElementsByTag("ref"); 
 			
-			doc.getElementsByTag("ref").stream()
+			// trim contents of <ref> tags
+			refs.stream()
 				.filter(ref -> !ref.tag().isSelfClosing())
 				.forEach(ref -> ref.html(ref.html().trim()));
+			
+			// <ref name="test"></ref> -> <ref name="test" />
+			List<Element> emptyRefs = refs.stream()
+				.filter(ref -> !ref.tag().isSelfClosing())
+				.filter(ref -> ref.html().isEmpty())
+				.filter(ref -> ref.attributes().size() != 0)
+				.collect(Collectors.toList());
+			
+			if (!emptyRefs.isEmpty()) {
+				emptyRefs.forEach(ref -> ref.after(String.format("<ref%s />", ref.attributes())));
+				emptyRefs.forEach(Element::remove);
+				setLog.add("simplificando <ref> vacíos");
+			}
 			
 			formatted = recodeJsoupDocument(doc);
 		}
@@ -4314,7 +4328,10 @@ public class Editor extends AbstractEditor {
 			))
 			.values().stream()
 			.filter(elements -> elements.size() > 1)
-			.filter(elements -> elements.stream().allMatch(el -> !el.tag().isSelfClosing()))
+			.filter(elements -> elements.stream().allMatch(el ->
+				!el.tag().isSelfClosing() &&
+				!el.html().isEmpty()
+			))
 			.filter(elements -> elements.stream().map(Element::html).distinct().count() > 1)
 			.forEach(elements -> elements.stream()
 				.collect(Collectors.groupingBy(
@@ -4632,7 +4649,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "wikcionarista";
+		String title = "sƛ̕čúcən";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
