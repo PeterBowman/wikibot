@@ -87,7 +87,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_FLEX_ETYM = Pattern.compile("([Dd]e|[Vv]éase|[Dd]el verbo|[Ff]lexión de) (?<quot>''|\"|)(\\[{2}[^\\]]+\\]{2}|\\{{2}l\\|[\\w-]+\\|[^|}]+\\}{2})\\k<quot>( y (de )?\\[{2}(-ed|-ing)\\]{2})?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
-	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?( *?:)(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?(\\s*?:+)(.*)$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -1092,18 +1092,29 @@ public class Editor extends AbstractEditor {
 		final String token = "<<<P_TERM_REPLACEMENT>>>";
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(temp, P_TERM, (m, sb) -> {
+			String colon = m.group(3);
 			String term = m.group(4);
+			String replacement = m.group();
+			
+			if (colon.contains("\n")) {
+				replacement =
+					temp.substring(m.start(), m.start(3)) +
+					":" +
+					temp.substring(m.end(3), m.end());
+			}
 			
 			if (term.isEmpty() && temp.substring(m.end(4)).startsWith("\n:")) {
-				String replacement = Matcher.quoteReplacement(m.group());
 				replacement += token;
-				m.appendReplacement(sb, replacement);
+			}
+			
+			if (!replacement.equals(m.group())) {
+				m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 			}
 		});
 		
 		// couldn't find an easier way to use Matcher outside its .find() regions
-		if (!formatted.equals(temp)) {
-			formatted = formatted.replace(token + "\n:", "");
+		if (formatted.contains(token)) {
+			formatted = formatted.replaceAll(token + "\n:+", "");
 		}
 		
 		checkDifferences(formatted, "joinLines", "uniendo líneas");
@@ -4517,22 +4528,20 @@ public class Editor extends AbstractEditor {
 		).forEach(section -> {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
-				(m, sb) -> {
-					String template = m.group(2);
-					
-					if (template == null || template.startsWith(" ")) {
-						return;
-					}
-					
-					String replacement =
-						intro.substring(m.start(), m.start(2)) +
-						" " + template +
-						intro.substring(m.end(2), m.end());
-					
-					m.appendReplacement(sb, replacement);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, (m, sb) -> {
+				String template = m.group(2);
+				
+				if (template == null || template.startsWith(" ")) {
+					return;
 				}
-			);
+				
+				String replacement =
+					intro.substring(m.start(), m.start(2)) +
+					" " + template +
+					intro.substring(m.end(2), m.end());
+				
+				m.appendReplacement(sb, replacement);
+			});
 			
 			if (!temp.equals(intro)) {
 				section.setIntro(temp);
@@ -4614,25 +4623,23 @@ public class Editor extends AbstractEditor {
 		).forEach(section -> {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM,
-				(m, sb) -> {
-					String number = m.group(1);
-					String colon = m.group(3);
-					String definition = m.group(4);
-					
-					if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
-						return;
-					}
-					
-					String replacement =
-						intro.substring(m.start(), m.start(1)) +
-						number.trim() +
-						intro.substring(m.end(1), m.start(3)) +
-						colon.trim() + " " + definition.trim();
-					
-					m.appendReplacement(sb, replacement);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, (m, sb) -> {
+				String number = m.group(1);
+				String colon = m.group(3);
+				String definition = m.group(4);
+				
+				if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
+					return;
 				}
-			);
+				
+				String replacement =
+					intro.substring(m.start(), m.start(1)) +
+					number.trim() +
+					intro.substring(m.end(1), m.start(3)) +
+					colon.trim() + " " + definition.trim();
+				
+				m.appendReplacement(sb, replacement);
+			});
 			
 			if (!temp.equals(intro)) {
 				section.setIntro(temp);
