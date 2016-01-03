@@ -639,6 +639,7 @@ public class Editor extends AbstractEditor {
 		manageClearElements();
 		convertHashedDefinitions();
 		applyUcfTemplates();
+		fixDefinitionNumbering();
 		sanitizeReferences();
 		groupReferences();
 		addTranslationsExampleComment();
@@ -4319,6 +4320,121 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
 	}
 	
+	public void fixDefinitionNumbering() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
+		
+		page.getAllLangSections().stream()
+			.flatMap(Editor::flattenEtymSections)
+			.filter(Editor::filterSectionsDefNumbering)
+			.map(Editor::mapSuccessiveDefinitionSections)
+			.filter(sections -> !sections.isEmpty())
+			.forEach(Editor::processDefinitionNumberings);
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "fixDefinitionNumbering", "corrigiendo numeración de definiciones");
+	}
+	
+	private static boolean filterSectionsDefNumbering(Section langSection) {
+		final Pattern pParens = Pattern.compile("\\[\\w+\\]|\\(\\w+\\)");
+		final Pattern pNum = Pattern.compile("\\d+");
+		
+		String lsText = langSection.toString();
+		String strippedText = removeCommentsAndNoWikiText(lsText);
+		
+		String[] lines = strippedText.split("\n");
+		
+		if (Stream.of(lines).anyMatch(line -> line.startsWith("#"))) {
+			return false;
+		}
+		
+		Matcher mImages = P_IMAGES.matcher(strippedText);
+		
+		while (mImages.find()) {
+			if (pParens.matcher(mImages.group()).find()) {
+				return false;
+			}
+		}
+		
+		return Stream.of(
+				getTemplates("t+", lsText),
+				getTemplates("trad", lsText),
+				getTemplates("trad2", lsText),
+				getTemplates("trad-arriba", lsText)
+			)
+			.flatMap(Collection::stream)
+			.map(template -> getTemplateParametersWithValue(template))
+			.map(Map::values)
+			.flatMap(Collection::stream)
+			.map(pNum::matcher)
+			.noneMatch(Matcher::find);
+	}
+	
+	private static Stream<Section> flattenEtymSections(LangSection langSection) {
+		List<Section> etymSections = langSection.findSubSectionsWithHeader("Etimología \\d+");
+		
+		if (etymSections.size() > 1) {
+			return etymSections.stream();
+		} else {
+			return Stream.of(langSection);
+		}
+	}
+	
+	private static List<Section> mapSuccessiveDefinitionSections(Section section) {
+		List<Section> subSections = AbstractSection.flattenSubSections(section.getChildSections());
+		final int level = section.getLevel() + 1;
+		
+		List<Section> list = subSections.stream()
+			.filter(s -> s.getLevel() == level)
+			.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
+			.filter(s -> P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find())
+			.collect(Collectors.toList());
+		
+		int prevIndex = -1;
+		
+		for (Section s : list) {
+			int index = subSections.indexOf(s);
+			
+			if (prevIndex != -1 && index != prevIndex + 1) {
+				return new ArrayList<>(0);
+			} else {
+				prevIndex = index;
+			}
+		}
+		
+		return list;
+	}
+	
+	private static void processDefinitionNumberings(List<Section> sections) {
+		MutableInt defn = new MutableInt(1);
+		
+		sections.forEach(section -> {
+			final String intro = section.getIntro();
+			
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, (m, sb) -> {
+				String number = m.group(1).trim();
+				
+				if (Integer.parseInt(number) != defn.intValue()) {
+					String replacement =
+						intro.substring(m.start(), m.start(1)) +
+						defn.toString() +
+						intro.substring(m.end(1), m.end());
+					
+					m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+				}
+				
+				defn.increment();
+			});
+			
+			if (!temp.equals(intro)) {
+				section.setIntro(temp);
+			}
+		});
+	}
+	
 	public void sanitizeReferences() {
 		if (!allowJsoup) {
 			return;
@@ -4659,7 +4775,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "aves nocturnas";
+		String title = "-́fica";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
