@@ -3570,6 +3570,9 @@ public class Editor extends AbstractEditor {
 					HashMap<String, String> params = getTemplateParametersWithValue(template);
 					String leng = params.get("leng");
 					
+					// remove "lang" params, often mistakenly used instead of "leng"
+					params.remove("lang");
+					
 					if (templateName.equals("ampliable")) {
 						String param1 = params.remove("ParamWithoutName1");
 						leng = Optional.ofNullable(leng).orElse(param1);
