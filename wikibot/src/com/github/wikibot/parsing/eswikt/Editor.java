@@ -79,8 +79,8 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_BR_STYLE = Pattern.compile("style *?=[^=]*?\\bclear *?:.+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern P_ETYM_TMPL = Pattern.compile("[:;*#]*?(\\{\\{ *?etimología2? *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}([^\n]*))", Pattern.DOTALL);
 	private static final Pattern P_LIST_ARGS = Pattern.compile("(?:[^,\\(\\)\\[\\]\\{\\}]|\\(.+?\\)|\\[\\[.+?\\]\\]|\\{\\{.+?\\}\\})+");
-	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\](.*)"); // from Linker::formatLinksInComment in Linker.php
-	private static final Pattern P_LINK_TRAIL = Pattern.compile("^([a-záéíóúñ]+)(.*)"); // api.php?action=query&meta=siteinfo
+	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)"); // from Linker::formatLinksInComment in Linker.php
+	private static final Pattern P_LINK_TRAIL = Pattern.compile("^([a-záéíóúñ]+)(.*)", Pattern.DOTALL); // api.php?action=query&meta=siteinfo
 	private static final Pattern P_PARENS = Pattern.compile("(.*?) \\(([^\\)]+)\\)");
 	private static final Pattern P_LINK_TMPLS = Pattern.compile("(\\{\\{l\\+?\\|[^\\}]+\\}\\})(?: *?\\((.+)\\))?");
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
@@ -299,7 +299,7 @@ public class Editor extends AbstractEditor {
 			"<!-- *?antropónimos .*?-->",
 			"<!-- *?apéndice .*?-->",
 			"<!-- ?(primera|segunda) locución ?-->",
-			"<!---*\\s*(== ?Traducciones ?==)?(\\{\\{trad-(arriba|centro|abajo)\\}\\}|\\* ?\\{\\{(?<lang>\\w+)\\}\\}: \\{\\{trad\\|\\k<lang>\\|\\}\\}|\\s*)+-*?-->",
+			"<!---*\\s*(== ?Traducciones ?==)?(\\{\\{trad-(arriba|centro|abajo)\\}\\}|\\* ?\\{\\{(?<lang>\\w+)\\}\\}: \\{\\{trad\\|\\k<lang>\\|?\\}\\}|\\s*)+-*?-->",
 			"<!---*\\s*== ?Locuciones ?==(\\* ?\\[\\[\\]\\][^\\n-]*?|\\s*)+-*?-->"
 		);
 		
@@ -3960,9 +3960,9 @@ public class Editor extends AbstractEditor {
 		langSections.stream()
 			.filter(langSection -> !langSection.getChildSections().isEmpty())
 			.filter(langSection ->
+				title.contains(" ") ||
 				(!hasNonFlexiveHeaders(langSection) && hasFlexiveHeaders(langSection)) ||
-				REDUCED_SECTION_CHECK.test(langSection) ||
-				title.contains(" ")
+				REDUCED_SECTION_CHECK.test(langSection)
 			)
 			// TODO: move image and category links to the previous section
 			.map(langSection -> langSection.findSubSectionsWithHeader("Etimología"))
@@ -4034,9 +4034,9 @@ public class Editor extends AbstractEditor {
 				.flatMap(Collection::stream)
 		)
 		.filter(section ->
+			title.contains(" ") ||
 			(!hasNonFlexiveHeaders(section) && hasFlexiveHeaders(section)) ||
-			REDUCED_SECTION_CHECK.test(section) ||
-			title.contains(" ")
+			REDUCED_SECTION_CHECK.test(section)
 		)
 		.filter(section ->
 			!getTemplates("etimología", section.getIntro()).isEmpty() ||
@@ -4652,7 +4652,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "sƛ̕čúcən";
+		String title = "aves nocturnas";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
