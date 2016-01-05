@@ -16,6 +16,7 @@ import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
@@ -155,9 +156,11 @@ public final class ScheduledEditor {
 	}
 	
 	private static boolean filterPages(PageContainer pc) {
+		String title = pc.getTitle();
 		String text = pc.getText();
 		
 		return
+			!StringUtils.containsAny(title, '/', ':') &&
 			getTemplates("TRANSLIT", text).isEmpty() &&
 			getTemplates("TAXO", text).isEmpty() &&
 			getTemplates("carácter oriental", text).isEmpty();

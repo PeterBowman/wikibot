@@ -4576,13 +4576,9 @@ public class Editor extends AbstractEditor {
 			.filter(s -> !s.getIntro().contains("{{t+|") && !s.getIntro().contains("véase"))
 			.filter(s -> !getTemplates("trad-arriba", s.getIntro()).isEmpty())
 			.filter(s -> getTemplates("t+", s.getIntro()).isEmpty())
-			.forEach(s -> {
-				String intro = Utils.replaceTemplates(s.getIntro(), "trad-arriba", template -> {
-					return String.format("%s%n%s", template, TRANSLATIONS_COMMENT);
-				});
-				
-				s.setIntro(intro);
-			});
+			.forEach(s -> s.setIntro(Utils.replaceTemplates(s.getIntro(), "trad-arriba", template ->
+				String.format("%s%n%s", template, TRANSLATIONS_COMMENT)
+			)));
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "addTranslationsExampleComment", null);
