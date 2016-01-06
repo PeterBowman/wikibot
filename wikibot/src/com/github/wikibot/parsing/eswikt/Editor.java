@@ -86,8 +86,8 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_CATEGORY_LINKS = Pattern.compile("\\[\\[ *?(?i:category|categoría) *?: *([^\\[\\{\\}]+?) *\\]\\]");
 	private static final Pattern P_FLEX_ETYM = Pattern.compile("([Dd]e|[Vv]éase|[Dd]el verbo|[Ff]lexión de) (?<quot>''|\"|)(\\[{2}[^\\]]+\\]{2}|\\{{2}l\\|[\\w-]+\\|[^|}]+\\}{2})\\k<quot>( y (de )?\\[{2}(-ed|-ing)\\]{2})?");
 	private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
-	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+?(?: *?\\{\\{[^\\{]+?\\}\\})? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
-	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+?)( *?\\{\\{[^\\{]+?\\}\\})?(\\s*?:+)(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+(?: *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
+	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
@@ -4341,6 +4341,7 @@ public class Editor extends AbstractEditor {
 	private static boolean filterSectionsDefNumbering(Section langSection) {
 		final Pattern pParens = Pattern.compile("\\[\\w+\\]|\\(\\w+\\)");
 		final Pattern pNum = Pattern.compile("\\d+");
+		final Pattern pTerm = Pattern.compile("^; *\\d+.*", Pattern.MULTILINE);
 		
 		String lsText = langSection.toString();
 		String strippedText = removeCommentsAndNoWikiText(lsText);
@@ -4357,6 +4358,12 @@ public class Editor extends AbstractEditor {
 			if (pParens.matcher(mImages.group()).find()) {
 				return false;
 			}
+		}
+		
+		String temp = P_TERM.matcher(strippedText).replaceAll("");
+
+		if (pTerm.matcher(temp).find()) {
+			return false;
 		}
 		
 		return Stream.of(
@@ -4771,7 +4778,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "-́fica";
+		String title = "koffie";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
