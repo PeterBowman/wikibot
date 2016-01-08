@@ -1,6 +1,13 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -9,6 +16,8 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.wikiutils.IOUtils;
+
+import com.github.wikibot.utils.Misc;
 
 public final class Catgram {
 	private Data firstMember, secondMember, thirdMember;
@@ -198,317 +207,159 @@ public final class Catgram {
 		private Properties properties;
 		
 		static {
-			Data.ABBREVIATION.properties.type = Type.FEMININE_NOUN;
-			Data.ABBREVIATION.properties.singular = "abreviatura";
-			Data.ABBREVIATION.properties.mascSingularAdj = "de abreviatura";
-			
-			Data.ADJECTIVE.properties.type = Type.MASCULINE_NOUN;
-			Data.ADJECTIVE.properties.singular = "adjetivo";
-			Data.ADJECTIVE.properties.femSingularAdj = "adjetiva";
-			Data.ADJECTIVE.properties.redirects = new String[]{"adjetivos"};
-			
-			Data.NUMERAL_ADJECTIVE.properties.type = Type.COMPOUND;
-			Data.NUMERAL_ADJECTIVE.properties.compoundTerms = new Data[]{Data.ADJECTIVE, Data.NUMERAL};
-			
-			Data.POSSESSIVE_ADJECTIVE.properties.type = Type.COMPOUND;
-			Data.POSSESSIVE_ADJECTIVE.properties.compoundTerms = new Data[]{Data.ADJECTIVE, Data.POSSESSIVE};
-			
-			Data.ADVERB.properties.type = Type.MASCULINE_NOUN;
-			Data.ADVERB.properties.singular = "adverbio";
-			Data.ADVERB.properties.mascSingularAdj = "adverbial";
-			Data.ADVERB.properties.mascPluralAdj = "adverbiales";
-			Data.ADVERB.properties.redirects = new String[]{"adverbios"};
-			
-			Data.AFFIX.properties.type = Type.MASCULINE_NOUN;
-			Data.AFFIX.properties.singular = "afijo";
-			Data.AFFIX.properties.femSingularAdj = "afija";
-			
-			Data.AMBIGUOUS.properties.type = Type.QUALIFIER;
-			Data.AMBIGUOUS.properties.singular = "ambiguo";
-			Data.AMBIGUOUS.properties.femSingularAdj = "ambigua";
-			
-			Data.ANIMATE.properties.type = Type.QUALIFIER;
-			Data.ANIMATE.properties.singular = "animado";
-			Data.ANIMATE.properties.femSingularAdj = "animada";
-			
-			Data.ARTICLE.properties.type = Type.MASCULINE_NOUN;
-			Data.ARTICLE.properties.singular = "artículo";
-			Data.ARTICLE.properties.mascSingularAdj = "de artículo";
-			Data.ARTICLE.properties.redirects = new String[]{"artículos", "articulos", "articulo"};
-			
-			Data.AUXILIARY.properties.type = Type.QUALIFIER;
-			Data.AUXILIARY.properties.singular = "auxiliar";
-			Data.AUXILIARY.properties.plural = "auxiliares";
-			
-			Data.CARDINAL.properties.type = Type.QUALIFIER;
-			Data.CARDINAL.properties.singular = "cardinal";
-			Data.CARDINAL.properties.plural = "cardinales";
-			
-			Data.COLLECTIVE.properties.type = Type.QUALIFIER;
-			Data.COLLECTIVE.properties.singular = "colectivo";
-			Data.COLLECTIVE.properties.femSingularAdj = "colectiva";
-			
-			Data.COMPARATIVE.properties.type = Type.QUALIFIER;
-			Data.COMPARATIVE.properties.singular = "comparativo";
-			Data.COMPARATIVE.properties.femSingularAdj = "comparativa";
-			
-			Data.COMMON.properties.type = Type.QUALIFIER;
-			Data.COMMON.properties.singular = "común";
-			Data.COMMON.properties.plural = "comunes";
-			
-			Data.CONJUNCTION.properties.type = Type.FEMININE_NOUN;
-			Data.CONJUNCTION.properties.singular = "conjunción";
-			Data.CONJUNCTION.properties.plural = "conjunciones";
-			Data.CONJUNCTION.properties.mascSingularAdj = "conjuntivo";
-			Data.CONJUNCTION.properties.femSingularAdj = "conjuntiva";
-			
-			Data.COPULATIVE.properties.type = Type.QUALIFIER;
-			Data.COPULATIVE.properties.singular = "copulativo";
-			Data.COPULATIVE.properties.femSingularAdj = "copulativa";
-			
-			Data.OF_ABLATIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_ABLATIVE.properties.singular = "de ablativo";
-			
-			Data.OF_ACCUSATIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_ACCUSATIVE.properties.singular = "de acusativo";
-			
-			Data.OF_ACCUSATIVE_OR_ABLATIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_ACCUSATIVE_OR_ABLATIVE.properties.singular = "de acusativo";
-			
-			Data.OF_AFFIRMATION.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_AFFIRMATION.properties.singular = "de afirmación";
-			
-			Data.OF_QUANTITY.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_QUANTITY.properties.singular = "de cantidad";
-			
-			Data.OF_DATIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_DATIVE.properties.singular = "de dativo";
-			
-			Data.OF_DOUBT.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_DOUBT.properties.singular = "de duda";
-			
-			Data.OF_GENITIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_GENITIVE.properties.singular = "de genitivo";
-			
-			Data.OF_INDICATIVE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_INDICATIVE.properties.singular = "de indicativo";
-			
-			Data.OF_PLACE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_PLACE.properties.singular = "de lugar";
-			
-			Data.OF_MOOD.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_MOOD.properties.singular = "de modo";
-			
-			Data.OF_NEGATION.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_NEGATION.properties.singular = "de negación";
-			
-			Data.OF_SEQUENCE.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_SEQUENCE.properties.singular = "de orden";
-			
-			Data.OF_TIME.properties.type = Type.INVARIANT_QUALIFIER;
-			Data.OF_TIME.properties.singular = "de tiempo";
-			
-			Data.DEFECTIVE.properties.type = Type.QUALIFIER;
-			Data.DEFECTIVE.properties.singular = "defectivo";
-			Data.DEFECTIVE.properties.femSingularAdj = "defectiva";
-			
-			Data.DEMONSTRATIVE.properties.type = Type.QUALIFIER;
-			Data.DEMONSTRATIVE.properties.singular = "demostrativo";
-			Data.DEMONSTRATIVE.properties.femSingularAdj = "demostrativa";
-			
-			Data.DETERMINATE.properties.type = Type.QUALIFIER;
-			Data.DETERMINATE.properties.singular = "determinado";
-			Data.DETERMINATE.properties.femSingularAdj = "determinada";
-			
-			Data.DUAL.properties.type = Type.QUALIFIER;
-			Data.DUAL.properties.singular = "dual";
-			Data.DUAL.properties.plural = "duales";
-			
-			Data.DIGRAPH.properties.type = Type.MASCULINE_NOUN;
-			Data.DIGRAPH.properties.singular = "dígrafo";
-			Data.DIGRAPH.properties.mascSingularAdj = "de dígrafo";
-			
-			Data.EXCLAMATIVE.properties.type = Type.QUALIFIER;
-			Data.EXCLAMATIVE.properties.singular = "exclamativo";
-			Data.EXCLAMATIVE.properties.femSingularAdj = "exclamativa";
-			
-			Data.FEMININE.properties.type = Type.QUALIFIER;
-			Data.FEMININE.properties.singular = "femenino";
-			Data.FEMININE.properties.femSingularAdj = "femenina";
-			
-			Data.VERB_FORM.properties.type = Type.FEMININE_NOUN;
-			Data.VERB_FORM.properties.singular = "forma verbal";
-			Data.VERB_FORM.properties.plural = "formas verbales";
-			Data.VERB_FORM.properties.mascSingularAdj = "de forma verbal";
-			Data.VERB_FORM.properties.mascPluralAdj = "de formas verbales";
-			
-			Data.IMPERFECTIVE.properties.type = Type.QUALIFIER;
-			Data.IMPERFECTIVE.properties.singular = "imperfectivo";
-			Data.IMPERFECTIVE.properties.femSingularAdj = "imperfectiva";
-			
-			Data.IMPERSONAL.properties.type = Type.QUALIFIER;
-			Data.IMPERSONAL.properties.singular = "impersonal";
-			Data.IMPERSONAL.properties.plural = "impersonales";
-			
-			Data.INANIMATE.properties.type = Type.QUALIFIER;
-			Data.INANIMATE.properties.singular = "inanimado";
-			Data.INANIMATE.properties.femSingularAdj = "inanimada";
-			
-			Data.INDECLINABLE.properties.type = Type.QUALIFIER;
-			Data.INDECLINABLE.properties.singular = "indeclinable";
-			
-			Data.INDEFINITE.properties.type = Type.QUALIFIER;
-			Data.INDEFINITE.properties.singular = "indefinido";
-			Data.INDEFINITE.properties.femSingularAdj = "indefinida";
-			
-			Data.INDETERMINATE.properties.type = Type.QUALIFIER;
-			Data.INDETERMINATE.properties.singular = "indeterminado";
-			Data.INDETERMINATE.properties.femSingularAdj = "indeterminada";
-			
-			Data.INFIX.properties.type = Type.MASCULINE_NOUN;
-			Data.INFIX.properties.singular = "infijo";
-			Data.INFIX.properties.femSingularAdj = "infija";
-			
-			Data.INTERJECTION.properties.type = Type.FEMININE_NOUN;
-			Data.INTERJECTION.properties.singular = "interjección";
-			Data.INTERJECTION.properties.plural = "interjecciones";
-			Data.INTERJECTION.properties.mascSingularAdj = "interjectivo";
-			Data.INTERJECTION.properties.femSingularAdj = "interjectiva";
-			
-			Data.INTERROGATIVE.properties.type = Type.QUALIFIER;
-			Data.INTERROGATIVE.properties.singular = "interrogativo";
-			Data.INTERROGATIVE.properties.femSingularAdj = "interrogativa";
-			
-			Data.INTRANSITIVE.properties.type = Type.QUALIFIER;
-			Data.INTRANSITIVE.properties.singular = "intransitivo";
-			Data.INTRANSITIVE.properties.femSingularAdj = "intransitiva";
-			
-			Data.LETTER.properties.type = Type.FEMININE_NOUN;
-			Data.LETTER.properties.singular = "letra";
-			Data.LETTER.properties.mascSingularAdj = "de letra";
-			
-			Data.PHRASE.properties.type = Type.FEMININE_NOUN;
-			Data.PHRASE.properties.singular = "locución";
-			Data.PHRASE.properties.plural = "locuciones";
-			Data.PHRASE.properties.mascSingularAdj = "locutivo";
-			Data.PHRASE.properties.femSingularAdj = "locutiva";
-			
-			Data.MASCULINE.properties.type = Type.QUALIFIER;
-			Data.MASCULINE.properties.singular = "masculino";
-			Data.MASCULINE.properties.femSingularAdj = "masculina";
-			
-			Data.MODAL.properties.type = Type.QUALIFIER;
-			Data.MODAL.properties.singular = "modal";
-			Data.MODAL.properties.plural = "modales";
-			
-			Data.NEUTER.properties.type = Type.QUALIFIER;
-			Data.NEUTER.properties.singular = "neutro";
-			Data.NEUTER.properties.femSingularAdj = "neutra";
-			
-			Data.NUMERAL.properties.type = Type.MASCULINE_NOUN;
-			Data.NUMERAL.properties.singular = "numeral";
-			Data.NUMERAL.properties.plural = "numerales";
-			
-			Data.ORDINAL.properties.type = Type.QUALIFIER;
-			Data.ORDINAL.properties.singular = "ordinal";
-			Data.ORDINAL.properties.plural = "ordinales";
-			
-			Data.PARTICLE.properties.type = Type.FEMININE_NOUN;
-			Data.PARTICLE.properties.singular = "partícula";
-			Data.PARTICLE.properties.mascSingularAdj = "de partícula";
-			Data.PARTICLE.properties.mascPluralAdj = "de partículas";
-			
-			Data.PERSONAL.properties.type = Type.QUALIFIER;
-			Data.PERSONAL.properties.singular = "personal";
-			Data.PERSONAL.properties.plural = "personales";
-			
-			Data.PLURAL.properties.type = Type.QUALIFIER;
-			Data.PLURAL.properties.singular = "plural";
-			Data.PLURAL.properties.plural = "plurales";
-			
-			Data.POSSESSIVE.properties.type = Type.QUALIFIER;
-			Data.POSSESSIVE.properties.singular = "posesivo";
-			Data.POSSESSIVE.properties.femSingularAdj = "posesiva";
-			Data.POSSESSIVE.properties.redirects = new String[]{"posesivos"};
-			
-			Data.POSTPOSITION.properties.type = Type.FEMININE_NOUN;
-			Data.POSTPOSITION.properties.singular = "postposición";
-			Data.POSTPOSITION.properties.plural = "postposiciones";
-			Data.POSTPOSITION.properties.mascSingularAdj = "postpositivo";
-			Data.POSTPOSITION.properties.femSingularAdj = "postpositiva";
-			
-			Data.PREFIX.properties.type = Type.MASCULINE_NOUN;
-			Data.PREFIX.properties.singular = "prefijo";
-			Data.PREFIX.properties.femSingularAdj = "prefija";
-			
-			Data.PREPOSITION.properties.type = Type.FEMININE_NOUN;
-			Data.PREPOSITION.properties.singular = "preposición";
-			Data.PREPOSITION.properties.plural = "preposiciones";
-			Data.PREPOSITION.properties.mascSingularAdj = "prepositivo";
-			Data.PREPOSITION.properties.femSingularAdj = "prepositiva";
-			Data.PREPOSITION.properties.redirects = new String[]{"preposicion", "preposiciones"};
-			
-			Data.PRONOUN.properties.type = Type.MASCULINE_NOUN;
-			Data.PRONOUN.properties.singular = "pronombre";
-			Data.PRONOUN.properties.mascSingularAdj = "pronominal";
-			Data.PRONOUN.properties.mascPluralAdj = "pronominales";
-			Data.PRONOUN.properties.redirects = new String[]{"pronombres", "pronominal"};
-			
-			Data.POSSESSIVE_PRONOUN.properties.type = Type.COMPOUND;
-			Data.POSSESSIVE_PRONOUN.properties.compoundTerms = new Data[]{Data.PRONOUN, Data.POSSESSIVE};
-			
-			Data.PROPER.properties.type = Type.QUALIFIER;
-			Data.PROPER.properties.singular = "propio";
-			Data.PROPER.properties.femSingularAdj = "propia";
-			
-			Data.PROVERB.properties.type = Type.MASCULINE_NOUN;
-			Data.PROVERB.properties.singular = "refrán";
-			Data.PROVERB.properties.plural = "refranes";
-			Data.PROVERB.properties.mascSingularAdj = "de refrán";
-			Data.PROVERB.properties.mascPluralAdj = "de refrán";
-			
-			Data.RELATIVE.properties.type = Type.QUALIFIER;
-			Data.RELATIVE.properties.singular = "relativo";
-			Data.RELATIVE.properties.femSingularAdj = "relativa";
-			
-			Data.ACRONYM.properties.type = Type.FEMININE_NOUN;
-			Data.ACRONYM.properties.singular = "sigla";
-			Data.ACRONYM.properties.mascSingularAdj = "de sigla";
-			Data.ACRONYM.properties.mascPluralAdj = "de siglas";
-			
-			Data.SINGULAR.properties.type = Type.QUALIFIER;
-			Data.SINGULAR.properties.singular = "singular";
-			Data.SINGULAR.properties.plural = "singulares";
-			
-			Data.SUFFIX.properties.type = Type.MASCULINE_NOUN;
-			Data.SUFFIX.properties.singular = "sufijo";
-			Data.SUFFIX.properties.femSingularAdj = "sufija";
-			
-			Data.FLEXIVE_SUFFIX.properties.type = Type.MASCULINE_NOUN;
-			Data.FLEXIVE_SUFFIX.properties.singular = "sufijo flexivo";
-			Data.FLEXIVE_SUFFIX.properties.plural = "sufijos flexivos";
-			Data.FLEXIVE_SUFFIX.properties.femSingularAdj = "sufija flexiva";
-			Data.FLEXIVE_SUFFIX.properties.femPluralAdj = "sufijas flexivas";
-			
-			Data.NOUN.properties.type = Type.MASCULINE_NOUN;
-			Data.NOUN.properties.singular = "sustantivo";
-			Data.NOUN.properties.femSingularAdj = "sustantiva";
-			Data.NOUN.properties.redirects = new String[]{"sustantivos"};
-			
-			Data.PROPER_NOUN.properties.type = Type.COMPOUND;
-			Data.PROPER_NOUN.properties.compoundTerms = new Data[]{Data.NOUN, Data.PROPER};
-			
-			Data.TRANSITIVE.properties.type = Type.QUALIFIER;
-			Data.TRANSITIVE.properties.singular = "transitivo";
-			Data.TRANSITIVE.properties.femSingularAdj = "transitiva";
-			
-			Data.VERB.properties.type = Type.MASCULINE_NOUN;
-			Data.VERB.properties.singular = "verbo";
-			Data.VERB.properties.mascSingularAdj = "verbal";
-			Data.VERB.properties.mascPluralAdj = "verbales";
-			Data.VERB.properties.redirects = new String[]{"verbos"};
+			Map<String, Properties> map = loadFile("/eswikt-catgram-data.txt");
+			
+			for (Data data : Data.values()) {
+				Properties properties = map.get(data.toString());
+				
+				if (properties != null) {
+					data.properties = properties;
+				}
+			}
+			
+			validateData();
 		}
-
+		
+		private static Map<String, Properties> loadFile(String filename) {
+			String text;
+			
+			try (InputStream is = Catgram.Data.class.getResourceAsStream(filename)) {
+				List<String> lines = org.apache.commons.io.IOUtils.readLines(is, StandardCharsets.UTF_8);
+				// could have used IOUtils.toString(), but newlines are platform-dependent
+				text = String.join("\n", lines);
+			} catch (IOException | NullPointerException e) {
+				throw new MissingResourceException("Error loading resource: " + filename, "Catgram.Data", filename);
+			}
+			
+			String[] items = text.trim().split("\\n{2,}");
+			Map<String, Properties> map = new HashMap<String, Properties>(Data.values().length, 1);
+			
+			for (String item : items) {
+				String[] lines = item.split("\n");
+				String name = lines[0].trim();
+				String[] params = Arrays.copyOfRange(lines, 1, lines.length);
+				map.put(name, buildPropertiesObject(params));
+			}
+			
+			return map;
+		}
+		
+		private static Properties buildPropertiesObject(String[] params) {
+			Properties p = new Properties();
+			
+			Map<String, String> m = Stream.of(params)
+				.map(param -> param.split("="))
+				.filter(tokens -> tokens.length == 2)
+				.collect(Collectors.toMap(
+					tokens -> tokens[0].trim(),
+					tokens -> tokens[1].trim(),
+					(a, b) -> a
+				));
+			
+			String type = m.getOrDefault("type", null);
+			
+			p.type = Stream.of(Type.values())
+				.filter(t -> t.toString().equals(type))
+				.findAny()
+				.orElse(null);
+			
+			p.mascSingularAdj = m.getOrDefault("m sg", null);
+			
+			if (Type.INVARIANT_QUALIFIER.equals(p.type)) {
+				p.femSingularAdj = p.mascSingularAdj;
+				p.mascPluralAdj = p.mascSingularAdj;
+				p.femPluralAdj = p.mascSingularAdj;
+			} else {
+				p.femSingularAdj = m.getOrDefault("f sg", null);
+				p.mascPluralAdj = m.getOrDefault("m pl", null);
+				p.femPluralAdj = m.getOrDefault("f pl", null);
+			}
+			
+			p.singular = m.getOrDefault("sing", p.mascSingularAdj);
+			p.plural = m.getOrDefault("plur", p.mascPluralAdj);
+			
+			if (m.containsKey("cterms")) {
+				p.compoundTerms = Stream.of(m.get("cterms").split(", "))
+					.map(token -> Stream.of(Data.values())
+						.filter(data -> data.toString().equals(token))
+						.findAny()
+						.orElse(null)
+					)
+					.toArray(Data[]::new); 
+			}
+			
+			if (m.containsKey("redirects")) {
+				p.redirects = m.get("redirects").split(", ");
+			}
+			
+			return p;
+		}
+		
+		private static void validateData() {
+			for (Data data : Data.values()) {
+				Properties properties = data.properties;
+				
+				if (properties == null) {
+					throw new Error("Properties object is null: " + data.toString());
+				}
+				
+				if (properties.type == null) {
+					throw new Error("Type property is null: " + data.toString());
+				}
+				
+				switch (properties.type) {
+					case MASCULINE_NOUN:
+					case FEMININE_NOUN:
+					case QUALIFIER:
+					case INVARIANT_QUALIFIER:
+					case COMPOUND:
+						break;	
+					default:
+						throw new Error("Unrecognized Type property (" + properties.type + "): " + data.toString());
+				}
+				
+				if (properties.type == Type.COMPOUND) {
+					if (properties.compoundTerms == null) {
+						throw new Error("compoundTerms property is null: " + data.toString());
+					}
+					
+					if (properties.compoundTerms.length < 2) {
+						throw new Error("compoundTerms property array length is < 2: " + data.toString());
+					}
+					
+					continue;
+				}
+				
+				if (properties.singular == null || properties.singular.isEmpty()) {
+					throw new Error("singular property is null or empty: " + data.toString());
+				}
+				
+				if (properties.plural == null || properties.plural.isEmpty()) {
+					throw new Error("plural property is null or empty: " + data.toString());
+				}
+				
+				if (properties.mascSingularAdj == null || properties.mascSingularAdj.isEmpty()) {
+					throw new Error("mascSingularAdj property is null or empty: " + data.toString());
+				}
+				
+				if (properties.femSingularAdj == null || properties.femSingularAdj.isEmpty()) {
+					throw new Error("femSingularAdj property is null or empty: " + data.toString());
+				}
+				
+				if (properties.mascPluralAdj == null || properties.mascPluralAdj.isEmpty()) {
+					throw new Error("mascPluralAdj property is null or empty: " + data.toString());
+				}
+				
+				if (properties.femPluralAdj == null || properties.femPluralAdj.isEmpty()) {
+					throw new Error("femPluralAdj property is null or empty: " + data.toString());
+				}
+				
+				if (properties.redirects != null && properties.redirects.length == 0) {
+					throw new Error("redirects property array length is 0: " + data.toString());
+				}
+			}
+		}
+		
 		private Data() {
 			properties = new Properties();
 		}
@@ -528,14 +379,6 @@ public final class Catgram {
 		public String getPlural() {
 			if (properties.type == Type.COMPOUND) {
 				return retrieveCompoundData(Data::getPlural);
-			}
-			
-			if (properties.type == Type.INVARIANT_QUALIFIER) {
-				return getSingular();
-			}
-			
-			if (properties.plural == null) {
-				return String.format("%ss", getSingular());
 			} else {
 				return properties.plural;
 			}
@@ -544,14 +387,6 @@ public final class Catgram {
 		public String getMasculineSingularAdjective() {
 			if (properties.type == Type.COMPOUND) {
 				return retrieveCompoundData(Data::getMasculineSingularAdjective);
-			}
-			
-			if (properties.type == Type.INVARIANT_QUALIFIER) {
-				return getSingular();
-			}
-			
-			if (properties.mascSingularAdj == null) {
-				return getSingular();
 			} else {
 				return properties.mascSingularAdj;
 			}
@@ -560,14 +395,6 @@ public final class Catgram {
 		public String getFeminineSingularAdjective() {
 			if (properties.type == Type.COMPOUND) {
 				return retrieveCompoundData(Data::getFeminineSingularAdjective);
-			}
-			
-			if (properties.type == Type.INVARIANT_QUALIFIER) {
-				return getSingular();
-			}
-			
-			if (properties.femSingularAdj == null) {
-				return getMasculineSingularAdjective();
 			} else {
 				return properties.femSingularAdj;
 			}
@@ -576,18 +403,6 @@ public final class Catgram {
 		public String getMasculinePluralAdjective() {
 			if (properties.type == Type.COMPOUND) {
 				return retrieveCompoundData(Data::getMasculinePluralAdjective);
-			}
-			
-			if (properties.type == Type.INVARIANT_QUALIFIER) {
-				return getSingular();
-			}
-			
-			if (properties.mascPluralAdj == null) {
-				if (properties.mascSingularAdj == null) {
-					return getPlural();
-				} else {
-					return String.format("%ss", properties.mascSingularAdj);
-				}
 			} else {
 				return properties.mascPluralAdj;
 			}
@@ -596,18 +411,6 @@ public final class Catgram {
 		public String getFemininePluralAdjective() {
 			if (properties.type == Type.COMPOUND) {
 				return retrieveCompoundData(Data::getFemininePluralAdjective);
-			}
-			
-			if (properties.type == Type.INVARIANT_QUALIFIER) {
-				return getSingular();
-			}
-			
-			if (properties.femPluralAdj == null) {
-				if (properties.femSingularAdj == null) {
-					return getMasculinePluralAdjective();
-				} else {
-					return String.format("%ss", properties.femSingularAdj);
-				}
 			} else {
 				return properties.femPluralAdj;
 			}
@@ -744,29 +547,65 @@ public final class Catgram {
 		return sb.toString();
 	}
 	
+	static void printDataFile(String[] args) throws IOException {
+		StringBuilder sb = new StringBuilder(10000);
+		
+		for (Data data : Data.values()) {
+			sb.append(data.toString()).append("\n");
+			sb.append("type = ").append(data.getType().toString()).append("\n");
+			
+			if (!data.getType().toString().equals("COMPOUND")) {
+				if (!data.getType().toString().contains("QUALIFIER")) {
+					sb.append("sing = ").append(data.getSingular()).append("\n");
+					sb.append("plur = ").append(data.getPlural()).append("\n");
+				}
+				
+				sb.append("m sg = ").append(data.getMasculineSingularAdjective()).append("\n");
+				
+				if (!data.getType().toString().equals("INVARIANT_QUALIFIER")) {
+					sb.append("f sg = ").append(data.getFeminineSingularAdjective()).append("\n");
+					sb.append("m pl = ").append(data.getMasculinePluralAdjective()).append("\n");
+					sb.append("f pl = ").append(data.getFemininePluralAdjective()).append("\n");
+				}
+			} else {
+				Data[] ct = data.getCompoundTerms();
+				String temp = Stream.of(ct).map(t -> t.toString()).collect(Collectors.joining(", "));
+				sb.append("cterms = ").append(temp).append("\n");
+			}
+			
+			if (data.getRedirects() != null) {
+				String[] redirs = data.getRedirects();
+				String temp = String.join(", ", redirs);
+				sb.append("redirects = ").append(temp).append("\n");
+			}
+			
+			sb.append("\n");
+		}
+		
+		IOUtils.writeToFile(sb.toString(), "./data/test.txt");
+	}
+	
 	public static void main(String[] args) throws IOException {
 		StringBuilder sb = new StringBuilder(10000);
 		
 		for (Data data : Data.values()) {
-			sb.append(data.toString());
-			sb.append(", ");
-			sb.append(data.getType().toString());
-			sb.append("\n");
-			sb.append(data.getSingular());
-			sb.append("\n");
-			sb.append(data.getPlural());
-			sb.append("\n");
-			sb.append(data.getMasculineSingularAdjective());
-			sb.append("\n");
-			sb.append(data.getFeminineSingularAdjective());
-			sb.append("\n");
-			sb.append(data.getMasculinePluralAdjective());
-			sb.append("\n");
-			sb.append(data.getFemininePluralAdjective());
-			sb.append("\n");
+			sb.append(data.toString()).append(", ").append(data.getType().toString()).append("\n");
+			sb.append(data.getSingular()).append("\n");
+			sb.append(data.getPlural()).append("\n");
+			sb.append(data.getMasculineSingularAdjective()).append("\n");
+			sb.append(data.getFeminineSingularAdjective()).append("\n");
+			sb.append(data.getMasculinePluralAdjective()).append("\n");
+			sb.append(data.getFemininePluralAdjective()).append("\n");
+			
+			if (data.getRedirects() != null) {
+				sb.append(Arrays.asList(data.getRedirects()));
+				sb.append("\n");
+			}
+			
 			sb.append("\n");
 		}
 		
+		Misc.serialize(sb.toString(), "./data/eswikt.catgram.ser");
 		IOUtils.writeToFile(sb.toString(), "./data/eswikt.catgram.txt");
 	}
 }

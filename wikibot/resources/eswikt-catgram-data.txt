@@ -1,0 +1,526 @@
+ABBREVIATION
+type = FEMININE_NOUN
+sing = abreviatura
+plur = abreviaturas
+m sg = de abreviatura
+f sg = de abreviatura
+m pl = de abreviaturas
+f pl = de abreviaturas
+
+ADJECTIVE
+type = MASCULINE_NOUN
+sing = adjetivo
+plur = adjetivos
+m sg = adjetivo
+f sg = adjetiva
+m pl = adjetivos
+f pl = adjetivas
+redirects = adjetivos
+
+NUMERAL_ADJECTIVE
+type = COMPOUND
+cterms = ADJECTIVE, NUMERAL
+
+POSSESSIVE_ADJECTIVE
+type = COMPOUND
+cterms = ADJECTIVE, POSSESSIVE
+
+ADVERB
+type = MASCULINE_NOUN
+sing = adverbio
+plur = adverbios
+m sg = adverbial
+f sg = adverbial
+m pl = adverbiales
+f pl = adverbiales
+redirects = adverbios
+
+AFFIX
+type = MASCULINE_NOUN
+sing = afijo
+plur = afijos
+m sg = afijo
+f sg = afija
+m pl = afijos
+f pl = afijas
+
+AMBIGUOUS
+type = QUALIFIER
+m sg = ambiguo
+f sg = ambigua
+m pl = ambiguos
+f pl = ambiguas
+
+ANIMATE
+type = QUALIFIER
+m sg = animado
+f sg = animada
+m pl = animados
+f pl = animadas
+
+ARTICLE
+type = MASCULINE_NOUN
+sing = artículo
+plur = artículos
+m sg = de artículo
+f sg = de artículo
+m pl = de artículos
+f pl = de artículos
+redirects = artículos, articulos, articulo
+
+AUXILIARY
+type = QUALIFIER
+m sg = auxiliar
+f sg = auxiliar
+m pl = auxiliares
+f pl = auxiliares
+
+CARDINAL
+type = QUALIFIER
+m sg = cardinal
+f sg = cardinal
+m pl = cardinales
+f pl = cardinales
+
+COLLECTIVE
+type = QUALIFIER
+m sg = colectivo
+f sg = colectiva
+m pl = colectivos
+f pl = colectivas
+
+COMPARATIVE
+type = QUALIFIER
+m sg = comparativo
+f sg = comparativa
+m pl = comparativos
+f pl = comparativas
+
+COMMON
+type = QUALIFIER
+m sg = común
+f sg = común
+m pl = comunes
+f pl = comunes
+
+CONJUNCTION
+type = FEMININE_NOUN
+sing = conjunción
+plur = conjunciones
+m sg = conjuntivo
+f sg = conjuntiva
+m pl = conjuntivos
+f pl = conjuntivas
+
+COPULATIVE
+type = QUALIFIER
+m sg = copulativo
+f sg = copulativa
+m pl = copulativos
+f pl = copulativas
+
+OF_ABLATIVE
+type = INVARIANT_QUALIFIER
+m sg = de ablativo
+
+OF_ACCUSATIVE
+type = INVARIANT_QUALIFIER
+m sg = de acusativo
+
+OF_ACCUSATIVE_OR_ABLATIVE
+type = INVARIANT_QUALIFIER
+m sg = de acusativo
+
+OF_AFFIRMATION
+type = INVARIANT_QUALIFIER
+m sg = de afirmación
+
+OF_QUANTITY
+type = INVARIANT_QUALIFIER
+m sg = de cantidad
+
+OF_DATIVE
+type = INVARIANT_QUALIFIER
+m sg = de dativo
+
+OF_DOUBT
+type = INVARIANT_QUALIFIER
+m sg = de duda
+
+OF_GENITIVE
+type = INVARIANT_QUALIFIER
+m sg = de genitivo
+
+OF_INDICATIVE
+type = INVARIANT_QUALIFIER
+m sg = de indicativo
+
+OF_PLACE
+type = INVARIANT_QUALIFIER
+m sg = de lugar
+
+OF_MOOD
+type = INVARIANT_QUALIFIER
+m sg = de modo
+
+OF_NEGATION
+type = INVARIANT_QUALIFIER
+m sg = de negación
+
+OF_SEQUENCE
+type = INVARIANT_QUALIFIER
+m sg = de orden
+
+OF_TIME
+type = INVARIANT_QUALIFIER
+m sg = de tiempo
+
+DEFECTIVE
+type = QUALIFIER
+m sg = defectivo
+f sg = defectiva
+m pl = defectivos
+f pl = defectivas
+
+DEMONSTRATIVE
+type = QUALIFIER
+m sg = demostrativo
+f sg = demostrativa
+m pl = demostrativos
+f pl = demostrativas
+
+DETERMINATE
+type = QUALIFIER
+m sg = determinado
+f sg = determinada
+m pl = determinados
+f pl = determinadas
+
+DUAL
+type = QUALIFIER
+m sg = dual
+f sg = dual
+m pl = duales
+f pl = duales
+
+DIGRAPH
+type = MASCULINE_NOUN
+sing = dígrafo
+plur = dígrafos
+m sg = de dígrafo
+f sg = de dígrafo
+m pl = de dígrafos
+f pl = de dígrafos
+
+EXCLAMATIVE
+type = QUALIFIER
+m sg = exclamativo
+f sg = exclamativa
+m pl = exclamativos
+f pl = exclamativas
+
+FEMININE
+type = QUALIFIER
+m sg = femenino
+f sg = femenina
+m pl = femeninos
+f pl = femeninas
+
+VERB_FORM
+type = FEMININE_NOUN
+sing = forma verbal
+plur = formas verbales
+m sg = de forma verbal
+f sg = de forma verbal
+m pl = de formas verbales
+f pl = de formas verbales
+
+IMPERFECTIVE
+type = QUALIFIER
+m sg = imperfectivo
+f sg = imperfectiva
+m pl = imperfectivos
+f pl = imperfectivas
+
+IMPERSONAL
+type = QUALIFIER
+m sg = impersonal
+f sg = impersonal
+m pl = impersonales
+f pl = impersonales
+
+INANIMATE
+type = QUALIFIER
+m sg = inanimado
+f sg = inanimada
+m pl = inanimados
+f pl = inanimadas
+
+INDECLINABLE
+type = QUALIFIER
+m sg = indeclinable
+f sg = indeclinable
+m pl = indeclinables
+f pl = indeclinables
+
+INDEFINITE
+type = QUALIFIER
+m sg = indefinido
+f sg = indefinida
+m pl = indefinidos
+f pl = indefinidas
+
+INDETERMINATE
+type = QUALIFIER
+m sg = indeterminado
+f sg = indeterminada
+m pl = indeterminados
+f pl = indeterminadas
+
+INFIX
+type = MASCULINE_NOUN
+sing = infijo
+plur = infijos
+m sg = infijo
+f sg = infija
+m pl = infijos
+f pl = infijas
+
+INTERJECTION
+type = FEMININE_NOUN
+sing = interjección
+plur = interjecciones
+m sg = interjectivo
+f sg = interjectiva
+m pl = interjectivos
+f pl = interjectivas
+
+INTERROGATIVE
+type = QUALIFIER
+m sg = interrogativo
+f sg = interrogativa
+m pl = interrogativos
+f pl = interrogativas
+
+INTRANSITIVE
+type = QUALIFIER
+m sg = intransitivo
+f sg = intransitiva
+m pl = intransitivos
+f pl = intransitivas
+
+LETTER
+type = FEMININE_NOUN
+sing = letra
+plur = letras
+m sg = de letra
+f sg = de letra
+m pl = de letras
+f pl = de letras
+
+PHRASE
+type = FEMININE_NOUN
+sing = locución
+plur = locuciones
+m sg = locutivo
+f sg = locutiva
+m pl = locutivos
+f pl = locutivas
+
+MASCULINE
+type = QUALIFIER
+m sg = masculino
+f sg = masculina
+m pl = masculinos
+f pl = masculinas
+
+MODAL
+type = QUALIFIER
+m sg = modal
+f sg = modal
+m pl = modales
+f pl = modales
+
+NEUTER
+type = QUALIFIER
+m sg = neutro
+f sg = neutra
+m pl = neutros
+f pl = neutras
+
+NUMERAL
+type = MASCULINE_NOUN
+sing = numeral
+plur = numerales
+m sg = numeral
+f sg = numeral
+m pl = numerales
+f pl = numerales
+
+ORDINAL
+type = QUALIFIER
+m sg = ordinal
+f sg = ordinal
+m pl = ordinales
+f pl = ordinales
+
+PARTICLE
+type = FEMININE_NOUN
+sing = partícula
+plur = partículas
+m sg = de partícula
+f sg = de partícula
+m pl = de partículas
+f pl = de partículas
+
+PERSONAL
+type = QUALIFIER
+m sg = personal
+f sg = personal
+m pl = personales
+f pl = personales
+
+PLURAL
+type = QUALIFIER
+m sg = plural
+f sg = plural
+m pl = plurales
+f pl = plurales
+
+POSSESSIVE
+type = QUALIFIER
+m sg = posesivo
+f sg = posesiva
+m pl = posesivos
+f pl = posesivas
+redirects = posesivos
+
+POSTPOSITION
+type = FEMININE_NOUN
+sing = postposición
+plur = postposiciones
+m sg = postpositivo
+f sg = postpositiva
+m pl = postpositivos
+f pl = postpositivas
+
+PREFIX
+type = MASCULINE_NOUN
+sing = prefijo
+plur = prefijos
+m sg = prefijo
+f sg = prefija
+m pl = prefijos
+f pl = prefijas
+
+PREPOSITION
+type = FEMININE_NOUN
+sing = preposición
+plur = preposiciones
+m sg = prepositivo
+f sg = prepositiva
+m pl = prepositivos
+f pl = prepositivas
+redirects = preposicion, preposiciones
+
+PRONOUN
+type = MASCULINE_NOUN
+sing = pronombre
+plur = pronombres
+m sg = pronominal
+f sg = pronominal
+m pl = pronominales
+f pl = pronominales
+redirects = pronombres, pronominal
+
+POSSESSIVE_PRONOUN
+type = COMPOUND
+cterms = PRONOUN, POSSESSIVE
+
+PROPER
+type = QUALIFIER
+m sg = propio
+f sg = propia
+m pl = propios
+f pl = propias
+
+PROVERB
+type = MASCULINE_NOUN
+sing = refrán
+plur = refranes
+m sg = de refrán
+f sg = de refrán
+m pl = de refrán
+f pl = de refrán
+
+RELATIVE
+type = QUALIFIER
+m sg = relativo
+f sg = relativa
+m pl = relativos
+f pl = relativas
+
+ACRONYM
+type = FEMININE_NOUN
+sing = sigla
+plur = siglas
+m sg = de sigla
+f sg = de sigla
+m pl = de siglas
+f pl = de siglas
+
+SINGULAR
+type = QUALIFIER
+m sg = singular
+f sg = singular
+m pl = singulares
+f pl = singulares
+
+SUFFIX
+type = MASCULINE_NOUN
+sing = sufijo
+plur = sufijos
+m sg = sufijo
+f sg = sufija
+m pl = sufijos
+f pl = sufijas
+
+FLEXIVE_SUFFIX
+type = MASCULINE_NOUN
+sing = sufijo flexivo
+plur = sufijos flexivos
+m sg = sufijo flexivo
+f sg = sufija flexiva
+m pl = sufijos flexivos
+f pl = sufijas flexivas
+
+NOUN
+type = MASCULINE_NOUN
+sing = sustantivo
+plur = sustantivos
+m sg = sustantivo
+f sg = sustantiva
+m pl = sustantivos
+f pl = sustantivas
+redirects = sustantivos
+
+PROPER_NOUN
+type = COMPOUND
+cterms = NOUN, PROPER
+
+TRANSITIVE
+type = QUALIFIER
+m sg = transitivo
+f sg = transitiva
+m pl = transitivos
+f pl = transitivas
+
+VERB
+type = MASCULINE_NOUN
+sing = verbo
+plur = verbos
+m sg = verbal
+f sg = verbal
+m pl = verbales
+f pl = verbales
+redirects = verbos
