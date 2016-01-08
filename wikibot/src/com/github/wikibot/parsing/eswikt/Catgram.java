@@ -1,13 +1,9 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -17,7 +13,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.wikiutils.IOUtils;
 
-import com.github.wikibot.utils.Misc;
+import com.github.wikibot.parsing.Utils;
 
 public final class Catgram {
 	private Data firstMember, secondMember, thirdMember;
@@ -221,16 +217,7 @@ public final class Catgram {
 		}
 		
 		private static Map<String, Properties> loadFile(String filename) {
-			String text;
-			
-			try (InputStream is = Catgram.Data.class.getResourceAsStream(filename)) {
-				List<String> lines = org.apache.commons.io.IOUtils.readLines(is, StandardCharsets.UTF_8);
-				// could have used IOUtils.toString(), but newlines are platform-dependent
-				text = String.join("\n", lines);
-			} catch (IOException | NullPointerException e) {
-				throw new MissingResourceException("Error loading resource: " + filename, "Catgram.Data", filename);
-			}
-			
+			String text = Utils.loadResource(filename, Catgram.Data.class);
 			String[] items = text.trim().split("\\n{2,}");
 			Map<String, Properties> map = new HashMap<String, Properties>(Data.values().length, 1);
 			
@@ -252,8 +239,7 @@ public final class Catgram {
 				.filter(tokens -> tokens.length == 2)
 				.collect(Collectors.toMap(
 					tokens -> tokens[0].trim(),
-					tokens -> tokens[1].trim(),
-					(a, b) -> a
+					tokens -> tokens[1].trim()
 				));
 			
 			String type = m.getOrDefault("type", null);
@@ -279,9 +265,9 @@ public final class Catgram {
 			p.plural = m.getOrDefault("plur", p.mascPluralAdj);
 			
 			if (m.containsKey("cterms")) {
-				p.compoundTerms = Stream.of(m.get("cterms").split(", "))
+				p.compoundTerms = Stream.of(m.get("cterms").split(",\\s*"))
 					.map(token -> Stream.of(Data.values())
-						.filter(data -> data.toString().equals(token))
+						.filter(data -> data.name().equals(token))
 						.findAny()
 						.orElse(null)
 					)
@@ -289,7 +275,7 @@ public final class Catgram {
 			}
 			
 			if (m.containsKey("redirects")) {
-				p.redirects = m.get("redirects").split(", ");
+				p.redirects = m.get("redirects").split(",\\s*");
 			}
 			
 			return p;
@@ -582,7 +568,7 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		IOUtils.writeToFile(sb.toString(), "./data/test.txt");
+		IOUtils.writeToFile(sb.toString(), "./data/eswikt-catgram.txt");
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -605,7 +591,6 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		Misc.serialize(sb.toString(), "./data/eswikt.catgram.ser");
-		IOUtils.writeToFile(sb.toString(), "./data/eswikt.catgram.txt");
+		IOUtils.writeToFile(sb.toString(), "./data/eswikt-catgram-output.txt");
 	}
 }

@@ -1,10 +1,14 @@
 package com.github.wikibot.parsing;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -13,6 +17,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Range;
 import org.wikiutils.ParseUtils;
 
@@ -221,5 +226,25 @@ public final class Utils {
 		}
 
 		return index;
+	}
+	
+	public static String loadResource(String filename, Class<?> caller) {
+		try (InputStream is = caller.getResourceAsStream(filename)) {
+			List<String> lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
+			// could have used IOUtils.toString(), but newlines are platform-dependent
+			return String.join("\n", lines);
+		} catch (IOException | NullPointerException e) {
+			throw new MissingResourceException("Error loading resource: " + filename, caller.getName(), filename);
+		}
+	}
+	
+	public static Stream<String> readLinesFromResource(String filename, Class<?> caller) {
+		try (InputStream is = caller.getResourceAsStream(filename)) {
+			return IOUtils.readLines(is, StandardCharsets.UTF_8).stream()
+				.map(String::trim)
+				.filter(line -> !line.isEmpty() && !line.startsWith("#"));
+		} catch (IOException | NullPointerException e) {
+			throw new MissingResourceException("Error loading resource: " + filename, caller.getName(), filename);
+		}
 	}
 }

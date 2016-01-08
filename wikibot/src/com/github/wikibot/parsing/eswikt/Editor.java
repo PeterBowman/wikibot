@@ -309,192 +309,27 @@ public class Editor extends AbstractEditor {
 	}
 	
 	static {
-		// TODO: expand per [[Especial:TodasLasRedirecciones]]
-		// TODO: delete obsolete templates
+		TMPL_ALIAS_MAP = Utils.readLinesFromResource("/eswikt-template-redirects.txt", Editor.class)
+			.map(line -> line.split("\\s*=\\s*"))
+			.filter(tokens -> tokens.length == 2)
+			.collect(Collectors.toMap(
+				tokens -> tokens[0],
+				tokens -> tokens[1]
+			));
 		
-		TMPL_ALIAS_MAP = new HashMap<>(150, 1);
-		
-		TMPL_ALIAS_MAP.put("Pronunciación", "pronunciación");
-		TMPL_ALIAS_MAP.put("Etimología", "etimología");
-		TMPL_ALIAS_MAP.put("etimologia", "etimología");
-		TMPL_ALIAS_MAP.put("etyl", "etimología");
-		TMPL_ALIAS_MAP.put("Desambiguación", "desambiguación");
-		TMPL_ALIAS_MAP.put("Desambiguacion", "desambiguación");
-		TMPL_ALIAS_MAP.put("desambiguacion", "desambiguación");
-		TMPL_ALIAS_MAP.put("desamb", "desambiguación");
-		TMPL_ALIAS_MAP.put("Desambig", "desambiguación");
-		TMPL_ALIAS_MAP.put("Notadesambiguación", "desambiguación");
-		TMPL_ALIAS_MAP.put("Desambiguado", "desambiguación");
-		TMPL_ALIAS_MAP.put("grafías alternativas", "grafía alternativa");
-		TMPL_ALIAS_MAP.put("ucf", "plm");
-		TMPL_ALIAS_MAP.put("Anagramas", "anagrama");
-		TMPL_ALIAS_MAP.put("Parónimos", "parónimo");
-		TMPL_ALIAS_MAP.put("tit ref", "título referencias");
-		TMPL_ALIAS_MAP.put("sustantivo masculino y femenino", "sustantivo femenino y masculino");
-		TMPL_ALIAS_MAP.put("acrónimo", "sigla");
-		TMPL_ALIAS_MAP.put("redireccion suave", "redirección suave");
-		
-		TMPL_ALIAS_MAP.put("DRAE1914", "DLC1914");
-		TMPL_ALIAS_MAP.put("DUE", "MaríaMoliner");
-		TMPL_ALIAS_MAP.put("Moliner", "MaríaMoliner");
-		TMPL_ALIAS_MAP.put("NDLC1866", "Labernia1866");
-		TMPL_ALIAS_MAP.put("dlc1914", "DLC1914");
-		TMPL_ALIAS_MAP.put("dme1831", "DME1831");
-		TMPL_ALIAS_MAP.put("dme1864", "DME1864");
-		TMPL_ALIAS_MAP.put("dp2002", "DP2002");
-		TMPL_ALIAS_MAP.put("drae1914", "DLC1914");
-		
-		// TODO: these are not transcluded, analyze "leng" params instead
-		// TODO: move to langTemplateParams()
-		
-		TMPL_ALIAS_MAP.put("aka", "ak");
-		TMPL_ALIAS_MAP.put("allentiac", "qbt");
-		TMPL_ALIAS_MAP.put("arg", "an");
-		TMPL_ALIAS_MAP.put("aus-dar", "0hk");
-		TMPL_ALIAS_MAP.put("ava", "av");
-		TMPL_ALIAS_MAP.put("ave", "ae");
-		TMPL_ALIAS_MAP.put("bak", "ba");
-		TMPL_ALIAS_MAP.put("bam", "bm");
-		TMPL_ALIAS_MAP.put("bat-smg", "sgs");
-		TMPL_ALIAS_MAP.put("be-x-old", "be");
-		TMPL_ALIAS_MAP.put("bod", "bo");
-		TMPL_ALIAS_MAP.put("ces", "cs");
-		TMPL_ALIAS_MAP.put("cha", "ch");
-		TMPL_ALIAS_MAP.put("che", "ce");
-		TMPL_ALIAS_MAP.put("chu", "cu");
-		TMPL_ALIAS_MAP.put("chv", "cv");
-		TMPL_ALIAS_MAP.put("cor", "kw");
-		TMPL_ALIAS_MAP.put("cos", "co");
-		TMPL_ALIAS_MAP.put("cre", "cr");
-		TMPL_ALIAS_MAP.put("cym", "cy");
-		TMPL_ALIAS_MAP.put("div", "dv");
-		TMPL_ALIAS_MAP.put("ewe", "ee");
-		TMPL_ALIAS_MAP.put("fas", "fa");
-		TMPL_ALIAS_MAP.put("fiu-vro", "vro");
-		TMPL_ALIAS_MAP.put("ful", "ff");
-		TMPL_ALIAS_MAP.put("gkm", "qgk");
-		TMPL_ALIAS_MAP.put("gla", "gd");
-		TMPL_ALIAS_MAP.put("gle", "ga");
-		TMPL_ALIAS_MAP.put("glv", "gv");
-		TMPL_ALIAS_MAP.put("her", "hz");
-		TMPL_ALIAS_MAP.put("hmo", "ho");
-		TMPL_ALIAS_MAP.put("hrv", "hr");
-		TMPL_ALIAS_MAP.put("hye", "hy");
-		TMPL_ALIAS_MAP.put("ind", "id");
-		TMPL_ALIAS_MAP.put("jav", "jv");
-		TMPL_ALIAS_MAP.put("kal", "kl");
-		TMPL_ALIAS_MAP.put("kat", "ka");
-		TMPL_ALIAS_MAP.put("lzh", "zh-classical");
-		TMPL_ALIAS_MAP.put("mah", "mh");
-		TMPL_ALIAS_MAP.put("mlt", "mt");
-		TMPL_ALIAS_MAP.put("mri", "mi");
-		TMPL_ALIAS_MAP.put("nb", "no");
-		TMPL_ALIAS_MAP.put("nrm", "nrf");
-		TMPL_ALIAS_MAP.put("oji", "oj");
-		TMPL_ALIAS_MAP.put("ood", "nai");
-		TMPL_ALIAS_MAP.put("protoindoeuropeo", "ine");
-		TMPL_ALIAS_MAP.put("prv", "oc");
-		TMPL_ALIAS_MAP.put("roa-oca", "oca");
-		TMPL_ALIAS_MAP.put("roa-rup", "rup");
-		TMPL_ALIAS_MAP.put("roa-tara", "roa-tar");
-		TMPL_ALIAS_MAP.put("roh", "rm");
-		TMPL_ALIAS_MAP.put("sna", "sn");
-		TMPL_ALIAS_MAP.put("srd", "sc");
-		TMPL_ALIAS_MAP.put("srp", "sr");
-		TMPL_ALIAS_MAP.put("ssw", "ss");
-		TMPL_ALIAS_MAP.put("tsz", "pua");
-		TMPL_ALIAS_MAP.put("yue", "zh-yue");
-		TMPL_ALIAS_MAP.put("zh-cn", "zh");
-		TMPL_ALIAS_MAP.put("zh-min-nan", "nan");
-		TMPL_ALIAS_MAP.put("zh-wuu", "wuu");
-		
-		TMPL_ALIAS_MAP.put("AR", "AR-ES");
-		TMPL_ALIAS_MAP.put("CA", "CA-ES");
-		TMPL_ALIAS_MAP.put("CHN", "CMN-ES");
-		TMPL_ALIAS_MAP.put("EN", "EN-ES");
-		TMPL_ALIAS_MAP.put("EU", "EU-ES");
-		TMPL_ALIAS_MAP.put("FR", "FR-ES");
-		TMPL_ALIAS_MAP.put("GL", "GL-ES");
-		TMPL_ALIAS_MAP.put("IT", "IT-ES");
-		TMPL_ALIAS_MAP.put("LA", "LA-ES");
-		TMPL_ALIAS_MAP.put("MN", "MN-ES");
-		TMPL_ALIAS_MAP.put("PL", "PL-ES");
-		TMPL_ALIAS_MAP.put("PT", "PT-ES");
-		TMPL_ALIAS_MAP.put("QU", "QU-ES");
-		
-		TMPL_ALIAS_MAP.put("Allentiac-ES", "QBT-ES");
-		TMPL_ALIAS_MAP.put("BAT-SMG-ES", "SGS-ES");
-		TMPL_ALIAS_MAP.put("CYM-ES", "CY-ES");
-		TMPL_ALIAS_MAP.put("FIU-VRO-ES", "VRO-ES");
-		TMPL_ALIAS_MAP.put("FRS-ES", "STQ-ES");
-		TMPL_ALIAS_MAP.put("LZH-ES", "ZH-CLASSICAL-ES");
-		TMPL_ALIAS_MAP.put("MYA-ES", "MY-ES");
-		TMPL_ALIAS_MAP.put("NLD-ES", "NL-ES");
-		TMPL_ALIAS_MAP.put("OFR-ES", "FRO-ES");
-		TMPL_ALIAS_MAP.put("PROTOPOLINESIO-ES", "POZ-POL-ES");
-		TMPL_ALIAS_MAP.put("Protopolinesio-ES", "POZ-POL-ES");
-		TMPL_ALIAS_MAP.put("PRV-ES", "OC-ES");
-		TMPL_ALIAS_MAP.put("TGL-ES", "TL-ES");
-		TMPL_ALIAS_MAP.put("TOG-ES", "TO-ES");
-		TMPL_ALIAS_MAP.put("TSZ-ES", "PUA-ES");
-		TMPL_ALIAS_MAP.put("YUE-ES", "ZH-YUE-ES");
-		TMPL_ALIAS_MAP.put("ZH-ES", "CMN-ES");
-		
-		TMPL_ALIAS_MAP.put("Indoeuropeo", "INE-ES");
-		TMPL_ALIAS_MAP.put("castellanoantiguo", "OSP-ES");
-		TMPL_ALIAS_MAP.put("Aymará-Español", "AY-ES");
-		TMPL_ALIAS_MAP.put("Guaraní-Español", "GN-ES");
-		TMPL_ALIAS_MAP.put("Náhuatl-Español", "NAH-ES");
-		TMPL_ALIAS_MAP.put("Quechua-Español", "QU-ES");
-		
-		TMPL_ALIAS_MAP.put("Caracter oriental", "Carácter oriental");
-	}
-	
-	static {
-		SECTION_DATA_MAP = new HashMap<>(50, 1);
-		
-		SECTION_DATA_MAP.put("adjetivo cardinal",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.CARDINAL));
-		SECTION_DATA_MAP.put("adjetivo numeral",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.NUMERAL));
-		SECTION_DATA_MAP.put("adjetivo ordinal",         Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.ORDINAL));
-		SECTION_DATA_MAP.put("adjetivo posesivo",        Arrays.asList(Catgram.Data.ADJECTIVE, Catgram.Data.POSSESSIVE));
-		SECTION_DATA_MAP.put("adverbio de afirmación",   Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_AFFIRMATION));
-		SECTION_DATA_MAP.put("adverbio de cantidad",     Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_QUANTITY));
-		SECTION_DATA_MAP.put("adverbio de duda",         Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_DOUBT));
-		SECTION_DATA_MAP.put("adverbio de lugar",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_PLACE));
-		SECTION_DATA_MAP.put("adverbio de modo",         Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_MOOD));
-		SECTION_DATA_MAP.put("adverbio de negación",     Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_NEGATION));
-		SECTION_DATA_MAP.put("adverbio de orden",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_SEQUENCE));
-		SECTION_DATA_MAP.put("adverbio de tiempo",       Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.OF_TIME));
-		SECTION_DATA_MAP.put("adverbio interrogativo",   Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.INTERROGATIVE));
-		SECTION_DATA_MAP.put("adverbio relativo",        Arrays.asList(Catgram.Data.ADVERB, Catgram.Data.RELATIVE));
-		SECTION_DATA_MAP.put("artículo determinado",     Arrays.asList(Catgram.Data.ARTICLE, Catgram.Data.DETERMINATE));
-		SECTION_DATA_MAP.put("artículo indeterminado",   Arrays.asList(Catgram.Data.ARTICLE, Catgram.Data.INDETERMINATE));
-		SECTION_DATA_MAP.put("locución adjetiva",        Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.ADJECTIVE));
-		SECTION_DATA_MAP.put("locución adverbial",       Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.ADVERB));
-		SECTION_DATA_MAP.put("locución conjuntiva",      Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.CONJUNCTION));
-		SECTION_DATA_MAP.put("locución interjectiva",    Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.INTERJECTION));
-		SECTION_DATA_MAP.put("locución preposicional",   Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.PREPOSITION));
-		SECTION_DATA_MAP.put("locución sustantiva",      Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.NOUN));
-		SECTION_DATA_MAP.put("locución verbal",          Arrays.asList(Catgram.Data.PHRASE, Catgram.Data.VERB));
-		SECTION_DATA_MAP.put("preposición de ablativo",  Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ABLATIVE));
-		SECTION_DATA_MAP.put("preposición de acusativo", Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ACCUSATIVE));
-		SECTION_DATA_MAP.put("preposición de acusativo o ablativo", Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_ACCUSATIVE_OR_ABLATIVE));
-		SECTION_DATA_MAP.put("preposición de genitivo",  Arrays.asList(Catgram.Data.PREPOSITION, Catgram.Data.OF_GENITIVE));
-		SECTION_DATA_MAP.put("pronombre interrogativo",  Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.INTERROGATIVE));
-		SECTION_DATA_MAP.put("pronombre personal",       Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.PERSONAL));
-		SECTION_DATA_MAP.put("pronombre relativo",       Arrays.asList(Catgram.Data.PRONOUN, Catgram.Data.RELATIVE));
-		SECTION_DATA_MAP.put("sustantivo ambiguo",       Arrays.asList(Catgram.Data.NOUN, Catgram.Data.AMBIGUOUS));
-		SECTION_DATA_MAP.put("sustantivo animado",       Arrays.asList(Catgram.Data.NOUN, Catgram.Data.ANIMATE));
-		SECTION_DATA_MAP.put("sustantivo femenino",      Arrays.asList(Catgram.Data.NOUN, Catgram.Data.FEMININE));
-		SECTION_DATA_MAP.put("sustantivo inanimado",     Arrays.asList(Catgram.Data.NOUN, Catgram.Data.INANIMATE));
-		SECTION_DATA_MAP.put("sustantivo masculino",     Arrays.asList(Catgram.Data.NOUN, Catgram.Data.MASCULINE));
-		SECTION_DATA_MAP.put("sustantivo neutro",        Arrays.asList(Catgram.Data.NOUN, Catgram.Data.NEUTER));
-		SECTION_DATA_MAP.put("sustantivo propio",        Arrays.asList(Catgram.Data.NOUN, Catgram.Data.PROPER));
-		SECTION_DATA_MAP.put("sustantivo común",         Arrays.asList(Catgram.Data.NOUN, Catgram.Data.COMMON));
-		SECTION_DATA_MAP.put("verbo impersonal",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.IMPERSONAL));
-		SECTION_DATA_MAP.put("verbo intransitivo",       Arrays.asList(Catgram.Data.VERB, Catgram.Data.INTRANSITIVE));
-		SECTION_DATA_MAP.put("verbo pronominal",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.PRONOUN));
-		SECTION_DATA_MAP.put("verbo transitivo",         Arrays.asList(Catgram.Data.VERB, Catgram.Data.TRANSITIVE));
+		SECTION_DATA_MAP = Utils.readLinesFromResource("/eswikt-catgram-compound.txt", Editor.class)
+			.map(line -> line.split("\\s*=\\s*"))
+			.filter(tokens -> tokens.length == 2)
+			.collect(Collectors.toMap(
+				tokens -> tokens[0],
+				tokens -> Stream.of(tokens[1].split(",\\s*"))
+					.map(name -> Stream.of(Catgram.Data.values())
+						.filter(data -> data.name().equals(name))
+						.findAny()
+						.orElseThrow(Error::new)
+					)
+					.collect(Collectors.toList())
+			));
 	}
 	
 	static {
