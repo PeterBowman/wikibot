@@ -34,11 +34,6 @@
   		<version>1.5.6</version>
   	</dependency>
   	<dependency>
-  		<groupId>org.tukaani</groupId>
-  		<artifactId>xz</artifactId>
-  		<version>1.5</version>
-  	</dependency>
-  	<dependency>
   		<groupId>org.apache.commons</groupId>
   		<artifactId>commons-compress</artifactId>
   		<version>1.10</version>
@@ -47,12 +42,6 @@
   		<groupId>net.sourceforge.htmlunit</groupId>
   		<artifactId>htmlunit</artifactId>
   		<version>2.19</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>com.google.guava</groupId>
-  		<artifactId>guava</artifactId>
-  		<version>18.0</version>
-  		<classifier>site</classifier>
   	</dependency>
   	<dependency>
   		<groupId>org.wikipedia</groupId>
@@ -64,5 +53,13 @@
   		<artifactId>jsoup</artifactId>
   		<version>1.8.3</version>
   	</dependency>
+  	<dependency>
+  		<groupId>org.apache.commons</groupId>
+  		<artifactId>commons-lang3</artifactId>
+  		<version>3.4</version>
+  	</dependency>
   </dependencies>
+  <properties>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
 </project>
