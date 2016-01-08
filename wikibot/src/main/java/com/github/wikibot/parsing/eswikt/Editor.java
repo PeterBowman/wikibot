@@ -326,7 +326,10 @@ public class Editor extends AbstractEditor {
 					.map(name -> Stream.of(Catgram.Data.values())
 						.filter(data -> data.name().equals(name))
 						.findAny()
-						.orElseThrow(Error::new)
+						// there used to be a .orElseThrow(Error::new) here, but
+						// mvn compile complained a lot (a JRE bug?)
+						// http://stackoverflow.com/questions/25523375
+						.orElse(null)
 					)
 					.collect(Collectors.toList())
 			));

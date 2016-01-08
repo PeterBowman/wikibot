@@ -4,7 +4,6 @@
   <artifactId>wikibot</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <build>
-    <sourceDirectory>src</sourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -25,20 +24,7 @@
       		<goal>copy-dependencies</goal>
       	</goals>
       </plugin>
-      <plugin>
-      	<groupId>org.apache.maven.plugins</groupId>
-      	<artifactId>maven-resources-plugin</artifactId>
-      	<version>2.7</version>
-      </plugin>
     </plugins>
-    <resources>
-    	<resource>
-    		<directory>resources</directory>
-    		<includes>
-    			<include>*.txt</include>
-    		</includes>
-    	</resource>
-    </resources>
   </build>
   <dependencies>
   	<dependency>
