@@ -127,7 +127,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 			
 			for (T section : list) {
 				List<T> siblings = section.getSiblingSections();
-				T parent = section.getParentSection();
+				T parent = section.getParentSection().orElse(null);
 				
 				int minLevel = siblings.stream()
 					.map(AbstractSection::getLevel)

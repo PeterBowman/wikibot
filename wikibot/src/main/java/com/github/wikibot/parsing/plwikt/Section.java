@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -17,8 +18,8 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.AbstractSection;
+import com.github.wikibot.parsing.ParsingException;
 
 public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	private List<Field> fields;
@@ -227,21 +228,17 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		Collections.sort(fields);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public <T extends Field> T getField(FieldTypes fieldType) {
-		Field out = fields.stream()
+	public Optional<? extends Field> getField(FieldTypes fieldType) {
+		return fields.stream()
 			.filter(f -> f.getFieldType().equals(fieldType))
-			.findFirst()
-			.orElse(null);
-		
-		return (T) out;
+			.findAny();
 	}
 	
 	public Field addField(FieldTypes fieldType, String text, boolean isNewline) {
-		Field newField = getField(fieldType);
+		Optional<? extends Field> newFieldOpt = getField(fieldType);
 		
-		if (newField != null) {
-			return newField;
+		if (newFieldOpt.isPresent()) {
+			return newFieldOpt.get();
 		}
 		
 		StringBuilder sb = new StringBuilder();
@@ -254,7 +251,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		
 		sb.append(text);
 		
-		newField = Field.parseField(fieldType, sb.toString());
+		Field newField = Field.parseField(fieldType, sb.toString());
 		newField.containingSection = this;
 		fields.add(newField);
 		sortFields();
@@ -263,13 +260,13 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	public boolean removeField(FieldTypes fieldType) {
-		Field field = getField(fieldType);
+		Optional<? extends Field> fieldOpt = getField(fieldType);
 		
-		if (field == null) {
+		if (!fieldOpt.isPresent()) {
 			return false;
 		}
 		
-		fields.remove(field);
+		fields.remove(fieldOpt.get());
 		return true;
 	}
 	

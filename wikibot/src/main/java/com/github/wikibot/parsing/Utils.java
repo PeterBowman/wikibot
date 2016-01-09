@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.MissingResourceException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -246,5 +247,16 @@ public final class Utils {
 		} catch (IOException | NullPointerException e) {
 			throw new MissingResourceException("Error loading resource: " + filename, caller.getName(), filename);
 		}
+	}
+	
+	/**
+	 * Turns an Optional<T> into a Stream<T> of length zero or one depending upon
+	 * whether a value is present.
+	 * TODO: awaiting for JDK 9's Optional.stream():
+	 * 
+	 * @see <a href="http://stackoverflow.com/a/22822592">http://stackoverflow.com/a/22822592</a>
+	 */
+	public static <T> Stream<T> streamOpt(Optional<T> opt) {
+		return opt.map(Stream::of).orElseGet(Stream::empty);
 	}
 }

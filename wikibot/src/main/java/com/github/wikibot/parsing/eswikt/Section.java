@@ -4,14 +4,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 
-import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.AbstractSection;
+import com.github.wikibot.parsing.ParsingException;
 
 public class Section extends AbstractSection<Section> implements Comparable<Section> {
 	public static final List<String> HEAD_SECTIONS = Arrays.asList(
@@ -52,18 +53,18 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		return section;
 	}
 	
-	public LangSection getLangSectionParent() {
+	public Optional<LangSection> getLangSectionParent() {
 		Section parentSection = this;
 		
 		while (parentSection != null) {
 			if (parentSection instanceof LangSection) {
-				return (LangSection) parentSection;
+				return Optional.of((LangSection) parentSection);
 			}
 			
 			parentSection = parentSection.parentSection;
 		}
 		
-		return null;
+		return Optional.empty();
 	}
 	
 	void sortSections() {

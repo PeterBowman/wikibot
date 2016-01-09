@@ -1233,7 +1233,7 @@ public class Editor extends AbstractEditor {
 		
 		for (Section section : page.getAllSections()) {
 			// workaround that benefits from the lack of Section reparsing 
-			if (section.getLangSectionParent() == null) {
+			if (!section.getLangSectionParent().isPresent()) {
 				try {
 					section.setLevel(section.getLevel() + 1);
 				} catch (IllegalArgumentException e) {}
@@ -1298,26 +1298,24 @@ public class Editor extends AbstractEditor {
 			} else if (
 				section instanceof LangSection &&
 				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
-				!Optional.ofNullable(section.nextSiblingSection())
+				!section.nextSiblingSection()
 					.filter(s -> s.getHeader().startsWith("ETYM "))
 					.isPresent()
 			) {
 				continue;
 			} else if (
 				etymologySections.isEmpty() ||
-				hasAdditionalEtymSections(section.nextSection(), etymologySections)
+				hasAdditionalEtymSections(section, etymologySections)
 			) {
-				Section nextSibling = section.nextSiblingSection();
 				Section etymologySection = Section.create("Etimología", 3);
 				etymologySection.setTrailingNewlines(1);
 				
 				if (
 					etymologySections.isEmpty() &&
 					section instanceof LangSection &&
-					(
-						nextSibling == null || 
-						!nextSibling.getHeader().startsWith("ETYM ")
-					)
+					!section.nextSiblingSection()
+						.filter(s -> s.getHeader().startsWith("ETYM "))
+						.isPresent()
 				) {
 					processIfSingleEtym(section, etymologySection);
 				} else {
@@ -1421,18 +1419,20 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "transformToNewStructure", "conversión a la nueva estructura");
 	}
 
-	private static boolean hasAdditionalEtymSections(Section nextSection, List<Section> etymologySections) {
-		if (etymologySections.isEmpty() || nextSection == null) {
+	private static boolean hasAdditionalEtymSections(Section section, List<Section> etymologySections) {
+		Optional<Section> nextSectionOpt = section.nextSection();
+		
+		if (etymologySections.isEmpty() || !nextSectionOpt.isPresent()) {
 			return false;
 		}
 		
 		Section etymologySection = etymologySections.get(0);
+		Section nextSection = nextSectionOpt.get();
 		
-		return (
+		return
 			etymologySection != nextSection &&
 			!etymologySection.getStrippedHeader().matches("[Ee]timolog[íi]a( 1)?") &&
-			!nextSection.getHeader().matches("^[Pp]ronunciaci[óo]n.*")
-		);
+			!nextSection.getHeader().matches("^[Pp]ronunciaci[óo]n.*");
 	}
 
 	private static String replaceOldStructureTemplates(String title, String text) {
@@ -1661,11 +1661,13 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Page page = Page.store(title, text);
-		Section references = page.getReferencesSection();
 		
 		page.getAllSections().stream()
 			.filter(section -> section.getLevel() == 2 && section.getTocLevel() == 1)
-			.filter(section -> !(section instanceof LangSection) && section != references)
+			.filter(section ->
+				!(section instanceof LangSection) &&
+				section != page.getReferencesSection().orElse(null)
+			)
 			.forEach(section -> Page.CODE_TO_LANG.entrySet().stream()
 				.filter(entry -> entry.getValue().equalsIgnoreCase(section.getHeader()))
 				.findAny()
@@ -1714,7 +1716,7 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^Formas? (?:de )?sub?stantiv[oa]s? (masculin|femenin|neutr)[oa]s?$", "Forma sustantiva $1a");
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=klei&oldid=2727290
-			LangSection langSection = section.getLangSectionParent();
+			LangSection langSection = section.getLangSectionParent().orElse(null);
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
@@ -1779,14 +1781,14 @@ public class Editor extends AbstractEditor {
 		}
 		
 		Collections.reverse(contents);
-		Section references = page.getReferencesSection();
 		
-		if (references == null) {
-			references = Section.create("Referencias y notas", 2);
+		if (!page.getReferencesSection().isPresent()) {
+			Section references = Section.create("Referencias y notas", 2);
 			contents.add("<references />");
 			references.setIntro(String.join("\n", contents));
 			page.setReferencesSection(references);
 		} else {
+			Section references = page.getReferencesSection().get();
 			String intro = references.getIntro();
 			intro = intro.replaceAll("(?i)<references *?/ *?>", "").trim();
 			contents.addAll(Arrays.asList(intro.split("\n")));
@@ -1845,7 +1847,7 @@ public class Editor extends AbstractEditor {
 		
 		Section references = allReferences.get(0);
 		
-		if (references == page.getReferencesSection()) {
+		if (references == page.getReferencesSection().orElse(null)) {
 			return;
 		}
 		
@@ -1895,7 +1897,7 @@ public class Editor extends AbstractEditor {
 			.filter(section -> !section.getChildSections().isEmpty())
 			.forEach(section -> {
 				if (!section.getIntro().isEmpty()) {
-					Section previousSection = section.previousSection();
+					Section previousSection = section.previousSection().get();
 					String previousIntro = previousSection.getIntro();
 					previousIntro += "\n" + section.getIntro();
 					previousSection.setIntro(previousIntro);
@@ -1938,44 +1940,38 @@ public class Editor extends AbstractEditor {
 		page.normalizeChildLevels();
 		
 		// TODO: traverse siblings of the first Section?
-		// TODO: don't push levels unless it will result in a LangSection child
-		for (Section section : page.getAllSections()) {
-			if (
-				section.getTocLevel() != 1 ||
-				section instanceof LangSection ||
-				section.getHeader().startsWith("Referencias")
-			) {
-				continue;
-			}
-			
-			try {
-				section.pushLevels(1);
-			} catch (IllegalArgumentException e) {}
-		}
+		// TODO: don't push levels unless it would result in a LangSection child
+		page.getAllSections().stream()
+			.filter(section -> section.getTocLevel() == 1)
+			.filter(section -> !(section instanceof LangSection))
+			.filter(section -> !section.getHeader().startsWith("Referencias"))
+			.forEach(section -> {
+				try {
+					section.pushLevels(1);
+				} catch (IllegalArgumentException e) {}
+			});
 		
 		// TODO: reparse Page
 		page = Page.store(title, page.toString());
-		Section references = page.getReferencesSection();
 		
-		if (references != null && references.getLevel() != 2) {
-			try {
-				references.pushLevels(2 - references.getLevel());
-			} catch (IllegalArgumentException e) {}
-		}
+		page.getReferencesSection()
+			.filter(section -> section.getLevel() != 2)
+			.ifPresent(section -> {
+				try {
+					section.pushLevels(2 - section.getLevel());
+				} catch (IllegalArgumentException e) {}
+			});
 		
-		for (Section etymologySection : page.findSectionsWithHeader("^Etimología.*")) {
-			int level = etymologySection.getLevel();
-			
-			if (level > 3) {
-				etymologySection.pushLevels(3 - level);
-			}
-		}
+		page.findSectionsWithHeader("^Etimología.*").stream()
+			.filter(section -> section.getLevel() > 3)
+			.forEach(section -> section.pushLevels(3 - section.getLevel()));
 		
 		page.normalizeChildLevels();
 		
-		for (Section pronGrafSection : page.findSectionsWithHeader("Pronunciación y escritura")) {
-			pronGrafSection.getChildSections().forEach(s -> s.pushLevels(-1));
-		}
+		page.findSectionsWithHeader("Pronunciación y escritura").stream()
+			.map(AbstractSection::getChildSections)
+			.flatMap(Collection::stream)
+			.forEach(section -> section.pushLevels(-1));
 		
 		for (LangSection langSection : page.getAllLangSections()) {
 			if (langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE)) {
@@ -2012,43 +2008,37 @@ public class Editor extends AbstractEditor {
 	}
 
 	public void removePronGrafSection() {
-		Page page = Page.store(title, text);
-		List<Section> sections = page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?");
-		
-		if (isOldStructure || sections.isEmpty()) {
+		if (isOldStructure) {
 			return;
 		}
 		
-		for (Section section : sections) {
-			Section parentSection = section.getParentSection();
-			
-			if (parentSection == null || !section.getChildSections().isEmpty()) {
-				continue;
-			}
-			
-			String selfIntro = section.getIntro();
-			String parentIntro = parentSection.getIntro();
-			
-			if (
-				!(parentSection instanceof LangSection) &&
-				!parentSection.getHeader().matches("^Etimología.*")
-			) {
-				// TODO: ¿?
-				continue;
-			}
-			
-			String[] lines = String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n");
-			
-			String newIntro = Stream.of(lines)
-				.sorted((line1, line2) -> -Boolean.compare(
-					line1.matches(P_AMBOX_TMPLS.toString()),
-					line2.matches(P_AMBOX_TMPLS.toString())
-				))
-				.collect(Collectors.joining("\n"));
-			
-			parentSection.setIntro(newIntro);
-			section.detachOnlySelf();
-		}
+		Page page = Page.store(title, text);
+		
+		page.findSectionsWithHeader("[Pp]ronunciaci[óo]n( y escritura)?").stream()
+			.filter(section -> section.getParentSection().isPresent())
+			.filter(section -> section.getChildSections().isEmpty())
+			.filter(section -> // TODO: ¿?
+				section.getParentSection().get() instanceof LangSection ||
+				section.getParentSection().get().getHeader().matches("^Etimología.*")
+			)
+			.forEach(section -> {
+				Section parentSection = section.getParentSection().get();
+				
+				String selfIntro = section.getIntro();
+				String parentIntro = parentSection.getIntro();
+				
+				String[] lines = String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n");
+				
+				String newIntro = Stream.of(lines)
+					.sorted((line1, line2) -> -Boolean.compare(
+						line1.matches(P_AMBOX_TMPLS.toString()),
+						line2.matches(P_AMBOX_TMPLS.toString())
+					))
+					.collect(Collectors.joining("\n"));
+				
+				parentSection.setIntro(newIntro);
+				section.detachOnlySelf();
+			});
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "removePronGrafSection", "eliminando títulos de pronunciación");
@@ -2117,7 +2107,7 @@ public class Editor extends AbstractEditor {
 		
 		// Translations
 		
-		LangSection spanishSection = page.getLangSection("es");
+		LangSection spanishSection = page.getLangSection("es").orElse(null);
 		
 		if (
 			spanishSection != null &&
@@ -2178,18 +2168,17 @@ public class Editor extends AbstractEditor {
 	
 	public void moveReferencesElements() {
 		Page page = Page.store(title, text);
-		Section references = page.getReferencesSection();
 		List<Section> referencesSections = page.findSectionsWithHeader("Referencias y notas");
 		
 		if (
-			isOldStructure || references == null ||
+			isOldStructure || !page.getReferencesSection().isPresent() ||
 			referencesSections.size() > 1
 		) {
 			return;
 		}
 		
 		Page tempPage = Page.store(title, text);
-		tempPage.getReferencesSection().detachOnlySelf();
+		tempPage.getReferencesSection().get().detachOnlySelf();
 		String str = tempPage.toString();
 		final Pattern pReferenceTags = Pattern.compile("(?i)<references *?/? *?>");
 		
@@ -2203,7 +2192,7 @@ public class Editor extends AbstractEditor {
 		Set<String> set = new HashSet<>();
 		
 		for (Section section : page.getAllSections()) {
-			if (section == references) {
+			if (section == page.getReferencesSection().get()) {
 				continue;
 			}
 			
@@ -2240,6 +2229,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		String summary = null;
+		Section references = page.getReferencesSection().get();
 		String referencesIntro = references.getIntro();
 		
 		if (
@@ -2376,7 +2366,7 @@ public class Editor extends AbstractEditor {
 			set.add(String.format("{{%s}}", newTemplateName));
 			
 			if (PRON_TMPLS.contains(newTemplateName)) {
-				LangSection langSection = section.getLangSectionParent();
+				LangSection langSection = section.getLangSectionParent().get();
 				String langSectionIntro = langSection.getIntro();
 				langSectionIntro += "\n" + newTemplate;
 				langSection.setIntro(langSectionIntro);
@@ -2467,7 +2457,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			LangSection langSection = section.getLangSectionParent();
+			LangSection langSection = section.getLangSectionParent().orElse(null);
 			String content = section.getIntro();
 			content = Utils.replaceWithStandardIgnoredRanges(content, "\n{2,}", "\n");
 			
@@ -3177,7 +3167,7 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		Section spanishSection = page.getLangSection("es");
+		Section spanishSection = page.getLangSection("es").orElse(null);
 		
 		// Translations
 		
@@ -3210,7 +3200,7 @@ public class Editor extends AbstractEditor {
 			}
 		}
 		
-		Section references = page.getReferencesSection();
+		Section references = page.getReferencesSection().orElse(null);
 		
 		// <references />
 		
@@ -3473,10 +3463,10 @@ public class Editor extends AbstractEditor {
 				.flatMap(Collection::stream)
 				.map(template -> getTemplateParametersWithValue(template))
 				.filter(params -> !params.getOrDefault("ParamWithoutName1", "")
-					.equalsIgnoreCase(section.getLangSectionParent().getLangCode())
+					.equalsIgnoreCase(section.getLangSectionParent().get().getLangCode())
 				)
 				.forEach(params -> {
-					params.put("ParamWithoutName1", section.getLangSectionParent().getLangCode());
+					params.put("ParamWithoutName1", section.getLangSectionParent().get().getLangCode());
 					String header = Utils.replaceTemplates(
 						section.getHeader(),
 						params.get("templateName"),
@@ -3542,7 +3532,7 @@ public class Editor extends AbstractEditor {
 				.map(catgram -> temp.replaceFirst(catgram.getSingular(), String.format(
 					"{{%s|%s|%s}}",
 					templateName,
-					section.getLangSectionParent().getLangCode(),
+					section.getLangSectionParent().get().getLangCode(),
 					catgram.getSecondMember().getSingular()
 				)))
 				.findAny()
@@ -3595,7 +3585,7 @@ public class Editor extends AbstractEditor {
 			.filter(section -> !containsAny(section.getHeader(), '{', '}', '[', ']', '<', '>'))
 			.forEach(section -> {
 				String header = section.getHeader().toLowerCase();
-				String langCode = section.getLangSectionParent().getLangCode();
+				String langCode = section.getLangSectionParent().get().getLangCode();
 				
 				String newHeader = SECTION_DATA_MAP.keySet().stream()
 					.filter(header::startsWith)
@@ -3754,12 +3744,11 @@ public class Editor extends AbstractEditor {
 			.filter(Editor::isEmptyOrInvisible)
 			.forEach(section -> {
 				if (!section.getIntro().isEmpty()) {
-					Section previousSection = section.previousSection();
-					
-					if (previousSection == null) {
+					if (!section.previousSection().isPresent()) {
 						return;
 					}
 					
+					Section previousSection = section.previousSection().get();
 					String previousIntro = previousSection.getIntro();
 					previousIntro += "\n" + section.getIntro();
 					previousSection.setIntro(previousIntro);
@@ -3950,33 +3939,34 @@ public class Editor extends AbstractEditor {
 		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
-		final String[] arr = {"{{arriba", "{{trad-arriba", "{{rel-arriba", "{{derivados"};
+		List<String> templates = Arrays.asList("arriba", "trad-arriba", "rel-arriba", "derivados");
 		
 		for (Section section : page.getAllSections()) {
-			Section nextSection = section.nextSection();
-			
-			if (nextSection == null) {
+			if (!section.nextSection().isPresent()) {
 				break;
 			}
 			
+			Section nextSection = section.nextSection().get();
 			String sectionIntro = section.getIntro();
 			String sanitizedNextSectionIntro = removeCommentsAndNoWikiText(nextSection.getIntro());
 			
-			if (
-				startsWithAny(sanitizedNextSectionIntro, arr) ||
-				(
-					nextSection.getStrippedHeader().matches("Etimología \\d+") &&
-					!nextSection.getStrippedHeader().equals("Etimología 1")
-				)
-			) {
-				List<String> templates = getTemplates("clear", sectionIntro);
+			boolean anyMatch = templates.stream()
+				.map(template -> getTemplates(template, sanitizedNextSectionIntro))
+				.flatMap(Collection::stream)
+				.anyMatch(sanitizedNextSectionIntro::startsWith);
+			
+			if (anyMatch || (
+				nextSection.getStrippedHeader().matches("Etimología \\d+") &&
+				!nextSection.getStrippedHeader().equals("Etimología 1")
+			)) {
+				List<String> clearTemplates = getTemplates("clear", sectionIntro);
 				String sanitizedSectionIntro = removeCommentsAndNoWikiText(sectionIntro);
 				
-				if (templates.size() == 1 && sanitizedSectionIntro.endsWith("{{clear}}")) {
+				if (clearTemplates.size() == 1 && sanitizedSectionIntro.endsWith("{{clear}}")) {
 					continue;
 				}
 				
-				if (!templates.isEmpty()) {
+				if (!clearTemplates.isEmpty()) {
 					sectionIntro = removeClearTemplates(section);
 				}
 				
@@ -4053,7 +4043,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		page.filterSections(s ->
-			s.getLangSectionParent() != null &&
+			s.getLangSectionParent().isPresent() &&
 			Stream.of(removeCommentsAndNoWikiText(s.getIntro()).split("\n"))
 				.anyMatch(line -> line.startsWith("#")) &&
 			!P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find() &&
@@ -4099,10 +4089,8 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		Section references = page.getReferencesSection();
-		
 		List<Section> sections = page.filterSections(section ->
-			section != references &&
+			section != page.getReferencesSection().orElse(null) &&
 			!(section instanceof LangSection) &&
 			!STANDARD_HEADERS.contains(section)
 		);
@@ -4476,10 +4464,8 @@ public class Editor extends AbstractEditor {
 		
 		// term whitespaces (;1 {{foo}}: bar)
 		
-		Section references = page.getReferencesSection();
-		
 		page.filterSections(section ->
-			section != references &&
+			section != page.getReferencesSection().orElse(null) &&
 			!(section instanceof LangSection) &&
 			!STANDARD_HEADERS.contains(section.getStrippedHeader())
 		).forEach(section -> {
@@ -4571,10 +4557,8 @@ public class Editor extends AbstractEditor {
 		
 		// term whitespaces (;1 {{foo}}: bar)
 		
-		Section references = page.getReferencesSection();
-		
 		page.filterSections(section ->
-			section != references &&
+			section != page.getReferencesSection().orElse(null) &&
 			!(section instanceof LangSection) &&
 			!STANDARD_HEADERS.contains(section.getStrippedHeader())
 		).forEach(section -> {

@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
@@ -15,6 +16,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -79,13 +81,13 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
 			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
+			Section s = p.getPolishSection().get();
 			
-			if (!s.getField(FieldTypes.INFLECTION).isEmpty()) {
+			if (!s.getField(FieldTypes.INFLECTION).get().getContent().isEmpty()) {
 				continue;
 			}
 			
-			String definitions = s.getField(FieldTypes.DEFINITIONS).getContent();
+			String definitions = s.getField(FieldTypes.DEFINITIONS).get().getContent();
 			
 			Map<String, String> forms = constructForms(title, model);
 			boolean isPerfective = definitions.contains(" dokonany") || definitions.contains("{{dokonany od|");
@@ -119,9 +121,9 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
 			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
+			Section s = p.getPolishSection().get();
 			
-			String inflectionText = s.getField(FieldTypes.INFLECTION).getContent();
+			String inflectionText = s.getField(FieldTypes.INFLECTION).get().getContent();
 			List<String> templates = ParseUtils.getTemplates("koniugacjaPL", inflectionText);
 			
 			if (templates.isEmpty()) {
@@ -134,7 +136,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 				continue;
 			}
 			
-			String definitions = s.getField(FieldTypes.DEFINITIONS).getContent();
+			String definitions = s.getField(FieldTypes.DEFINITIONS).get().getContent();
 			
 			Map<String, String> forms = null;
 			
@@ -174,9 +176,12 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
 		
 		for (PageContainer page : pages) {
-			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
-			String inflectionText = s.getField(FieldTypes.INFLECTION).getContent();
+			String inflectionText = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+				.map(Field::getContent)
+				.orElse("");
+			
 			List<String> templates = ParseUtils.getTemplates("odmiana-czasownik-polski", inflectionText);
 			boolean found = false;
 			
@@ -226,7 +231,11 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 			Page p = Page.wrap(page);
 			String newInflection = contents[contents.length - 1];
 			
-			p.getPolishSection().getField(FieldTypes.INFLECTION).editContent(newInflection, true);
+			Optional.of(p)
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+				.ifPresent(f -> f.editContent(newInflection, true));
+			
 			String summary = "wstawienie odmiany; wer.: [[User:Peter Bowman]]";
 			
 			try {

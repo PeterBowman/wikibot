@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
@@ -81,14 +82,14 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		
 		for (PageContainer wiktpage : wiktpages) {
 			Page wp = Page.wrap(wiktpage);
-			Section s = wp.getPolishSection();
+			Section s = wp.getPolishSection().orElse(null);
 			
 			if (s == null) {
 				System.out.printf("Missing polish section: %s%n", wiktpage.getTitle());
 				continue;
 			}
 			
-			Field notes = s.getField(FieldTypes.NOTES);
+			Field notes = s.getField(FieldTypes.NOTES).get();
 			
 			PageContainer qpage = Stream.of(quotepages)
 				.filter(page -> page.getTitle().toUpperCase().equals(wiktpage.getTitle().toUpperCase()))
@@ -133,8 +134,11 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			Calendar timestamp = page.getTimestamp();
 			
 			Page p = Page.wrap(page);
-			Field notes = p.getPolishSection().getField(FieldTypes.NOTES);
-			notes.editContent(data[data.length - 1], true);
+			
+			Optional.of(p)
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.NOTES))
+				.ifPresent(f -> f.editContent(data[data.length - 1], true));
 			
 			String summary = "+ {{wikicytaty}}";
 			

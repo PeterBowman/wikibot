@@ -98,8 +98,8 @@ public final class GermanNounDeclension implements Selectorizable {
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
 			Page p = Page.wrap(page);
-			Section s = p.getSection("język niemiecki");
-			Field definitions = s.getField(FieldTypes.DEFINITIONS);
+			Section s = p.getSection("język niemiecki").get();
+			Field definitions = s.getField(FieldTypes.DEFINITIONS).get();
         	String definitionsText = definitions.getContent();
         	int a = definitionsText.indexOf("''rzeczownik, rodzaj ");
         	
@@ -141,7 +141,7 @@ public final class GermanNounDeclension implements Selectorizable {
 	        		continue;
         	}
         	
-        	Field inflection = s.getField(FieldTypes.INFLECTION);
+        	Field inflection = s.getField(FieldTypes.INFLECTION).get();
         	String inflectionText = inflection.getContent();
         	
         	if (!inflectionText.isEmpty() && !inflectionText.contains("{{odmiana-rzeczownik-niemiecki")) {

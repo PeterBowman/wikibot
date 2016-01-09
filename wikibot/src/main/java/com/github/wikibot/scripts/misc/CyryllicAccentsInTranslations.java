@@ -9,11 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Domains;
@@ -71,12 +73,14 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		final String pattern6 = ".*?\\[\\[[ \u0400-\uFFFF]+\\|[^\\]\u0301]*?\u0301[^\\|\\]]*?\\]\\].*";
 		
 		for (PageContainer page : pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			String translations = p.getPolishSection().getField(FieldTypes.TRANSLATIONS).getContent();
+			String translations = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.TRANSLATIONS))
+				.map(Field::getContent)
+				.orElse("");
 			
 			if (translations.contains("\u0301") && translations.replace("\n", "").matches(pattern6)) {
-				querymap.put(title, translations);
+				querymap.put(page.getTitle(), translations);
 			}
 		}
 		

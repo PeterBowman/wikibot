@@ -42,7 +42,7 @@ public class Editor extends AbstractEditor {
 		Set<String> log = new HashSet<>();
 		
 		for (Section s : page.getAllSections()) {
-			Field inflection = s.getField(FieldTypes.INFLECTION);
+			Field inflection = s.getField(FieldTypes.INFLECTION).get();
 			
 			if (inflection.isEmpty()) {
 				continue;
@@ -117,7 +117,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		for (Section s : page.getAllSections()) {
-			Field examples = s.getField(FieldTypes.EXAMPLES);
+			Field examples = s.getField(FieldTypes.EXAMPLES).orElse(null);
 			
 			if (examples == null) {
 				continue;
@@ -135,7 +135,7 @@ public class Editor extends AbstractEditor {
 			examplesText = mInterwiki.replaceAll("<ref>$1</ref>");
 			
 			if (!examplesText.equals(examples.getContent())) {
-				Field sources = s.getField(FieldTypes.SOURCES);
+				Field sources = s.getField(FieldTypes.SOURCES).get();
 				
 				if (sources.isEmpty()) {
 					sources.editContent("<references />", true);

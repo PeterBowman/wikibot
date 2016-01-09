@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +26,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -69,7 +71,11 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		List<String> verb_templates = Stream.of(pages).map(Page::wrap)
 			.flatMap((Page page) -> ParseUtils.getTemplates(
 					"odmiana-czasownik-hiszpański",
-					page.getSection("język hiszpański").getField(FieldTypes.INFLECTION).getContent()
+					Optional.of(page)
+						.flatMap(p -> p.getSection("język hiszpański"))
+						.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+						.map(Field::getContent)
+						.orElse("")
 				)
 				.stream()
 				.map((String template) -> ParseUtils.setTemplateParam(template, "czasownik", page.getTitle(), false))
@@ -151,10 +157,10 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		    int op = -1;
 		    						
 			if (content != null) {
-				Section section = Page.store(form, content).getSection("język hiszpański");
+				Section section = Page.store(form, content).getSection("język hiszpański").orElse(null);
 					
 				if (section != null) {
-					String definitions = section.getField(FieldTypes.DEFINITIONS).getContent();
+					String definitions = section.getField(FieldTypes.DEFINITIONS).get().getContent();
 					
 					List<String> meanings = Stream.of(definitions.split("\n"))
 						.filter(line -> !line.startsWith(":"))

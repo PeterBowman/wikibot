@@ -1,5 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
+import static com.github.wikibot.parsing.Utils.streamOpt;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -58,10 +60,10 @@ public final class SpanishCanonicalInflectedForms implements Selectorizable {
 		
 		List<String> forms = Stream.of(pages)
 			.map(Page::wrap)
-			.map(p -> p.getSection("hiszpański", true))
-			.map(s -> (Field) s.getField(FieldTypes.DEFINITIONS))
+			.flatMap(p -> streamOpt(p.getSection("hiszpański", true)))
+			.flatMap(s -> streamOpt(s.getField(FieldTypes.DEFINITIONS)))
 			.filter(SpanishCanonicalInflectedForms::matchNonInflectedDefinitions)
-			.map(f -> f.getContainingSection().getContainingPage().getTitle())
+			.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
 			.sorted(Misc.getCollator("es"))
 			.collect(Collectors.toList());
 

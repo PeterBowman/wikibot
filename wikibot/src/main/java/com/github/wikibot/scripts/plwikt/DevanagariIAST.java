@@ -51,7 +51,7 @@ public class DevanagariIAST implements Selectorizable {
 			Page p = Page.wrap(page);
 			
 			for (Section s : p.getAllSections()) {
-				Field f = s.getField(FieldTypes.TRANSLITERATION);
+				Field f = s.getField(FieldTypes.TRANSLITERATION).orElse(null);
 				
 				if (f == null || !f.getContent().contains("{{IAST|")) {
 					if (s.getLangShort().equals("hindi")) {

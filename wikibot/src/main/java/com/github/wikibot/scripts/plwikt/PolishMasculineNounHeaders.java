@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,7 +24,6 @@ import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.plwikt.Editor;
-import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -117,10 +117,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			.collect(Collectors.toMap(
 				page -> page.getTitle(),
 				page -> {
-					Section s = Page.wrap(page).getPolishSection();
+					Section s = Page.wrap(page).getPolishSection().get();
 					String[] data = new String[]{
-						s.getField(FieldTypes.DEFINITIONS).getContent(),
-						s.getField(FieldTypes.INFLECTION).getContent()
+						s.getField(FieldTypes.DEFINITIONS).get().getContent(),
+						s.getField(FieldTypes.INFLECTION).get().getContent()
 					};
 					return Arrays.asList(data);
 				},
@@ -156,8 +156,11 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			
 			PageContainer page = Misc.retrievePage(pages, title);
 			Page p = Page.wrap(page);
-			Field definitions = p.getPolishSection().getField(FieldTypes.DEFINITIONS);
-			definitions.editContent(definitionsText, true);
+			
+			Optional.of(p)
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS))
+				.ifPresent(f -> f.editContent(definitionsText, true));
 			
 			AbstractEditor editor = new Editor(p);
 			editor.check();

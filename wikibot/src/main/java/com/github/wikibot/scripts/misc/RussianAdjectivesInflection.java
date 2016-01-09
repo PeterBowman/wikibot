@@ -59,11 +59,11 @@ class RussianAdjectivesInflection implements Selectorizable {
 		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
-			Section section = Page.wrap(page).getSection(RU_LANG);
-			DefinitionsField definitions = section.getField(FieldTypes.DEFINITIONS);
+			Section section = Page.wrap(page).getSection(RU_LANG).get();
+			DefinitionsField definitions = (DefinitionsField) section.getField(FieldTypes.DEFINITIONS).get();
 			
 			if (definitions.getContent().contains("\'\'przymiotnik\'\'")) {
-				Field inflection = section.getField(FieldTypes.INFLECTION);
+				Field inflection = section.getField(FieldTypes.INFLECTION).get();
 				String content = inflection.getContent();
 				
 				if (

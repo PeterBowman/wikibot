@@ -209,7 +209,7 @@ public final class LinkManager implements Selectorizable {
 				for (PageContainer page : temp) {
 					try {
 						Page p = Page.wrap(page);
-						Section s = p.getSection(entry.lang, false);
+						Section s = p.getSection(entry.lang, false).get();
 						contents.putIfAbsent(p.getTitle(), s.toString());
 					} catch (Exception e) {
 						contents.putIfAbsent(page.getTitle(), Utils.sanitizeWhitespaces(page.getText()));
@@ -379,7 +379,7 @@ public final class LinkManager implements Selectorizable {
 			
 			for (LinkDiff diff : list) {
 				if (diff.lang != null && !diff.lang.isEmpty()) {
-					Section section = Page.store("temp", pagetext).getSection(diff.lang);
+					Section section = Page.store("temp", pagetext).getSection(diff.lang).orElse(null);
 					
 					if (section == null) {
 						errormap.put(page, new String[]{

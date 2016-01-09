@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -164,8 +165,8 @@ public final class Page extends AbstractPage<Section> {
 		return Collections.unmodifiableList(new ArrayList<>(langSections));
 	}
 
-	public Section getReferencesSection() {
-		return references;
+	public Optional<Section> getReferencesSection() {
+		return Optional.ofNullable(references);
 	}
 	
 	public void setReferencesSection(Section references) {
@@ -194,7 +195,7 @@ public final class Page extends AbstractPage<Section> {
 		List<Section> nonLangSections = new ArrayList<>();
 		
 		for (Section section : sections) {
-			if (!(section instanceof LangSection) && section.getLangSectionParent() == null) {
+			if (!(section instanceof LangSection) && !section.getLangSectionParent().isPresent()) {
 				nonLangSections.add(section);
 			}
 		}
@@ -209,28 +210,25 @@ public final class Page extends AbstractPage<Section> {
 		buildSectionTree();
 	}
 
-	public LangSection getLangSection(String langCode) {
-		LangSection out = langSections
+	public Optional<LangSection> getLangSection(String langCode) {
+		return langSections
 			.stream()
 			.filter(section -> section.langCodeEqualsTo(langCode))
-			.findFirst()
-			.orElse(null);
-		
-		return out;
+			.findAny();
 	}
 
 	public LangSection addLangSection(String langCode) {
-		LangSection langSection = getLangSection(langCode);
+		Optional<LangSection> langSectionOpt = getLangSection(langCode);
 		
-		if (langSection != null) {
-			return langSection;
+		if (langSectionOpt.isPresent()) {
+			return langSectionOpt.get();
 		}
 		
-		langSection = LangSection.create(langCode);
+		LangSection langSection = LangSection.create(langCode);
 		langSections.add(langSection);
 		sortSections();
 		
-		return null;
+		return langSection;
 	}
 
 	public boolean addLangSection(LangSection langSection) {
@@ -245,13 +243,13 @@ public final class Page extends AbstractPage<Section> {
 	}
 
 	public boolean removeLangSection(String langCode) {
-		LangSection langSection = getLangSection(langCode);
+		Optional<LangSection> langSectionOpt = getLangSection(langCode);
 		
-		if (langSection == null) {
+		if (!langSectionOpt.isPresent()) {
 			return false;
 		}
 		
-		sections.remove(langSection);
+		sections.remove(langSectionOpt.get());
 		buildSectionTree();
 		
 		return true;

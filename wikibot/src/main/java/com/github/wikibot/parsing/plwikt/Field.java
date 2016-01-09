@@ -1,6 +1,7 @@
 package com.github.wikibot.parsing.plwikt;
 
 import java.security.InvalidParameterException;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -135,8 +136,8 @@ public class Field implements Comparable<Field> {
 		this.eolMark = eolMark;
 	}
 	
-	public Section getContainingSection() {
-		return containingSection;
+	public Optional<Section> getContainingSection() {
+		return Optional.ofNullable(containingSection);
 	}
 	
 	@Override

@@ -64,9 +64,9 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
 			Page p = Page.wrap(page);
-			Section section = p.getPolishSection();
+			Section section = p.getPolishSection().get();
 			
-			String definition = section.getField(FieldTypes.DEFINITIONS).getContent();
+			String definition = section.getField(FieldTypes.DEFINITIONS).get().getContent();
 			List<String> templates = ParseUtils.getTemplates("odczasownikowy od", definition);
 			
 			if (templates.isEmpty()) {
@@ -76,11 +76,11 @@ public final class ReviewPolishGerunds implements Selectorizable {
 			String template = templates.get(0);
 			String verb = ParseUtils.getTemplateParam(template, 1);
 			
-			Field relatedTerms = section.getField(FieldTypes.RELATED_TERMS);
+			Field relatedTerms = section.getField(FieldTypes.RELATED_TERMS).get();
 			String relatedTermsText = relatedTerms.getContent();
 			String patternString = String.format(": (1.1) {{etymn|pol|%s|-anie}}", verb);
 			Pattern p_etymology = Pattern.compile(patternString, Pattern.LITERAL);
-			Field etymology = section.getField(FieldTypes.ETYMOLOGY);
+			Field etymology = section.getField(FieldTypes.ETYMOLOGY).get();
 			String etymologyText = etymology.getContent();
 			
 			if (

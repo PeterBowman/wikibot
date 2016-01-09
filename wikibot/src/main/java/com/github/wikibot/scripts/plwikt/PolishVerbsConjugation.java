@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
@@ -17,7 +18,6 @@ import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -54,15 +54,12 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		
 		outer:
 		for (PageContainer page : pages) {
-			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
+			String content = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+				.map(Field::getContent)
+				.orElse("");
 			
-			if (s == null) {
-				continue;
-			}
-			
-			Field inflection = s.getField(FieldTypes.INFLECTION);
-			String content = inflection.getContent();
 			List<String> templates = ParseUtils.getTemplates("odmiana-czasownik-polski", content);
 			
 			for (String template : templates) {
@@ -70,7 +67,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 				
 				if (parameter == null || parameter.isEmpty()) {
 					targets.add(page);
-					map.put(p.getTitle(), content);
+					map.put(page.getTitle(), content);
 					continue outer;
 				}
 			}
@@ -103,7 +100,11 @@ public final class PolishVerbsConjugation implements Selectorizable {
 			
 			Page p = Page.wrap(page);
 			
-			p.getPolishSection().getField(FieldTypes.INFLECTION).editContent(content);
+			Optional.of(p)
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+				.ifPresent(f -> f.editContent(content));
+			
 			String summary = "wstawienie modelu koniugacji; wer.: [[User:Peter Bowman]]";
 			
 			try {

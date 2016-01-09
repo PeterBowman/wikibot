@@ -11,6 +11,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
@@ -18,10 +19,9 @@ import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
-import com.github.wikibot.parsing.plwikt.DefinitionsField;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -73,19 +73,19 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			Section s = p.getSection("język niemiecki");
-			DefinitionsField definitions = s.getField(FieldTypes.DEFINITIONS);
-			String content = definitions.getContent();
+			String content = Optional.of(Page.wrap(page))
+				.flatMap(p -> p.getSection("język niemiecki"))
+				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS))
+				.map(Field::getContent)
+				.orElse("");
 			
 			int start = content.indexOf("{{forma czasownika|de}}");
         	String verbform = content.substring(start);
         	String verbformdef = verbform.substring(verbform.indexOf("\n") + 1);
         	
         	if (verbformdef.contains("{{zob") || !verbformdef.contains("{{")) {
-        		list.add(title);
-        		pw.println(++count + " - " + title + "\n" + verbform);
+        		list.add(page.getTitle());
+        		pw.println(++count + " - " + page.getTitle() + "\n" + verbform);
         	}
 		}
 		
@@ -152,19 +152,20 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			Section s = p.getSection("język niemiecki");
-			DefinitionsField definitions = s.getField(FieldTypes.DEFINITIONS);
-			String definitionsText = definitions.getContent();
-        	String fulldef = definitionsText.substring(definitionsText.indexOf("''czasownik"));
-        	String def = fulldef.substring(fulldef.indexOf("\n") + 1);
-        	
-        	if (def.contains("forma fleksyjna")) {
-        		int newline = fulldef.indexOf("\n");
-        		fulldef = "''{{forma czasownika|de}}''" + fulldef.substring(newline);
-        		list.add((list.size() + 1) + " - " + title + "\n" + fulldef);
-        	}
+			String definitionsText = Optional.of(Page.wrap(page))
+				.flatMap(p -> p.getSection("język niemiecki"))
+				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS))
+				.map(Field::getContent)
+				.orElse("");
+			
+			String fulldef = definitionsText.substring(definitionsText.indexOf("''czasownik"));
+			String def = fulldef.substring(fulldef.indexOf("\n") + 1);
+			
+			if (def.contains("forma fleksyjna")) {
+				int newline = fulldef.indexOf("\n");
+				fulldef = "''{{forma czasownika|de}}''" + fulldef.substring(newline);
+				list.add((list.size() + 1) + " - " + page.getTitle() + "\n" + fulldef);
+			}
 		}
 		
 		IOUtils.writeToFile(String.join("\n\n", list), location + "work_list_headers.txt");

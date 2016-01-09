@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +15,7 @@ import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Domains;
@@ -51,17 +53,19 @@ public final class KurdishTranslations implements Selectorizable {
 		int errors = 0;
 		
 		for (PageContainer page : pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			String translationsText = p.getPolishSection().getField(FieldTypes.TRANSLATIONS).getContent();
+			String translationsText = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.TRANSLATIONS))
+				.map(Field::getContent)
+				.orElse("");
 			
 			if (translationsText.contains("kurdyjski")) {
 				Matcher m = patt.matcher(translationsText);
 				
 				if (m.find()) {
-					pw.println("# [[" + title + "]] <nowiki>" + m.group(0) + "</nowiki>");
+					pw.println("# [[" + page.getTitle() + "]] <nowiki>" + m.group(0) + "</nowiki>");
 				} else {
-					pw.println("# [[" + title + "]]");
+					pw.println("# [[" + page.getTitle() + "]]");
 					errors++;
 				}
 				

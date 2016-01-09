@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -237,12 +238,12 @@ public class PolishGerundsList implements Selectorizable {
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
 			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
+			Section s = p.getPolishSection().get();
 			String definitionsText = null;
 			
 			try {
-				definitionsText = s.getField(FieldTypes.DEFINITIONS).getContent();
-			} catch (NullPointerException e) {
+				definitionsText = s.getField(FieldTypes.DEFINITIONS).get().getContent();
+			} catch (NullPointerException | NoSuchElementException e) {
 				System.out.printf("NullPointerException en %s%n", title);
 				continue;
 			}

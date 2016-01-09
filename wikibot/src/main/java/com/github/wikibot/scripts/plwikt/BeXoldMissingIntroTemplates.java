@@ -11,13 +11,14 @@ import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -56,10 +57,10 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		
 		for (PageContainer page : pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			Section s = p.getSection("język białoruski (taraszkiewica)");
-			String content = s.toString();
+			String content = Optional.of(Page.wrap(page))
+				.flatMap(p -> p.getSection("język białoruski (taraszkiewica)"))
+				.map(AbstractSection::toString)
+				.orElse("");
 
         	int a = content.indexOf("\n") + 1;
         	int b = content.indexOf("\n{{wymowa}}", a);
@@ -69,7 +70,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
         	if (!intro.startsWith("{{ortografieBE") && !intro.contains("\n{{ortografieBE"))
         		continue;
         	        	
-        	pw.println(title);
+        	pw.println(page.getTitle());
         	pw.println(intro);
         	pw.println("");
 		}

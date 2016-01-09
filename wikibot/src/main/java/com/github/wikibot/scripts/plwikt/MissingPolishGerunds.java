@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -79,9 +81,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			Section s = p.getPolishSection();
-			String inflection = s.getField(FieldTypes.INFLECTION).getContent();
+			
+			String inflection = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.INFLECTION))
+				.map(Field::getContent)
+				.orElse("");
 			
 			List<String> templates = ParseUtils.getTemplates("odmiana-czasownik-polski", inflection);
 			List<String> temp = new ArrayList<>();
@@ -250,13 +255,13 @@ public final class MissingPolishGerunds implements Selectorizable {
 		String relatedTerms = isNegate ? "" : String.format("{{czas}} [[%s]]", verb);
 		
 		Page page = Page.create(gerund, "język polski");
-		Section section = page.getPolishSection();
+		Section section = page.getPolishSection().get();
 		
 		section.setHeaderTitle(header);
-		section.getField(FieldTypes.DEFINITIONS).editContent(definition, true);
-		section.getField(FieldTypes.INFLECTION).editContent(inflection, true);
-		section.getField(FieldTypes.ANTONYMS).editContent(antonym, true);
-		section.getField(FieldTypes.RELATED_TERMS).editContent(relatedTerms, true);
+		section.getField(FieldTypes.DEFINITIONS).get().editContent(definition, true);
+		section.getField(FieldTypes.INFLECTION).get().editContent(inflection, true);
+		section.getField(FieldTypes.ANTONYMS).get().editContent(antonym, true);
+		section.getField(FieldTypes.RELATED_TERMS).get().editContent(relatedTerms, true);
 		
 		return page.toString();
 	}

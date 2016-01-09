@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,7 +20,6 @@ import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -65,15 +65,12 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 				continue;
 			}
 			
-			Page p = Page.wrap(page);
-			Section section = p.getSection("język polski");
+			String content = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS))
+				.map(Field::getContent)
+				.orElse("");
 			
-			if (section == null) {
-				section = p.getSection("termin obcy w języku polskim");
-			}
-			
-			Field definitions = section.getField(FieldTypes.DEFINITIONS);
-			String content = definitions.getContent();
 			String reflexive = title + " się"; 
 			
 			if (content.contains(reflexive)) {

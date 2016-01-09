@@ -3,6 +3,7 @@ package com.github.wikibot.scripts.misc;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
@@ -10,6 +11,7 @@ import javax.security.auth.login.FailedLoginException;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Domains;
@@ -47,15 +49,11 @@ public class FrenchIpa {
 		Map<String, String> map = new HashMap<>();
 		
 		for (PageContainer page : contents) {
-			Page p = Page.wrap(page);
-			String content = "";
-			
-			try {
-				content = p.getSection("język francuski").getField(FieldTypes.PRONUNCIATION).getContent();
-			} catch (NullPointerException e) {
-				System.out.printf("NullPointerException: %s%n", page.getTitle());
-				continue;
-			}
+			String content = Optional.of(Page.wrap(page))
+				.flatMap(p -> p.getSection("język francuski"))
+				.flatMap(s -> s.getField(FieldTypes.PRONUNCIATION))
+				.map(Field::getContent)
+				.orElse("");
 			
 			if (!content.isEmpty() && content.contains("{{IPA") && (
 				content.contains("b.l") ||

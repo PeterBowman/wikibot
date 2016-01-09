@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -202,12 +203,12 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		this.trailingNewlines = trailingNewlines;
 	}
 
-	public T getParentSection() {
-		return parentSection;
+	public Optional<T> getParentSection() {
+		return Optional.ofNullable(parentSection);
 	}
 	
-	public AbstractPage<T> getContainingPage() {
-		return containingPage;
+	public Optional<AbstractPage<T>> getContainingPage() {
+		return Optional.ofNullable(containingPage);
 	}
 	
 	public List<T> getSiblingSections() {
@@ -218,7 +219,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		return Collections.unmodifiableList(new ArrayList<>(childSections));
 	}
 	
-	public T nextSection() {
+	public Optional<T> nextSection() {
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
@@ -226,13 +227,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		int selfIndex = containingPage.sections.indexOf(this);
 		
 		try {
-			return containingPage.sections.get(selfIndex + 1);
+			return Optional.of(containingPage.sections.get(selfIndex + 1));
 		} catch (IndexOutOfBoundsException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 	
-	public T previousSection() {
+	public Optional<T> previousSection() {
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
@@ -240,13 +241,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		int selfIndex = containingPage.sections.indexOf(this);
 		
 		try {
-			return containingPage.sections.get(selfIndex - 1);
+			return Optional.of(containingPage.sections.get(selfIndex - 1));
 		} catch (IndexOutOfBoundsException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 	
-	public T nextSiblingSection() {
+	public Optional<T> nextSiblingSection() {
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
@@ -258,13 +259,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		int selfIndex = siblingSections.indexOf(this);
 		
 		try {
-			return siblingSections.get(selfIndex + 1);
+			return Optional.of(siblingSections.get(selfIndex + 1));
 		} catch (IndexOutOfBoundsException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 	
-	public T previousSiblingSection() {
+	public Optional<T> previousSiblingSection() {
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot traverse Sections with no containing Page");
 		}
@@ -276,9 +277,9 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		int selfIndex = siblingSections.indexOf(this);
 		
 		try {
-			return siblingSections.get(selfIndex - 1);
+			return Optional.of(siblingSections.get(selfIndex - 1));
 		} catch (IndexOutOfBoundsException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 	
@@ -473,7 +474,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 				.filter(predicate)
 				.collect(Collectors.toList());
 		} else {
-			return new ArrayList<>();
+			return new ArrayList<>(0);
 		}
 	}
 	

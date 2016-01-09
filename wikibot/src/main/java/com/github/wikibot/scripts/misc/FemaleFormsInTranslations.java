@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -77,8 +78,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		List<Translations> nouns = Stream.of(fempages)
 			.map(Page::wrap)
 			.map(page -> {
-				Section s = page.getPolishSection();
-				Field translations = s.getField(FieldTypes.TRANSLATIONS);
+				Section s = page.getPolishSection().get();
+				Field translations = s.getField(FieldTypes.TRANSLATIONS).get();
 				String translationsText = translations.getContent();
 				List<String> templates = ParseUtils.getTemplates("zobtłum rodz", translationsText);
 				String param = ParseUtils.getTemplateParam(templates.get(0), 1);
@@ -112,7 +113,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			String masc_noun = page.getTitle();
 			Page p = Page.wrap(page);
 			
-			Translations masc = new Translations(masc_noun, p.getPolishSection());
+			Translations masc = new Translations(masc_noun, p.getPolishSection().get());
         	Translations fem = null;
         	
         	for (Translations transl : nouns) {
@@ -276,10 +277,13 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		PageContainer[] fem_pages = wb.getContentOfPages(fem_set.toArray(new String[fem_set.size()]));
 		
 		for (PageContainer page : masc_pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			String translationsText = p.getPolishSection().getField(FieldTypes.TRANSLATIONS).getContent();
-			List<String> transls = masc_list.get(title);
+			String translationsText = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.TRANSLATIONS))
+				.map(Field::getContent)
+				.orElse("");
+			
+			List<String> transls = masc_list.get(page.getTitle());
 			
 			for (String transl : transls) {
 				if (transl.indexOf(" || ") != -1) {
@@ -292,19 +296,22 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 				translationsText = translationsText.substring(0, start) + "* " + transl + translationsText.substring(end);
 			}
 			
-			pw_masc.println(title);
+			pw_masc.println(page.getTitle());
 			pw_masc.println(translationsText);
 			
-			masc_ready.put(title, translationsText);
+			masc_ready.put(page.getTitle(), translationsText);
 		}
 		
 		pw_masc.close();
 		
 		for (PageContainer page : fem_pages) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			String translationsText = p.getPolishSection().getField(FieldTypes.TRANSLATIONS).getContent();
-			List<String> transls = fem_list.get(title);
+			String translationsText = Optional.of(Page.wrap(page))
+				.flatMap(Page::getPolishSection)
+				.flatMap(s -> s.getField(FieldTypes.TRANSLATIONS))
+				.map(Field::getContent)
+				.orElse(""); 
+			
+			List<String> transls = fem_list.get(page.getTitle());
 			
 			String intro = translationsText.substring(0, translationsText.indexOf("\n* ") + 1);
 			String body = translationsText.substring(translationsText.indexOf("\n* ") + 1);
@@ -317,10 +324,10 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			Misc.sortList(myList, "pl");
 			String output = intro + String.join("\n", myList) + "\n";
 			
-			pw_fem.println(title);
+			pw_fem.println(page.getTitle());
 			pw_fem.println(output);
 			
-			fem_ready.put(title, output);
+			fem_ready.put(page.getTitle(), output);
 		}
 		
 		pw_fem.close();
@@ -443,7 +450,7 @@ class Translations {
 	}
 	
 	private void analyzeDefs(Section section) {
-		String defs = section.getField(FieldTypes.DEFINITIONS).getContent();
+		String defs = section.getField(FieldTypes.DEFINITIONS).get().getContent();
 		
 		if (defs.contains("(1.2)")) {
 			only1def = false;
@@ -453,7 +460,7 @@ class Translations {
 	}
 	
 	private void analyzeTranslations(Section section) {
-		String transl = section.getField(FieldTypes.TRANSLATIONS).getContent();
+		String transl = section.getField(FieldTypes.TRANSLATIONS).get().getContent();
 		
 		for (int t = transl.indexOf("\n* "); t != -1; t = transl.indexOf("\n* ", ++t)) {
 			int start = transl.indexOf("* ", t) + 2;

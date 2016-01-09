@@ -3,6 +3,7 @@ package com.github.wikibot.parsing.plwikt;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import javax.security.auth.login.FailedLoginException;
@@ -59,24 +60,20 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 		}
 	}
 
-	public Section getSection(String lang) {
+	public Optional<Section> getSection(String lang) {
 		return getSection(lang, false);
 	}
 	
-	public Section getSection(String lang, boolean useShortName) {
-		Section out = sections
-			.stream()
+	public Optional<Section> getSection(String lang, boolean useShortName) {
+		return sections.stream()
 			.filter(section -> (useShortName ? section.getLangShort() : section.getLang()).equals(lang))
-			.findFirst()
-			.orElse(null);
-		
-		return out;
+			.findAny();
 	}
 	
-	public Section getPolishSection() {
-		Section out = getSection("język polski");
+	public Optional<Section> getPolishSection() {
+		Optional<Section> out = getSection("język polski");
 		
-		if (out == null) {
+		if (!out.isPresent()) {
 			out = getSection("termin obcy w języku polskim");
 		}
 		
@@ -84,14 +81,14 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 	}
 	
 	public Section addSection(String lang) {
-		Section section = getSection(lang);
+		Optional<Section> sectionOpt = getSection(lang);
 		
-		if (section != null) {
-			return section;
+		if (sectionOpt.isPresent()) {
+			return sectionOpt.get();
 		}
 		
-		section = Section.create(lang, title);
-		section.getField(FieldTypes.EXAMPLES).editContent("(1.1)", true);
+		Section section = Section.create(lang, title);
+		section.getField(FieldTypes.EXAMPLES).ifPresent(f -> f.editContent("(1.1)", true));
 		sections.add(section);
 		
 		sortSections();
@@ -113,13 +110,13 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 	}
 
 	public boolean removeSection(String lang) {
-		Section section = getSection(lang);
+		Optional<Section> sectionOpt = getSection(lang);
 		
-		if (section == null) {
+		if (!sectionOpt.isPresent()) {
 			return false;
 		}
 		
-		sections.remove(section);
+		sections.remove(sectionOpt.get());
 		updateToc();
 		buildSectionTree();
 		
@@ -137,9 +134,9 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		String text = wiki.getPageText("rescate");
 		Page page = Page.store("rescate", text);
-		Section esp = page.getSection("język hiszpański");
-		Field esp_ex = esp.getField(FieldTypes.EXAMPLES);
-		DefinitionsField esp_def = esp.getField(FieldTypes.DEFINITIONS);
+		Section esp = page.getSection("język hiszpański").get();
+		Field esp_ex = esp.getField(FieldTypes.EXAMPLES).get();
+		DefinitionsField esp_def = (DefinitionsField) esp.getField(FieldTypes.DEFINITIONS).get();
 		page.addSection("język polski");
 		String text2 = wiki.getPageText("boks");
 		Page page2 = Page.store("boks", text2);

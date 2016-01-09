@@ -238,7 +238,7 @@ public final class InconsistentHeaderTitles {
 			headerTitle = stripWikiLinks(headerTitle);
 		}
 		
-		String pageTitle = section.getContainingPage().getTitle();
+		String pageTitle = section.getContainingPage().get().getTitle();
 		pageTitle = pageTitle.replace("ʼ", "'").replace("…", "...");
 		headerTitle = headerTitle.replace("ʼ", "'").replace("…", "...");
 		

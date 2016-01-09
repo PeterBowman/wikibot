@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
@@ -21,7 +22,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -120,14 +120,14 @@ public class JyddishIpa implements Selectorizable {
 		
 		for (PageContainer page : pages) {
 		//for (Entry<String, String> entry : contenmap.entrySet()) {
-			String title = page.getTitle();
-			Page p = Page.wrap(page);
-			Section s = p.getSection("jidysz");
-			Field pronunciation = s.getField(FieldTypes.PRONUNCIATION);
-			String pronunciationText = pronunciation.getContent();
+			String pronunciationText = Optional.of(Page.wrap(page))
+				.flatMap(p -> p.getSection("jidysz"))
+				.flatMap(s -> s.getField(FieldTypes.PRONUNCIATION))
+				.map(Field::getContent)
+				.orElse("");
 			
 			if (ParseUtils.getTemplates("wymowa", pronunciationText).isEmpty()) {
-				pw_errors.println(++errors + ". Sin sección de pronunciación: " + title);
+				pw_errors.println(++errors + ". Sin sección de pronunciación: " + page.getTitle());
 				continue;
 			}
 			
@@ -160,8 +160,8 @@ public class JyddishIpa implements Selectorizable {
 					b = pronunciationText.indexOf("}}", a);
 					
 					if (!pronunciationText.substring(a, b).matches(".*[" + chars + "].*")) {
-						pw_list.println(++count + " - " + title);
-						sb_list.append("# [[" + title + "]]\n");
+						pw_list.println(++count + " - " + page.getTitle());
+						sb_list.append("# [[" + page.getTitle() + "]]\n");
 					}
 				}
 				
