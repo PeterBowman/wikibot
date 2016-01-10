@@ -3361,38 +3361,40 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		// language section templates: {{lengua|xx}}
-		
 		page.getAllLangSections().stream()
 			.filter(langSection -> !langSection.getLangCode(false).equals(langSection.getLangCode(true)))
 			.forEach(langSection -> langSection.setLangCode(langSection.getLangCode(true)));
 		
+		String formatted = page.toString();
+		
 		// term section templates: {{sustantivo|xx}}
+		formatted = processLanguageParameters(formatted, "ParamWithoutName1", SECTION_TMPLS);
 		
-		page.getAllLangSections().stream()
-			.map(AbstractSection::getChildSections)
-			.map(AbstractSection::flattenSubSections)
-			.flatMap(Collection::stream)
-			.filter(section -> !section.getHeader().isEmpty())
-			.forEach(section -> SECTION_TMPLS.stream()
-				.map(template -> getTemplates(template, section.getHeader()))
-				.flatMap(Collection::stream)
-				.map(template -> getTemplateParametersWithValue(template))
-				.filter(params -> !params.getOrDefault("ParamWithoutName1", "").isEmpty())
-				.filter(params -> !params.get("ParamWithoutName1").toLowerCase()
-					.equals(params.get("ParamWithoutName1"))
-				)
-				.forEach(params -> {
-					params.compute("ParamWithoutName1", (k, v) -> v.toLowerCase());
-					String header = Utils.replaceTemplates(
-						section.getHeader(),
-						params.get("templateName"),
-						template -> templateFromMap(params)
-					);
-					section.setHeader(header);
-				})
+		// "leng" parameter templates: {{sinónimo|leng=xx}}
+		formatted = processLanguageParameters(formatted, "leng", LENG_PARAM_TMPLS);
+		
+		checkDifferences(formatted, "checkLangCodeCase", null);
+	}
+	
+	private static String processLanguageParameters(String text, String param, List<String> templates) {
+		for (String templateName : templates) {
+			String temp = Utils.replaceTemplates(text, templateName, template ->
+				Optional.of(getTemplateParametersWithValue(template))
+					.filter(params -> !params.getOrDefault(param, "").isEmpty())
+					.filter(params -> !params.get(param).equals(params.get(param).toLowerCase()))
+					.map(params -> {
+						params.compute(param, (k, v) -> v.toLowerCase());
+						return templateFromMap(params);
+					})
+					.orElse(template)
 			);
+			
+			if (!temp.equals(text)) {
+				text = temp;
+			}
+		}
 		
-		checkDifferences(page.toString(), "checkLangCodeCase", null);
+		return text;
 	}
 	
 	public void langTemplateParams() {
