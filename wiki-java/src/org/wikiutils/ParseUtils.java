@@ -376,48 +376,66 @@ public class ParseUtils
          */
         public static ArrayList<String> getTemplates(String template, String text)
         {
-                HashMap<Integer, Integer> noWiki = getIgnorePositions(text, "<nowiki>", "</nowiki>");
-                HashMap<Integer, Integer> comment = getIgnorePositions(text, "<!--", "-->");
-                ArrayList<String> al = new ArrayList<String>();
-                char firstChar = template.charAt(0);
-                template = template.substring(1);
-                Pattern p = Pattern.compile("\\{\\{\\s*("
-                                + Character.toLowerCase(firstChar) + "|"
-                                + Character.toUpperCase(firstChar) + ")"
-                                + Pattern.quote(template) + "\\s*[\\|\\}]");
-                Matcher m = p.matcher(text);
-                while (m.find()) 
-                {
-                        int startPos = m.start();
-                        if (isIgnorePosition(noWiki, startPos) || isIgnorePosition(comment, startPos))
-                                continue;
-                        int i = startPos + 2;
-                        int nb = 1;
-                        int len = text.length();
-                        while (nb != 0 && i < len - 1)
-                        {
-                                if (text.charAt(i) == '{' && text.charAt(i + 1) == '{')
-                                {
-                                        nb++;
-                                        i++;
-                                }
-                                else if (text.charAt(i) == '}' && text.charAt(i + 1) == '}')
-                                {
-                                        nb--;
-                                        i++;
-                                }
-                                i++;
-                        }
-                        if (i > len)
-                                continue;
-                        i = (i + 1 > len) ? len : i + 1;
-                        String temp = text.substring(startPos, i);
-                        if (!temp.endsWith("}}"))
-                                temp = temp.substring(0, temp.length() - 1);
-                        al.add(temp);
-                }
+                return getTemplatesInternal(template, text, false);
+        }
+        
+        public static ArrayList<String> getTemplatesIgnoreCase(String template, String text)
+        {
+                return getTemplatesInternal(template, text, true);
+        }
+        
+        private static ArrayList<String> getTemplatesInternal(String template, String text, boolean ignoreCase)
+        {
+            HashMap<Integer, Integer> noWiki = getIgnorePositions(text, "<nowiki>", "</nowiki>");
+            HashMap<Integer, Integer> comment = getIgnorePositions(text, "<!--", "-->");
+            ArrayList<String> al = new ArrayList<String>();
+            String regex = "\\{\\{\\s*";
+            if (ignoreCase)
+            {
+                    char firstChar = template.charAt(0);
+                    template = template.substring(1);
+                    regex += "("
+                            + Character.toLowerCase(firstChar) + "|"
+                            + Character.toUpperCase(firstChar) + ")"
+                            + Pattern.quote(template);
+            }
+            else
+                regex += Pattern.quote(template);
+            regex += "\\s*[\\|\\}]";
+            Pattern p = Pattern.compile(regex);
+            Matcher m = p.matcher(text);
+            while (m.find()) 
+            {
+                    int startPos = m.start();
+                    if (isIgnorePosition(noWiki, startPos) || isIgnorePosition(comment, startPos))
+                            continue;
+                    int i = startPos + 2;
+                    int nb = 1;
+                    int len = text.length();
+                    while (nb != 0 && i < len - 1)
+                    {
+                            if (text.charAt(i) == '{' && text.charAt(i + 1) == '{')
+                            {
+                                    nb++;
+                                    i++;
+                            }
+                            else if (text.charAt(i) == '}' && text.charAt(i + 1) == '}')
+                            {
+                                    nb--;
+                                    i++;
+                            }
+                            i++;
+                    }
+                    if (i > len)
+                            continue;
+                    i = (i + 1 > len) ? len : i + 1;
+                    String temp = text.substring(startPos, i);
+                    if (!temp.endsWith("}}"))
+                            temp = temp.substring(0, temp.length() - 1);
+                    al.add(temp);
+            }
 
-                return al;
+            return al;
         }
         
         /**

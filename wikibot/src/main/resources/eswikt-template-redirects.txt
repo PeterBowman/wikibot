@@ -20,6 +20,16 @@ sustantivo masculino y femenino = sustantivo femenino y masculino
 acrónimo = sigla
 redireccion suave = redirección suave
 
+Ampliable = ampliable
+Definición = definición
+Discutido = discutido
+Stub = esbozo
+stub = esbozo
+Esbozo = esbozo
+Formato = estructura
+formato = estructura
+revisar = revisión
+
 DRAE1914 = DLC1914
 DUE = MaríaMoliner
 Moliner = MaríaMoliner

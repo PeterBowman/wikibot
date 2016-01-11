@@ -119,8 +119,7 @@ public class Editor extends AbstractEditor {
 	
 	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
 	private static final List<String> AMBOX_TMPLS = Arrays.asList(
-		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "stub", "estructura", "formato",
-		"falta", "revisión", "revisar"
+		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "estructura", "falta", "revisión"
 	);
 	
 	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
@@ -230,7 +229,7 @@ public class Editor extends AbstractEditor {
 		
 		P_ADAPT_PRON_TMPL = Pattern.compile("^[ :;*#]*?\\{\\{ *?(" + String.join("|", PRON_TMPLS) + ") *?(?:\\|[^\\{]*?)?\\}\\}[.\\s]*((?:<!--.*?-->|<!--.*)*\\s*)$");
 		
-		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE);
+		P_AMBOX_TMPLS = Pattern.compile("[ :;*#]*?\\{\\{ *?(" + String.join("|", AMBOX_TMPLS) + ") *?(?:\\|.*)?\\}\\}( *?<!--.+?-->)*");
 
 		P_IMAGES = Pattern.compile("[ :;*#]*?\\[\\[ *?(" + String.join("|", fileNsAliases) + ") *?:(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]( *?<!--.+?-->)*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
@@ -966,14 +965,8 @@ public class Editor extends AbstractEditor {
 		for (Map.Entry<String, String> entry : TMPL_ALIAS_MAP.entrySet()) {
 			String temp = Utils.replaceTemplates(formatted, entry.getKey(), template -> {
 				HashMap<String, String> params = getTemplateParametersWithValue(template);
-				
-				// ParseUtils's template methods are case-insensitive
-				if (params.get("templateName").equals(entry.getKey())) {
-					params.put("templateName", entry.getValue());
-					return templateFromMap(params);
-				} else {
-					return template;
-				}
+				params.put("templateName", entry.getValue());
+				return templateFromMap(params);
 			});
 			
 			if (!temp.equals(formatted)) {
