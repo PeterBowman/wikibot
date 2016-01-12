@@ -12,7 +12,8 @@ import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -150,31 +151,31 @@ public final class Utils {
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			BiConsumer<Matcher, StringBuffer> biCons) {
-		Function<Matcher, Integer> func = m -> m.start();
+		ToIntFunction<Matcher> func = m -> m.start();
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
-			Function<Matcher, Integer> func, BiConsumer<Matcher, StringBuffer> biCons) {
+			ToIntFunction<Matcher> func, BiConsumer<Matcher, StringBuffer> biCons) {
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
 	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
 			List<Range<Integer>> ignoredRanges) {
 		Pattern patt = Pattern.compile(regex);
-		Function<Matcher, Integer> func = m -> m.start();
+		ToIntFunction<Matcher> func = m -> m.start();
 		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
 		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
 	}
 	
 	public static String replaceWithIgnoredranges(String text, Pattern patt,
-			List<Range<Integer>> ignoredRanges, Function<Matcher, Integer> func,
+			List<Range<Integer>> ignoredRanges, ToIntFunction<Matcher> func,
 			BiConsumer<Matcher, StringBuffer> biCons) {
 		Matcher m = patt.matcher(text);
 		StringBuffer sb = new StringBuffer(text.length());
 		
 		while (m.find()) {
-			if (containedInRanges(ignoredRanges, func.apply(m))) {
+			if (containedInRanges(ignoredRanges, func.applyAsInt(m))) {
 				continue;
 			}
 			
@@ -184,7 +185,7 @@ public final class Utils {
 		return m.appendTail(sb).toString();
 	}
 
-	public static String replaceTemplates(String text, String templateName, Function<String, String> func) {
+	public static String replaceTemplates(String text, String templateName, UnaryOperator<String> func) {
 		List<String> templates = ParseUtils.getTemplates(templateName, text);
 		
 		if (templates.isEmpty()) {
@@ -225,7 +226,7 @@ public final class Utils {
 				fromIndex = index + target.length();
 			}
 		}
-
+		
 		return index;
 	}
 	

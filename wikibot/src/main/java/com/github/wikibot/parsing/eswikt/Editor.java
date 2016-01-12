@@ -31,8 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -634,13 +635,13 @@ public class Editor extends AbstractEditor {
 		return sb.toString();
 	}
 	
-	private static int traverseChars(CharSequence text, int pos, Function<Integer, Integer> op) {
+	private static int traverseChars(CharSequence text, int pos, IntUnaryOperator op) {
 		char ch;
 		int nextPos = pos;
 		
 		try {
 			while (true) {
-				nextPos = op.apply(nextPos);
+				nextPos = op.applyAsInt(nextPos);
 				
 				if (nextPos < pos) { // decrement
 					ch = text.charAt(nextPos);
@@ -659,7 +660,7 @@ public class Editor extends AbstractEditor {
 			return pos;
 		}
 		
-		return ch == '\n' ? op.apply(pos) : -1;
+		return ch == '\n' ? op.applyAsInt(pos) : -1;
 	}
 	
 	public void removeTemplatePrefixes() {
@@ -1181,7 +1182,7 @@ public class Editor extends AbstractEditor {
 		return text;
 	}
 	
-	private static String applyReplacementFunction(String text, Set<String> set, String log, Function<String, String> func) {
+	private static String applyReplacementFunction(String text, Set<String> set, String log, UnaryOperator<String> func) {
 		String testString = func.apply(text);
 		
 		if (!testString.equals(text)) {

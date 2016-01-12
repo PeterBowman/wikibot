@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,7 +59,7 @@ public abstract class AbstractEditor {
 	
 	public abstract void check();
 	
-	protected void addOperation(String caller, String log, Function<String, String> func) {
+	protected void addOperation(String caller, String log, UnaryOperator<String> func) {
 		String formatted = func.apply(text);
 		checkDifferences(formatted, caller, log);
 	}

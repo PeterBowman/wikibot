@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -103,7 +103,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 		
 		int tocLevel = 1;
 		
-		BiConsumer<List<T>, Integer> cons = (sections, level) ->
+		ObjIntConsumer<List<T>> cons = (sections, level) ->
 			sections.stream().forEach(s -> s.setLevel(level));
 		
 		while (true) {
