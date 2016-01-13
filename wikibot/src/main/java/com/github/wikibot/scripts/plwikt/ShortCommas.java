@@ -18,10 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import javax.xml.stream.XMLStreamException;
-
 import org.wikiutils.IOUtils;
-import org.xml.sax.SAXException;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -101,7 +98,7 @@ public final class ShortCommas implements Selectorizable {
 		IOUtils.writeToFile(String.join("\n", templates), shorts);
 	}
 	
-	public static void getList() throws IOException, SAXException {
+	public static void getList() throws IOException {
 		Set<String> wlh = new HashSet<>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
 		List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
 		XMLDumpReader dumpReader = new XMLDumpReader(Domains.PLWIKT);
@@ -115,9 +112,6 @@ public final class ShortCommas implements Selectorizable {
 				.filter(rev -> patt.matcher(rev.getText()).matches())
 				.map(XMLRevision::toPageContainer)
 				.forEach(pages::add);
-		} catch (XMLStreamException e) {
-			e.printStackTrace();
-			return;
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());

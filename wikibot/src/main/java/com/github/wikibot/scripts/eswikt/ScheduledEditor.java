@@ -13,8 +13,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
-import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.IOUtils;
@@ -43,7 +41,7 @@ public final class ScheduledEditor {
 	private static volatile RuntimeException threadExecutionException;
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
-	public static void main(String[] args) throws FailedLoginException, IOException {
+	public static void main(String[] args) throws Exception {
 		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		wb.setThrottle(5000);
 		
@@ -126,15 +124,13 @@ public final class ScheduledEditor {
 		}
 	}
 	
-	private static void processDumpFile(XMLDumpReader dumpReader) {
+	private static void processDumpFile(XMLDumpReader dumpReader) throws IOException {
 		try (Stream<XMLRevision> r = dumpReader.getStAXReader().stream(wb.getSiteStatistics().get("pages"))) {
 			r.parallel()
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(XMLRevision::toPageContainer)
 				.forEach(ScheduledEditor::processPage); // TODO: review exit codes
-		} catch (XMLStreamException | IOException e) {
-			e.printStackTrace();
 		}
 	}
 	
