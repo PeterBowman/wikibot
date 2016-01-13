@@ -82,6 +82,7 @@ public final class SAXConcurrentPageHandler extends DefaultHandler {
 				break;
 			case "ip": // either this or "username"
 				revision.contributor = decode(sb.toString());
+				revision.isAnonymousContributor = true;
 				break;
 			case "minor":
 				revision.isMinor = true;

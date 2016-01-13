@@ -57,6 +57,7 @@ public final class JsoupDumpReader {
 			// revdeleted, not sure if it applies here
 			if (!ip.tag().isSelfClosing()) {
 				rev.contributor = ip.text();
+				rev.isAnonymousContributor = true;
 			}
 		}
 		

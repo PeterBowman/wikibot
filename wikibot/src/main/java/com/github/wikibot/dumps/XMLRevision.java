@@ -9,7 +9,7 @@ import java.util.TimeZone;
 
 import com.github.wikibot.utils.PageContainer;
 
-public class XMLRevision implements Serializable, Comparable<XMLRevision>, Cloneable {
+public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	private static final long serialVersionUID = -7617943255499585377L;
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
@@ -21,6 +21,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision>, Clone
 	int parentid = 0;
 	String timestamp;
 	String contributor;
+	boolean isAnonymousContributor;
 	boolean isMinor;
 	String comment;
 	String text;
@@ -61,6 +62,10 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision>, Clone
 	
 	public String getContributor() {
 		return contributor;
+	}
+	
+	public boolean isAnonymousContributor() {
+		return isAnonymousContributor;
 	}
 	
 	public boolean isMinor() {
@@ -126,6 +131,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision>, Clone
 		rev.parentid = parentid;
 		rev.timestamp = timestamp;
 		rev.contributor = contributor;
+		rev.isAnonymousContributor = isAnonymousContributor;
 		rev.isMinor = isMinor;
 		rev.comment = comment;
 		rev.text = text;
@@ -140,18 +146,18 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision>, Clone
 	@Override
 	public String toString() {
 		// contributor/comment/text may be null (revdeleted)
-		StringBuilder sb = new StringBuilder((text != null ? text.length() : 0) + 100);
-		sb.append("[title=").append(title);
-		sb.append(",ns=").append(ns);
-		sb.append(",pageid=").append(pageid);
-		sb.append(",isRedirect=").append(isRedirect);
-		sb.append(",revid=").append(revid);
-		sb.append(",parentid=").append(parentid);
-		sb.append(",timestamp=").append(timestamp);
-		sb.append(",contributor=").append(contributor);
-		sb.append(",isMinor=").append(isMinor);
-		sb.append(",comment=").append(comment);
-		sb.append(",text=").append(text).append("]");
-		return sb.toString();
+		return
+			"[title=" + title +
+			",ns=" + ns +
+			",pageid=" + pageid +
+			",isRedirect=" + isRedirect +
+			",revid=" + revid +
+			",parentid=" + parentid +
+			",timestamp=" + timestamp +
+			",contributor=" + contributor +
+			",isAnonymousContributor=" + isAnonymousContributor +
+			",isMinor=" + isMinor +
+			",comment=" + comment +
+			",text=" + text + "]";
 	}
 }

@@ -81,6 +81,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 				break;
 			case "ip": // either this or "username"
 				revision.contributor = decode(text);
+				revision.isAnonymousContributor = true;
 				break;
 			case "minor":
 				revision.isMinor = true;
