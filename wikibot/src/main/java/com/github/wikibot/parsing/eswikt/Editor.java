@@ -218,7 +218,8 @@ public class Editor extends AbstractEditor {
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
-			"título referencias", "pron-graf", "imagen", "listaref"
+			"título referencias", "pron-graf", "imagen", "listaref",
+			"inflect\\.[^ |{}]+", "[\\w-]+\\.v\\.conj[^ |{}]*", "comp(?:\\.[\\w-]+)?"
 		);
 		
 		BS_SPLITTER_LIST = new ArrayList<>(AMBOX_TMPLS.size() + tempListBS.size());
@@ -1076,6 +1077,8 @@ public class Editor extends AbstractEditor {
 		// TODO: detect comment tags
 		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
 		
+		// TODO: expand character set
+		// https://es.wiktionary.org/w/index.php?title=blog&diff=4036523&oldid=4036446
 		formatted = applyReplacementFunction(formatted, setLog, "\"^[.,:;*#]$\" → \"\"", text -> {
 			text = Utils.replaceWithStandardIgnoredRanges(text, "(?<=[^\n])\n+?[.,:;*#]+\n", "\n\n");
 			text = Utils.replaceWithStandardIgnoredRanges(text, "^\n*?[.,:;*#]+\n", "");
@@ -4601,7 +4604,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "gato";
+		String title = "blog";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

@@ -330,8 +330,12 @@ public final class InconsistentHeaderTitles {
 		
 		@Override
 		public boolean equals(Object o) {
-			if (!(o instanceof Item) || o == this) {
+			if (o == this) {
 				return true;
+			}
+			
+			if (!(o instanceof Item)) {
+				return false;
 			}
 			
 			Item i = (Item) o;
