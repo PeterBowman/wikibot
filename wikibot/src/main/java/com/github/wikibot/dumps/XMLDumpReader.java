@@ -135,7 +135,7 @@ public final class XMLDumpReader {
 		}
 	}
 	
-	public void runSAXReader(Consumer<XMLRevision> cons) throws IOException {
+	public void runParallelSAXReader(Consumer<XMLRevision> cons) throws IOException {
 		XMLReader xmlReader;
 		
 		try {
@@ -156,6 +156,10 @@ public final class XMLDumpReader {
 	}
 	
 	public StAXDumpReader getStAXReader() throws IOException {
+		return getStAXReader(0);
+	}
+	
+	public StAXDumpReader getStAXReader(int estimateSize) throws IOException {
 		XMLStreamReader streamReader;
 		
 		try {
@@ -166,7 +170,7 @@ public final class XMLDumpReader {
 			throw new IOException(e);
 		}
 		
-		return new StAXDumpReader(streamReader);
+		return new StAXDumpReader(streamReader, estimateSize);
 	}
 	
 	public List<XMLRevision> getParsedIncrementalDump() throws IOException {
@@ -186,7 +190,7 @@ public final class XMLDumpReader {
 		XMLDumpReader reader = new XMLDumpReader(Domains.ESWIKT);
 		List<String> list = Collections.synchronizedList(new ArrayList<>(5000));
 		
-		/*reader.runSAXReader(rev -> {
+		/*reader.runParallelSAXReader(rev -> {
 			Page page = Page.store(rev.title, rev.text);
 			boolean anyMatch = page.getAllLangSections().stream()
 				.anyMatch(ls -> ls.getTemplateParams().containsKey("alt"));
@@ -197,7 +201,7 @@ public final class XMLDumpReader {
 		});*/
 		
 		// 866328 - 4717 - 85 s (vs 80 s)
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream(900000)) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader(900000).stream()) {
 			stream.parallel()
 				//.filter(rev -> rev.ns == 0)
 				//.limit(100)

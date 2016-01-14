@@ -125,7 +125,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processDumpFile(XMLDumpReader dumpReader) throws IOException {
-		try (Stream<XMLRevision> r = dumpReader.getStAXReader().stream(wb.getSiteStatistics().get("pages"))) {
+		try (Stream<XMLRevision> r = dumpReader.getStAXReader(wb.getSiteStatistics().get("pages")).stream()) {
 			r.parallel()
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

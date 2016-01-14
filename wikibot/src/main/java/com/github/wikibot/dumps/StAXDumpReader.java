@@ -17,9 +17,20 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	);
 	
 	private XMLStreamReader streamReader;
+	private final int estimateSize;
 	
 	public StAXDumpReader(XMLStreamReader streamReader) {
 		this.streamReader = streamReader;
+		this.estimateSize = 0;
+	}
+	
+	public StAXDumpReader(XMLStreamReader streamReader, int estimateSize) {
+		if (estimateSize < 0) {
+			throw new IllegalArgumentException("Negative estimateSize value: " + estimateSize);
+		}
+		
+		this.streamReader = streamReader;
+		this.estimateSize = estimateSize;
 	}
 
 	@Override
@@ -33,21 +44,14 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	}
 	
 	public Stream<XMLRevision> stream() {
-		Spliterator<XMLRevision> spliterator = Spliterators.spliteratorUnknownSize(iterator(),
-			Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL); 
+		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL;
+		Spliterator<XMLRevision> spliterator;
 		
-		return StreamSupport.stream(spliterator, false);
-	}
-	
-	public Stream<XMLRevision> stream(int size) {
-		if (size == 0) {
-			return stream();
-		} else if (size < 0) {
-			throw new IllegalArgumentException("Negative estimated size: " + size);
+		if (estimateSize == 0) {
+			spliterator = Spliterators.spliteratorUnknownSize(iterator(), characteristics);
+		} else {
+			spliterator = Spliterators.spliterator(iterator(), estimateSize, characteristics);
 		}
-		
-		Spliterator<XMLRevision> spliterator = Spliterators.spliterator(iterator(), size,
-			Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL);
 		
 		return StreamSupport.stream(spliterator, false);
 	}
