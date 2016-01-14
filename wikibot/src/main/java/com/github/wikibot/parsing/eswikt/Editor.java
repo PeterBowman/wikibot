@@ -767,6 +767,11 @@ public class Editor extends AbstractEditor {
 			// test#en -> test
 			if (target.contains("#")) {
 				strippedTarget = target.substring(0, target.indexOf("#"));
+				
+				// [[#]] or anchor to section: [[#name]]
+				if (strippedTarget.isEmpty()) {
+					return;
+				}
 			} else {
 				strippedTarget = target;
 			}
@@ -4596,7 +4601,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "koffie";
+		String title = "gato";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

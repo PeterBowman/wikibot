@@ -190,21 +190,10 @@ public final class XMLDumpReader {
 		XMLDumpReader reader = new XMLDumpReader(Domains.ESWIKT);
 		List<String> list = Collections.synchronizedList(new ArrayList<>(5000));
 		
-		/*reader.runParallelSAXReader(rev -> {
-			Page page = Page.store(rev.title, rev.text);
-			boolean anyMatch = page.getAllLangSections().stream()
-				.anyMatch(ls -> ls.getTemplateParams().containsKey("alt"));
-			
-			if (anyMatch) {
-				list.add(page.getTitle());
-			}
-		});*/
-		
-		// 866328 - 4717 - 85 s (vs 80 s)
 		try (Stream<XMLRevision> stream = reader.getStAXReader(900000).stream()) {
 			stream.parallel()
-				//.filter(rev -> rev.ns == 0)
-				//.limit(100)
+				.filter(XMLRevision::isMainNamespace)
+				.filter(XMLRevision::nonRedirect)
 				.map(rev -> Page.store(rev.title, rev.text))
 				.filter(page -> page.getAllLangSections().stream()
 					.anyMatch(ls -> ls.getTemplateParams().containsKey("alt"))
@@ -212,7 +201,7 @@ public final class XMLDumpReader {
 				.forEach(page -> list.add(page.getTitle()));
 		}
 		
-		System.out.printf("Total count: %d%n%s%n", list.size(), list);
+		System.out.printf("Total count: %d%n", list.size());
 		//IOUtils.writeToFile(String.join("\n", list), "./data/test2.txt");
 	}
 
