@@ -491,6 +491,7 @@ public class Editor extends AbstractEditor {
 		manageClearElements();
 		convertHashedDefinitions();
 		applyUcfTemplates();
+		convertDefinitionsToUcfTemplates();
 		fixDefinitionNumbering();
 		sanitizeReferences();
 		groupReferences();
@@ -4266,6 +4267,32 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "applyUcfTemplates", "convirtiendo enlaces a {{plm}}");
+	}
+	
+	public void convertDefinitionsToUcfTemplates() {
+		// TODO: allow specific trailing elements, e.g. <ref> tags
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TERM, (m, sb) -> {
+			String term = m.group(4).trim();
+			
+			if (
+				term.isEmpty() || Character.isUpperCase(term.charAt(0)) ||
+				!term.matches("(?i)[a-záéíóúüñ]+\\.?")
+			) {
+				return;
+			}
+			
+			term = term.replaceFirst("\\.$", "");
+			String template = String.format(term.equals(title) ? "{{plm}}." : "{{plm|%s}}.", term);
+			
+			String replacement =
+				text.substring(m.start(), m.start(4)) +
+				template +
+				text.substring(m.end(4), m.end());
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+		});
+		
+		checkDifferences(formatted, "convertDefinitionsToUcfTemplates", "convirtiendo definiciones simples a {{plm}}");
 	}
 	
 	public void fixDefinitionNumbering() {
