@@ -209,7 +209,8 @@ public class Editor extends AbstractEditor {
 		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|-{4}|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\|)(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 		
 		final List<String> tempListLS = Arrays.asList(
-			"t+", "descendiente", "desc", "anotación", "etimología", "etimología2"
+			"t+", "descendiente", "desc", "anotación"
+			// no longer transcluding a bulleted list: "etimología", "etimología2"
 		);
 		
 		LS_SPLITTER_LIST = new ArrayList<>(PRON_TMPLS.size() + TERM_TMPLS.size() + tempListLS.size());
