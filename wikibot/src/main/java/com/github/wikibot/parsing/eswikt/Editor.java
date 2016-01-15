@@ -1111,7 +1111,7 @@ public class Editor extends AbstractEditor {
 		);
 		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;\\d.+\" → \";\\d:.+\"", text ->
-			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)\\.?((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
 		);
 		
 		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
@@ -4722,7 +4722,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "amplios";
+		String title = "тут";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
