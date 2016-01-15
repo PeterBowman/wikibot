@@ -29,6 +29,10 @@ public abstract class AbstractEditor {
 		return text;
 	}
 	
+	public String getPageTitle() {
+		return title;
+	}
+	
 	public String getSummary() {
 		return summ.toString();
 	}

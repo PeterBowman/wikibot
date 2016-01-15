@@ -2,6 +2,7 @@ package com.github.wikibot.parsing.eswikt;
 
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import static org.apache.commons.lang3.StringUtils.countMatches;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.commons.lang3.StringUtils.startsWithAny;
@@ -153,6 +154,16 @@ public class Editor extends AbstractEditor {
 		"sustantivo inanimado", "sustantivo masculino", "sustantivo neutro", "sustantivo propio",
 		"sustantivo común", /*"símbolo",*/ "verbo", "verbo impersonal", "verbo intransitivo",
 		"verbo pronominal", "verbo transitivo"
+	);
+	
+	private static final List<String> FLEX_FORM_TMPLS = Arrays.asList(
+		// {{forma}}'s use cases are too unpredictable: "forma",
+		"forma sustantivo", "forma sustantivo plural", "forma adjetivo", "forma adjetivo 2", "forma verbo",
+		"forma verbo-en", "forma verbal arcaica-en", "forma participio", "forma pronombre", "forma sufijo",
+		"gerundio", "participio", "infinitivo", "supino",
+		// these are not considered flexive forms: "comparativo", "superlativo",
+		// redirects
+		"plural", "f.s.p", "f.adj2", "f.v", "fv-en", "fvarc-en", "f.part", "f.suf"
 	);
 	
 	private static final List<Pattern> COMMENT_PATT_LIST;
@@ -446,6 +457,7 @@ public class Editor extends AbstractEditor {
 		substituteReferencesTemplate();
 		duplicateReferencesSection();
 		moveReferencesSection();
+		convertHeadersToFlexiveForm();
 		
 		// TODO
 		if (!checkFlexiveFormHeaders()) {
@@ -1858,6 +1870,111 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "moveReferencesSection", "trasladando sección de referencias");
+	}
+	
+	public void convertHeadersToFlexiveForm() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
+		
+		page.filterSections(section ->
+			section.getLangSectionParent().isPresent() &&
+			section.getChildSections().isEmpty() &&
+			!containsIgnoreCase(section.getHeader(), "forma") &&
+			// TODO: execute after convertHashedDefinitions?
+			!Stream.of(removeCommentsAndNoWikiText(section.getIntro()).split("\n"))
+				.anyMatch(line -> line.startsWith("#")) &&
+			filterTermSections(section) &&
+			filterFlexiveSections(section)
+		).forEach(Editor::processSectionFlexiveHeader);
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "convertHeadersToFlexiveForm", "revisando títulos de sección de formas flexivas");
+	}
+
+	private static boolean filterFlexiveSections(Section section) {
+		String intro = removeCommentsAndNoWikiText(section.getIntro());
+		
+		if (intro.isEmpty()) {
+			return false;
+		}
+		
+		boolean found = false;
+		Matcher m = P_TERM.matcher(intro);
+		
+		while (m.find()) {
+			String term = m.group(4);
+			
+			boolean anyMatch = FLEX_FORM_TMPLS.stream()
+				.anyMatch(template -> !getTemplates(template, term).isEmpty());
+			
+			if (anyMatch) {
+				found = true;
+			} else {
+				return false;
+			}
+		}
+		
+		return found;
+	}
+
+	private static void processSectionFlexiveHeader(Section section) {
+		if (!section.getHeader().equals(section.getStrippedHeader())) {
+			return;
+		}
+		
+		// TODO: allow non-templated headers (see filterTermSections(Section)())
+		// TODO: allow template-text headers, i.e. "{{locución sustantiva|xx}} femenina"
+		
+		String femenineSingularForm = SECTION_DATA_MAP.entrySet().stream()
+			.filter(entry -> textEqualsToTemplate(section.getHeader(), entry.getKey()))
+			.map(Map.Entry::getValue)
+			.map(list -> list.stream()
+				.map(Catgram.Data::getFeminineSingularAdjective)
+				.collect(Collectors.joining(" "))
+			)
+			.findAny()
+			.orElse(SECTION_TMPLS.stream()
+				.filter(templateName -> textEqualsToTemplate(section.getHeader(), templateName))
+				.map(templateName -> getTemplateParametersWithValue(section.getHeader()))
+				.map(params -> Optional.ofNullable(Catgram.make(
+						params.get("templateName"), params.get("ParamWithoutName2")
+					))
+					.map(catgram -> Stream.of(catgram.getFirstMember(), catgram.getSecondMember())
+						.filter(Objects::nonNull)
+						.map(Catgram.Data::getFeminineSingularAdjective)
+						.collect(Collectors.joining(" "))
+					)
+					.filter(catgram -> !catgram.isEmpty())
+					.orElse(null)
+				)
+				.filter(Objects::nonNull)
+				.findAny()
+				.orElse(null)
+			);
+		
+		if (femenineSingularForm == null) {
+			return;
+		}
+		
+		String header = "Forma " + femenineSingularForm;
+		
+		// TODO: merge with existing sections?
+		if (section.getLangSectionParent().get().hasSubSectionWithHeader(header)) {
+			return;
+		}
+		
+		section.setHeader(header);
+	}
+
+	private static boolean textEqualsToTemplate(String text, String templateName) {
+		return Optional.of(getTemplates(templateName, text))
+			.filter(templates -> templates.size() == 1)
+			.map(templates -> templates.get(0))
+			.filter(text::equals)
+			.isPresent();
 	}
 	
 	public void normalizeEtymologyHeaders() {
@@ -4604,7 +4721,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "blog";
+		String title = "amplios";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
