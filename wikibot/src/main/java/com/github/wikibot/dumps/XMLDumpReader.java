@@ -33,7 +33,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
-import com.github.wikibot.parsing.eswikt.Page;
 import com.github.wikibot.utils.Domains;
 
 public final class XMLDumpReader {
@@ -87,14 +86,16 @@ public final class XMLDumpReader {
 		InputStream bis = new BufferedInputStream(new FileInputStream(file));
 		
 		switch (extension) {
-			case EXT_bz2:
-			case EXT_gz:
+			case ZIP_BZ2:
+			case ZIP_GZ:
 				return new CompressorStreamFactory().createCompressorInputStream(bis);
-			case EXT_7z:
+			case ZIP_7Z:
 				return new ArchiveStreamFactory("UTF8").createArchiveInputStream(bis);
+			case XML:
+				return bis;
 			default:
 				bis.close();
-				throw new UnsupportedOperationException();
+				throw new UnsupportedOperationException("Unsupported extension: " + extension);
 		}
 	}
 	
@@ -103,13 +104,16 @@ public final class XMLDumpReader {
 		
 		switch (ext) {
 			case "bz2":
-				extension = Extension.EXT_bz2;
+				extension = Extension.ZIP_BZ2;
 				break;
 			case "gz":
-				extension = Extension.EXT_gz;
+				extension = Extension.ZIP_GZ;
 				break;
 			case "7z":
-				extension = Extension.EXT_7z;
+				extension = Extension.ZIP_7Z;
+				break;
+			case "xml":
+				extension = Extension.XML;
 				break;
 			case "":
 				throw new UnsupportedOperationException("Unsupported extension: no extension");
@@ -119,9 +123,10 @@ public final class XMLDumpReader {
 	}
 	
 	private enum Extension {
-		EXT_bz2,
-		EXT_gz,
-		EXT_7z
+		ZIP_BZ2,
+		ZIP_GZ,
+		ZIP_7Z,
+		XML // uncompressed
 	}
 	
 	private static String resolveDomainName(Domains domain) {
@@ -194,15 +199,21 @@ public final class XMLDumpReader {
 			stream.parallel()
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
-				.map(rev -> Page.store(rev.title, rev.text))
-				.filter(page -> page.getAllLangSections().stream()
-					.anyMatch(ls -> ls.getTemplateParams().containsKey("alt"))
-				)
-				.forEach(page -> list.add(page.getTitle()));
+				.map(XMLRevision::getTitle)
+				.forEach(list::add);
 		}
 		
 		System.out.printf("Total count: %d%n", list.size());
-		//IOUtils.writeToFile(String.join("\n", list), "./data/test2.txt");
+		/*StringBuilder sb = new StringBuilder((int) (list.size() * 8));
+		
+		synchronized (list) {
+			Iterator<String> i = list.iterator();
+			while (i.hasNext()) {
+				sb.append(i.next()).append("\n");
+			}
+		}
+		
+		IOUtils.writeToFile(sb.toString(), "./data/test.txt");*/
 	}
 
 }
