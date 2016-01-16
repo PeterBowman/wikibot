@@ -206,7 +206,7 @@ public class Editor extends AbstractEditor {
 		 *  unable to process bundled "special" and page links ("[[File:test]] [[a]]\ntest")
 		 */
 		// TODO: review headers ("=" signs)
-		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|-{4}|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\|)(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|-{4}|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\|)(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.DOTALL);
 		
 		final List<String> tempListLS = Arrays.asList(
 			"t+", "descendiente", "desc", "anotación"
@@ -1708,26 +1708,26 @@ public class Editor extends AbstractEditor {
 			String header = section.getHeader();
 			
 			header = strip(header, "=").trim();
-			header = header.replaceFirst("(?i)^Etimolog[íi]a", "Etimología");
-			header = header.replaceFirst("(?i)^Pronunciaci[óo]n\\b", "Pronunciación");
+			header = header.replaceFirst("(?iu)^Etimolog[íi]a", "Etimología");
+			header = header.replaceFirst("(?iu)^Pronunciaci[óo]n\\b", "Pronunciación");
 			// TODO: don't confuse with {{locución}}, {{refrán}}
 			header = header.replaceFirst("(?i)^Locuciones", "Locuciones");
 			header = header.replaceFirst("(?i)^(?:Refranes|Dichos?)", "Refranes");
-			header = header.replaceFirst("(?i)^Conjugaci[óo]n\\b", "Conjugación");
-			header = header.replaceFirst("(?i)^Informaci[óo]n (?:adicional|avanzada)", "Información adicional");
-			header = header.replaceFirst("(?i)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
+			header = header.replaceFirst("(?iu)^Conjugaci[óo]n\\b", "Conjugación");
+			header = header.replaceFirst("(?iu)^Informaci[óo]n (?:adicional|avanzada)", "Información adicional");
+			header = header.replaceFirst("(?iu)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
-			header = header.replaceFirst("(?i)^Acr[óo]nimo\\b$", "Sigla");
+			header = header.replaceFirst("(?iu)^Acr[óo]nimo\\b$", "Sigla");
 			header = header.replaceFirst("(?i)^Sub?stantivo\\b$", "Sustantivo");
-			header = header.replaceFirst("(?i)^Contracci[óo]n\\b", "Contracción");
+			header = header.replaceFirst("(?iu)^Contracci[óo]n\\b", "Contracción");
 			
 			header = header.replaceFirst("(?i)^Formas? flexivas?$", "Forma flexiva");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?sub?stantiv[oa]s?$", "Forma sustantiva");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?verb(?:os?|al(?:es)?)$", "Forma verbal");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?adjetiv[oa]s?$", "Forma adjetiva");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?(?:pronombres?|pronominal(?:es)?)$", "Forma pronominal");
-			header = header.replaceFirst("(?i)^Formas? (?:de )?(?:preposici(?:ón|ones)|prepositiv(?:o|as?))$", "Forma prepositiva");
+			header = header.replaceFirst("(?iu)^Formas? (?:de )?(?:preposici(?:ón|ones)|prepositiv(?:o|as?))$", "Forma prepositiva");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?adverbi(?:os?|al(?:es)?)$", "Forma adverbial");
 			header = header.replaceFirst("(?i)^Formas? (?:de )?sub?stantiv[oa]s? (masculin|femenin|neutr)[oa]s?$", "Forma sustantiva $1a");
 			
@@ -1736,9 +1736,9 @@ public class Editor extends AbstractEditor {
 			
 			if (langSection != null) {
 				if (langSection.getLangName().equals("español")) {
-					header = header.replaceFirst("(?i)^Traducci[óo]n(?:es)?$", "Traducciones");
+					header = header.replaceFirst("(?iu)^Traducci[óo]n(?:es)?$", "Traducciones");
 				} else {
-					header = header.replaceFirst("(?i)^Traducci[óo]n(?:es)?$", "Traducción");
+					header = header.replaceFirst("(?iu)^Traducci[óo]n(?:es)?$", "Traducción");
 				}
 			}
 			
@@ -3307,9 +3307,9 @@ public class Editor extends AbstractEditor {
 					getTemplates("trad", intro).isEmpty() &&
 					getTemplates("t+", intro).isEmpty() &&
 					getTemplates("véase", intro).isEmpty() &&
-					!intro.matches("(?i).*?\\b(v[ée]an?se|ver)\\b.*")
+					!intro.matches("(?iu).*?\\b(v[ée]an?se|ver)\\b.*")
 				) {
-					if (intro.matches("(\\[\\[(?i:category|categoría):.+?\\]\\]\\s*)+")) {
+					if (intro.matches("(\\[\\[(?iu:category|categoría):.+?\\]\\]\\s*)+")) {
 						intro = TRANSLATIONS_TEMPLATE + "\n\n" + intro;
 					} else {
 						intro += "\n\n" + TRANSLATIONS_TEMPLATE;
@@ -4276,7 +4276,7 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				term.isEmpty() || Character.isUpperCase(term.charAt(0)) ||
-				!term.matches("(?i)[a-záéíóúüñ]+\\.?")
+				!term.matches("[a-záéíóúüñ]+\\.?")
 			) {
 				return;
 			}
