@@ -140,13 +140,13 @@ public final class XMLDumpReader {
 		}
 	}
 	
-	public void runParallelSAXReader(Consumer<XMLRevision> cons) throws IOException {
+	private void runSAXReaderTemplate(SAXPageHandler sph) throws IOException {
 		XMLReader xmlReader;
 		
 		try {
 			SAXParserFactory factory = SAXParserFactory.newInstance();
 			SAXParser saxParser = factory.newSAXParser();
-			ContentHandler handler = new SAXConcurrentPageHandler(cons);
+			ContentHandler handler = sph;
 			xmlReader = saxParser.getXMLReader();
 			xmlReader.setContentHandler(handler);
 		} catch (ParserConfigurationException | SAXException e) {
@@ -158,6 +158,16 @@ public final class XMLDumpReader {
 		} catch (CompressorException | ArchiveException | SAXException e) {
 			throw new IOException(e);
 		}
+	}
+	
+	public void runSAXReader(Consumer<XMLRevision> cons) throws IOException {
+		SAXPageHandler sph = new SAXPageHandler(cons);
+		runSAXReaderTemplate(sph);
+	}
+	
+	public void runParallelSAXReader(Consumer<XMLRevision> cons) throws IOException {
+		SAXPageHandler sph = new SAXConcurrentPageHandler(cons);
+		runSAXReaderTemplate(sph);
 	}
 	
 	public StAXDumpReader getStAXReader() throws IOException {
