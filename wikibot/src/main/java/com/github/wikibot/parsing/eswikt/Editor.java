@@ -848,13 +848,14 @@ public class Editor extends AbstractEditor {
 						if (mTrail.matches()) { // [[test|tests]]s -> [[test|testss]]
 							pipe += mTrail.group(1);
 							trail = mTrail.group(2);
+							updated = true;
 						}
 						
-						String trimmed = pipe.substring(target.length()) + trail;
-						Matcher mTrimmed = P_LINK_TRAIL.matcher(trimmed);
+						String trimmedPipe = pipe.substring(target.length());
+						Matcher mTrimmed = P_LINK_TRAIL.matcher(trimmedPipe);
 						
 						if (mTrimmed.matches() && mTrimmed.group(2).isEmpty()) { // [[test|tests]] -> [[test]]s
-							trail = trimmed + trail;
+							trail = trimmedPipe + trail;
 							link = String.format(reducedLinkFormat, target, trail);
 						} else if (updated) { // apply previous change (see mTrail)
 							link = String.format(pipedLinkFormat, target, pipe, trail);
@@ -4749,7 +4750,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "тут";
+		String title = "círculo horario";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
