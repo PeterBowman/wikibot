@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
@@ -91,7 +90,8 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_UCF = Pattern.compile("^; *?\\d+(?: *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
 	
-	private static final List<String> LENG_PARAM_TMPLS = Arrays.asList(
+	private static final List<String> LENG_PARAM_TMPLS;
+	private static final List<String> LENG_PARAM_TMPLS_STANDARD = Arrays.asList(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación",
@@ -173,6 +173,7 @@ public class Editor extends AbstractEditor {
 	
 	private static final Map<String, String> TMPL_ALIAS_MAP;
 	private static final Map<String, List<Catgram.Data>> SECTION_DATA_MAP;
+	private static final Map<String, List<String>> SEM_TMPLS_MAP;
 	
 	private static final String TRANSLATIONS_COMMENT = "<!-- formato: {{t+|idioma|<acepción#>|palabra|género}} p. ej. {{t+|fr|1|chose|f}} -->";
 	private static final String TRANSLATIONS_TEMPLATE;
@@ -335,7 +336,7 @@ public class Editor extends AbstractEditor {
 			.filter(tokens -> tokens.length == 2)
 			.collect(Collectors.toMap(
 				tokens -> tokens[0],
-				tokens -> Stream.of(tokens[1].split(",\\s*"))
+				tokens -> Stream.of(tokens[1].split("\\s*,\\s*"))
 					.map(name -> Stream.of(Catgram.Data.values())
 						.filter(data -> data.name().equals(name))
 						.findAny()
@@ -346,6 +347,18 @@ public class Editor extends AbstractEditor {
 					)
 					.collect(Collectors.toList())
 			));
+		
+		SEM_TMPLS_MAP = Utils.readLinesFromResource("/eswikt-catsem-templates.txt", Editor.class)
+			.map(line -> line.split("\\s*=\\s*"))
+			.filter(tokens -> tokens.length == 2)
+			.collect(Collectors.toMap(
+				tokens -> tokens[0],
+				tokens -> Stream.of(tokens[1].split(",\\s*")).collect(Collectors.toList())
+			));
+		
+		LENG_PARAM_TMPLS = Stream.concat(LENG_PARAM_TMPLS_STANDARD.stream(), SEM_TMPLS_MAP.keySet().stream())
+			.distinct()
+			.collect(Collectors.toList());
 	}
 	
 	static {
@@ -484,6 +497,8 @@ public class Editor extends AbstractEditor {
 		langTemplateParams();
 		manageSectionTemplates();
 		addSectionTemplates();
+		manageSemanticTemplates();
+		addSemanticTemplates();
 		removeCategoryLinks();
 		deleteEmptySections();
 		deleteWrongSections();
@@ -3550,12 +3565,16 @@ public class Editor extends AbstractEditor {
 							return template;
 						}
 					} else if (leng == null) {
-						@SuppressWarnings("unchecked")
-						Map<String, String> tempMap = (Map<String, String>) params.clone();
-						params.clear();
-						params.put("templateName", tempMap.remove("templateName"));
-						params.put("leng", langSection.getLangCode());
-						params.putAll(tempMap);
+						if (!SEM_TMPLS_MAP.containsKey(templateName)) {
+							Map<String, String> tempMap = new LinkedHashMap<>(params);
+							params.clear();
+							params.put("templateName", tempMap.remove("templateName"));
+							params.put("leng", langSection.getLangCode());
+							params.putAll(tempMap);
+						} else {
+							params.put("leng", langSection.getLangCode());
+						}
+						
 						return templateFromMap(params);
 					} else if (!langSection.langCodeEqualsTo(leng)) {
 						params.put("leng", langSection.getLangCode());
@@ -3764,55 +3783,97 @@ public class Editor extends AbstractEditor {
 		}
 	}
 	
-	public void removeCategoryLinks() {
-		// TODO: remove categories inserted for {{Matemáticas}}-like templates
+	public void manageSemanticTemplates() {
+		if (isOldStructure) {
+			return;
+		}
 		
-		Set<String> targetCategories = new HashSet<>();
-		
-		// section templates: {{sustantivo|xx}} -> [[Categoría:XX:Sustantivos]]
-		
-		BiConsumer<String, String> addString = (code, plural) -> targetCategories
-			.add(String.format("%s:%s", code.toUpperCase(), capitalize(plural)));
-		
-		for (String templateName : SECTION_TMPLS) {
-			for (String template : getTemplates(templateName, text)) {
-				Map<String, String> map = getTemplateParametersWithValue(template);
-				String langCode = map.get("ParamWithoutName1");
+		String formatted = text;
+
+		for (String templateName : SEM_TMPLS_MAP.keySet()) {
+			String temp = Utils.replaceTemplates(formatted, templateName, template -> {
+				HashMap<String, String> params = getTemplateParametersWithValue(template);
 				
-				if (langCode == null || langCode.isEmpty()) {
-					continue;
-				}
+				params.entrySet().stream()
+					.filter(entry -> entry.getKey().startsWith("ParamWithoutName"))
+					.filter(entry -> TMPL_ALIAS_MAP.containsKey(entry.getValue()))
+					.filter(entry -> SEM_TMPLS_MAP.containsKey(TMPL_ALIAS_MAP.get(entry.getValue())))
+					.forEach(entry -> entry.setValue(TMPL_ALIAS_MAP.get(entry.getValue())));
 				
-				final Catgram catgram;
-				
-				// See TODO in manageSectionTemplates()
-				if (SECTION_DATA_MAP.containsKey(map.get("templateName"))) {
-					List<Catgram.Data> data = SECTION_DATA_MAP.get(map.get("templateName"));
-					catgram = Catgram.make(data.get(0), data.get(1));
-				} else {
-					catgram = Catgram.make(map.get("templateName"), map.get("ParamWithoutName2"));
-				}
-				
-				if (catgram == null) {
-					continue;
-				}
-				
-				addString.accept(langCode, catgram.getPlural());
-				
-				if (catgram.getSecondMember() != null) {
-					addString.accept(langCode, catgram.getFirstMember().getPlural());
-					
-					if (catgram.getFirstMember() == Catgram.Data.PHRASE) {
-						addString.accept(langCode, catgram.getSecondMember().getPlural());
-					}
-				}
+				return templateFromMap(params);
+			});
+			
+			if (!temp.equals(formatted)) {
+				formatted = temp;
 			}
+		}
+		
+		checkDifferences(formatted, "manageSemanticTemplates", "revisando plantillas de campo semántico");
+	}
+	
+	public void addSemanticTemplates() {
+		if (isOldStructure) {
+			return;
 		}
 		
 		Page page = Page.store(title, text);
 		
-		// language sections: {{lengua|xx}} -> [[Categoría:Xx:Español]]
+		page.getAllLangSections().forEach(langSection -> {
+			final String content = langSection.toString();
+			
+			// TODO: accept annotations (inside parentheses), multiple values...
+			String temp = Utils.replaceWithStandardIgnoredRanges(content, P_TERM, (m, sb) ->
+				Optional.ofNullable(m.group(2))
+					.map(String::trim)
+					.map(text -> text.replace("'", "").replace("^[Ee]n ?", "").replaceFirst("[.,]$", ""))
+					.filter(text -> !text.isEmpty())
+					.filter(text -> !containsAny(text, '{', '}', '[', ']', '|', '<', '>'))
+					.map(text -> TMPL_ALIAS_MAP.entrySet().stream()
+						.filter(entry -> entry.getKey().equalsIgnoreCase(text))
+						.map(Map.Entry::getValue)
+						.filter(SEM_TMPLS_MAP::containsKey)
+						.findAny()
+						.orElseGet(() -> SEM_TMPLS_MAP.keySet().stream()
+							.filter(key -> key.equalsIgnoreCase(text))
+							.findAny()
+							.orElse(null)
+						)
+					)
+					.filter(Objects::nonNull)
+					.ifPresent(templateName -> m.appendReplacement(sb, Matcher.quoteReplacement(
+						content.substring(m.start(), m.start(2)) + " " +
+						String.format(
+							langSection.langCodeEqualsTo("es") ? "{{%s}}" : "{{%s|leng=%s}}",
+							templateName, langSection.getLangCode()
+						) +
+						content.substring(m.end(2), m.end())
+					)))
+			);
+			
+			if (!temp.equals(content)) {
+				LangSection newLangSection = LangSection.parse(temp);
+				langSection.replaceWith(newLangSection);
+			}
+		});
 		
+		String formatted = page.toString();
+		checkDifferences(formatted, "addSemanticTemplates", "añadiendo plantillas de campo semántico");
+	}
+	
+	public void removeCategoryLinks() {
+		// TODO: remove categories inserted by {{Matemáticas}}-like templates
+		
+		Set<String> targetCategories = new HashSet<>();
+		
+		// section templates: {{sustantivo|xx}} -> [[Categoría:XX:Sustantivos]]
+		addCatgramCategories(text, targetCategories);
+		
+		// semantic templates: {{lenguas|leng=xx}} -> [[Categoría:XX:Lenguas]]
+		addCatsemCategories(text, targetCategories);
+		
+		Page page = Page.store(title, text);
+		
+		// language sections: {{lengua|xx}} -> [[Categoría:Xx:Español]]
 		page.getAllLangSections().stream()
 			.filter(langSection -> !langSection.langCodeEqualsTo("es"))
 			.map(LangSection::getLangCode)
@@ -3850,6 +3911,118 @@ public class Editor extends AbstractEditor {
 		});
 		
 		checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
+	}
+	
+	private static void addCatgramCategories(String text, Set<String> targetCategories) {
+		for (String templateName : SECTION_TMPLS) {
+			for (String template : getTemplates(templateName, text)) {
+				Map<String, String> map = getTemplateParametersWithValue(template);
+				String langCode = map.get("ParamWithoutName1");
+				
+				if (langCode == null || langCode.isEmpty()) {
+					continue;
+				}
+				
+				final Catgram catgram;
+				
+				// See TODO in manageSectionTemplates()
+				if (SECTION_DATA_MAP.containsKey(map.get("templateName"))) {
+					List<Catgram.Data> data = SECTION_DATA_MAP.get(map.get("templateName"));
+					catgram = Catgram.make(data.get(0), data.get(1));
+				} else {
+					catgram = Catgram.make(map.get("templateName"), map.get("ParamWithoutName2"));
+				}
+				
+				if (catgram == null) {
+					continue;
+				}
+				
+				formatCategoryName(langCode, catgram.getPlural(), targetCategories);
+				
+				if (catgram.getSecondMember() != null) {
+					formatCategoryName(langCode, catgram.getFirstMember().getPlural(), targetCategories);
+					
+					if (catgram.getFirstMember() == Catgram.Data.PHRASE) {
+						formatCategoryName(langCode, catgram.getSecondMember().getPlural(), targetCategories);
+					}
+				}
+			}
+		}
+	}
+	
+	private static void addCatsemCategories(String text, Set<String> targetCategories) {
+		SEM_TMPLS_MAP.keySet().stream()
+			.map(templateName -> getTemplates(templateName, text))
+			.flatMap(Collection::stream)
+			.map(template -> getTemplateParametersWithValue(template))
+			.forEach(params -> {
+				final String langCode = Optional.of(params.get("leng"))
+					.filter(Objects::nonNull)
+					.filter(param -> !param.isEmpty())
+					.orElse("es");
+				
+				params.entrySet().stream()
+					.filter(entry ->
+						entry.getKey().equals("templateName") ||
+						entry.getKey().startsWith("ParamWithoutName")
+					)
+					.map(Map.Entry::getValue)
+					.map(SEM_TMPLS_MAP::get)
+					.filter(Objects::nonNull)
+					.flatMap(Collection::stream)
+					.forEach(category -> formatCategoryName(langCode, category, targetCategories));
+				
+				// annoying special case
+				if (params.get("templateName").equals("regiones")) {
+					processRegionCategories(params, langCode, targetCategories);
+				}
+			});
+	}
+	
+	private static void formatCategoryName(String code, String category, Set<String> set) {
+		set.add(String.format("%s:%s", code.toUpperCase(), capitalize(category)));
+	}
+	
+	private static void processRegionCategories(Map<String, String> params, String code, Set<String> set) {
+		String country = params.getOrDefault("p", params.getOrDefault("país", ""));
+		
+		if (!country.isEmpty()) {
+			String formatString = String.format("%%s de %s", country);
+			
+			if (params.containsKey("dep")) {
+				formatCategoryName(code, String.format(formatString, "Departamentos"), set);
+			} else {
+				String type = params.getOrDefault("tipo", "");
+				
+				switch (params.getOrDefault("tipo", "")) {
+					case "dep":
+						formatCategoryName(code, String.format(formatString, "Departamentos"), set);
+						break;
+					case "est":
+						formatCategoryName(code, String.format(formatString, "Estados"), set);
+						break;
+					case "com":
+					case "c.a.":
+					case "comunidad autónoma":
+						formatCategoryName(code, String.format(formatString, "Comunidades autónomas"), set);
+						break;
+					case "estfed":
+					case "e.f":
+					case "estado federado":
+						formatCategoryName(code, String.format(formatString, "Estados federados"), set);
+						break;
+					case "prov":
+					case "provincia":
+						formatCategoryName(code, String.format(formatString, "Provincias"), set);
+						break;
+					default:
+						formatCategoryName(code, String.format(formatString, type), set);
+						break;
+				}
+			}
+		} else {
+			formatCategoryName(code, "Regiones", set);
+		}
 	}
 	
 	public void deleteEmptySections() {
