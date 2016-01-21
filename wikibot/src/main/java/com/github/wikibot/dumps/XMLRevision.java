@@ -88,6 +88,10 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		return !isRedirect;
 	}
 	
+	public boolean isFirstRevision() {
+		return parentid == 0;
+	}
+	
 	public PageContainer toPageContainer() {
 		return new PageContainer(title, text, timestampToCalendar(timestamp));
 	}
