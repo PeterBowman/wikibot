@@ -1104,8 +1104,9 @@ public class Editor extends AbstractEditor {
 			setLog.add(log);
 		}
 		
-		// TODO: detect comment tags
-		//formatted = formatted.replaceAll("(?m)^((?:<!--.*?-->)*)[:;]$", "$1");
+		formatted = applyReplacementFunction(formatted, setLog, "\"-->\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "-{2,}>", "")
+		);
 		
 		// TODO: expand character set
 		// https://es.wiktionary.org/w/index.php?title=blog&diff=4036523&oldid=4036446
@@ -1129,6 +1130,10 @@ public class Editor extends AbstractEditor {
 		
 		formatted = applyReplacementFunction(formatted, setLog, "\"^;\\d.+\" → \";\\d:.+\"", text ->
 			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^; ?(\\d++)\\.?((?: ?\\{{2}plm[\\|\\}]|(?! ?\\{{2}))[^:\n]+)$", ";$1:$2")
+		);
+		
+		formatted = applyReplacementFunction(formatted, setLog, "\"* [(primera|segunda) locución]\" → \"\"", text ->
+			Utils.replaceWithStandardIgnoredRanges(text, "(?m)^\\* ?\\[\\[(primera|segunda) locución\\]\\]$", "")
 		);
 		
 		// Jsoup fails miserably on <ref name=a/> tags (no space before '/', no quotes around 'a'),
@@ -1162,6 +1167,8 @@ public class Editor extends AbstractEditor {
 			
 			formatted = recodeJsoupDocument(doc);
 		}
+		
+		formatted = Utils.sanitizeWhitespaces(formatted);
 		
 		// remove trailing newlines from the last Section
 		
@@ -4923,7 +4930,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "círculo horario";
+		String title = "mensajería";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
