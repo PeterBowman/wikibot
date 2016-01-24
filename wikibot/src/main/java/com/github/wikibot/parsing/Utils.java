@@ -24,6 +24,11 @@ import org.apache.commons.lang3.Range;
 import org.wikiutils.ParseUtils;
 
 public final class Utils {
+	private static final int P_OPTIONS = Pattern.DOTALL | Pattern.CASE_INSENSITIVE;
+	private static final Pattern P_NOWIKI = Pattern.compile("<(?<tag>nowiki)\\b[^>]*?(?<!/ ?)>.*?</\\k<tag>\\s*>", P_OPTIONS);
+	private static final Pattern P_PRE = Pattern.compile("<(?<tag>pre)\\b[^>]*?(?<!/ ?)>.*?</\\k<tag>\\s*>", P_OPTIONS);
+	private static final Pattern P_CODE = Pattern.compile("<(?<tag>code)\\b[^>]*?(?<!/ ?)>.*?</\\k<tag>\\s*>", P_OPTIONS);
+
 	private Utils() {}
 	
 	public static String sanitizeWhitespaces(String text) {
@@ -32,9 +37,13 @@ public final class Utils {
 		text = text.replace(" \n", "\n");
 		return text;
 	}
-
-	@SuppressWarnings("unchecked")
+	
 	public static Range<Integer>[] findRanges(String text, String start, String end) {
+		return findRanges(text, start, end, false);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Range<Integer>[] findRanges(String text, String start, String end, boolean lazyClosingTag) {
 		int startPos = text.indexOf(start);
 		
 		if (startPos == -1) {
@@ -50,6 +59,10 @@ public final class Utils {
 				endPos += end.length();
 				list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
 				startPos = text.indexOf(start, endPos);
+			} else if (lazyClosingTag) {
+				endPos = text.length();
+				list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
+				break;
 			} else {
 				return list.toArray(new Range[list.size()]); 
 			}
@@ -71,12 +84,12 @@ public final class Utils {
 	}
 	
 	public static List<Range<Integer>> getStandardIgnoredRanges(String text) {
-		final int patternOptions = Pattern.DOTALL | Pattern.CASE_INSENSITIVE;
-		Range<Integer>[] comments = findRanges(text, "<!--", "-->");
 		// TODO: use DOM parsing?
-		Range<Integer>[] nowikis = findRanges(text, Pattern.compile("<nowiki(?: |>).+?</nowiki *?>", patternOptions));
-		Range<Integer>[] pres = findRanges(text, Pattern.compile("<pre(?: |>).+?</pre *?>", patternOptions));
-		Range<Integer>[] codes = findRanges(text, Pattern.compile("<code(?: |>).+?</code *?>", patternOptions));
+		Range<Integer>[] comments = findRanges(text, "<!--", "-->", true);
+		// FIXME: process stray open tags (see findRanges(String, String, String, boolean))
+		Range<Integer>[] nowikis = findRanges(text, P_NOWIKI);
+		Range<Integer>[] pres = findRanges(text, P_PRE);
+		Range<Integer>[] codes = findRanges(text, P_CODE);
 		
 		return getCombinedRanges(comments, nowikis, pres, codes);
 	}
