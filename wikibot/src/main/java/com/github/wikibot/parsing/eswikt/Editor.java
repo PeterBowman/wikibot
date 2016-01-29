@@ -3967,8 +3967,7 @@ public class Editor extends AbstractEditor {
 			.flatMap(Collection::stream)
 			.map(template -> getTemplateParametersWithValue(template))
 			.forEach(params -> {
-				final String langCode = Optional.of(params.get("leng"))
-					.filter(Objects::nonNull)
+				final String langCode = Optional.ofNullable(params.get("leng"))
 					.filter(param -> !param.isEmpty())
 					.orElse("es");
 				
@@ -4934,7 +4933,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "pregoneras";
+		String title = "rorcual";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
