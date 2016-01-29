@@ -4147,7 +4147,7 @@ public class Editor extends AbstractEditor {
 	private static boolean isEmptyTranslationsSection(Section section) {
 		String intro = section.getIntro();
 		intro = removeCommentsAndNoWikiText(intro);
-		intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\}\\}", "");
+		intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\|*\\}\\}", "");
 		intro = intro.replace("{{clear}}", "");
 		intro = intro.trim();
 		return intro.isEmpty();
@@ -4156,7 +4156,7 @@ public class Editor extends AbstractEditor {
 	private static boolean isEmptyEtymologySection(Section section) {
 		String intro = section.getIntro();
 		intro = removeCommentsAndNoWikiText(intro);
-		intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\}\\}\\.?", "");
+		intro = intro.replaceAll("\\{\\{etimología2?(\\|leng=[\\w-]+?)?\\|*\\}\\}\\.?", "");
 		intro = intro.replace("{{clear}}", "");
 		intro = intro.trim();
 		return intro.isEmpty();
@@ -4934,7 +4934,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "salus";
+		String title = "pregoneras";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
