@@ -1205,6 +1205,10 @@ public class Editor extends AbstractEditor {
 		newText = newText.replace("\"", "").replace("'", "");
 		text = text.replace("\"", "").replace("'", "");
 		
+		// ...converts <br/> to <br>
+		newText = newText.replaceAll("(?i)<br\\b([^>]*)/>", "<br$1>");
+		text = text.replaceAll("(?i)<br\\b([^>]*)/>", "<br$1>");
+		
 		// ...and enforces lower case tag names
 		allowJsoup = newText.equalsIgnoreCase(text);
 	}
@@ -4930,7 +4934,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "mensajería";
+		String title = "salus";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
