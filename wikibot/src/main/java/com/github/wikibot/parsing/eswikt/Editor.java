@@ -2214,43 +2214,43 @@ public class Editor extends AbstractEditor {
 		
 		// Etymology
 		
-		for (LangSection langSection : page.getAllLangSections()) {
-			if (
-				title.contains(" ") || // TODO: tweak this to detect {{locución}} templates?
-				langSection.getChildSections().isEmpty() ||
-				langSection.hasSubSectionWithHeader("Etimología.*") ||
-				langSection.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) ||
-				RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
-				REDUCED_SECTION_CHECK.test(langSection)
-			) {
-				continue;
-			}
-			
-			// TODO: review, catch special cases
-			Set<String> headers = langSection.getChildSections().stream()
-				.map(AbstractSection::getStrippedHeader)
-				.collect(Collectors.toSet());
-			
-			headers.removeAll(STANDARD_HEADERS);
-			
-			if (headers.isEmpty()) {
-				continue;
-			}
-			
-			Section etymologySection = Section.create("Etimología", 3);
-			etymologySection.setTrailingNewlines(1);
-			
-			HashMap<String, String> params = new LinkedHashMap<>();
-			params.put("templateName", "etimología");
-			
-			if (!langSection.langCodeEqualsTo("es")) {
-				params.put("leng", langSection.getLangCode());
-			}
-			
-			String template = templateFromMap(params);
-			etymologySection.setIntro(template + ".");
-			langSection.prependSections(etymologySection);
-			set.add("Etimología");
+		if (!title.contains(" ")) { // TODO: tweak this to detect {{locución}} templates?
+			page.getAllLangSections().stream()
+				.filter(ls -> !ls.getChildSections().isEmpty())
+				.filter(ls -> !ls.hasSubSectionWithHeader("Etimología.*"))
+				.filter(ls -> !ls.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE))
+				.filter(ls -> !RECONSTRUCTED_LANGS.contains(ls.getLangCode()))
+				.filter(ls -> !REDUCED_SECTION_CHECK.test(ls))
+				// TODO: review, catch special cases
+				.filter(ls -> !ls.getChildSections().stream()
+					.map(AbstractSection::getStrippedHeader)
+					.allMatch(STANDARD_HEADERS::contains)
+				)
+				.forEach(langSection -> {
+					Section etymologySection = Section.create("Etimología", 3);
+					etymologySection.setTrailingNewlines(1);
+					
+					// move all etymology templates to the new section
+					processIfSingleEtym(langSection, etymologySection);
+					
+					if (
+						getTemplates("etimología", etymologySection.getIntro()).isEmpty() &&
+						getTemplates("etimología2", etymologySection.getIntro()).isEmpty()
+					) {
+						HashMap<String, String> params = new LinkedHashMap<>();
+						params.put("templateName", "etimología");
+						
+						if (!langSection.langCodeEqualsTo("es")) {
+							params.put("leng", langSection.getLangCode());
+						}
+						
+						String template = templateFromMap(params);
+						etymologySection.setIntro(template + ".");
+					}
+					
+					langSection.prependSections(etymologySection);
+					set.add("Etimología");
+				});
 		}
 		
 		// Translations
@@ -4933,7 +4933,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "rorcual";
+		String title = "prion";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
