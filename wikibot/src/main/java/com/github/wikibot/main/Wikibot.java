@@ -18,6 +18,9 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.parser.Parser;
 import org.wikipedia.WMFWiki;
 
 import com.github.wikibot.utils.PageContainer;
@@ -174,7 +177,7 @@ public class Wikibot extends WMFWiki {
 			list.addAll(func.apply(line));
 		}
 		
-		log(Level.INFO, "getListedContent", "Successfully retrieved page contents (" + list.size() + " pages)");
+		log(Level.INFO, "getListedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
 		return list;
 	}
 
@@ -194,7 +197,7 @@ public class Wikibot extends WMFWiki {
 	        list.addAll(parseContentLine(line));
 	    } while (cont != null && (limit < 0 || list.size() < limit));
 		
-		log(Level.INFO, "getGeneratedContent", "Successfully retrieved page contents (" + list.size() + " pages)");
+		log(Level.INFO, "getGeneratedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
 		return list.toArray(new PageContainer[list.size()]);
 	}
 	
@@ -216,35 +219,18 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private Collection<PageContainer> parseContentLine(String line) {
-		Collection<PageContainer> list = new ArrayList<>(max);
-		int start = line.indexOf("<page ");
+		Document doc = Jsoup.parse(line, "", Parser.xmlParser());
+		doc.outputSettings().prettyPrint(false);
 		
-		do {
-			int end = line.indexOf("<page ", start + 1);
-			String text = line.substring(start, end != -1 ? end : line.length());
-			start = end;
-			
-			if (!text.contains("<rev ")) {
-				continue;
-			}
-			
-			String title = decode(parseAttribute(text, "title", 0));
-			String timestamp = parseAttribute(text, "timestamp", 0);
-			String content = null;
-			
-			if (!text.contains("</rev>")) {
-				content = "";
-			} else {
-				int a = text.indexOf("<rev ");
-		        a = text.indexOf("xml:space=\"preserve\">", a) + 21;
-		        int b = text.indexOf("</rev>", a);
-		        content = decode(text.substring(a, b));
-			}
-			
-			list.add(new PageContainer(title, content, timestampToCalendar(timestamp, true)));
-		} while (start != -1);
-		
-		return list;
+		return doc.getElementsByTag("page").stream()
+			.flatMap(page -> page.getElementsByTag("rev").stream()
+				.map(rev -> new PageContainer(
+					decode(page.attr("title")),
+					decode(rev.html()),
+					timestampToCalendar(rev.attr("timestamp"), true)
+				))
+			)
+			.collect(Collectors.toList());
 	}
 	
 	public Map<String, Calendar> getTimestamps(String[] pages) throws IOException {
