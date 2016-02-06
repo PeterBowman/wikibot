@@ -222,7 +222,7 @@ public class Wikibot extends WMFWiki {
 		Document doc = Jsoup.parse(line, "", Parser.xmlParser());
 		doc.outputSettings().prettyPrint(false);
 		
-		return doc.getElementsByTag("page").stream()
+		return doc.getElementsByTag("page").parallelStream()
 			.flatMap(page -> page.getElementsByTag("rev").stream()
 				.map(rev -> new PageContainer(
 					decode(page.attr("title")),
@@ -236,8 +236,8 @@ public class Wikibot extends WMFWiki {
 	public Map<String, Calendar> getTimestamps(String[] pages) throws IOException {
 		return Stream.of(getTopRevision(pages))
 			.collect(Collectors.toMap(
-				rev -> rev.getPage(),
-				rev -> rev.getTimestamp()
+				Revision::getPage,
+				Revision::getTimestamp
 			));
 	}
 	
@@ -245,16 +245,16 @@ public class Wikibot extends WMFWiki {
 	public Map<String, Calendar> getTimestamps(Collection<? extends String> pages) throws IOException {
 		return Stream.of(getTopRevision(pages.toArray(new String[pages.size()])))
 			.collect(Collectors.toMap(
-				rev -> rev.getPage(),
-				rev -> rev.getTimestamp()
+				Revision::getPage,
+				Revision::getTimestamp
 			));
 	}
 	
 	public Map<String, Calendar> getTimestamps(PageContainer[] pages) {
 		return Stream.of(pages)
 			.collect(Collectors.toMap(
-				page -> page.getTitle(),
-				page -> page.getTimestamp()
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
 			));
 	}
 	
