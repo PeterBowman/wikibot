@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,8 +55,8 @@ public class Wikibot extends WMFWiki {
     public PageContainer[] getContentOfPages(String[] pages, int limit) throws IOException {
 		limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&titles=";
-		Function<String, Collection<PageContainer>> func = this::parseContentLine;
-		Collection<PageContainer> coll = getListedContent(url, pages, "getContents", func, limit);
+		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
+		Collection<PageContainer> coll = getListedContent(url, pages, "getContents", biCons, limit);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
@@ -67,9 +67,9 @@ public class Wikibot extends WMFWiki {
     public PageContainer[] getContentOfPageIds(Long[] pageids, int limit) throws IOException {
 		limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&pageids=";
-		Function<String, Collection<PageContainer>> func = this::parseContentLine;
+		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", func, limit);
+		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons, limit);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
@@ -80,9 +80,9 @@ public class Wikibot extends WMFWiki {
     public PageContainer[] getContentOfRevIds(Long[] revids, int limit) throws IOException {
     	limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&revids=";
-		Function<String, Collection<PageContainer>> func = this::parseContentLine;
+		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", func, limit);
+		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons, limit);
 		return coll.toArray(new PageContainer[coll.size()]);
     }
 	
@@ -140,7 +140,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private <T> Collection<T> getListedContent(String url, String[] titles, String caller,
-			Function<String, Collection<T>> func, int limit)
+			BiConsumer<String, Collection<T>> biCons, int limit)
 	throws IOException {
 		int listSize = titles.length;
 		String[] batches = constructTitleString(titles, limit);
@@ -174,7 +174,7 @@ public class Wikibot extends WMFWiki {
 				line = sb.toString();
 			}
 			
-			list.addAll(func.apply(line));
+			biCons.accept(line, list);
 		}
 		
 		log(Level.INFO, "getListedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
@@ -186,7 +186,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private PageContainer[] getGeneratedContent(String url, int limit) throws IOException {
-		List<PageContainer> list = new ArrayList<>(slowmax);
+		ArrayList<PageContainer> list = new ArrayList<>(slowmax * 2);
 		
 		String cont = "continue=";
 		String line;
@@ -194,7 +194,8 @@ public class Wikibot extends WMFWiki {
 		do {
 	    	line = fetch(url + "&" + cont, "getGeneratedContent");
 	    	cont = parseContinue(line);
-	        list.addAll(parseContentLine(line));
+	    	parseContentLine(line, list);
+	    	list.ensureCapacity(list.size() + slowmax);
 	    } while (cont != null && (limit < 0 || list.size() < limit));
 		
 		log(Level.INFO, "getGeneratedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
@@ -218,11 +219,11 @@ public class Wikibot extends WMFWiki {
 		return out;
 	}
 	
-	private Collection<PageContainer> parseContentLine(String line) {
+	private void parseContentLine(String line, Collection<PageContainer> list) {
 		Document doc = Jsoup.parse(line, "", Parser.xmlParser());
 		doc.outputSettings().prettyPrint(false);
 		
-		return doc.getElementsByTag("page").parallelStream()
+		doc.getElementsByTag("page").stream()
 			.flatMap(page -> page.getElementsByTag("rev").stream()
 				.map(rev -> new PageContainer(
 					decode(page.attr("title")),
@@ -230,7 +231,7 @@ public class Wikibot extends WMFWiki {
 					timestampToCalendar(rev.attr("timestamp"), true)
 				))
 			)
-			.collect(Collectors.toList());
+			.forEach(list::add);
 	}
 	
 	public Map<String, Calendar> getTimestamps(String[] pages) throws IOException {
@@ -303,20 +304,16 @@ public class Wikibot extends WMFWiki {
         url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         url.append("&rvtoken=rollback&titles=");
 		
-		Function<String, Collection<Revision>> func = (line) -> {
-			List<Revision> list = new ArrayList<>(slowmax);
-			
+		BiConsumer<String, Collection<Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
 				String title = parseAttribute(line, "title", page);
 				int start = line.indexOf("<rev ", page);
 				int end = line.indexOf("/>", start);
 				list.add(parseRevision(line.substring(start, end), title));
 			}
-			
-			return list;
 		};
 		
-		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", func, slowmax);
+		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", biCons, slowmax);
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
