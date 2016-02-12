@@ -508,6 +508,7 @@ public class Editor extends AbstractEditor {
 		applyUcfTemplates();
 		convertDefinitionsToUcfTemplates();
 		fixDefinitionNumbering();
+		removeDefinitionHeaders();
 		sanitizeReferences();
 		groupReferences();
 		addTranslationsExampleComment();
@@ -4601,6 +4602,25 @@ public class Editor extends AbstractEditor {
 		});
 	}
 	
+	public void removeDefinitionHeaders() {
+		if (isOldStructure) {
+			return;
+		}
+		
+		Page page = Page.store(title, text);
+		String quoted = Pattern.quote(title);
+		Pattern patt = Pattern.compile("^'{3}(to )?" + quoted + "'{3}$", Pattern.MULTILINE);
+		
+		page.getAllSections().stream()
+			.filter(Editor::filterTermSections)
+			.forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), patt,
+				(m, sb) -> m.appendReplacement(sb, "")
+			)));
+		
+		String formatted = page.toString();
+		checkDifferences(formatted, "removeDefinitionHeaders", "eliminando encabezamientos de definiciones");
+	}
+	
 	public void sanitizeReferences() {
 		if (!allowJsoup) {
 			return;
@@ -4933,7 +4953,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "prion";
+		String title = "sum";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
