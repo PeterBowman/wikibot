@@ -112,16 +112,19 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> TERM_TMPLS = Arrays.asList(
-		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama", "derivado"
+		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama",
+		"derivado"
 	);
 	
 	private static final List<String> TERM_TMPLS_ALIAS = Arrays.asList(
-		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas", "derivados"
+		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas",
+		"derivados"
 	);
 	
 	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
 	private static final List<String> AMBOX_TMPLS = Arrays.asList(
-		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "estructura", "falta", "revisión"
+		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "estructura", "falta",
+		"referencias", "revisión"
 	);
 	
 	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
