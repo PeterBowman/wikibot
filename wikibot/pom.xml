@@ -18,7 +18,7 @@
       	<artifactId>maven-dependency-plugin</artifactId>
       	<version>2.10</version>
       	<configuration>
-      		<excludeArtifactIds>wiki-java</excludeArtifactIds>
+      		<excludeArtifactIds>wiki-java,avatar-js</excludeArtifactIds>
       	</configuration>
       	<goals>
       		<goal>copy-dependencies</goal>
@@ -26,6 +26,13 @@
       </plugin>
     </plugins>
   </build>
+  <repositories>
+  	<repository>
+  		<id>nexus-snapshots</id>
+  		<name>Nexus Snapshots</name>
+  		<url>https://maven.java.net/content/repositories/snapshots/</url>
+  	</repository>
+  </repositories>
   <dependencies>
   	<dependency>
   		<groupId>com.univocity</groupId>
@@ -62,6 +69,23 @@
   		<artifactId>commons-io</artifactId>
   		<version>2.4</version>
   	</dependency>
+  	<dependency>
+	  <groupId>com.oracle</groupId>
+	  <artifactId>avatar-js</artifactId>
+	  <version>0.10.32-SNAPSHOT</version>
+	</dependency>
+	<dependency>
+	  <groupId>com.oracle</groupId>
+	  <artifactId>libavatar-js-win-x64</artifactId>
+	  <version>0.10.32-SNAPSHOT</version>
+	  <type>dll</type>
+	</dependency>
+	<dependency>
+	  <groupId>com.oracle</groupId>
+	  <artifactId>libavatar-js-linux-x64</artifactId>
+	  <version>0.10.32-SNAPSHOT</version>
+	  <type>so</type>
+	</dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
