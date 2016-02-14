@@ -1,0 +1,4 @@
+
+[submodule "wikibot/parsoid"]
+	path = wikibot/parsoid
+	url = https://gerrit.wikimedia.org/r/p/mediawiki/services/parsoid
