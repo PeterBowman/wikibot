@@ -334,7 +334,7 @@ public class Editor extends AbstractEditor {
 				tokens -> tokens[1]
 			));
 		
-		SECTION_DATA_MAP = Utils.readLinesFromResource("/eswikt-catgram-compound.txt", Editor.class)
+		SECTION_DATA_MAP = Utils.readLinesFromResource("/eswikt-catgram-compounds.txt", Editor.class)
 			.map(line -> line.split("\\s*=\\s*"))
 			.filter(tokens -> tokens.length == 2)
 			.collect(Collectors.toMap(

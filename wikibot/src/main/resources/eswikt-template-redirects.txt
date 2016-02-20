@@ -249,6 +249,7 @@ Geometría = geometría
 Gimnasia = gimnasia
 glotónimo = lenguas
 Gramática = lingüística
+gramática = lingüística
 Halconería = cetrería
 Heráldica = heráldica
 Hípica = equitación
