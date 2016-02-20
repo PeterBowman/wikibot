@@ -1,5 +1,6 @@
 package com.github.wikibot.utils;
 
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -257,6 +259,30 @@ public final class Misc {
 			.filter(page -> page.getTitle().equals(title))
 			.findFirst()
 			.orElse(null);
+	}
+	
+	public static String readLine() {
+		Console console = System.console();
+		
+		if (console != null) {
+			return console.readLine();
+		} else {
+			@SuppressWarnings("resource")
+			Scanner scanner = new Scanner(System.in);
+			return scanner.nextLine();
+		}
+	}
+	
+	public static char[] readPassword() {
+		Console console = System.console();
+		
+		if (console != null) {
+			return console.readPassword();
+		} else {
+			@SuppressWarnings("resource")
+			Scanner scanner = new Scanner(System.in);
+			return scanner.nextLine().toCharArray();
+		}
 	}
 
 	public static void main(String[] args) {

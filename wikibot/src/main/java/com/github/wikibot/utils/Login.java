@@ -1,6 +1,5 @@
 package com.github.wikibot.utils;
 
-import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,21 +66,10 @@ public class Login {
 	}
 	
 	private static void storeCredentials(Users user) throws FileNotFoundException, IOException {
-		Console console = System.console();
-		
-		if (console != null) {
-			console.printf("Username: %s%n", user.getUsername());
-			char[] password = console.readPassword("Password: ");
-			credentials.put(user.getUsername(), password);
-		} else {
-			System.out.println("Using standard console");
-			@SuppressWarnings("resource")
-			Scanner scanner = new Scanner(System.in);
-			System.out.printf("Username: %s%n", user.getUsername());
-			System.out.printf("Password: ");
-			String password = scanner.nextLine();
-			credentials.put(user.getUsername(), password.toCharArray());
-		}
+		System.out.printf("Username: %s%n", user.getUsername());
+		System.out.print("Password: ");
+		char[] password = Misc.readPassword();
+		credentials.put(user.getUsername(), password);
 	}
 	
 	@SuppressWarnings("unchecked")
