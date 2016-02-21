@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.Collator;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +19,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
@@ -74,51 +80,32 @@ public final class InconsistentHeaderTitles {
 		Collator collator = Misc.getCollator("pl");
 		Map<String, Collection<Item>> map = new ConcurrentSkipListMap<>(collator::compare);
 		
-		char op;
+		CommandLine line = readOptions(args);
 		
-		if (args.length == 0) {
-			System.out.println("'p' - patrol RC, 'd' - read from dump file");
-			System.out.print("Option: ");
-			op = (char) System.in.read();
+		if (line == null) {
+			return;
+		} else if (line.hasOption('p') || line.hasOption("patrol")) {
+			String[] storedTitles = extractStoredTitles();
+			analyzeRecentChanges(storedTitles, map);
+		} else if (line.hasOption('d') || line.hasOption("dump")) {
+			readDumpFile(line.getArgList(), map);
+			
+			String[] titles = map.values().stream()
+				.flatMap(Collection::stream)
+				.map(item -> item.page)
+				.distinct()
+				.toArray(String[]::new);
+			
+			map.clear();
+			analyzeRecentChanges(titles, map);
 		} else {
-			op = args[0].toCharArray()[0];
+			System.out.printf("No options specified: %s%n", Arrays.asList(args));
+			return;
 		}
 		
-		switch (op) {
-			case 'p': // patrol RC
-				String[] newTitles = extractRecentChanges();
-				String[] storedTitles = extractStoredTitles();
-				
-				if (newTitles.length == 0 || storedTitles.length == 0) {
-					System.out.println("No entries found/extracted.");
-					return;
-				}
-				
-				String[] distinctTitles = Stream.of(newTitles, storedTitles)
-					.flatMap(Stream::of)
-					.distinct()
-					.toArray(String[]::new);
-				
-				PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
-				Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
-				
-				break;
-			case 'd': // read from dump file, TODO: only local environment
-				XMLDumpReader reader = new XMLDumpReader(Domains.PLWIKT);
-				int size = wb.getSiteStatistics().get("pages");
-				
-				try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
-					stream.parallel()
-						.filter(XMLRevision::isMainNamespace)
-						.filter(XMLRevision::nonRedirect)
-						.map(XMLRevision::toPageContainer)
-						.forEach(pc -> findErrors(pc, map));
-				}
-				
-				break;
-			default:
-				System.out.printf("Unrecognized argument: %c%n.", op);
-				return;
+		if (map.isEmpty()) {
+			System.out.println("No entries found/extracted.");
+			return;
 		}
 		
 		File fHash = new File(LOCATION + "hash.ser");
@@ -128,20 +115,77 @@ public final class InconsistentHeaderTitles {
 			return;
 		} else {
 			Misc.serialize(map.hashCode(), fHash);
+			
 			String[] arr = map.values().stream()
 				.flatMap(coll -> coll.stream().map(item -> item.page))
 				.distinct()
 				.toArray(String[]::new);
+			
 			Misc.serialize(arr, LOCATION + "stored_titles.ser");
 			System.out.printf("%d titles stored.%n", arr.length);
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage(map);
-		
 		IOUtils.writeToFile(page.toString(), LOCATION + "page.txt");
 		
 		wb.setMarkBot(false);
 		wb.edit(page.getTitle(), page.toString(), "aktualizacja");
+	}
+	
+	private static CommandLine readOptions(String[] args) {
+		Options options = new Options();
+		options.addOption("p", "patrol", false, "patrol recent changes");
+		options.addOption("d", "dump", false, "read from dump file");
+		
+		if (args.length == 0) {
+			System.out.print("Option: ");
+			String input = Misc.readLine();
+			args = input.split(" ");
+		}
+		
+		CommandLineParser parser = new DefaultParser();
+		
+		try {
+			return parser.parse(options, args);
+		} catch (ParseException e) {
+			System.out.println(e.getMessage());
+			HelpFormatter help = new HelpFormatter();
+			help.printHelp(InconsistentHeaderTitles.class.getName(), options);
+			return null;
+		}
+	}
+
+	private static void analyzeRecentChanges(String[] storedTitles, Map<String, Collection<Item>> map)
+			throws IOException {
+		String[] newTitles = extractRecentChanges();
+		
+		if (newTitles.length == 0 && storedTitles.length == 0) {
+			return;
+		}
+		
+		String[] distinctTitles = Stream.of(newTitles, storedTitles)
+			.flatMap(Stream::of)
+			.distinct()
+			.toArray(String[]::new);
+		
+		PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
+		Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
+	}
+
+	private static void readDumpFile(List<String> arguments, Map<String, Collection<Item>> map)
+			throws FileNotFoundException, IOException {
+		System.out.printf("Passed argument list: %s%n", arguments);
+		XMLDumpReader reader = new XMLDumpReader(arguments.get(0));
+		int size = wb.getSiteStatistics().get("pages");
+		
+		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
+			stream.parallel()
+				.filter(XMLRevision::isMainNamespace)
+				.filter(XMLRevision::nonRedirect)
+				// TODO: restore XMLRevision::toPageContainer once it's assured to be thread-safe
+				.map(rev -> new PageContainer(rev.getTitle(), rev.getText(), null))
+				.forEach(pc -> findErrors(pc, map));
+		}
 	}
 	
 	private static String[] extractRecentChanges() throws IOException {
@@ -151,7 +195,7 @@ public final class InconsistentHeaderTitles {
 			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
 			startCal = Calendar.getInstance();
 			startCal.setTime(DATE_FORMAT.parse(timestamp));
-		} catch (FileNotFoundException | ArrayIndexOutOfBoundsException | ParseException e) {
+		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
 			startCal = wb.makeCalendar();
 			startCal.add(Calendar.DATE, -1);
@@ -167,7 +211,8 @@ public final class InconsistentHeaderTitles {
 		
 		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
+		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG,
+			"move", null, "", Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
 		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
