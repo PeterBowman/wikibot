@@ -58,6 +58,9 @@ public final class InconsistentHeaderTitles {
 	// https://en.wikipedia.org/wiki/Whitespace_character#Unicode
 	private static final Pattern P_WHITESPACE = Pattern.compile("[\u0009\u00a0\u1680\u180e\u2000-\u200d\u2028-\u2029\u202f\u205f-\u2060\u3000\ufeff]");
 	
+	// http://www.freeformatter.com/html-entities.html
+	private static final Pattern P_ENTITIES = Pattern.compile("&(nbsp|ensp|emsp|thinsp|zwnj|zwj|lrm|rlm);");
+	
 	private static PLWikt wb;
 	
 	static {
@@ -149,14 +152,14 @@ public final class InconsistentHeaderTitles {
 			throws IOException {
 		String[] newTitles = extractRecentChanges();
 		
-		if (newTitles.length == 0 && bufferedTitles.length == 0) {
-			return;
-		}
-		
 		String[] distinctTitles = Stream.of(newTitles, bufferedTitles)
 			.flatMap(Stream::of)
 			.distinct()
 			.toArray(String[]::new);
+		
+		if (distinctTitles.length == 0) {
+			return;
+		}
 		
 		PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
 		Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
@@ -212,14 +215,13 @@ public final class InconsistentHeaderTitles {
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getPage),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails)
-				.filter(targetTitle -> {
-					try {
-						return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
-					} catch (Exception e) {
-						return false;
-					}
-				})
+			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> {
+				try {
+					return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
+				} catch (Exception e) {
+					return false;
+				}
+			})
 		).distinct().toArray(String[]::new);
 	}
 	
@@ -296,9 +298,11 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	private static String normalizeHeaderTitle(String title) {
+		final String blankCharEntity = "&#9251;";
 		title = title.replace("&#", "&amp;#");
 		title = title.replace("<", "&lt;").replace(">", "&gt;");
-		title = P_WHITESPACE.matcher(title).replaceAll("&#9251;");
+		title = P_WHITESPACE.matcher(title).replaceAll(blankCharEntity);
+		title = P_ENTITIES.matcher(title).replaceAll(blankCharEntity);
 		return title;
 	}
 	
