@@ -3,6 +3,7 @@ package com.github.wikibot.parsing;
 import java.io.IOException;
 import java.io.Serializable;
 
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.utils.PageContainer;
 
@@ -19,6 +20,10 @@ public class Page extends AbstractPage<Section> implements Serializable {
 	
 	public static Page wrap(PageContainer page) {
 		return new Page(page.getTitle(), page.getText());
+	}
+	
+	public static Page wrap(XMLRevision xml) {
+		return new Page(xml.getTitle(), xml.getText());
 	}
 	
 	public static Page store(String title, String text) {

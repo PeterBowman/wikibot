@@ -34,7 +34,6 @@ import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
@@ -56,21 +55,20 @@ public final class InconsistentHeaderTitles {
 	// from Linker::formatLinksInComment in Linker.php
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]");
 	
+	// https://en.wikipedia.org/wiki/Whitespace_character#Unicode
+	private static final Pattern P_WHITESPACE = Pattern.compile("[\u0009\u00a0\u1680\u180e\u2000-\u200d\u2028-\u2029\u202f\u205f-\u2060\u3000\ufeff]");
+	
 	private static PLWikt wb;
 	
 	static {
-		StringBuilder sb = new StringBuilder(350);
-		sb.append("Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej.");
-		sb.append(" ");
-		sb.append("Odświeżany jest automatycznie przy użyciu wewnętrzej listy ostatnio przenalizowanych stron.");
-		sb.append(" ");
-		sb.append("Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota.");
-		sb.append("\n");
-		sb.append("__NOEDITSECTION__");
-		sb.append("\n");
-		sb.append("{{TOCright}}");
+		PAGE_INTRO =
+			"Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej. " +
+			"Odświeżany jest automatycznie przy użyciu wewnętrzej listy ostatnio przenalizowanych stron. " +
+			"Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota. " +
+			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
+			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
+			"\n__NOEDITSECTION__\n{{TOCright}}";
 		
-		PAGE_INTRO = sb.toString();
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
@@ -88,16 +86,8 @@ public final class InconsistentHeaderTitles {
 			String[] storedTitles = extractStoredTitles();
 			analyzeRecentChanges(storedTitles, map);
 		} else if (line.hasOption('d') || line.hasOption("dump")) {
-			readDumpFile(line.getArgList(), map);
-			
-			String[] titles = map.values().stream()
-				.flatMap(Collection::stream)
-				.map(item -> item.page)
-				.distinct()
-				.toArray(String[]::new);
-			
-			map.clear();
-			analyzeRecentChanges(titles, map);
+			String[] candidateTitles = readDumpFile(line.getArgList());
+			analyzeRecentChanges(candidateTitles, map);
 		} else {
 			System.out.printf("No options specified: %s%n", Arrays.asList(args));
 			return;
@@ -155,15 +145,15 @@ public final class InconsistentHeaderTitles {
 		}
 	}
 
-	private static void analyzeRecentChanges(String[] storedTitles, Map<String, Collection<Item>> map)
+	private static void analyzeRecentChanges(String[] bufferedTitles, Map<String, Collection<Item>> map)
 			throws IOException {
 		String[] newTitles = extractRecentChanges();
 		
-		if (newTitles.length == 0 && storedTitles.length == 0) {
+		if (newTitles.length == 0 && bufferedTitles.length == 0) {
 			return;
 		}
 		
-		String[] distinctTitles = Stream.of(newTitles, storedTitles)
+		String[] distinctTitles = Stream.of(newTitles, bufferedTitles)
 			.flatMap(Stream::of)
 			.distinct()
 			.toArray(String[]::new);
@@ -172,19 +162,22 @@ public final class InconsistentHeaderTitles {
 		Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
 	}
 
-	private static void readDumpFile(List<String> arguments, Map<String, Collection<Item>> map)
-			throws FileNotFoundException, IOException {
+	private static String[] readDumpFile(List<String> arguments) throws FileNotFoundException, IOException {
 		System.out.printf("Passed argument list: %s%n", arguments);
 		XMLDumpReader reader = new XMLDumpReader(arguments.get(0));
 		int size = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
-			stream.parallel()
+			return stream.parallel()
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
-				// TODO: restore XMLRevision::toPageContainer once it's assured to be thread-safe
-				.map(rev -> new PageContainer(rev.getTitle(), rev.getText(), null))
-				.forEach(pc -> findErrors(pc, map));
+				.map(Page::wrap)
+				.map(Page::getAllSections)
+				.flatMap(Collection::stream)
+				.filter(InconsistentHeaderTitles::filterSections)
+				.map(section -> section.getContainingPage().get().getTitle())
+				.distinct()
+				.toArray(String[]::new);
 		}
 	}
 	
@@ -248,7 +241,7 @@ public final class InconsistentHeaderTitles {
 		
 		try {
 			page = Page.wrap(pc);
-		} catch (ParsingException e) {
+		} catch (Exception e) {
 			return;
 		}
 		
@@ -256,7 +249,7 @@ public final class InconsistentHeaderTitles {
 			.filter(InconsistentHeaderTitles::filterSections)
 			.forEach(section -> {
 				String lang = section.getLangShort();
-				String headerTitle = section.getHeaderTitle().replace("&#", "&amp;#");
+				String headerTitle = normalizeHeaderTitle(section.getHeaderTitle());
 				Item item = new Item(pc.getTitle(), headerTitle);
 				
 				// http://stackoverflow.com/a/10743710
@@ -302,6 +295,13 @@ public final class InconsistentHeaderTitles {
 		return m.appendTail(sb).toString();
 	}
 	
+	private static String normalizeHeaderTitle(String title) {
+		title = title.replace("&#", "&amp;#");
+		title = title.replace("<", "&lt;").replace(">", "&gt;");
+		title = P_WHITESPACE.matcher(title).replaceAll("&#9251;");
+		return title;
+	}
+	
 	private static com.github.wikibot.parsing.Page makePage(Map<String, Collection<Item>> map) {
 		List<String> values = map.values().stream()
 			.flatMap(coll -> coll.stream().map(item -> item.page))
@@ -314,9 +314,8 @@ public final class InconsistentHeaderTitles {
 		
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
-		page.setIntro(String.format(
-			"%s%nZnaleziono %s (%s) w %s. Aktualizacja: ~~~~~.",
-			PAGE_INTRO,
+		page.setIntro(PAGE_INTRO + "\n" + String.format(
+			"Znaleziono %s (%s) w %s. Aktualizacja: ~~~~~.",
 			Misc.makePluralPL(total, "hasło", "hasła", "haseł"),
 			Misc.makePluralPL(unique, "strona", "strony", "stron"),
 			Misc.makePluralPL(map.keySet().size(), "języku", "językach", "językach")
@@ -336,10 +335,11 @@ public final class InconsistentHeaderTitles {
 					sb.append(String.format("{{columns|liczba=%d|", NUMBER_OF_COLUMNS));
 				}
 				
-				sb.append("\n").append(entry.getValue().stream()
+				sb.append("\n");
+				
+				entry.getValue().stream()
 					.map(item -> String.format("#[[%s]]: %s", item.page, item.headerTitle))
-					.collect(Collectors.joining("\n"))
-				).append("\n");
+					.forEach(formatted -> sb.append(formatted).append("\n"));
 				
 				if (useColumns) {
 					sb.append("}}");

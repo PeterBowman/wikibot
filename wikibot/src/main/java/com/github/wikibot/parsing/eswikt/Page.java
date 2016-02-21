@@ -18,10 +18,11 @@ import javax.security.auth.login.FailedLoginException;
 
 import org.wikiutils.IOUtils;
 
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractPage;
-import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.AbstractSection;
+import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
@@ -77,6 +78,10 @@ public final class Page extends AbstractPage<Section> {
 	
 	public static Page wrap(PageContainer page) {
 		return new Page(page.getTitle(), page.getText());
+	}
+	
+	public static Page wrap(XMLRevision xml) {
+		return new Page(xml.getTitle(), xml.getText());
 	}
 	
 	public static Page store(String title, String text) {

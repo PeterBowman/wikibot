@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.login.FailedLoginException;
 
+import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.Utils;
@@ -31,6 +32,10 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 	
 	public static Page wrap(PageContainer page) {
 		return new Page(page.getTitle(), page.getText());
+	}
+	
+	public static Page wrap(XMLRevision xml) {
+		return new Page(xml.getTitle(), xml.getText());
 	}
 	
 	public static Page store(String title, String text) {
