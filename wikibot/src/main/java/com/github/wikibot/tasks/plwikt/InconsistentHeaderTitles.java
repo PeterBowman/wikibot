@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -34,6 +35,7 @@ import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
@@ -61,6 +63,8 @@ public final class InconsistentHeaderTitles {
 	// http://www.freeformatter.com/html-entities.html
 	private static final Pattern P_ENTITIES = Pattern.compile("&(nbsp|ensp|emsp|thinsp|zwnj|zwj|lrm|rlm);");
 	
+	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
+	
 	private static PLWikt wb;
 	
 	static {
@@ -70,7 +74,7 @@ public final class InconsistentHeaderTitles {
 			"Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota. " +
 			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
 			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
-			"\n__NOEDITSECTION__\n{{TOCright}}";
+			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
 		
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
@@ -271,7 +275,7 @@ public final class InconsistentHeaderTitles {
 		headerTitle = ParseUtils.removeCommentsAndNoWikiText(headerTitle);
 		
 		if (StringUtils.containsAny(headerTitle, '{', '}')) {
-			return false;
+			headerTitle = stripHeaderTemplates(headerTitle);
 		}
 		
 		if (StringUtils.containsAny(headerTitle, '[', ']')) {
@@ -283,6 +287,19 @@ public final class InconsistentHeaderTitles {
 		headerTitle = headerTitle.replace("ʼ", "'").replace("…", "...");
 		
 		return !pageTitle.equals(headerTitle);
+	}
+	
+	private static String stripHeaderTemplates(String text) {
+		for (String headerTemplate : HEADER_TEMPLATES) {
+			text = Utils.replaceTemplates(text, headerTemplate, template ->
+				Optional.of(ParseUtils.getTemplateParametersWithValue(template))
+					.map(params -> params.get("ParamWithoutName1"))
+					.filter(Objects::nonNull)
+					.orElse(template)
+			);
+		}
+		
+		return text;
 	}
 	
 	private static String stripWikiLinks(String text) {
