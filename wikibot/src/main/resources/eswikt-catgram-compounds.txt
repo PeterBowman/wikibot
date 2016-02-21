@@ -3,6 +3,7 @@ adjetivo indefinido = ADJECTIVE, INDEFINITE
 adjetivo numeral = ADJECTIVE, NUMERAL
 adjetivo ordinal = ADJECTIVE, ORDINAL
 adjetivo posesivo = ADJECTIVE, POSSESSIVE
+adverbio comparativo = ADVERB, COMPARATIVE
 adverbio de afirmación = ADVERB, OF_AFFIRMATION
 adverbio de cantidad = ADVERB, OF_QUANTITY
 adverbio de duda = ADVERB, OF_DOUBT
