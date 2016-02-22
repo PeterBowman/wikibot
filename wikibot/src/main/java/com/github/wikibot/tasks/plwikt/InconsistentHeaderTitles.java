@@ -89,11 +89,11 @@ public final class InconsistentHeaderTitles {
 		
 		if (line == null) {
 			return;
-		} else if (line.hasOption('p') || line.hasOption("patrol")) {
+		} else if (line.hasOption("patrol")) {
 			String[] storedTitles = extractStoredTitles();
 			analyzeRecentChanges(storedTitles, map);
-		} else if (line.hasOption('d') || line.hasOption("dump")) {
-			String[] candidateTitles = readDumpFile(line.getArgList());
+		} else if (line.hasOption("dump")) {
+			String[] candidateTitles = readDumpFile(line.getOptionValue("dump"));
 			analyzeRecentChanges(candidateTitles, map);
 		} else {
 			System.out.printf("No options specified: %s%n", Arrays.asList(args));
@@ -132,7 +132,7 @@ public final class InconsistentHeaderTitles {
 	private static CommandLine readOptions(String[] args) {
 		Options options = new Options();
 		options.addOption("p", "patrol", false, "patrol recent changes");
-		options.addOption("d", "dump", false, "read from dump file");
+		options.addOption("d", "dump", true, "read from dump file");
 		
 		if (args.length == 0) {
 			System.out.print("Option: ");
@@ -169,9 +169,9 @@ public final class InconsistentHeaderTitles {
 		Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
 	}
 
-	private static String[] readDumpFile(List<String> arguments) throws FileNotFoundException, IOException {
-		System.out.printf("Passed argument list: %s%n", arguments);
-		XMLDumpReader reader = new XMLDumpReader(arguments.get(0));
+	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
+		System.out.printf("Reading from file: %s%n", path);
+		XMLDumpReader reader = new XMLDumpReader(path);
 		int size = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
