@@ -203,7 +203,7 @@ public final class Catgram {
 		private Properties properties;
 		
 		static {
-			Map<String, Properties> map = loadFile("/eswikt-catgram-data.txt");
+			Map<String, Properties> map = loadFile("/eswikt/catgram-data.txt");
 			
 			for (Data data : Data.values()) {
 				Properties properties = map.get(data.toString());
