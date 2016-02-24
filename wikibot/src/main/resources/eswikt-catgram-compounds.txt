@@ -1,4 +1,5 @@
 adjetivo cardinal = ADJECTIVE, CARDINAL
+adjetivo comparativo = ADJECTIVE, COMPARATIVE
 adjetivo indefinido = ADJECTIVE, INDEFINITE
 adjetivo numeral = ADJECTIVE, NUMERAL
 adjetivo ordinal = ADJECTIVE, ORDINAL
