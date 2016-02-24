@@ -1,13 +1,20 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.Collator;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,9 +52,9 @@ public final class ShortCommas {
 	private static final Pattern P_SHORT_ANNOTATION;
 	private static final Pattern P_SHORT_SEMICOLON;
 	
-	private static final String SHORT_SHORT_REPL = "{{$1}} {{$2";
-	private static final String SHORT_ANNOTATION_REPL = "{{$1}} ''";
-	private static final String SHORT_SEMICOLON_REPL = "{{$1}} {{zob|";
+	private static final String SHORT_SHORT_REPL = "$1{{$2}} {{$3$4";
+	private static final String SHORT_ANNOTATION_REPL = "$1{{$2}} ''$3";
+	private static final String SHORT_SEMICOLON_REPL = "$1{{$2}} {{zob|$3";
 	
 	private static final List<String> SHORT_TEMPLATES_CATS = Arrays.asList(
 		"Szablony skrótów", "Szablony skrótów - obcojęzyczne", "Szablony skrótów nazw języków",
@@ -66,9 +73,9 @@ public final class ShortCommas {
 		
 		final String joined = String.join("|", SHORTS_SET);
 		
-		P_SHORT_SHORT = Pattern.compile("\\{\\{ *(" + joined + ") *\\}\\} *, *\\{\\{ *(" + joined + ") *?(?=\\}|\\|)");
-		P_SHORT_ANNOTATION = Pattern.compile("\\{\\{ *(" + joined + ") *\\}\\} *, *'{2}(?!')");
-		P_SHORT_SEMICOLON = Pattern.compile("\\{\\{ *(" + joined + ") *\\}\\} *; *\\{\\{ *zob *\\|");
+		P_SHORT_SHORT = Pattern.compile("^(.*)\\{\\{ *(" + joined + ") *\\}\\} *, *\\{\\{ *(" + joined + ") *?([}|].*)$", Pattern.MULTILINE);
+		P_SHORT_ANNOTATION = Pattern.compile("^(.*)\\{\\{ *(" + joined + ") *\\}\\} *, *'{2}([^'].*)$", Pattern.MULTILINE);
+		P_SHORT_SEMICOLON = Pattern.compile("^(.*)\\{\\{ *(" + joined + ") *\\}\\} *; *\\{\\{ *zob *\\|(.*)$", Pattern.MULTILINE);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -82,16 +89,16 @@ public final class ShortCommas {
 			XMLDumpReader reader = new XMLDumpReader(Domains.PLWIKT);
 			analyzePages(reader);
 		} else if (line.hasOption("edit")) {
-			List<PageContainer> list = Misc.deserialize(LOCATION + "list.ser");
-			editPages(list);
+			List<PageContainer> list = Misc.deserialize(LOCATION + "worklist.ser");
+			editPages(list, line.hasOption("verify"));
 		} else if (line.hasOption("check")) {
 			checkStoredTemplates();
 		} else if (line.hasOption("dump")) {
 			XMLDumpReader reader = new XMLDumpReader(line.getOptionValue("dump"));
 			List<PageContainer> list = analyzePages(reader);
-			editPages(list);
+			editPages(list, false);
 		} else {
-			System.out.printf("No options specified: %s%n", Arrays.asList(args));
+			System.out.println("No options supplied");
 		}
 	}
 	
@@ -101,6 +108,7 @@ public final class ShortCommas {
 		options.addOption("a", "analyze", false, "retrieve list of affected pages");
 		options.addOption("e", "edit", false, "apply changes");
 		options.addOption("c", "check", false, "check stored templates");
+		options.addOption("v", "verify", false, "verify diff list");
 		options.addOption("d", "dump", true, "read from dump file");
 		
 		if (args.length == 0) {
@@ -122,11 +130,7 @@ public final class ShortCommas {
 	}
 	
 	private static List<PageContainer> analyzePages(XMLDumpReader reader) throws IOException {
-		final String baseTemplate = "Szablon:skrót";
-		Set<String> wth = new HashSet<>(Arrays.asList(wb.whatTranscludesHere(baseTemplate, 0)));
-		
-		System.out.printf("Transclusions of \"%s\" in the main namespace: %d%n", baseTemplate, wth.size());
-		
+		Set<String> wth = new HashSet<>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
 		int size = wb.getSiteStatistics().get("pages");
 		String[] titles;
 		
@@ -143,17 +147,23 @@ public final class ShortCommas {
 		System.out.printf("%d result(s) found in dump file%n", titles.length);
 		
 		PageContainer[] pages = wb.getContentOfPages(titles, 150);
+		Map<String, Collection<String>> map = new ConcurrentSkipListMap<>();
 		
-		List<PageContainer> processedPages = Stream.of(pages)
-			.map(ShortCommas::processPage)
+		List<PageContainer> processedPages = Stream.of(pages).parallel()
+			.map(pc -> processPage(pc, map))
 			.filter(Objects::nonNull)
+			.sorted((pc1, pc2) -> pc1.getTitle().compareTo(pc2.getTitle()))
 			.collect(Collectors.toList());
 		
 		System.out.printf("%d page(s) filtered and processed%n", processedPages.size());
 		
 		String[] targetTitles = processedPages.stream().map(PageContainer::getTitle).toArray(String[]::new);
-		IOUtils.writeToFile(String.join("\n", targetTitles), LOCATION + "titles.txt");
-		Misc.serialize(processedPages, LOCATION + "list.ser");
+		final String timestamp = makeTimestamp();
+		
+		IOUtils.writeToFile(String.join("\n", targetTitles), LOCATION + timestamp + "-titles.txt");
+		IOUtils.writeToFile(Misc.makeMultiList(map), LOCATION + timestamp + "-diffs.txt");
+		
+		Misc.serialize(processedPages, LOCATION + "worklist.ser");
 		
 		return processedPages;
 	}
@@ -165,13 +175,14 @@ public final class ShortCommas {
 			P_SHORT_SEMICOLON.matcher(xml.getText()).find();
 	}
 	
-	private static PageContainer processPage(PageContainer pc) {
+	private static PageContainer processPage(PageContainer pc, Map<String, Collection<String>> map) {
 		String text = pc.getText();
+		List<String> diffs = new ArrayList<>();
 		String temp = text;
 		
 		// Must loop this due to the presence of template chains: {{A}}, {{B}}, {{C}}...
 		while (true) {
-			text = applyReplacement(text, SHORT_SHORT_REPL, P_SHORT_SHORT);
+			text = applyReplacement(text, SHORT_SHORT_REPL, P_SHORT_SHORT, diffs);
 			
 			if (temp.equals(text)) {
 				break;
@@ -180,30 +191,58 @@ public final class ShortCommas {
 			}
 		}
 		
-		text = applyReplacement(text, SHORT_ANNOTATION_REPL, P_SHORT_ANNOTATION);
-		text = applyReplacement(text, SHORT_SEMICOLON_REPL, P_SHORT_SEMICOLON);
+		text = applyReplacement(text, SHORT_ANNOTATION_REPL, P_SHORT_ANNOTATION, diffs);
+		text = applyReplacement(text, SHORT_SEMICOLON_REPL, P_SHORT_SEMICOLON, diffs);
 		
-		if (text.equals(pc.getText())) {
+		if (diffs.isEmpty()) {
 			return null;
 		} else {
+			map.put(pc.getTitle(), diffs);
 			text = Utils.sanitizeWhitespaces(text);
 			return new PageContainer(pc.getTitle(), text, pc.getTimestamp());
 		}
 	}
 	
-	private static String applyReplacement(String text, String replacement, Pattern patt) {
+	private static String applyReplacement(String text, String replacement, Pattern patt, List<String> diffs) {
 		StringBuffer sb = new StringBuffer(text.length());
 		Matcher m = patt.matcher(text);
 		
 		while (m.find()) {
-			m.appendReplacement(sb, replacement);
+			String original = m.group();
+			String replaced = patt.matcher(original).replaceFirst(replacement);
+			diffs.add(original + "\n" + replaced);
+			m.appendReplacement(sb, "");
+			sb.append(replaced);
 		}
 		
 		return m.appendTail(sb).toString();
 	}
 	
-	private static void editPages(List<PageContainer> pages) throws LoginException, IOException {
-		System.out.printf("Editing %d page(s)...", pages.size());
+	private static String makeTimestamp() {
+		Date date = new Date();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return dateFormat.format(date);
+	}
+	
+	private static void editPages(List<PageContainer> pages, boolean verify) throws LoginException, IOException {
+		System.out.printf("Worklist size: %d%n", pages.size());
+		
+		if (verify) {
+			try {
+				String[] lines = IOUtils.loadFromFile(LOCATION + "verified.txt", "", "UTF8");
+				Map<String, String[]> map = Misc.readMultiList(lines);
+				pages.removeIf(pc -> !map.containsKey(pc.getTitle()));
+				System.out.printf("Worklist size after manual verification: %d%n", pages.size());
+				
+				if (pages.isEmpty()) {
+					return;
+				}
+			} catch (FileNotFoundException e) {
+				System.out.println(e);
+				return;
+			}
+		}
 		
 		final String summary = "usunięcie znaku oddzielającego między kwalifikatorami";
 		List<String> errors = new ArrayList<>();
