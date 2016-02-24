@@ -13,6 +13,7 @@ adverbio de modo = ADVERB, OF_MOOD
 adverbio de negación = ADVERB, OF_NEGATION
 adverbio de orden = ADVERB, OF_SEQUENCE
 adverbio de tiempo = ADVERB, OF_TIME
+adverbio demostrativo = ADVERB, DEMONSTRATIVE
 adverbio interrogativo = ADVERB, INTERROGATIVE
 adverbio relativo = ADVERB, RELATIVE
 artículo determinado = ARTICLE, DETERMINATE
