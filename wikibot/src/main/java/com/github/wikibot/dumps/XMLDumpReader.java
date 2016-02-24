@@ -50,12 +50,14 @@ public final class XMLDumpReader {
 			throw new FileNotFoundException();
 		}
 		
+		System.out.printf("Reading from file: %s%n", file);
 		checkExtension();
 	}
 	
 	public XMLDumpReader(Domains domain) throws FileNotFoundException {
 		Objects.requireNonNull(domain);
 		file = getLocalFile(domain);
+		System.out.printf("Reading from file: %s%n", file);
 		checkExtension();
 	}
 	
@@ -67,6 +69,7 @@ public final class XMLDumpReader {
 			throw new FileNotFoundException();
 		}
 		
+		System.out.printf("Reading from file: %s%n", file);
 		checkExtension();
 	}
 
@@ -78,7 +81,6 @@ public final class XMLDumpReader {
 			throw new FileNotFoundException("Dump file not found: " + domain.toString());
 		}
 		
-		System.out.printf("Reading from file: %s%n", matching[0].getName());
 		return matching[0];
 	}
 	
