@@ -72,6 +72,10 @@ public final class XMLDumpReader {
 		System.out.printf("Reading from file: %s%n", file);
 		checkExtension();
 	}
+	
+	public File getFile() {
+		return file;
+	}
 
 	private static File getLocalFile(Domains domain) throws FileNotFoundException {
 		String domainPrefix = resolveDomainName(domain);
