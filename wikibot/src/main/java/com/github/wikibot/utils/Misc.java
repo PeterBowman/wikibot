@@ -61,10 +61,10 @@ public final class Misc {
 	}
 	
 	public static void serialize(Object target, File f) throws FileNotFoundException, IOException {
-		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
-		out.writeObject(target);
-		System.out.printf("Object successfully serialized: %s%n", f.getName());
-		out.close();
+		try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
+			out.writeObject(target);
+			System.out.printf("Object successfully serialized: %s%n", f.getName());
+		}
 	}
 	
 	public static <T> T deserialize(String source) throws FileNotFoundException, IOException, ClassNotFoundException {
@@ -73,12 +73,11 @@ public final class Misc {
 	
 	@SuppressWarnings("unchecked")
 	public static <T> T deserialize(File f) throws FileNotFoundException, IOException, ClassNotFoundException {
-		ObjectInputStream in = new ObjectInputStream(new FileInputStream(f));
-		T target = (T)in.readObject();
-		System.out.printf("Object successfully deserialized: %s%n", f.getName());
-		in.close();
-		
-		return target;
+		try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+			T target = (T) in.readObject();
+			System.out.printf("Object successfully deserialized: %s%n", f.getName());
+			return target;
+		}
 	}
 	
 	public static String makePluralPL(int value, String nominative, String genitive) {
