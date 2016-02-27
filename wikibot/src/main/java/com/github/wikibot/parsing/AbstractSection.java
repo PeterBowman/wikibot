@@ -30,7 +30,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	protected AbstractPage<T> containingPage;
 	private UUID uuid;
 	
-	private static final Pattern P_HEADER_REFS = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)");
+	private static final Pattern P_HEADER_REFS = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", Pattern.CASE_INSENSITIVE);
 	
 	protected AbstractSection(String text) {
 		header = "";
