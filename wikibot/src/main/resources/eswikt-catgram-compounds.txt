@@ -30,6 +30,7 @@ preposición de acusativo = PREPOSITION, OF_ACCUSATIVE
 preposición de acusativo o ablativo = PREPOSITION, OF_ACCUSATIVE_OR_ABLATIVE
 preposición de genitivo = PREPOSITION, OF_GENITIVE
 pronombre demostrativo = PRONOUN, DEMONSTRATIVE
+pronombre indefinido = PRONOUN, INDEFINITE
 pronombre interrogativo = PRONOUN, INTERROGATIVE
 pronombre personal = PRONOUN, PERSONAL
 pronombre relativo = PRONOUN, RELATIVE

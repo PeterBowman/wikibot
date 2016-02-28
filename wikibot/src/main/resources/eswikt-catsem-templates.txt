@@ -68,6 +68,7 @@ cultura = Cultura
 danza = Danza
 deporte = Deporte
 derecho = Derecho
+días de la semana = Días de la semana
 dinosaurios = Dinosaurios
 diseño = Diseño
 ecología = Ecología
