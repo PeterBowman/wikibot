@@ -245,7 +245,7 @@ public final class Misc {
 	
 	public static Collator getCollator(String lang) {
 		Collator collator = Collator.getInstance(new Locale(lang));
-		collator.setStrength(Collator.SECONDARY);
+		collator.setStrength(Collator.TERTIARY);
 		return collator;
 	}
 	
