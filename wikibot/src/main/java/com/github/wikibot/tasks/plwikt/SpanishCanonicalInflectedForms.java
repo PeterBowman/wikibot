@@ -2,6 +2,8 @@ package com.github.wikibot.tasks.plwikt;
 
 import static com.github.wikibot.parsing.Utils.streamOpt;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -10,12 +12,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import com.github.wikibot.main.PLWikt;
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -25,40 +29,65 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
-public final class SpanishCanonicalInflectedForms implements Selectorizable {
+public final class SpanishCanonicalInflectedForms {
+	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
+	private static final String TARGET_PAGE = "Indeks:Hiszpańskie formy czasownikowe";
+	private static final String CATEGORY_NAME = "Formy czasowników hiszpańskich";
+	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP;
+	
 	private static PLWikt wb;
-	private static final String location = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
-	private static final String targetpage = "Wikipedysta:Peter Bowman/hiszpańskie formy czasownikowe";
-	private static final String categoryName = "Formy czasowników hiszpańskich";
-	private static final Map<Character, Character> strippedAccentsMap;
 	
 	static {
-		strippedAccentsMap = new HashMap<>(5, 1);
+		STRIPPED_ACCENTS_MAP = new HashMap<>(5, 1);
 		
-		strippedAccentsMap.put('á', 'a');
-		strippedAccentsMap.put('é', 'e');
-		strippedAccentsMap.put('í', 'i');
-		strippedAccentsMap.put('ó', 'o');
-		strippedAccentsMap.put('ú', 'u');
+		STRIPPED_ACCENTS_MAP.put('á', 'a');
+		STRIPPED_ACCENTS_MAP.put('é', 'e');
+		STRIPPED_ACCENTS_MAP.put('í', 'i');
+		STRIPPED_ACCENTS_MAP.put('ó', 'o');
+		STRIPPED_ACCENTS_MAP.put('ú', 'u');
 	}
 	
-	public void selector(char op) throws Exception {
-		switch (op) {
-			case '1':
-			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
-				getList(op == '2');
-				wb.logout();
-				break;
-			default:
-				System.out.print("Número de operación incorrecto.");
+	public static void main(String[] args) throws Exception {
+		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		
+		CommandLine line = readOptions(args);
+		List<String> list = retrieveList();
+		
+		if (!line.hasOption("edit") || !checkAndUpdateStoredData(list)) {
+			System.out.println("No changes detected/read-only mode, aborting.");
+			return;
+		}
+		
+		String pageText = makePage(list);
+		
+		wb.setMarkBot(false);
+		wb.edit(TARGET_PAGE, pageText, "aktualizacja");
+	}
+	
+	private static CommandLine readOptions(String[] args) {
+		Options options = new Options();
+		options.addOption("e", "edit", false, "edit pages");
+		
+		if (args.length == 0) {
+			System.out.print("Options (if any): ");
+			String input = Misc.readLine();
+			args = input.split(" ");
+		}
+		
+		CommandLineParser parser = new DefaultParser();
+		
+		try {
+			return parser.parse(options, args);
+		} catch (ParseException e) {
+			new HelpFormatter().printHelp(InconsistentHeaderTitles.class.getName(), options);
+			throw new IllegalArgumentException();
 		}
 	}
 	
-	public static void getList(boolean edit) throws IOException, LoginException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(categoryName, PLWikt.MAIN_NAMESPACE);
+	private static List<String> retrieveList() throws IOException {
+		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY_NAME, PLWikt.MAIN_NAMESPACE);
 		
-		List<String> forms = Stream.of(pages)
+		List<String> titles = Stream.of(pages)
 			.map(Page::wrap)
 			.flatMap(p -> streamOpt(p.getSection("hiszpański", true)))
 			.flatMap(s -> streamOpt(s.getField(FieldTypes.DEFINITIONS)))
@@ -66,17 +95,43 @@ public final class SpanishCanonicalInflectedForms implements Selectorizable {
 			.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
 			.sorted(Misc.getCollator("es"))
 			.collect(Collectors.toList());
-
-		System.out.printf("Se han extraído %d formas verbales\n", forms.size());
 		
-		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(targetpage);
+		System.out.printf("%d titles extracted%n", titles.size());
+		
+		return titles;
+	}
+	
+	private static boolean checkAndUpdateStoredData(List<String> list) throws FileNotFoundException, IOException {
+		int newHashCode = list.hashCode();
+		int storedHashCode;
+		
+		File fHash = new File(LOCATION + "hash.ser");
+		
+		try {
+			storedHashCode = Misc.deserialize(fHash);
+		} catch (ClassNotFoundException | IOException e) {
+			storedHashCode = 0;
+		}
+		
+		if (storedHashCode != newHashCode) {
+			Misc.serialize(newHashCode, fHash);
+			Misc.serialize(list, LOCATION + "list.ser");
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private static String makePage(List<String> list) throws IOException {
+		com.github.wikibot.parsing.Page page =
+			com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(String.format(
 			"Lista zawiera %s. Aktualizacja: ~~~~~.",
-			Misc.makePluralPL(forms.size(), "hasła", "haseł")
+			Misc.makePluralPL(list.size(), "hasła", "haseł")
 		));
 		
-		forms.stream()
+		list.stream()
 			.collect(Collectors.groupingBy(
 				SpanishCanonicalInflectedForms::getFirstChar,
 				LinkedHashMap::new,
@@ -92,37 +147,24 @@ public final class SpanishCanonicalInflectedForms implements Selectorizable {
 				page.appendSections(section);
 			});
 		
-		IOUtils.writeToFile(page.toString(), location + "lista.txt");
+		String pageText = wb.getPageText(TARGET_PAGE);
+		pageText = pageText.substring(0, pageText.indexOf("-->") + 3);
+		page.setIntro(pageText + "\n" + page.getIntro());
 		
-		if (edit) {
-			String pageContent = wb.getPageText(targetpage);
-			pageContent = pageContent.substring(0, pageContent.indexOf("-->") + 3);
-			page.setIntro(pageContent + "\n" + page.getIntro());
-			
-			wb.setMarkBot(false);
-			wb.edit(targetpage, page.toString(), "aktualizacja");
-		}
+		return page.toString();
 	}
-	
-	private static Character getFirstChar(String title) {
-		char letter = title.charAt(0);
-		return strippedAccentsMap.getOrDefault(letter, letter);
-	}
-	
-	private static boolean matchNonInflectedDefinitionLine(String line) {
-		return !line.startsWith(":") && !line.contains("{{forma ") && !line.contains("{{zbitka");
+
+	private static Character getFirstChar(String str) {
+		char letter = str.charAt(0);
+		return STRIPPED_ACCENTS_MAP.getOrDefault(letter, letter);
 	}
 	
 	private static boolean matchNonInflectedDefinitions(Field definitions) {
 		return Stream.of(definitions.getContent().split("\n"))
 			.anyMatch(SpanishCanonicalInflectedForms::matchNonInflectedDefinitionLine);
 	}
-
-	public static void main(String[] args) {
-		if (args.length == 0) {
-			Misc.runTimerWithSelector(new SpanishCanonicalInflectedForms());
-		} else {
-			Misc.runScheduledSelector(new SpanishCanonicalInflectedForms(), args[0]);
-		}
+	
+	private static boolean matchNonInflectedDefinitionLine(String line) {
+		return !line.startsWith(":") && !line.contains("{{forma ") && !line.contains("{{zbitka");
 	}
 }
