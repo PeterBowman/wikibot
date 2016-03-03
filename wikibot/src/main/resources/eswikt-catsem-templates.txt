@@ -209,6 +209,7 @@ telecomunicación = Telecomunicación
 tenis = Tenis
 termodinámica = Termodinámica
 textiles = Textiles
+tiempo = Tiempo
 tipografía = Tipografía
 topónimos = Topónimos
 transporte = Transporte

@@ -1,5 +1,6 @@
 adjetivo cardinal = ADJECTIVE, CARDINAL
 adjetivo comparativo = ADJECTIVE, COMPARATIVE
+adjetivo demostrativo = ADJECTIVE, DEMONSTRATIVE
 adjetivo indefinido = ADJECTIVE, INDEFINITE
 adjetivo numeral = ADJECTIVE, NUMERAL
 adjetivo ordinal = ADJECTIVE, ORDINAL
@@ -18,6 +19,7 @@ adverbio interrogativo = ADVERB, INTERROGATIVE
 adverbio relativo = ADVERB, RELATIVE
 artículo determinado = ARTICLE, DETERMINATE
 artículo indeterminado = ARTICLE, INDETERMINATE
+conjunción adversativa = CONJUNCTION, ADVERSATIVE
 locución adjetiva = PHRASE, ADJECTIVE
 locución adverbial = PHRASE, ADVERB
 locución conjuntiva = PHRASE, CONJUNCTION

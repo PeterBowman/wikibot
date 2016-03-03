@@ -35,6 +35,13 @@ m pl = adverbiales
 f pl = adverbiales
 redirects = adverbios
 
+ADVERSATIVE
+type = QUALIFIER
+m sg = adversativo
+f sg = adversativa
+m pl = adversativos
+f pl = adversativas
+
 AFFIX
 type = MASCULINE_NOUN
 sing = afijo
