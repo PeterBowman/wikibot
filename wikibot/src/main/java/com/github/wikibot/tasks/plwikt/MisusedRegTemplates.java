@@ -80,7 +80,7 @@ public final class MisusedRegTemplates {
 			"\n\n" +
 			"Rozpoznawane szablony: " + templateList + "." +
 			"\n\n" +
-			"Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~";
+			"Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.";
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -110,8 +110,8 @@ public final class MisusedRegTemplates {
 			CommandLine line = parser.parse(options, args);
 			
 			if (line.hasOption("dump")) {
-				File f = new File(line.getOptionValue("dump"));
-				return new XMLDumpReader(f);
+				String pathToFile = line.getOptionValue("dump");
+				return new XMLDumpReader(pathToFile);
 			} else {
 				new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
 				throw new IllegalArgumentException();

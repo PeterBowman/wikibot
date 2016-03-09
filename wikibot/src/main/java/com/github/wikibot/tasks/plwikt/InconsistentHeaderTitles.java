@@ -170,7 +170,6 @@ public final class InconsistentHeaderTitles {
 	}
 
 	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
-		System.out.printf("Reading from file: %s%n", path);
 		XMLDumpReader reader = new XMLDumpReader(path);
 		int size = wb.getSiteStatistics().get("pages");
 		
