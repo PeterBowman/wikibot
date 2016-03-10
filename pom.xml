@@ -7,6 +7,7 @@
   <modules>
   	<module>wiki-java</module>
   	<module>wikibot</module>
+  	<module>webapp</module>
   </modules>
   <scm>
   	<url>https://github.com/PeterBowman/wikibot</url>
