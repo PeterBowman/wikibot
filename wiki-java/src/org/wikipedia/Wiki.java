@@ -1900,7 +1900,7 @@ public class Wiki implements Serializable
         
         // deleted revisions token
         String titleenc = URLEncoder.encode(normalize(title), "UTF-8");
-        String delrev = query + "action=query&list=deletedrevs&drlimit=1&drprop=token&titles=" + titleenc;
+        String delrev = fetch(query + "action=query&list=deletedrevs&drlimit=1&drprop=token&titles=" + titleenc, "undelete");
         if (!delrev.contains("token=\"")) // nothing to undelete
         {
             log(Level.WARNING, "undelete", "Page \"" + title + "\" has no deleted revisions!");
