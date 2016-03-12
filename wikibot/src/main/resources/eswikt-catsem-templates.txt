@@ -178,6 +178,7 @@ ornitología = Ornitología
 países = Países, Topónimos
 paleontología = Paleontología
 peces = Peces
+penínsulas = Penínsulas
 periodismo = Periodismo
 pesca = Pesca
 pintura = Pintura
