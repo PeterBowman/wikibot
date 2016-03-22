@@ -91,8 +91,8 @@ public abstract class OnlineDict<T> implements Callable<T> {
 	protected String getHTML(String page) throws IOException {
 		String text = fetch(URL + escape(page));
 		text = text.replace("\n", "");
-		int a = text.indexOf("<body>") + 6;
-		int b = text.indexOf("</body>", a);
+		int a = text.indexOf("<body");
+		int b = text.indexOf("</body>", a) + 7;
 		
 		return stripContent(text.substring(a, b));
 	}

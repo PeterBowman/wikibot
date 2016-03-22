@@ -3,6 +3,10 @@ package com.github.wikibot.utils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Collection;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 public class SJP extends OnlineDict<SJP> {
 	protected boolean exists = false;
@@ -14,18 +18,16 @@ public class SJP extends OnlineDict<SJP> {
     
 	@Override
 	protected String escape(String text) throws UnsupportedEncodingException {
-		return URLEncoder.encode(text, "ISO-8859-2");
+		return URLEncoder.encode(text, "UTF-8");
 	}
 	
 	@Override
 	protected String stripContent(String text) {
-		int a = text.indexOf("<span class=\"entry-head-title\">Słownik języka polskiego</span>");
-		
-		if (a == -1)
+		if (text.indexOf("<span class=\"entry-head-title\">Słownik języka polskiego</span>") == -1) {
 			return "Nie znaleziono żadnych wyników wyszukiwania";
-		
-		int b = text.indexOf("<div class=\"row col-wrapper\">", a);
-		return text.substring(a, (b != -1) ? b : text.length());
+		} else {
+			return text;
+		}
 	}
 	
 	@Override
@@ -39,11 +41,20 @@ public class SJP extends OnlineDict<SJP> {
 	}
 	
 	public boolean isDefined() {
-		return isSerial ? isDefined : content.matches(".*?<span class=\"tytul\"><a .*?class=\"anchor-title\".*?>" + entry + ".*?</a></span>.*");
+		if (isSerial) {
+			return isDefined;
+		} else {
+			Document doc = Jsoup.parseBodyFragment(content);
+
+			return doc.getElementsByClass("sjp-wyniki").stream()
+				.map(el -> el.getElementsByClass("anchor-title"))
+				.flatMap(Collection::stream)
+				.anyMatch(el -> el.text().equals(entry));
+		}
 	}
 	
 	public static void main(String[] args) {
-		SJP sjp = new SJP("Montevideo");
+		SJP sjp = new SJP("znak równości");
 		
 		try {
 			sjp.fetchEntry();
