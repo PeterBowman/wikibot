@@ -3,18 +3,26 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.TreeMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,6 +63,9 @@ public final class CitationTypography {
 		FieldTypes.EXAMPLES, FieldTypes.ETYMOLOGY, FieldTypes.NOTES
 	);
 	
+	private static final String SQL_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_verify_citations";
+	private static final Properties defaultSQLProperties = new Properties();
+	
 	private static PLWikt wb;
 	
 	static {
@@ -63,6 +74,10 @@ public final class CitationTypography {
 		P_LINE = Pattern.compile("^(.*)" + P_OCCURENCE.pattern() + "(.*)$", Pattern.MULTILINE);
 		
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+		
+		defaultSQLProperties.setProperty("autoReconnect", "true");
+		defaultSQLProperties.setProperty("useUnicode", "yes");
+		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -85,22 +100,23 @@ public final class CitationTypography {
 			String[] combinedTitles = set.toArray(new String[set.size()]);
 			PageContainer[] pages = wb.getContentOfPages(combinedTitles, 400);
 			
-			List<Item> list = Stream.of(pages).parallel()
+			List<Item> items = Stream.of(pages).parallel()
 				.flatMap(CitationTypography::mapOccurrences)
 				.collect(Collectors.toList());
 			
-			if (!list.isEmpty()) {
-				Map<String, String> map = list.stream()
-					.collect(Collectors.toMap(
-						item -> item.title,
-						item -> String.format("%s%n%n%s", item.originalText, item.newText),
-						(i1, i2) -> i1,
-						TreeMap::new
-					));
+			if (!items.isEmpty()) {
+				System.out.printf("%d items extracted.%n", items.size());
+				mapPageIds(items);
+				storeResult(items);
 				
-				System.out.println(map.size());
-				IOUtils.writeToFile(Misc.makeList(map), "./data/test8.txt");
+				if (line.hasOption("update")) {
+					updateSQLTables(items);
+				}
+			} else {
+				System.out.println("No items extracted.");
 			}
+		} else {
+			System.out.println("No titles extracted.");
 		}
 		
 		if (line.hasOption("edit")) {
@@ -264,9 +280,89 @@ public final class CitationTypography {
 		return Optional.ofNullable(apostrophes).orElse("") + sb.toString() + ".";
 	}
 	
+	@SuppressWarnings("unchecked")
+	private static void mapPageIds(List<Item> items) throws IOException {
+		String[] titles = items.stream().map(item -> item.title).toArray(String[]::new);
+		Map<String, Object>[] infos = wb.getPageInfo(titles);
+		Map<String, Integer> titleToPageId = new HashMap<>(infos.length);
+		
+		for (int i = 0; i < infos.length; i++) {
+			Map<String, Object> info = infos[i];
+			String title = titles[i];
+			long pageId = (long) info.getOrDefault("pageid", -1);
+			
+			if (pageId == -1) {
+				continue;
+			}
+			
+			titleToPageId.putIfAbsent(title, Math.toIntExact(pageId));
+		}
+		
+		items.removeIf(item -> !titleToPageId.containsKey(item.title));
+		items.forEach(item -> item.pageId = titleToPageId.get(item.title));
+		
+		System.out.printf("%d items after pageid mapping.%n", items.size());
+	}
+	
+	private static void storeResult(List<Item> items) throws FileNotFoundException, IOException {
+		Misc.serialize(items, LOCATION + "list.ser");
+		
+		Map<String, String> map = items.stream()
+			.collect(Collectors.toMap(
+				item -> item.title,
+				item -> String.format("%s%n%n%s", item.originalText, item.newText),
+				(i1, i2) -> i1,
+				TreeMap::new
+			));
+		
+		IOUtils.writeToFile(Misc.makeList(map), LOCATION + "diffs.txt");
+	}
+	
+	private static Properties prepareSQLProperties() throws IOException {
+		Properties properties = new Properties(defaultSQLProperties);
+		Pattern patt = Pattern.compile("(.+)='(.+)'");
+		
+		Files.lines(Paths.get("./replica.my.cnf"))
+			.map(patt::matcher)
+			.filter(Matcher::matches)
+			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));
+		
+		return properties;
+	}
+	
+	private static void updateSQLTables(List<Item> items) throws IOException, ClassNotFoundException {
+		Properties properties = prepareSQLProperties();
+		Class.forName("com.mysql.jdbc.Driver");
+		
+		try (Connection conn = DriverManager.getConnection(SQL_URI, properties)) {
+			updatePageTitlesTable(conn, items);
+			
+			// TODO
+		} catch (SQLException e) {
+			e.printStackTrace();;
+		}
+	}
+	
+	private static void updatePageTitlesTable(Connection conn, List<Item> items) throws SQLException {
+		String values = items.stream()
+			.map(item -> String.format("(%d, '%s')", item.pageId, item.title.replace("'", "\\'")))
+			.collect(Collectors.joining(", "));
+		
+		String query = "INSERT INTO page_title (page_id, page_title) "
+			+ "VALUES "
+			+ values
+			+ " ON DUPLICATE KEY UPDATE "
+			+ "page_title = VALUES(page_title);";
+		
+		Statement stmt = conn.createStatement();
+		int updatedRows = stmt.executeUpdate(query);
+		System.out.printf("%d rows updated.", updatedRows);
+	}
+	
 	private static class Item implements Serializable, Comparable<Item> {
 		private static final long serialVersionUID = 4565508346026187762L;
 		
+		int pageId;
 		String title;
 		String langSection;
 		FieldTypes fieldType;
@@ -289,7 +385,8 @@ public final class CitationTypography {
 		
 		@Override
 		public String toString() {
-			return String.format("%s, %s, %s:%n%s%n%s", title, langSection, fieldType, originalText, newText);
+			return String.format("%d, %s, %s, %s:%n%s%n%s",
+				pageId, title, langSection, fieldType, originalText, newText);
 		}
 		
 		@Override
@@ -305,21 +402,21 @@ public final class CitationTypography {
 			Item i = (Item) o;
 			
 			return
-				title.equals(i.title) && langSection.equals(i.langSection) &&
+				pageId == i.pageId && langSection.equals(i.langSection) &&
 				fieldType == i.fieldType&& originalText.equals(i.originalText);
 		}
 		
 		@Override
 		public int hashCode() {
 			return
-				title.hashCode() + langSection.hashCode() + fieldType.hashCode() +
+				pageId + langSection.hashCode() + fieldType.hashCode() +
 				originalText.hashCode();
 		}
 
 		@Override
 		public int compareTo(Item i) {
-			if (!title.equals(i.title)) {
-				return title.compareTo(i.title);
+			if (pageId != i.pageId) {
+				return Integer.compare(pageId, i.pageId);
 			}
 			
 			if (!langSection.equals(i.langSection)) {
