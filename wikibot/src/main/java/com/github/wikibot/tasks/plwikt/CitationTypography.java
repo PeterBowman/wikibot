@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
@@ -16,6 +17,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,6 +85,8 @@ public final class CitationTypography {
 	public static void main(String[] args) throws Exception {
 		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		
+		Class.forName("com.mysql.jdbc.Driver");
+		
 		CommandLine line = readOptions(args);
 		Set<String> set = new HashSet<>(0);
 		
@@ -96,20 +100,23 @@ public final class CitationTypography {
 			set.addAll(Arrays.asList(candidateTitles));
 		}
 		
+		List<Item> items;
+		
 		if (!set.isEmpty()) {
 			String[] combinedTitles = set.toArray(new String[set.size()]);
 			PageContainer[] pages = wb.getContentOfPages(combinedTitles, 400);
 			
-			List<Item> items = Stream.of(pages).parallel()
+			items = Stream.of(pages).parallel()
 				.flatMap(CitationTypography::mapOccurrences)
 				.collect(Collectors.toList());
 			
 			if (!items.isEmpty()) {
 				System.out.printf("%d items extracted.%n", items.size());
+				
 				mapPageIds(items);
 				storeResult(items);
 				
-				if (line.hasOption("update")) {
+				if (!items.isEmpty() && line.hasOption("update")) {
 					updateSQLTables(items);
 				}
 			} else {
@@ -117,6 +124,7 @@ public final class CitationTypography {
 			}
 		} else {
 			System.out.println("No titles extracted.");
+			items = new ArrayList<>();
 		}
 		
 		if (line.hasOption("edit")) {
@@ -332,20 +340,30 @@ public final class CitationTypography {
 	
 	private static void updateSQLTables(List<Item> items) throws IOException, ClassNotFoundException {
 		Properties properties = prepareSQLProperties();
-		Class.forName("com.mysql.jdbc.Driver");
 		
 		try (Connection conn = DriverManager.getConnection(SQL_URI, properties)) {
-			updatePageTitlesTable(conn, items);
+			updatePageTitleTable(conn, items);
+			analyzeStoredEntries(conn, items);
 			
-			// TODO
+			List<Item> candidateItems = items.stream()
+				.filter(item -> item.verified == null)
+				.collect(Collectors.toList());
+			
+			if (!candidateItems.isEmpty()) {
+				storeNewItems(conn, candidateItems);
+			}
+			
+			items.removeAll(candidateItems);
+			items.removeIf(item -> !item.verified.booleanValue());
 		} catch (SQLException e) {
-			e.printStackTrace();;
+			e.printStackTrace();
 		}
 	}
 	
-	private static void updatePageTitlesTable(Connection conn, List<Item> items) throws SQLException {
+	private static void updatePageTitleTable(Connection conn, List<Item> items) throws SQLException {
 		String values = items.stream()
 			.map(item -> String.format("(%d, '%s')", item.pageId, item.title.replace("'", "\\'")))
+			.distinct()
 			.collect(Collectors.joining(", "));
 		
 		String query = "INSERT INTO page_title (page_id, page_title) "
@@ -359,6 +377,97 @@ public final class CitationTypography {
 		System.out.printf("%d rows updated.", updatedRows);
 	}
 	
+	private static void analyzeStoredEntries(Connection conn, List<Item> items) throws SQLException {
+		String pageIdList = items.stream()
+			.map(item -> item.pageId)
+			.map(Object::toString)
+			.distinct()
+			.collect(Collectors.joining(", "));
+		
+		String query = "SELECT entry.entry_id, entry.page_id, page_title.title, entry.language,"
+				+ " field.field_name, entry.current_line_id, line.line_id, line.text, entry.review_status"
+			+ " FROM entry"
+			+ " INNER JOIN line"
+			+ " ON line.line_id = entry.first_line_id"
+			+ " OR line.line_id = entry.current_line_id"
+			+ " INNER JOIN page_title"
+			+ " ON page_title.page_id = entry.page_id"
+			+ " INNER JOIN field"
+			+ " ON field.field_id = entry.field_id"
+			+ " WHERE entry.page_id IN (" + pageIdList + ");";
+		
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery(query);
+		
+		Map<Integer, Item> storedItems = new HashMap<>(items.size());
+		
+		while (rs.next()) {
+			int entryId = rs.getInt("entry_id");
+			int currentLineId = rs.getInt("current_line_id");
+			int lineId = rs.getInt("line_id");
+			
+			String firstLineText = null;
+			String currentLineText = null;
+			
+			if (lineId == currentLineId) {
+				currentLineText = rs.getString("text");
+			} else {
+				firstLineText = rs.getString("text");
+			}
+			
+			if (storedItems.containsKey(entryId)) {
+				Item item = storedItems.get(entryId);
+				
+				if (item.originalText.isEmpty() && firstLineText != null) {
+					item.originalText = firstLineText;
+				}
+				
+				if (item.newText.isEmpty() && currentLineText != null) {
+					item.newText = currentLineText;
+				}
+				
+				continue;
+			}
+			
+			int pageId = rs.getInt("page_id");
+			String title = rs.getString("title");
+			String language = rs.getString("language");
+			String field = rs.getString("field");
+			Boolean verified = rs.getBoolean("review_status");
+			
+			if (rs.wasNull()) {
+				verified = null;
+			}
+			
+			FieldTypes fieldType;
+			
+			try {
+				fieldType = FieldTypes.valueOf(field);
+			} catch (IllegalArgumentException e) {
+				continue;
+			}
+			
+			Item item = new Item(title, language, fieldType, firstLineText, currentLineText);
+			
+			item.verified = verified;
+			item.pageId = pageId;
+			
+			storedItems.put(entryId, item);
+		}
+		
+		Map<Item, Boolean> verifiedItems = storedItems.values().stream()
+			.filter(i -> i.originalText.isEmpty() || i.newText.isEmpty())
+			.collect(Collectors.toMap(i -> i, i -> i.verified, (i1, i2) -> i1));
+		
+		items.stream()
+			.filter(verifiedItems::containsKey)
+			.forEach(i -> i.verified = verifiedItems.get(i));
+	}
+	
+	private static void storeNewItems(Connection conn, List<Item> items) {
+		
+	}
+	
 	private static class Item implements Serializable, Comparable<Item> {
 		private static final long serialVersionUID = 4565508346026187762L;
 		
@@ -368,13 +477,17 @@ public final class CitationTypography {
 		FieldTypes fieldType;
 		String originalText;
 		String newText;
-
+		Boolean verified;
+		
 		Item(String title, String langSection, FieldTypes fieldType, String originalText, String newText) {
 			this.title = title;
 			this.langSection = langSection;
 			this.fieldType = fieldType;
-			this.originalText = originalText;
-			this.newText = newText;
+			this.originalText = Optional.ofNullable(originalText).orElse("");
+			this.newText = Optional.ofNullable(newText).orElse("");
+			
+			this.pageId = 0;
+			this.verified = null;
 		}
 		
 		static Item constructNewItem(Field field, String originalText, String newText) {
@@ -385,7 +498,7 @@ public final class CitationTypography {
 		
 		@Override
 		public String toString() {
-			return String.format("%d, %s, %s, %s:%n%s%n%s",
+			return String.format("[%d, %s, %s, %s]:%n%s%n%s%n",
 				pageId, title, langSection, fieldType, originalText, newText);
 		}
 		
@@ -403,14 +516,15 @@ public final class CitationTypography {
 			
 			return
 				pageId == i.pageId && langSection.equals(i.langSection) &&
-				fieldType == i.fieldType&& originalText.equals(i.originalText);
+				fieldType == i.fieldType && originalText.equals(i.originalText) &&
+				newText.equals(i.newText);
 		}
 		
 		@Override
 		public int hashCode() {
 			return
 				pageId + langSection.hashCode() + fieldType.hashCode() +
-				originalText.hashCode();
+				originalText.hashCode() + newText.hashCode();
 		}
 
 		@Override
