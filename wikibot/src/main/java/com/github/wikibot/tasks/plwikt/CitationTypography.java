@@ -79,7 +79,6 @@ public final class CitationTypography {
 		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -343,22 +342,12 @@ public final class CitationTypography {
 		
 		try (Connection conn = DriverManager.getConnection(SQL_URI, properties)) {
 			updatePageTitleTable(conn, items);
-			analyzeStoredEntries(conn, items);
 			
-			List<Item> candidateItems = items.stream()
-				.filter(item -> item.verified == null)
-				.collect(Collectors.toList());
-			
-			System.out.printf("%d candidate items to be stored in DB.%n", candidateItems.size());
-			
-			if (!candidateItems.isEmpty()) {
-				storeNewItems(conn, candidateItems);
+			List<Item> newItems = analyzeStoredEntries(conn, items);
+						
+			if (!newItems.isEmpty()) {
+				storeNewItems(conn, newItems);
 			}
-			
-			items.removeAll(candidateItems);
-			items.removeIf(item -> !item.verified.booleanValue());
-			
-			System.out.printf("%d stored and verified items left for edit stage.%n", items.size());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -380,7 +369,7 @@ public final class CitationTypography {
 		System.out.printf("%d rows updated.%n", updatedRows);
 	}
 	
-	private static void analyzeStoredEntries(Connection conn, List<Item> items) throws SQLException {
+	private static List<Item> analyzeStoredEntries(Connection conn, List<Item> items) throws SQLException {
 		String pageIdList = items.stream()
 			.map(item -> item.pageId)
 			.map(Object::toString)
@@ -388,8 +377,11 @@ public final class CitationTypography {
 			.collect(Collectors.joining(", "));
 		
 		String query = "SELECT entry.entry_id, entry.page_id, page_title.page_title, entry.language,"
-				+ " field.field_name, entry.current_line_id, line.line_id, line.text, entry.review_status"
+				+ " field.field_name, entry.current_line_id, line.line_id, line.text, entry.review_status,"
+				+ " pending.entry_id AS pending_id"
 			+ " FROM entry"
+			+ " LEFT JOIN pending"
+			+ " ON pending.entry_id = entry.entry_id"
 			+ " INNER JOIN line"
 			+ " ON line.line_id = entry.first_line_id"
 			+ " OR line.line_id = entry.current_line_id"
@@ -402,7 +394,8 @@ public final class CitationTypography {
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
 		
-		Map<Integer, Item> storedItems = new HashMap<>(items.size());
+		Map<Integer, Item> map = new HashMap<>(items.size());
+		Set<Item> set = new HashSet<>(items.size());
 		
 		while (rs.next()) {
 			int entryId = rs.getInt("entry_id");
@@ -418,8 +411,8 @@ public final class CitationTypography {
 				firstLineText = rs.getString("text");
 			}
 			
-			if (storedItems.containsKey(entryId)) {
-				Item item = storedItems.get(entryId);
+			if (map.containsKey(entryId)) {
+				Item item = map.get(entryId);
 				
 				if (item.originalText.isEmpty() && firstLineText != null) {
 					item.originalText = firstLineText;
@@ -436,11 +429,8 @@ public final class CitationTypography {
 			String title = rs.getString("page_title");
 			String language = rs.getString("language");
 			String field = rs.getString("field_name");
-			Boolean verified = rs.getBoolean("review_status");
-			
-			if (rs.wasNull()) {
-				verified = null;
-			}
+			boolean verified = rs.getBoolean("review_status");
+			boolean isPending = rs.getInt("pending_id") != 0;
 			
 			FieldTypes fieldType;
 			
@@ -451,20 +441,28 @@ public final class CitationTypography {
 			}
 			
 			Item item = new Item(title, language, fieldType, firstLineText, currentLineText);
-			
-			item.verified = verified;
 			item.pageId = pageId;
 			
-			storedItems.put(entryId, item);
+			map.put(entryId, item);
+			
+			if (verified && !isPending) {
+				set.add(item);
+			}
 		}
 		
-		Map<Item, Boolean> verifiedItems = storedItems.values().stream()
-			.filter(i -> i.originalText.isEmpty() || i.newText.isEmpty())
-			.collect(Collectors.toMap(i -> i, i -> i.verified, (i1, i2) -> i1));
+		Set<Item> storedItems = new HashSet<>(map.values());
 		
-		items.stream()
-			.filter(verifiedItems::containsKey)
-			.forEach(i -> i.verified = verifiedItems.get(i));
+		List<Item> newItems = items.stream()
+			.filter(item -> !storedItems.contains(item))
+			.collect(Collectors.toList());
+		
+		items.retainAll(set);
+		
+		System.out.printf(
+			"%d items already stored in DB, %d marked as verified and eligible for automated edit.%n",
+			storedItems.size(), items.size());
+		
+		return newItems;
 	}
 	
 	private static void storeNewItems(Connection conn, List<Item> items) throws SQLException {
@@ -554,17 +552,14 @@ public final class CitationTypography {
 		FieldTypes fieldType;
 		String originalText;
 		String newText;
-		Boolean verified;
 		
 		Item(String title, String langSection, FieldTypes fieldType, String originalText, String newText) {
+			this.pageId = 0;
 			this.title = title;
 			this.langSection = langSection;
 			this.fieldType = fieldType;
 			this.originalText = Optional.ofNullable(originalText).orElse("");
 			this.newText = Optional.ofNullable(newText).orElse("");
-			
-			this.pageId = 0;
-			this.verified = null;
 		}
 		
 		static Item constructNewItem(Field field, String originalText, String newText) {
