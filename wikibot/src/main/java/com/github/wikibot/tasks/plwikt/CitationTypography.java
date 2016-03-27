@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -17,7 +18,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,7 +59,7 @@ public final class CitationTypography {
 	private static final Pattern P_OCCURENCE;
 	private static final Pattern P_LINE;
 	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	
 	private static final List<FieldTypes> ALLOWED_NON_POLISH_FIELDS = Arrays.asList(
 		FieldTypes.EXAMPLES, FieldTypes.ETYMOLOGY, FieldTypes.NOTES
@@ -349,12 +349,16 @@ public final class CitationTypography {
 				.filter(item -> item.verified == null)
 				.collect(Collectors.toList());
 			
+			System.out.printf("%d candidate items to be stored in DB.%n", candidateItems.size());
+			
 			if (!candidateItems.isEmpty()) {
 				storeNewItems(conn, candidateItems);
 			}
 			
 			items.removeAll(candidateItems);
 			items.removeIf(item -> !item.verified.booleanValue());
+			
+			System.out.printf("%d stored and verified items left for edit stage.%n", items.size());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -366,15 +370,14 @@ public final class CitationTypography {
 			.distinct()
 			.collect(Collectors.joining(", "));
 		
-		String query = "INSERT INTO page_title (page_id, page_title) "
-			+ "VALUES "
-			+ values
-			+ " ON DUPLICATE KEY UPDATE "
-			+ "page_title = VALUES(page_title);";
+		String query = "INSERT INTO page_title (page_id, page_title)"
+			+ " VALUES " + values
+			+ " ON DUPLICATE KEY"
+			+ " UPDATE page_title = VALUES(page_title);";
 		
 		Statement stmt = conn.createStatement();
 		int updatedRows = stmt.executeUpdate(query);
-		System.out.printf("%d rows updated.", updatedRows);
+		System.out.printf("%d rows updated.%n", updatedRows);
 	}
 	
 	private static void analyzeStoredEntries(Connection conn, List<Item> items) throws SQLException {
@@ -384,7 +387,7 @@ public final class CitationTypography {
 			.distinct()
 			.collect(Collectors.joining(", "));
 		
-		String query = "SELECT entry.entry_id, entry.page_id, page_title.title, entry.language,"
+		String query = "SELECT entry.entry_id, entry.page_id, page_title.page_title, entry.language,"
 				+ " field.field_name, entry.current_line_id, line.line_id, line.text, entry.review_status"
 			+ " FROM entry"
 			+ " INNER JOIN line"
@@ -430,9 +433,9 @@ public final class CitationTypography {
 			}
 			
 			int pageId = rs.getInt("page_id");
-			String title = rs.getString("title");
+			String title = rs.getString("page_title");
 			String language = rs.getString("language");
-			String field = rs.getString("field");
+			String field = rs.getString("field_name");
 			Boolean verified = rs.getBoolean("review_status");
 			
 			if (rs.wasNull()) {
@@ -464,8 +467,82 @@ public final class CitationTypography {
 			.forEach(i -> i.verified = verifiedItems.get(i));
 	}
 	
-	private static void storeNewItems(Connection conn, List<Item> items) {
+	private static void storeNewItems(Connection conn, List<Item> items) throws SQLException {
+		String preparedLineQuery = "INSERT INTO line (text, user, timestamp)"
+			+ " VALUES (?, ?, '" + generateTimestamp() + "')";
 		
+		String preparedEntryQuery = "INSERT INTO entry"
+			+ " (page_id, language, field_id, first_line_id, current_line_id)"
+			+ " VALUES (?, ?, ?, ?, ?);";
+		
+		String preparedPendingQuery = "INSERT INTO pending (entry_id) VALUES (?);";
+		
+		int opt = Statement.RETURN_GENERATED_KEYS;
+		PreparedStatement insertLine = conn.prepareStatement(preparedLineQuery, opt);
+		PreparedStatement insertEntry = conn.prepareStatement(preparedEntryQuery, opt);
+		PreparedStatement insertPending = conn.prepareStatement(preparedPendingQuery, opt);
+		
+		conn.setAutoCommit(false);
+		
+		for (Item item : items) {
+			int firstLineId;
+			int currentLineId;
+			int entryId;
+			
+			ResultSet rs;
+			
+			insertLine.setString(1, item.originalText);
+			insertLine.setString(2, "NULL");
+			insertLine.executeUpdate();
+			
+			rs = insertLine.getGeneratedKeys();
+			
+			if (rs.next()) {
+				firstLineId = rs.getInt(1); 
+			} else {
+				continue;
+			}
+			
+			insertLine.setString(1, item.newText);
+			insertLine.setString(2, "PBbot");
+			insertLine.executeUpdate();
+			
+			rs = insertLine.getGeneratedKeys();
+			
+			if (rs.next()) {
+				currentLineId = rs.getInt(1);
+			} else {
+				continue;
+			}
+			
+			insertEntry.setInt(1, item.pageId);
+			insertEntry.setString(2, item.langSection);
+			insertEntry.setInt(3, item.fieldType.ordinal() + 1);
+			insertEntry.setInt(4, firstLineId);
+			insertEntry.setInt(5, currentLineId);
+			insertEntry.executeUpdate();
+			
+			rs = insertEntry.getGeneratedKeys();
+			
+			if (rs.next()) {
+				entryId = rs.getInt(1);
+			} else {
+				continue;
+			}
+			
+			insertPending.setInt(1, entryId);
+			insertPending.executeUpdate();
+			
+			conn.commit();
+		}
+		
+		conn.setAutoCommit(true);
+	}
+	
+	private static String generateTimestamp() {
+		Calendar cal = Calendar.getInstance();
+		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return DATE_FORMAT.format(cal.getTime());
 	}
 	
 	private static class Item implements Serializable, Comparable<Item> {
