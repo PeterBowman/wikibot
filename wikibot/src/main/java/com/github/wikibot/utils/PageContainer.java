@@ -2,6 +2,7 @@ package com.github.wikibot.utils;
 
 import java.io.Serializable;
 import java.util.Calendar;
+import java.util.Objects;
 
 public class PageContainer implements Serializable {
 	private static final long serialVersionUID = 2715796362852345824L;
@@ -11,9 +12,8 @@ public class PageContainer implements Serializable {
 	protected Calendar timestamp;
 	
 	public PageContainer(String title, String text, Calendar timestamp) {
-		if (title == null || text == null) {
-			throw new NullPointerException();
-		}
+		Objects.requireNonNull(title);
+		Objects.requireNonNull(text);
 		
 		this.title = title;
 		this.text = text;
