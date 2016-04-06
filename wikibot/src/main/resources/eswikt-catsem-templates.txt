@@ -16,6 +16,7 @@ antropotomía = Antropotomía
 apicultura = Apicultura
 arácnidos = Arácnidos
 árboles = Árboles
+arbustos = Arbustos
 aritmética = Matemáticas
 armamento = Armamento
 armas = Armas

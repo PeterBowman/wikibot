@@ -38,6 +38,7 @@ pronombre demostrativo = PRONOUN, DEMONSTRATIVE
 pronombre indefinido = PRONOUN, INDEFINITE
 pronombre interrogativo = PRONOUN, INTERROGATIVE
 pronombre personal = PRONOUN, PERSONAL
+pronombre posesivo = PRONOUN, POSSESSIVE
 pronombre relativo = PRONOUN, RELATIVE
 sustantivo ambiguo = NOUN, AMBIGUOUS
 sustantivo animado = NOUN, ANIMATE

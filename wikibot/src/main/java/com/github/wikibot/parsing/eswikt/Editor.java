@@ -137,8 +137,8 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
-		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "contracción",
-		"redirección suave"
+		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "variante rara",
+		"contracción", "redirección suave"
 	);
 	
 	private static final List<String> SECTION_TMPLS = Arrays.asList(
