@@ -44,7 +44,7 @@ public final class MisusedRegTemplates {
 	private static final List<String> TEMPLATES = Arrays.asList(
 		// Polish
 		"białystok", "częstochowa", "góry", "kielce", "kraków", "kresy", "kujawy", "łódź",
-		"lwów", "mazowsze", "podhale", "poznań", "śląsk", "warszawa",
+		"lwów", "mazowsze", "podhale", "poznań", "roztoczański", "śląsk", "warszawa",
 		// English
 		"szkocang",
 		// Arabic
