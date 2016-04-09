@@ -399,7 +399,7 @@ li#pt-anonuserpage {
 }
 
 #p-cactions li {
-	display: inline-block;
+	display: inline-block; /* MODIFIED */
 	border: 1px solid #aaa;
 	border-bottom: none;
 	padding: 0 0 1em 0;

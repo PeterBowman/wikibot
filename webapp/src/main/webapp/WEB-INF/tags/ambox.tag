@@ -1,3 +1,8 @@
+<%--
+	This HTML structure is based on https://pl.wikipedia.org/wiki/Szablon:Ambox and is
+	licensed under CC BY-SA 3.0 (see LICENSE-3RD-PARTIES.txt).
+--%>
+
 <%@ tag description="Ambox header template" pageEncoding="UTF-8" %>
 <%@ attribute name="type" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
