@@ -1,10 +1,12 @@
-<%@ tag description="Standard template" pageEncoding="UTF-8" %>
+<%@ tag description="Standard template" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
+
 <%@ attribute name="title" %>
 <%@ attribute name="firstHeading" %>
 <%@ attribute name="head" fragment="true" %>
 <%@ attribute name="cactions" fragment="true" %>
 <%@ attribute name="toolbarExtra" fragment="true" %>
 <%@ attribute name="headerNotice" fragment="true" %>
+
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
@@ -60,7 +62,7 @@
 		</div>
 		<div class="visualClear"></div>
 		<div id="footer" role="contentinfo">
-			<ul id="flist"><%@ include file="/WEB-INF/jspf/footer.jspf" %></ul>
+			<ul id="flist"><%@ include file="/WEB-INF/fragments/footer.jspf" %></ul>
 		</div>
 	</div>
 </body>

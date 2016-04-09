@@ -1,9 +1,9 @@
 eclipse.preferences.version=1
 encoding//src/main/java=UTF-8
 encoding//src/main/resources=UTF-8
-encoding//src/main/webapp/WEB-INF/jspf/footer.jspf=UTF-8
-encoding//src/main/webapp/WEB-INF/jspf/toolbar-labs.jspf=UTF-8
-encoding//src/main/webapp/WEB-INF/jspf/toolbar-navigation.jspf=UTF-8
-encoding//src/main/webapp/WEB-INF/jspf/toolbar-tools.jspf=UTF-8
+encoding//src/main/webapp/WEB-INF/fragments/footer.jspf=UTF-8
+encoding//src/main/webapp/WEB-INF/fragments/toolbar-labs.jspf=UTF-8
+encoding//src/main/webapp/WEB-INF/fragments/toolbar-navigation.jspf=UTF-8
+encoding//src/main/webapp/WEB-INF/fragments/toolbar-tools.jspf=UTF-8
 encoding//src/test/java=UTF-8
 encoding/<project>=UTF-8
