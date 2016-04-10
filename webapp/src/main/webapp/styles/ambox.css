@@ -1,0 +1,35 @@
+/*
+	Extracted from https://pl.wikipedia.org/wiki/MediaWiki:Common.css under
+	the CC BY-SA 3.0 license (see LICENSE-3RD-PARTIES.txt).
+*/
+
+table.ambox {
+	margin: 0 10% 0.5em 10%;               /* Will not overlap with other elements */
+	border-collapse: collapse;
+	background-color: #fbfbfb !important;
+	border: 1px solid #aaa;
+	border-left: 10px solid #1e90ff;       /* Default "notice" blue */
+}
+
+table.ambox th.ambox-text,
+table.ambox td.ambox-text {      /* The message body cell(s) */
+	padding: 0.25em 0.5em;              /* 0.5em left/right */
+	width: 100%;                        /* Make all templates the same width regardless of text size */
+}
+
+table.ambox td.ambox-image {          /* The left image cell */
+	padding: 2px 0 2px 0.5em;         /* 0.5em left, 0 right */
+	text-align: center;
+}
+
+table.ambox-notice {
+	border-left: 10px solid #1e90ff;       /* Blue */
+}
+
+table.ambox-serious {
+	border-left: 10px solid #b22222;       /* Red */
+}
+
+table.ambox-warning {
+	border-left: 10px solid #f28500;       /* Orange */
+}

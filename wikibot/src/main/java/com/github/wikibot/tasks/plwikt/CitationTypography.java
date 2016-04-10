@@ -370,6 +370,8 @@ public final class CitationTypography {
 			storeNewItems(conn, items);
 		}
 		
+		// TODO: remove pending entries that have been removed
+		
 		return entryMap;
 	}
 	
