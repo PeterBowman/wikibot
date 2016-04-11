@@ -22,16 +22,22 @@
 		danych (szczególnie w przypadku Wikipedii). 
 	</p>
 	<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
+		<c:if test="${not empty param.limit}">
+			<input type="hidden" name="limit" value="${param.limit}">
+		</c:if>
+		<c:if test="${not empty param.offset}">
+			<input type="hidden" name="offset" value="${param.offset}">
+		</c:if>
 		<fieldset>
 			<legend>Zerwane linki</legend>
 			<t:select parameter="project" label="Projekt" defaultOption="Wybierz opcję"
 				plwikisource="Wikizródła" plwikiquote="Wikicytaty" plwiki="Wikipedia"
 				plwikibooks="Wikibooks" plwikinews="Wikinews" plwikivoyage="Wikipodróże"
 				specieswiki="Wikispecies" />
-			<input id="ignorelc" name="ignorelc" type="checkbox"
+			<input type="checkbox" id="ignorelc" name="ignorelc"
 				<c:if test="${not empty param.ignorelc}">checked</c:if>>
 			<label for="ignorelc">ukryj strony docelowe zaczynające się od małej litery</label>
-			<input id="hideprefixes" name="hideprefixes" type="checkbox"
+			<input type="checkbox" id="hideprefixes" name="hideprefixes"
 				<c:if test="${not empty param.hideprefixes}">checked</c:if>>
 			<label for="hideprefixes">ukryj prefiksy interwiki</label>
 			<input type="submit" value="Pokaż" >
