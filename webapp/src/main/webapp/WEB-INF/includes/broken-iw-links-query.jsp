@@ -56,18 +56,21 @@
 		iwl_prefix = ? AND
 		page_title != "" AND
 		<c:if test="${not empty param.ignorelc}">
-			<%-- TODO: this doesn't seem to work for non-ASCII characters --%>
-			STRCMP(
-				LEFT(CONVERT(iwl_title USING latin7), 1) COLLATE latin7_general_cs,
-				UPPER(LEFT(CONVERT(iwl_title USING latin7), 1)) COLLATE latin7_general_cs
-			) < 1 AND
+		<%-- TODO: this doesn't seem to work for non-ASCII characters --%>
+		STRCMP(
+			LEFT(CONVERT(iwl_title USING latin7), 1) COLLATE latin7_general_cs,
+			UPPER(LEFT(CONVERT(iwl_title USING latin7), 1)) COLLATE latin7_general_cs
+		) < 1 AND
 		</c:if>
+		<c:if test="${not empty param.hideprefixes}">
 		NOT EXISTS (
 			SELECT NULL
 			FROM meta_p.wiki AS meta_wiki
 			<%-- Appending COLLATE utf8_general_ci led to empty results --%>
+			<%-- TODO: ignore project prefixes as well (q:, w:, s:, etc.) --%>
 			WHERE iwl_title LIKE CONCAT(meta_wiki.lang, ":%")
 		) AND
+		</c:if>
 		NOT EXISTS (
 			SELECT NULL
 			FROM ${param.project}_p.page AS foreign_page

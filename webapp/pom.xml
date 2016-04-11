@@ -5,7 +5,7 @@
   <artifactId>webapp</artifactId>
   <packaging>war</packaging>
   <version>0.0.1-SNAPSHOT</version>
-  <name>webapp Maven Webapp</name>
+  <name>webapp</name>
   <url>http://maven.apache.org</url>
   <build>
     <plugins>
@@ -30,8 +30,57 @@
       	  </execution>
       	</executions>
       </plugin>
+      <plugin>
+      	<groupId>org.apache.maven.plugins</groupId>
+      	<artifactId>maven-clean-plugin</artifactId>
+      	<version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>auto-clean</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <finalName>pbbot</finalName>
+    <pluginManagement>
+      <plugins>
+        <!--
+          This plugin's configuration is used to store Eclipse 
+          m2e settings only. It has no influence on the Maven build itself.
+          See also:
+          * http://stackoverflow.com/questions/6352208
+          * https://www.eclipse.org/m2e/documentation/m2e-execution-not-covered.html
+        -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <versionRange>[3.0,)</versionRange>
+                    <goals>
+                      <goal>clean</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <execute />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
   <dependencies>
     <dependency>
