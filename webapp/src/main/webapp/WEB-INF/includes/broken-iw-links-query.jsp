@@ -94,7 +94,7 @@
 		<ol start="${offset + 1}">
 			<c:forEach var="row" items="${result.rows}">
 				<li>
-					<a href="https://pl.wiktionary.org/wiki/${row.page_title}">
+					<a href="https://pl.wiktionary.org/wiki/${fn:escapeXml(row.page_title)}">
 						${fn:replace(row.page_title, '_', ' ')}
 					</a>
 					→
@@ -103,7 +103,7 @@
 							<i>pusty link</i>
 						</c:when>
 						<c:otherwise>
-							<a href="https://pl.wiktionary.org/wiki/${prefix}:${row.iwl_title}">
+							<a href="https://pl.wiktionary.org/wiki/${prefix}:${fn:escapeXml(row.iwl_title)}">
 								${fn:replace(row.iwl_title, '_', ' ')}
 							</a>
 						</c:otherwise>
