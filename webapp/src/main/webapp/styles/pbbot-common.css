@@ -1,0 +1,13 @@
+.column-list {
+	-webkit-column-count: 3;
+	-webkit-column-gap: 6em;
+	-wbekit-column-rule: 1px solid #aaa;
+	
+	-moz-column-count: 3;
+	-moz-column-gap: 6em;
+	-moz-column-rule: 1px solid #aaa;
+	
+	column-count: 3;
+	column-gap: 6em;
+	column-rule: 1px solid #aaa;
+}

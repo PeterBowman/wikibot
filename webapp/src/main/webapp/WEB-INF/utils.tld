@@ -20,4 +20,16 @@
 		<function-signature>int min(int, int)</function-signature>
 	</function>
 	
+	<function>
+		<name>formatTimestamp</name>
+		<function-class>com.github.wikibot.webapp.Utils</function-class>
+		<function-signature>java.lang.String formatTimestamp(java.lang.String, java.lang.String, java.lang.String)</function-signature>
+	</function>
+	
+	<function>
+		<name>makePluralPL</name>
+		<function-class>com.github.wikibot.webapp.Utils</function-class>
+		<function-signature>java.lang.String makePluralPL(int, java.lang.String, java.lang.String, java.lang.String)</function-signature>
+	</function>
+	
 </taglib>

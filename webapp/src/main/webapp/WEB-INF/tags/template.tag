@@ -2,6 +2,7 @@
 
 <%@ attribute name="title" %>
 <%@ attribute name="firstHeading" %>
+<%@ attribute name="enableJS" %>
 <%@ attribute name="head" fragment="true" %>
 <%@ attribute name="cactions" fragment="true" %>
 <%@ attribute name="toolbarExtra" fragment="true" %>
@@ -19,6 +20,7 @@
 	<link href="${contextPath}/styles/interface.css" type="text/css" rel="stylesheet">
 	<link href="${contextPath}/styles/elements.css" type="text/css" rel="stylesheet">
 	<link href="${contextPath}/styles/monobook.css" type="text/css" rel="stylesheet">
+	<link href="${contextPath}/styles/pbbot-common.css" type="text/css" rel="stylesheet">
 	<c:if test="${not empty headerNotice}">
 		<link href="${contextPath}/styles/ambox.css" type="text/css" rel="stylesheet">
 	</c:if>
@@ -29,6 +31,9 @@
 			<c:otherwise>PBbot</c:otherwise>
 		</c:choose>
 	</title>
+	<c:if test="${enableJS}">
+		<script src="//tools-static.wmflabs.org/static/jquery/1.11.0/jquery.min.js"></script>
+	</c:if>
 	<jsp:invoke fragment="head" />
 </head>
 <body>
