@@ -30,10 +30,10 @@
 </c:forTokens>
 
 <c:forTokens var="morphem" items="${morphems}" delims="|" varStatus="status">
-	<c:set var="morphem" value="${fn:replace(morphem, '_', ' ')}" />
+	<c:set var="normalized" value="${fn:replace(morphem, '_', ' ')}" />
 	<c:choose>
-		<c:when test="${targetMap[morphem]}">
-			<span class="eom-backlinks-hl">${morphem}</span><c:if test="${not status.last}">•</c:if>
+		<c:when test="${targetMap[normalized]}">
+			<span class="eom-backlinks-hl">${normalized}</span><c:if test="${not status.last}">•</c:if>
 		</c:when>
 		<c:otherwise>
 			<%-- Cast integer index as string, don't use 'value' attribute --%>
@@ -53,13 +53,16 @@
 					<c:set var="href" value="wiki/" />
 				</c:otherwise>
 			</c:choose>
-			<a href="https://pl.wiktionary.org/${href}${fn:escapeXml(morphem)}#eom" 
-				title='${morphem}<c:if test="${not empty title}">${" "}${title}</c:if>'
+			<a href="https://pl.wiktionary.org/${href}${fn:escapeXml(normalized)}#eom" 
+				title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
 				<c:if test="${not empty classVar}">class="${classVar}"</c:if>><%--
-				--%>${morphem}
+				--%>${normalized}
 			</a><c:if test="${not status.last}">•</c:if>
-			<c:remove var="index" /><c:remove var="href" /><c:remove var="title" /><c:remove var="classVar" />
+			<c:remove var="index" />
+			<c:remove var="href" />
+			<c:remove var="title" />
+			<c:remove var="classVar" />
 		</c:otherwise>
 	</c:choose>
-	<c:remove var="morphem" />
+	<c:remove var="normalized" />
 </c:forTokens>

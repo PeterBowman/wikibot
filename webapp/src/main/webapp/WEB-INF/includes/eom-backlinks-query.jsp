@@ -42,6 +42,9 @@
 		<c:set var="total" value="${count.rows[0].total}" />
 		<p>
 			Znaleziono <strong>${total}</strong> ${utils:makePluralPL(total, 'wynik', 'wyniki', 'wyników')}.
+			<c:if test="${not empty fn:trim(fn:replace(param.morphem, '|', ''))}">
+				Parametry wyszukiwania: <eombl:morphem-analyzer />.
+			</c:if>
 		</p>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ol start="${offset + 1}" <c:if test="${result.rowCount gt columnThreshold}">class="column-list"</c:if>>

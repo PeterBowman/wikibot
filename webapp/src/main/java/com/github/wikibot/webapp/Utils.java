@@ -39,4 +39,8 @@ public final class Utils {
 				return genitive;
 		}
 	}
+	
+	public static boolean bitCompare(int bitmask, int target) {
+		return (bitmask & target) == target;
+	}
 }
