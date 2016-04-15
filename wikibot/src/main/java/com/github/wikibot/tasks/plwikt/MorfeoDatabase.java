@@ -10,12 +10,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +46,14 @@ public final class MorfeoDatabase {
 	private static final String SQL_EOM_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_eom_backlinks";
 	private static final String SQL_COMMON_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_common";
 	
+	private static final byte MORPHEM_RED_LINK = 0;
+	private static final byte MORPHEM_MISSING = 1;
+	private static final byte MORPHEM_NORMAL = 2;
+	private static final byte MORPHEM_PREFIX = 4;
+	private static final byte MORPHEM_SUFFIX = 8;
+	private static final byte MORPHEM_GRAMMATICAL = 16;
+	private static final byte MORPHEM_UNKNOWN = 32;
+	
 	private static PLWikt wb;
 	
 	static {
@@ -58,13 +70,20 @@ public final class MorfeoDatabase {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", 0);
 		Map<String, List<String>> items = retrieveItems(pages);
 		
-		System.out.printf("%d morphems retrieved.%n", items.size());
+		String[] morphems = items.values().stream()
+			.flatMap(Collection::stream)
+			.distinct()
+			.toArray(String[]::new);
+		
+		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.length);
+		
+		Map<String, Byte> morphemInfo = getMorphemInfo(morphems);
 		
 		Class.forName("com.mysql.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
 		
 		try (Connection conn = DriverManager.getConnection(SQL_EOM_URI, properties)) {
-			updateMorfeoTable(conn, items);
+			updateMorfeoTable(conn, items, morphemInfo);
 		}
 		
 		try (Connection conn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
@@ -84,6 +103,65 @@ public final class MorfeoDatabase {
 			));
 		
 		map.values().removeIf(Objects::isNull);
+		return map;
+	}
+	
+	private static Map<String, Byte> getMorphemInfo(String[] morphems) throws IOException {
+		@SuppressWarnings("unchecked")
+		Map<String, Object>[] info = wb.getPageInfo(morphems);
+		List<String> list = new ArrayList<>(morphems.length);
+		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
+		
+		for (int i = 0; i < info.length; i++) {
+			if ((boolean) info[i].get("exists")) {
+				list.add(morphems[i]);
+			} else {
+				map.put(morphems[i], MORPHEM_RED_LINK);
+			}
+		}
+		
+		String[] _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", 0);
+		String[] _normal = wb.getCategoryMembers("Esperanto - morfemy", 0);
+		String[] _prefix = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe‎", 0);
+		String[] _suffix = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", 0);
+		String[] _grammatical = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", 0);
+		
+		Set<String> all = new HashSet<>(Arrays.asList(_all));
+		Set<String> normal = new HashSet<>(Arrays.asList(_normal));
+		Set<String> prefix = new HashSet<>(Arrays.asList(_prefix));
+		Set<String> suffix = new HashSet<>(Arrays.asList(_suffix));
+		Set<String> grammatical = new HashSet<>(Arrays.asList(_grammatical));
+		
+		for (String morphem : list) {
+			if (!all.contains(morphem)) {
+				map.put(morphem, MORPHEM_MISSING);
+			} else {
+				byte bitmask = 0;
+				
+				if (normal.contains(morphem)) {
+					bitmask |= MORPHEM_NORMAL;
+				}
+				
+				if (prefix.contains(morphem)) {
+					bitmask |= MORPHEM_PREFIX;
+				}
+				
+				if (suffix.contains(morphem)) {
+					bitmask |= MORPHEM_SUFFIX;
+				}
+				
+				if (grammatical.contains(morphem)) {
+					bitmask |= MORPHEM_GRAMMATICAL;
+				}
+				
+				if (bitmask == 0) {
+					bitmask = MORPHEM_UNKNOWN;
+				}
+				
+				map.put(morphem, bitmask);
+			}
+		}
+		
 		return map;
 	}
 	
@@ -122,7 +200,8 @@ public final class MorfeoDatabase {
 		return properties;
 	}
 	
-	private static void updateMorfeoTable(Connection conn, Map<String, List<String>> items) throws SQLException {
+	private static void updateMorfeoTable(Connection conn, Map<String, List<String>> items,
+			Map<String, Byte> morphemInfo) throws SQLException {
 		Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 		ResultSet rs = stmt.executeQuery("SELECT * FROM morfeo;");
 		List<String> storedTitles = new ArrayList<>(items.size());
@@ -135,6 +214,7 @@ public final class MorfeoDatabase {
 			String title = rs.getString("title");
 			String morphem = rs.getString("morphem");
 			int position = rs.getInt("position");
+			byte type = rs.getByte("type");
 			
 			if (!items.containsKey(title)) {
 				rs.deleteRow();
@@ -147,9 +227,20 @@ public final class MorfeoDatabase {
 					deleted++;
 				} else {
 					String extractedMorphem = morphems.set(position - 1, null);
+					byte morphemType = morphemInfo.get(morphem);
+					boolean updatedRow = false;
 					
 					if (!morphem.equals(extractedMorphem)) {
 						rs.updateString("morphem", extractedMorphem);
+						updatedRow = true;
+					}
+					
+					if (type != morphemType) {
+						rs.updateByte("type", morphemType);
+						updatedRow = true;
+					}
+					
+					if (updatedRow) {
 						rs.updateRow();
 						updated++;
 					}
@@ -176,6 +267,7 @@ public final class MorfeoDatabase {
 				rs.updateString("title", title);
 				rs.updateString("morphem", morphem);
 				rs.updateInt("position", i + 1);
+				rs.updateByte("type", morphemInfo.get(morphem));
 				rs.insertRow();
 				added++;
 			}
