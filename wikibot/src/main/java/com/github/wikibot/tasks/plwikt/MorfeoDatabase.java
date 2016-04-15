@@ -92,7 +92,13 @@ public final class MorfeoDatabase {
 		inspectEsperantoCategories(morphemInfo);
 		
 		try (Connection conn = DriverManager.getConnection(SQL_EOM_URI, properties)) {
-			updateMorfeoTable(conn, items, morphemInfo);
+			conn.setAutoCommit(false);
+			deleteMorfeoItems(conn, items);
+			updateMorfeoItems(conn, items, morphemInfo);
+			insertMorfeoItems(conn, items, morphemInfo);
+			
+			System.out.println("Committing changes to database.");
+			conn.commit();
 		}
 		
 		try (Connection conn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
@@ -118,7 +124,7 @@ public final class MorfeoDatabase {
 	private static Map<String, Byte> findMissingPages(Connection conn, String[] morphems) throws SQLException {
 		String values = Stream.of(morphems)
 			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
-			.collect(Collectors.joining(", "));
+			.collect(Collectors.joining(","));
 		
 		String query = "SELECT page_title"
 			+ " FROM page"
@@ -134,12 +140,20 @@ public final class MorfeoDatabase {
 			set.add(title);
 		}
 		
-		System.out.printf("%d out of %d pages found in plwiktionary_p database.", set.size(), morphems.length);
+		System.out.printf("%d out of %d pages found in plwiktionary_p database.%n", set.size(), morphems.length);
 		
-		return Stream.of(morphems).collect(Collectors.toMap(
-			morphem -> morphem,
-			morphem -> set.contains(morphem) ? null : MORPHEM_RED_LINK
-		));
+		// Map.merge doesn't like null values, don't use java 8 streams here
+		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
+		
+		for (String morphem : morphems) {
+			if (set.contains(morphem)) {
+				map.put(morphem, null);
+			} else {
+				map.put(morphem, MORPHEM_RED_LINK);
+			}
+		}
+		
+		return map;
 	}
 	
 	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
@@ -242,15 +256,31 @@ public final class MorfeoDatabase {
 		return properties;
 	}
 	
-	private static void updateMorfeoTable(Connection conn, Map<String, List<String>> items,
+	private static void deleteMorfeoItems(Connection conn, Map<String, List<String>> items) throws SQLException {
+		String allTitles = items.keySet().stream()
+			.map(el -> String.format("'%s'", el.replace("'", "\\'")))
+			.collect(Collectors.joining(","));
+		
+		String orClauses = items.entrySet().stream()
+			.map(entry -> String.format(
+				"(title = '%s' AND position > %d)",
+				entry.getKey().replace("'", "\\'"), entry.getValue().size()
+			))
+			.collect(Collectors.joining(" OR "));
+		
+		String query = "DELETE FROM morfeo"
+			+ " WHERE title NOT IN (" + allTitles + ")"
+			+ " OR " + orClauses + ";";
+		
+		int deletedRows = conn.createStatement().executeUpdate(query);
+		System.out.printf("%d rows deleted.%n", deletedRows);
+	}
+	
+	private static void updateMorfeoItems(Connection conn, Map<String, List<String>> items,
 			Map<String, Byte> morphemInfo) throws SQLException {
 		Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 		ResultSet rs = stmt.executeQuery("SELECT * FROM morfeo;");
-		List<String> storedTitles = new ArrayList<>(items.size());
-		
-		int added = 0;
-		int updated = 0;
-		int deleted = 0;
+		int updatedRows = 0;
 		
 		while (rs.next()) {
 			String title = rs.getString("title");
@@ -258,42 +288,34 @@ public final class MorfeoDatabase {
 			int position = rs.getInt("position");
 			byte type = rs.getByte("type");
 			
-			if (!items.containsKey(title)) {
-				rs.deleteRow();
-				deleted++;
-			} else {
-				List<String> morphems = items.get(title);
-				
-				if (position > morphems.size()) {
-					rs.deleteRow();
-					deleted++;
-				} else {
-					String extractedMorphem = morphems.set(position - 1, null);
-					byte morphemType = morphemInfo.get(morphem);
-					boolean updatedRow = false;
-					
-					if (!morphem.equals(extractedMorphem)) {
-						rs.updateString("morphem", extractedMorphem);
-						updatedRow = true;
-					}
-					
-					if (type != morphemType) {
-						rs.updateByte("type", morphemType);
-						updatedRow = true;
-					}
-					
-					if (updatedRow) {
-						rs.updateRow();
-						updated++;
-					}
-					
-					storedTitles.add(title);
-				}
+			List<String> morphems = items.get(title);
+			String extractedMorphem = morphems.set(position - 1, null);
+			byte morphemType = morphemInfo.get(morphem);
+			boolean isUpdatedRow = false;
+			
+			if (!morphem.equals(extractedMorphem)) {
+				rs.updateString("morphem", extractedMorphem);
+				isUpdatedRow = true;
+			}
+			
+			if (type != morphemType) {
+				rs.updateByte("type", morphemType);
+				isUpdatedRow = true;
+			}
+			
+			if (isUpdatedRow) {
+				rs.updateRow();
+				updatedRows++;
 			}
 		}
 		
 		items.values().removeIf(morphems -> morphems.stream().allMatch(Objects::isNull));
-		rs.moveToInsertRow();
+		System.out.printf("%d rows updated.%n", updatedRows);
+	}
+	
+	private static void insertMorfeoItems(Connection conn, Map<String, List<String>> items,
+		Map<String, Byte> morphemInfo) throws SQLException {
+		List<String> values = new ArrayList<>(items.size());
 		
 		for (Map.Entry<String, List<String>> entry : items.entrySet()) {
 			String title = entry.getKey();
@@ -306,16 +328,20 @@ public final class MorfeoDatabase {
 					continue;
 				}
 				
-				rs.updateString("title", title);
-				rs.updateString("morphem", morphem);
-				rs.updateInt("position", i + 1);
-				rs.updateByte("type", morphemInfo.get(morphem));
-				rs.insertRow();
-				added++;
+				String row = String.format(
+					"('%s', '%s', %d, %d)",
+					title.replace("'", "\\'"), morphem.replace("'", "\\'"), i + 1, morphemInfo.get(morphem)
+				);
+				
+				values.add(row);
 			}
 		}
 		
-		System.out.printf("Added: %d, updated: %d, deleted: %d.%n", added, updated, deleted);
+		String query = "INSERT INTO morfeo (title, morphem, position, type)"
+			+ " VALUES " + String.join(",", values) + ";";
+		
+		int insertedRows = conn.createStatement().executeUpdate(query);
+		System.out.printf("%d rows inserted.%n", insertedRows);
 	}
 	
 	private static void updateTimestampTable(Connection conn) throws SQLException {
