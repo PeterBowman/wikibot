@@ -43,6 +43,7 @@ public final class MorfeoDatabase {
 	private static final Properties defaultSQLProperties = new Properties();
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	
+	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
 	private static final String SQL_EOM_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_eom_backlinks";
 	private static final String SQL_COMMON_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_common";
 	
@@ -77,10 +78,18 @@ public final class MorfeoDatabase {
 		
 		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.length);
 		
-		Map<String, Byte> morphemInfo = getMorphemInfo(morphems);
-		
 		Class.forName("com.mysql.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
+		
+		Map<String, Byte> morphemInfo;
+		
+		try (Connection conn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
+			morphemInfo = findMissingPages(conn, morphems);
+		} catch (SQLException e) {
+			morphemInfo = checkMissingPagesFallback(morphems);
+		}
+		
+		inspectEsperantoCategories(morphemInfo);
 		
 		try (Connection conn = DriverManager.getConnection(SQL_EOM_URI, properties)) {
 			updateMorfeoTable(conn, items, morphemInfo);
@@ -106,19 +115,54 @@ public final class MorfeoDatabase {
 		return map;
 	}
 	
-	private static Map<String, Byte> getMorphemInfo(String[] morphems) throws IOException {
+	private static Map<String, Byte> findMissingPages(Connection conn, String[] morphems) throws SQLException {
+		String values = Stream.of(morphems)
+			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
+			.collect(Collectors.joining(", "));
+		
+		String query = "SELECT page_title"
+			+ " FROM page"
+			+ " WHERE page_namespace = 0"
+			+ " AND page_title IN (" + values + ");";
+		
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery(query);
+		Set<String> set = new HashSet<>(morphems.length);
+		
+		while (rs.next()) {
+			String title = rs.getString("page_title");
+			set.add(title);
+		}
+		
+		System.out.printf("%d out of %d pages found in plwiktionary_p database.", set.size(), morphems.length);
+		
+		return Stream.of(morphems).collect(Collectors.toMap(
+			morphem -> morphem,
+			morphem -> set.contains(morphem) ? null : MORPHEM_RED_LINK
+		));
+	}
+	
+	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
 		@SuppressWarnings("unchecked")
 		Map<String, Object>[] info = wb.getPageInfo(morphems);
-		List<String> list = new ArrayList<>(morphems.length);
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		
 		for (int i = 0; i < info.length; i++) {
 			if ((boolean) info[i].get("exists")) {
-				list.add(morphems[i]);
+				map.put(morphems[i], null);
 			} else {
 				map.put(morphems[i], MORPHEM_RED_LINK);
 			}
 		}
+		
+		return map;
+	}
+	
+	private static void inspectEsperantoCategories(Map<String, Byte> map) throws IOException {
+		List<String> list = map.entrySet().stream()
+			.filter(entry -> entry.getValue() == null)
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toList());
 		
 		String[] _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", 0);
 		String[] _normal = wb.getCategoryMembers("Esperanto - morfemy", 0);
@@ -161,8 +205,6 @@ public final class MorfeoDatabase {
 				map.put(morphem, bitmask);
 			}
 		}
-		
-		return map;
 	}
 	
 	private static List<String> parseMorfeoTemplatesFromField(Field f) {
