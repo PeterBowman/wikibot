@@ -17,7 +17,8 @@
 <sql:query var="result" dataSource="jdbc/EomBacklinks" startRow="${offset}" maxRows="${limit}">
 	SELECT
 		title,
-		GROUP_CONCAT(morphem ORDER BY position SEPARATOR '|') AS morphems
+		GROUP_CONCAT(morphem ORDER BY position SEPARATOR '|') AS morphems,
+		GROUP_CONCAT(type ORDER BY position SEPARATOR '|') AS types
 	FROM
 		morfeo
 	GROUP BY
@@ -46,11 +47,12 @@
 		<ol start="${offset + 1}" <c:if test="${result.rowCount gt columnThreshold}">class="column-list"</c:if>>
 			<c:forEach var="row" items="${result.rows}">
 				<li>
-					<a href="https://pl.wiktionary.org/wiki/${fn:escapeXml(row.title)}#eo">
-						${fn:replace(row.title, '_', ' ')}
+					<c:set var="normalized" value="${fn:replace(row.title, '_', ' ')}" />
+					<a href="https://pl.wiktionary.org/wiki/${fn:escapeXml(row.title)}#eo" title="${normalized}">
+						${normalized}
 					</a>
 					→
-					<eombl:format-morphems targets="${param.morphem}" morphems="${row.morphems}" />
+					<eombl:format-morphems morphems="${row.morphems}" types="${row.types}" />
 				</li>
 			</c:forEach>
 		</ol>

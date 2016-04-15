@@ -17,8 +17,8 @@
 	<meta charset="UTF-8">
 	<c:set var="contextPath" value="${pageContext.request.contextPath}" />
 	<link href="${contextPath}/styles/shared.css" type="text/css" rel="stylesheet">
-	<link href="${contextPath}/styles/interface.css" type="text/css" rel="stylesheet">
 	<link href="${contextPath}/styles/elements.css" type="text/css" rel="stylesheet">
+	<link href="${contextPath}/styles/interface.css" type="text/css" rel="stylesheet">
 	<link href="${contextPath}/styles/monobook.css" type="text/css" rel="stylesheet">
 	<link href="${contextPath}/styles/pbbot-common.css" type="text/css" rel="stylesheet">
 	<c:if test="${not empty headerNotice}">

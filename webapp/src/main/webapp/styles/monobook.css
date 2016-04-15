@@ -72,9 +72,9 @@ a {
 	color: #002bb8;
 }
 
-a:visited {
-	color: #5a3696;
-}
+/*a:visited {
+	color: #5a3696;  COMMENTED OUT
+}*/
 
 a.new,
 #p-personal a.new {

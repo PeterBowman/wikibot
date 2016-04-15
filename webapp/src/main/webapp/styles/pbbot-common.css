@@ -11,3 +11,11 @@
 	column-gap: 6em;
 	column-rule: 1px solid #aaa;
 }
+
+a.false-blue {
+	color: #a00080;
+}
+
+a.false-blue:visited {
+	color: #900070;
+}
