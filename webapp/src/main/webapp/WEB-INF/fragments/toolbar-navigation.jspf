@@ -2,4 +2,4 @@
 <li><a href="${pageContext.request.contextPath}/verify-citations">Weryfikacja typografii przypisów</a></li>
 <li><a href="${pageContext.request.contextPath}/broken-iw-links">Zerwane linki do siostrzanych</a></li>
 <li><a href="${pageContext.request.contextPath}/eom-backlinks">Morfemy esperanto</a></li>
-<li><a href="//tools-static.wmflabs.org/pbbot/">Serwer plików statycznych</a></li>
+<li><a href="//tools-static.wmflabs.org/pbbot/" target="_blank">Serwer plików statycznych</a></li>

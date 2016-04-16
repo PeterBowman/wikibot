@@ -1,9 +1,9 @@
-<li><a href="/tools-info">Tools-info</a></li>
+<li><a href="/tools-info" target="_blank">Tools-info</a></li>
 
 <li>
-	<a href="//dumps.wikimedia.org/backup-index.html">Zrzuty z bazy danych</a>
+	<a href="//dumps.wikimedia.org/backup-index.html" target="_blank">Zrzuty z bazy danych</a>
 	<ul>
-		<li><a href="http://dumps.wikimedia.org/plwiktionary/">plwiktionary</a></li>
-		<li><a href="http://dumps.wikimedia.org/eswiktionary/">eswiktionary</a></li>
+		<li><a href="http://dumps.wikimedia.org/plwiktionary/" target="_blank">plwiktionary</a></li>
+		<li><a href="http://dumps.wikimedia.org/eswiktionary/" target="_blank">eswiktionary</a></li>
 	</ul>
 </li>

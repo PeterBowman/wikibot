@@ -29,7 +29,6 @@
 		title COLLATE utf8mb4_general_ci;
 </sql:query>
 
-<%-- TODO: query plwiktionary_p db, show morphem categories --%>
 <c:choose>
 	<c:when test="${result.rowCount eq 0}">
 		<p>Nie znaleziono pozycji odpowiadających zapytaniu.</p> 
