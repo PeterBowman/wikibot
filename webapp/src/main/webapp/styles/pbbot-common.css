@@ -1,0 +1,21 @@
+.column-list {
+	-webkit-column-count: 3;
+	-webkit-column-gap: 7.5em;
+	-wbekit-column-rule: 1px solid #aaa;
+	
+	-moz-column-count: 3;
+	-moz-column-gap: 7.5em;
+	-moz-column-rule: 1px solid #aaa;
+	
+	column-count: 3;
+	column-gap: 7.5em;
+	column-rule: 1px solid #aaa;
+}
+
+a.false-blue {
+	color: #a00080;
+}
+
+a.false-blue:visited {
+	color: #900070;
+}
