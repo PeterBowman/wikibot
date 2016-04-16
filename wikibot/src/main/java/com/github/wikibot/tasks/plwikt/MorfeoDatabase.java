@@ -110,8 +110,6 @@ public final class MorfeoDatabase {
 			if (eomConn != null) {
 				eomConn.close();
 			}
-			
-			eomConn.setAutoCommit(true);
 		}
 		
 		try (Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
@@ -371,6 +369,6 @@ public final class MorfeoDatabase {
 			+ " UPDATE timestamp = VALUES(timestamp);";
 		
 		conn.createStatement().executeUpdate(query);
-		System.out.printf("New timestamp: %s%n.", timestamp);
+		System.out.printf("New timestamp: %s.%n", timestamp);
 	}
 }
