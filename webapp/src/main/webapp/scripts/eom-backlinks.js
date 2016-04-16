@@ -38,5 +38,6 @@ $( function () {
 		$this
 			.data( 'suggestions-context' )
 			.data.$container.css( 'fontSize', $this.css( 'fontSize' ) );
-	} );;
+	} )
+	.focus();
 } );

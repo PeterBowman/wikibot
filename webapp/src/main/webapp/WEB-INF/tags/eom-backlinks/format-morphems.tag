@@ -5,6 +5,7 @@
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
 <jsp:useBean id="targetMap" class="java.util.HashMap" />
 <jsp:useBean id="missingPageMap" class="java.util.HashMap" />
@@ -38,30 +39,11 @@
 		<c:otherwise>
 			<%-- Cast integer index as string, don't use 'value' attribute --%>
 			<c:set var="index">${status.index}</c:set>
-			<c:choose>
-				<c:when test="${missingPageMap[index]}">
-					<c:set var="href" value="w/index.php?action=edit&redlink=1&title=" />
-					<c:set var="title" value="(strona nie istnieje)" />
-					<c:set var="classVar" value="new" />
-				</c:when>
-				<c:when test="${missingSectionMap[index]}">
-					<c:set var="href" value="wiki/" />
-					<c:set var="title" value="(brak sekcji esperanto (morfem))" />
-					<c:set var="classVar" value="false-blue" />
-				</c:when>
-				<c:otherwise>
-					<c:set var="href" value="wiki/" />
-				</c:otherwise>
-			</c:choose>
-			<a href="https://pl.wiktionary.org/${href}${fn:escapeXml(normalized)}#eom" 
-				title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
-				<c:if test="${not empty classVar}">class="${classVar}"</c:if>><%--
-				--%>${normalized}
-			</a><c:if test="${not status.last}">•</c:if>
+			<t:linker hrefPattern="https://pl.wiktionary.org/$1#eom" target="${morphem}"
+				testMissingPage="${missingPageMap[index]}"
+				testMissingSection="${missingSectionMap[index]}" sectionName="esperanto (morfem)" /><%--
+			--%><c:if test="${not status.last}">•</c:if>
 			<c:remove var="index" />
-			<c:remove var="href" />
-			<c:remove var="title" />
-			<c:remove var="classVar" />
 		</c:otherwise>
 	</c:choose>
 	<c:remove var="normalized" />

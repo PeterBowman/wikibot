@@ -80,29 +80,42 @@ public final class MorfeoDatabase {
 		
 		Class.forName("com.mysql.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
-		
 		Map<String, Byte> morphemInfo;
 		
-		try (Connection conn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
-			morphemInfo = findMissingPages(conn, morphems);
+		try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
+			morphemInfo = findMissingPages(plwiktConn, morphems);
 		} catch (SQLException e) {
 			morphemInfo = checkMissingPagesFallback(morphems);
 		}
 		
 		inspectEsperantoCategories(morphemInfo);
 		
-		try (Connection conn = DriverManager.getConnection(SQL_EOM_URI, properties)) {
-			conn.setAutoCommit(false);
-			deleteMorfeoItems(conn, items);
-			updateMorfeoItems(conn, items, morphemInfo);
-			insertMorfeoItems(conn, items, morphemInfo);
+		Connection eomConn = null;
+		
+		try {
+			eomConn = DriverManager.getConnection(SQL_EOM_URI, properties);
+			eomConn.setAutoCommit(false);
+			
+			deleteMorfeoItems(eomConn, items);
+			updateMorfeoItems(eomConn, items, morphemInfo);
+			insertMorfeoItems(eomConn, items, morphemInfo);
 			
 			System.out.println("Committing changes to database.");
-			conn.commit();
+			eomConn.commit();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			eomConn.rollback();
+			return;
+		} finally {
+			if (eomConn != null) {
+				eomConn.close();
+			}
+			
+			eomConn.setAutoCommit(true);
 		}
 		
-		try (Connection conn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
-			updateTimestampTable(conn);
+		try (Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
+			updateTimestampTable(commonConn);
 		}
 	}
 	
@@ -126,7 +139,7 @@ public final class MorfeoDatabase {
 			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
 			.collect(Collectors.joining(","));
 		
-		String query = "SELECT page_title"
+		String query = "SELECT CONVERT(page_title USING utf8) AS page_title"
 			+ " FROM page"
 			+ " WHERE page_namespace = 0"
 			+ " AND page_title IN (" + values + ");";
@@ -337,11 +350,15 @@ public final class MorfeoDatabase {
 			}
 		}
 		
-		String query = "INSERT INTO morfeo (title, morphem, position, type)"
-			+ " VALUES " + String.join(",", values) + ";";
-		
-		int insertedRows = conn.createStatement().executeUpdate(query);
-		System.out.printf("%d rows inserted.%n", insertedRows);
+		if (!values.isEmpty()) {
+			String query = "INSERT INTO morfeo (title, morphem, position, type)"
+				+ " VALUES " + String.join(",", values) + ";";
+			
+			int insertedRows = conn.createStatement().executeUpdate(query);
+			System.out.printf("%d rows inserted.%n", insertedRows);
+		} else {
+			System.out.println("0 rows inserted.");
+		}
 	}
 	
 	private static void updateTimestampTable(Connection conn) throws SQLException {
@@ -354,5 +371,6 @@ public final class MorfeoDatabase {
 			+ " UPDATE timestamp = VALUES(timestamp);";
 		
 		conn.createStatement().executeUpdate(query);
+		System.out.printf("New timestamp: %s%n.", timestamp);
 	}
 }

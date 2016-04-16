@@ -43,17 +43,14 @@
 		<p>
 			Znaleziono <strong>${total}</strong> ${utils:makePluralPL(total, 'wynik', 'wyniki', 'wyników')}.
 			<c:if test="${not empty fn:trim(fn:replace(param.morphem, '|', ''))}">
-				Parametry wyszukiwania: <eombl:morphem-analyzer />.
+				Parametry zapytania: <eombl:morphem-analyzer />.
 			</c:if>
 		</p>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ol start="${offset + 1}" <c:if test="${result.rowCount gt columnThreshold}">class="column-list"</c:if>>
 			<c:forEach var="row" items="${result.rows}">
 				<li>
-					<c:set var="normalized" value="${fn:replace(row.title, '_', ' ')}" />
-					<a href="https://pl.wiktionary.org/wiki/${fn:escapeXml(row.title)}#eo" title="${normalized}">
-						${normalized}
-					</a>
+					<t:linker hrefPattern="https://pl.wiktionary.org/wiki/$1#eo" target="${row.title}" />
 					→
 					<eombl:format-morphems morphems="${row.morphems}" types="${row.types}" />
 				</li>
