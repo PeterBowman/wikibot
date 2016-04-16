@@ -1,24 +1,6 @@
 package com.github.wikibot.webapp;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
 public final class Utils {
-	public static String formatTimestamp(String timestamp, String timeZone, String locale) {
-		try {
-			SimpleDateFormat standardFormat = new SimpleDateFormat("yyyyMMddHHmmss", new Locale(locale));
-			Date date = standardFormat.parse(timestamp);
-			standardFormat.applyPattern("HH:mm, dd MMM yyyy (z)");
-			standardFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-			return standardFormat.format(date);
-		} catch (ParseException e) {
-			return timestamp;
-		}
-	}
-	
 	public static String makePluralPL(int value, String singular, String nominative, String genitive) {
 		if (value == 1) {
 			return singular;

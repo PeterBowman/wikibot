@@ -2,6 +2,7 @@
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
@@ -24,6 +25,10 @@
 		<script src="scripts/eom-backlinks.js"></script>
 	</jsp:attribute>
 	<jsp:body>
+		<c:set var="timestamp" value="${lastUpdate.rows[0].timestamp}" />
+		<fmt:parseDate var="date" value="${timestamp}" pattern="yyyyMMddHHmmss" timeZone="UTC" />
+		<fmt:setLocale value="pl_PL" />
+		<fmt:setTimeZone value="Europe/Madrid" />
 		<p>
 			Spis haseł esperanto, w których występuje wskazany morfem w szablonie <code>{{morfeo}}</code>.
 			Można też wyszukać wspólne wystąpienia dwóch lub więcej morfemów, oddzielając je znakiem
@@ -31,7 +36,7 @@
 			Zostaw to pole niewypełnione, aby wyświetlić wszystkie morfemy użyte w hasłach esperanto.
 		</p>
 		<p>
-			Ostatnia aktualizacja bazy danych: ${utils:formatTimestamp(lastUpdate.rows[0].timestamp, 'ECT', 'pl')}.
+			Ostatnia aktualizacja bazy danych: <fmt:formatDate value="${date}" pattern="HH:mm, dd MMM yyyy (z)" />.
 		</p>
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<fieldset>
