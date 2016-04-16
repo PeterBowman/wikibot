@@ -18,8 +18,10 @@
 
 <t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
-		<link href="${pageContext.request.contextPath}/styles/eom-backlinks.css" type="text/css"
-			rel="stylesheet">
+		<link href="styles/eom-backlinks.css" type="text/css" rel="stylesheet">
+		<link href="styles/suggestions.css" type="text/css" rel="stylesheet">
+		<script src="scripts/suggestions.js"></script>
+		<script src="scripts/eom-backlinks.js"></script>
 	</jsp:attribute>
 	<jsp:body>
 		<p>

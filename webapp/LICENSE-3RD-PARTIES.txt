@@ -3,6 +3,8 @@ This license applies to the following files:
 * /src/main/webapp/styles/ambox.css
 * /src/main/webapp/WEB-INF/tags/ambox.tag
 * /src/main/webapp/WEB-INF/tags/replace-param.tag
+* /src/main/webapp/scripts/suggestions.js
+* /src/main/webapp/styles/suggestions.css
 
 -------------------------------------------------------------------------
 
