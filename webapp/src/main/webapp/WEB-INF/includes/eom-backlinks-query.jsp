@@ -49,7 +49,7 @@
 		<ol start="${offset + 1}" <c:if test="${result.rowCount gt columnThreshold}">class="column-list"</c:if>>
 			<c:forEach var="row" items="${result.rows}">
 				<li>
-					<t:linker hrefPattern="https://pl.wiktionary.org/wiki/$1#eo" target="${row.title}" />
+					<t:linker hrefPattern="https://pl.wiktionary.org/$1#eo" target="${row.title}" />
 					→
 					<eombl:format-morphems morphems="${row.morphems}" types="${row.types}" />
 				</li>
