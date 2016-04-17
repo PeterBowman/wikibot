@@ -1,6 +1,9 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,6 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.security.auth.login.LoginException;
+
 import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
@@ -25,10 +30,15 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class EsperantoRelatedTerms {
+	private static final String LOCATION = "./data/tasks.plwikt/EsperantoRelatedTerms/";
+	private static final String TARGET_PAGE = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto";
+	private static final String TARGET_PAGE_EXCLUDED = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto/wykluczenia";
+	
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)"); // from Linker::formatLinksInComment in Linker.php
 	private static PLWikt wb;
 	
@@ -41,98 +51,26 @@ public final class EsperantoRelatedTerms {
 		
 		populateMaps(morphemToTitle, titleToMorphem, contentMap);
 		
-		List<Item> items = new ArrayList<>(contentMap.size());
-		String[] allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", 0);
-		Set<String> esperantoSet = new HashSet<>(Arrays.asList(allEsperantoTitles));
+		Map<String, List<MorphemTitlePair>> items = findItems(morphemToTitle, titleToMorphem, contentMap);
 		
-		for (Map.Entry<String, String> entry : contentMap.entrySet()) {
-			String title = entry.getKey();
-			String text = entry.getValue();
-			
-			Page p = Page.store(title, text);
-			Section s = p.getSection("esperanto").get();
-			Field f = s.getField(FieldTypes.RELATED_TERMS).get();
-			
-			List<String> morphems = titleToMorphem.get(title);
-			
-			List<String> allTitles = morphemToTitle.entrySet().stream()
-				.filter(m2t -> morphems.contains(m2t.getKey()))
-				.map(Map.Entry::getValue)
-				.flatMap(Collection::stream)
-				.distinct()
-				.collect(Collectors.toList());
-			
-			Set<String> relatedTerms = extractLinks(f.getContent());
-			Item item = new Item(title);
-			
-			for (String morphem : morphems) {
-				List<String> missing = new ArrayList<>(morphemToTitle.get(morphem));
-				missing.removeAll(relatedTerms);
-				missing.remove(title);
-				
-				List<String> wrong = new ArrayList<>(relatedTerms);
-				wrong.removeAll(allTitles);
-				wrong.removeIf(t -> t.toLowerCase().contains(morphem) && !esperantoSet.contains(t));
-				wrong.removeIf(t -> t.contains(" "));
-				
-				missing.stream()
-					.map(t -> new MorphemTitlePair(t, morphem))
-					.sorted()
-					.forEach(item.missingTitles::add);
-				
-				wrong.stream()
-					.map(t -> new MorphemTitlePair(t, morphem))
-					.sorted()
-					.forEach(item.wrongTitles::add);
-			}
-			
-			if (!item.missingTitles.isEmpty() || !item.wrongTitles.isEmpty()) {
-				items.add(item);
-			}
+		removeIgnoredItems(items);
+		
+		StringBuilder sb = new StringBuilder(30000);
+		
+		for (Map.Entry<String, List<MorphemTitlePair>> entry : items.entrySet()) {
+			sb.append(String.format("# [[%s]]: ", entry.getKey()));
+			sb.append(buildItemList(entry.getValue())).append("\n");
 		}
 		
-		System.out.printf("%d items extracted%n", items.size());
-		
-		items.sort((i1, i2) -> i1.title.compareTo(i2.title));
-		
-		StringBuilder sb = new StringBuilder(50000);
-		sb.append("{{język linków|esperanto}}\n\n");
-		
-		/*for (Item item : items) {
-			sb.append(String.format("# [[%s]]", item.title)).append("\n");
-			
-			if (!item.missingTitles.isEmpty()) {
-				sb.append("#* brakujące: ").append(buildItemList(item.missingTitles)).append("\n");
-			}
-			
-			if (!item.wrongTitles.isEmpty()) {
-				sb.append("#* błędne: ").append(buildItemList(item.wrongTitles)).append("\n");
-			}
-		}*/
-		
-		for (Item item : items) {
-			if (item.wrongTitles.isEmpty()) {
-				continue;
-			}
-			
-			sb.append(String.format("# [[%s]]: ", item.title));
-			sb.append(buildItemList(item.wrongTitles)).append("\n");
+		if (!checkAndUpdateStoredData(items)) {
+			System.out.println("No changes detected, aborting.");
+			return;
 		}
 		
-		IOUtils.writeToFile(sb.toString(), "./data/test9a.txt");
-		
-		/*for (Item item : items) {
-			if (item.missingTitles.isEmpty()) {
-				continue;
-			}
-			
-			sb.append(String.format("# [[%s]]: ", item.title));
-			sb.append(buildItemList(item.missingTitles)).append("\n");
-		}
-		
-		IOUtils.writeToFile(sb.toString(), "./data/test9b.txt");*/
+		IOUtils.writeToFile(sb.toString(), LOCATION + "output.txt");
+		editPage(sb.toString());
 	}
-
+	
 	private static void populateMaps(Map<String, List<String>> morphemToTitle,
 			Map<String, List<String>> titleToMorphem,
 			Map<String, String> contentMap)
@@ -178,6 +116,52 @@ public final class EsperantoRelatedTerms {
 		System.out.printf("titleToMorphem: %d%n", titleToMorphem.size());
 	}
 	
+	private static Map<String, List<MorphemTitlePair>> findItems(Map<String, List<String>> morphemToTitle,
+			Map<String, List<String>> titleToMorphem, Map<String, String> contentMap) throws IOException {
+		Map<String, List<MorphemTitlePair>> items = new TreeMap<>(Misc.getCollator("eo"));
+		String[] allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", 0);
+		Set<String> esperantoSet = new HashSet<>(Arrays.asList(allEsperantoTitles));
+		
+		for (Map.Entry<String, String> entry : contentMap.entrySet()) {
+			String title = entry.getKey();
+			
+			Page p = Page.store(title, entry.getValue());
+			Section s = p.getSection("esperanto").get();
+			Field f = s.getField(FieldTypes.RELATED_TERMS).get();
+			
+			List<String> morphems = titleToMorphem.get(title);
+			
+			List<String> allTitles = morphemToTitle.entrySet().stream()
+				.filter(m2t -> morphems.contains(m2t.getKey()))
+				.map(Map.Entry::getValue)
+				.flatMap(Collection::stream)
+				.distinct()
+				.collect(Collectors.toList());
+			
+			Set<String> relatedTerms = extractLinks(f.getContent());
+			List<MorphemTitlePair> list = new ArrayList<>();
+			
+			for (String morphem : morphems) {
+				List<String> wrong = new ArrayList<>(relatedTerms);
+				wrong.removeAll(allTitles);
+				wrong.removeIf(t -> t.toLowerCase().contains(morphem) && !esperantoSet.contains(t));
+				wrong.removeIf(t -> t.contains(" "));
+				
+				wrong.stream()
+					.map(t -> new MorphemTitlePair(t, morphem))
+					.sorted()
+					.forEach(list::add);
+			}
+			
+			if (!list.isEmpty()) {
+				items.put(title, list);
+			}
+		}
+		
+		System.out.printf("%d items extracted%n", items.size());
+		return items;
+	}
+	
 	private static Set<String> extractLinks(String text) {
 		if (text.isEmpty()) {
 			return Collections.emptySet();
@@ -199,11 +183,57 @@ public final class EsperantoRelatedTerms {
 		return set;
 	}
 	
+	private static void removeIgnoredItems(Map<String, List<MorphemTitlePair>> items) throws IOException {
+		Pattern patt = Pattern.compile("# *\\[\\[([^\\]]+?)\\]\\]: *\\[\\[([^\\]]+?)\\]\\] *\\(([^\\)]+?)\\)$", Pattern.MULTILINE);
+		String pageText = wb.getPageText(TARGET_PAGE_EXCLUDED);
+		Matcher m = patt.matcher(pageText);
+		
+		while (m.find()) {
+			String target = m.group(1).trim();
+			String title = m.group(2).trim();
+			String morphem = m.group(3).trim();
+			
+			List<MorphemTitlePair> list = items.get(target);
+			
+			if (list != null) {
+				MorphemTitlePair mtp = new MorphemTitlePair(title, morphem);
+				list.remove(mtp);
+				
+				if (list.isEmpty()) {
+					items.remove(target);
+				}
+			}
+		}
+		
+		System.out.printf("%d items after removing ignored from subpage%n", items.size());
+	}
+	
+	private static boolean checkAndUpdateStoredData(Map<String, List<MorphemTitlePair>> items)
+			throws FileNotFoundException, IOException {
+		int newHashCode = items.hashCode();
+		int storedHashCode;
+		
+		File fHash = new File(LOCATION + "hash.ser");
+		
+		try {
+			storedHashCode = Misc.deserialize(fHash);
+		} catch (ClassNotFoundException | IOException e) {
+			storedHashCode = 0;
+		}
+		
+		if (storedHashCode != newHashCode) {
+			Misc.serialize(newHashCode, fHash);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	private static String buildItemList(List<MorphemTitlePair> list) {
 		return list.stream()
 			.collect(Collectors.groupingBy(
 				i -> i.morphem,
-				TreeMap::new,
+				() -> new TreeMap<>(Misc.getCollator("eo")),
 				Collectors.mapping(
 					i -> String.format("[[%s]]", i.title),
 					Collectors.joining(", ")
@@ -216,19 +246,20 @@ public final class EsperantoRelatedTerms {
 			));
 	}
 	
-	private static class Item implements Comparable<Item> {
-		String title;
-		List<MorphemTitlePair> missingTitles = new ArrayList<>(0);
-		List<MorphemTitlePair> wrongTitles = new ArrayList<>(0);
+	private static void editPage(String text) throws IOException, LoginException {
+		String pageText = wb.getPageText(TARGET_PAGE);
 		
-		Item(String title) {
-			this.title = title;
+		if (pageText.contains("<!--") && pageText.contains("-->")) {
+			pageText = pageText.substring(0, pageText.lastIndexOf("-->") + 3) + "\n";
+		} else {
+			pageText = "{{język linków|esperanto}}\n";
+			pageText += "<!-- nie edytuj poniżej tej linii -->\n";
 		}
-
-		@Override
-		public int compareTo(Item i) {
-			return title.compareTo(i.title);
-		}
+		
+		pageText += text;
+		
+		wb.setMarkBot(false);
+		wb.edit(TARGET_PAGE, pageText, "aktualizacja");
 	}
 	
 	private static class MorphemTitlePair implements Comparable<MorphemTitlePair> {
@@ -242,7 +273,32 @@ public final class EsperantoRelatedTerms {
 
 		@Override
 		public int compareTo(MorphemTitlePair o) {
-			return title.compareTo(o.title);
+			Collator col = Misc.getCollator("eo");
+			return col.compare(title, o.title);
+		}
+		
+		@Override
+		public int hashCode() {
+			return title.hashCode() + morphem.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) {
+				return true;
+			}
+			
+			if (!(o instanceof MorphemTitlePair)) {
+				return false;
+			}
+			
+			MorphemTitlePair mtp = (MorphemTitlePair) o;
+			return title.equals(mtp.title) && morphem.equals(mtp.morphem);
+		}
+		
+		@Override
+		public String toString() {
+			return String.format("[%s: %s]", title, morphem);
 		}
 	}
 }
