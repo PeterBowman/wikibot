@@ -100,6 +100,7 @@ public final class MorfeoDatabase {
 			updateMorfeoItems(eomConn, items, morphemInfo);
 			insertMorfeoItems(eomConn, items, morphemInfo);
 			
+			// TODO: abort if no changes were detected?
 			System.out.println("Committing changes to database.");
 			eomConn.commit();
 		} catch (SQLException e) {
