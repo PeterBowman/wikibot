@@ -139,34 +139,28 @@ public final class MorfeoDatabase {
 	}
 	
 	private static Map<String, Byte> findMissingPages(Connection conn, String[] morphems) throws SQLException {
-		String values = Stream.of(morphems)
-			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
-			.collect(Collectors.joining(","));
-		
 		String query = "SELECT CONVERT(page_title USING utf8) AS page_title"
 			+ " FROM page"
-			+ " WHERE page_namespace = 0"
-			+ " AND page_title IN (" + values + ");";
+			+ " WHERE page_namespace = 0;";
 		
-		Statement stmt = conn.createStatement();
-		ResultSet rs = stmt.executeQuery(query);
-		Set<String> set = new HashSet<>(morphems.length);
+		ResultSet rs = conn.createStatement().executeQuery(query);
+		Set<String> set = new HashSet<>(Arrays.asList(morphems));
 		
 		while (rs.next()) {
 			String title = rs.getString("page_title");
-			set.add(title);
+			set.remove(title);
 		}
 		
-		System.out.printf("%d out of %d pages found in plwiktionary_p database.%n", set.size(), morphems.length);
+		System.out.printf("%d of %d pages are missing (plwiktionary_p).%n", set.size(), morphems.length);
 		
 		// Map.merge doesn't like null values, don't use java 8 streams here
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		
 		for (String morphem : morphems) {
 			if (set.contains(morphem)) {
-				map.put(morphem, null);
-			} else {
 				map.put(morphem, MORPHEM_RED_LINK);
+			} else {
+				map.put(morphem, null);
 			}
 		}
 		
