@@ -96,13 +96,18 @@ public final class MorfeoDatabase {
 			eomConn = DriverManager.getConnection(SQL_EOM_URI, properties);
 			eomConn.setAutoCommit(false);
 			
-			deleteMorfeoItems(eomConn, items);
-			updateMorfeoItems(eomConn, items, morphemInfo);
-			insertMorfeoItems(eomConn, items, morphemInfo);
+			int deleted = deleteMorfeoItems(eomConn, items);
+			int updated = updateMorfeoItems(eomConn, items, morphemInfo);
+			int inserted = insertMorfeoItems(eomConn, items, morphemInfo);
 			
-			// TODO: abort if no changes were detected?
-			System.out.println("Committing changes to database.");
-			eomConn.commit();
+			System.out.printf("%d/%d/%d rows deleted/updated/inserted.%n", deleted, updated, inserted);
+			
+			if (deleted + updated + inserted != 0) {
+				System.out.println("Committing changes to database.");
+				eomConn.commit();
+			} else {
+				eomConn.rollback();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 			eomConn.rollback();
@@ -268,27 +273,36 @@ public final class MorfeoDatabase {
 		return properties;
 	}
 	
-	private static void deleteMorfeoItems(Connection conn, Map<String, List<String>> items) throws SQLException {
-		String allTitles = items.keySet().stream()
-			.map(el -> String.format("'%s'", el.replace("'", "\\'")))
-			.collect(Collectors.joining(","));
+	private static int deleteMorfeoItems(Connection conn, Map<String, List<String>> items) throws SQLException {
+		ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM morfeo;");
+		List<Integer> ids = new ArrayList<>(100);
 		
-		String orClauses = items.entrySet().stream()
-			.map(entry -> String.format(
-				"(title = '%s' AND position > %d)",
-				entry.getKey().replace("'", "\\'"), entry.getValue().size()
-			))
-			.collect(Collectors.joining(" OR "));
+		while (rs.next()) {
+			int id = rs.getInt("id");
+			String title = rs.getString("title");
+			List<String> morphems = items.get(title);
+			
+			if (morphems == null) {
+				ids.add(id);
+			} else {
+				int position = rs.getInt("position");
+				
+				if (position > morphems.size()) {
+					ids.add(id);
+				}
+			}
+		}
 		
-		String query = "DELETE FROM morfeo"
-			+ " WHERE title NOT IN (" + allTitles + ")"
-			+ " OR " + orClauses + ";";
-		
-		int deletedRows = conn.createStatement().executeUpdate(query);
-		System.out.printf("%d rows deleted.%n", deletedRows);
+		if (!ids.isEmpty()) {
+			String values = ids.stream().map(Object::toString).collect(Collectors.joining(","));
+			String query = "DELETE FROM morfeo WHERE id IN (" + values + ");";
+			return conn.createStatement().executeUpdate(query);
+		} else {
+			return 0;
+		}
 	}
 	
-	private static void updateMorfeoItems(Connection conn, Map<String, List<String>> items,
+	private static int updateMorfeoItems(Connection conn, Map<String, List<String>> items,
 			Map<String, Byte> morphemInfo) throws SQLException {
 		Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 		ResultSet rs = stmt.executeQuery("SELECT * FROM morfeo;");
@@ -322,10 +336,10 @@ public final class MorfeoDatabase {
 		}
 		
 		items.values().removeIf(morphems -> morphems.stream().allMatch(Objects::isNull));
-		System.out.printf("%d rows updated.%n", updatedRows);
+		return updatedRows;
 	}
 	
-	private static void insertMorfeoItems(Connection conn, Map<String, List<String>> items,
+	private static int insertMorfeoItems(Connection conn, Map<String, List<String>> items,
 		Map<String, Byte> morphemInfo) throws SQLException {
 		List<String> values = new ArrayList<>(items.size());
 		
@@ -353,10 +367,9 @@ public final class MorfeoDatabase {
 			String query = "INSERT INTO morfeo (title, morphem, position, type)"
 				+ " VALUES " + String.join(",", values) + ";";
 			
-			int insertedRows = conn.createStatement().executeUpdate(query);
-			System.out.printf("%d rows inserted.%n", insertedRows);
+			return conn.createStatement().executeUpdate(query);
 		} else {
-			System.out.println("0 rows inserted.");
+			return 0;
 		}
 	}
 	
