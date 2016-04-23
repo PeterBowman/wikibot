@@ -106,7 +106,7 @@ public final class MorfeoDatabase {
 				System.out.println("Committing changes to database.");
 				eomConn.commit();
 			} else {
-				eomConn.rollback();
+				eomConn.rollback(); // finalize the transaction, release any locks held
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -138,29 +138,50 @@ public final class MorfeoDatabase {
 		return map;
 	}
 	
+	private static List<String> parseMorfeoTemplatesFromField(Field f) {
+		List<String> templates = ParseUtils.getTemplates("morfeo", f.getContent());
+		
+		if (templates.isEmpty()) {
+			return null;
+		}
+		
+		String template = templates.get(0);
+		
+		Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
+		params.remove("templateName");
+		params.values().removeIf(String::isEmpty);
+		
+		return new ArrayList<>(params.values());
+	}
+	
 	private static Map<String, Byte> findMissingPages(Connection conn, String[] morphems) throws SQLException {
+		String values = Stream.of(morphems)
+			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
+			.collect(Collectors.joining(","));
+		
 		String query = "SELECT CONVERT(page_title USING utf8) AS page_title"
 			+ " FROM page"
-			+ " WHERE page_namespace = 0;";
+			+ " WHERE page_namespace = 0"
+			+ " AND page_title IN (" + values + ");";
 		
 		ResultSet rs = conn.createStatement().executeQuery(query);
-		Set<String> set = new HashSet<>(Arrays.asList(morphems));
+		Set<String> set = new HashSet<>(morphems.length);
 		
 		while (rs.next()) {
 			String title = rs.getString("page_title");
-			set.remove(title);
+			set.add(title);
 		}
 		
-		System.out.printf("%d of %d pages are missing (plwiktionary_p).%n", set.size(), morphems.length);
+		System.out.printf("%d out of %d pages found in plwiktionary_p.%n", set.size(), morphems.length);
 		
 		// Map.merge doesn't like null values, don't use java 8 streams here
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		
 		for (String morphem : morphems) {
 			if (set.contains(morphem)) {
-				map.put(morphem, MORPHEM_RED_LINK);
-			} else {
 				map.put(morphem, null);
+			} else {
+				map.put(morphem, MORPHEM_RED_LINK);
 			}
 		}
 		
@@ -230,24 +251,6 @@ public final class MorfeoDatabase {
 				map.put(morphem, bitmask);
 			}
 		}
-	}
-	
-	private static List<String> parseMorfeoTemplatesFromField(Field f) {
-		List<String> templates = ParseUtils.getTemplates("morfeo", f.getContent());
-		
-		if (templates.isEmpty()) {
-			return null;
-		}
-		
-		String template = templates.get(0);
-		
-		Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-		params.remove("templateName");
-		
-		Collection<String> morphems = params.values();
-		morphems.removeIf(String::isEmpty);
-		
-		return new ArrayList<>(morphems);
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
