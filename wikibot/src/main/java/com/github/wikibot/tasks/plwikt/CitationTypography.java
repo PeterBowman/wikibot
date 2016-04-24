@@ -69,8 +69,11 @@ public final class CitationTypography {
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	private static final int HOURS_GAP = 8;
-	private static final String SQL_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_verify_citations";
+	
+	private static final String SQL_VC_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_verify_citations";
+	private static final String SQL_COMMON_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_common";
 	private static final Properties defaultSQLProperties = new Properties();
+	
 	private static final String EDIT_SUMMARY = "[[WS:Głosowania/Pozycja odsyłacza przypisu względem kropki]]";
 	private static final int EDIT_THROTTLE_MS = 5000;
 	
@@ -85,6 +88,10 @@ public final class CitationTypography {
 		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
+		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
+		
+		// Don't use this, it either breaks the encoding or throws MysqlDataTruncation.
+		// defaultSQLProperties.setProperty("character_set_server", "utf8mb4");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -124,24 +131,31 @@ public final class CitationTypography {
 			items = new ArrayList<>(0);
 		}
 		
-		if (line.hasOption("edit") || (!items.isEmpty() && line.hasOption("update"))) {
+		if (line.hasOption("edit") || line.hasOption("update")) {
 			Class.forName("com.mysql.jdbc.Driver");
 			Properties properties = prepareSQLProperties();
 			
-			try (Connection conn = DriverManager.getConnection(SQL_URI, properties)) {
-				Map<Integer, Item> entryMap;
+			try (
+				Connection vcConn = DriverManager.getConnection(SQL_VC_URI, properties);
+				Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties);
+			) {
+				vcConn.createStatement().executeQuery("SET NAMES utf8mb4;"); // important
+				Map<Integer, Item> entryMap = new LinkedHashMap<>();
 				
-				if (!items.isEmpty() && line.hasOption("update")) {
-					entryMap = updateSQLTables(conn, items);
-				} else {
-					entryMap = new LinkedHashMap<>();
+				if (line.hasOption("update")) {
+					if (!items.isEmpty()) {
+						entryMap = updateSQLTables(vcConn, items);
+					}
+					
+					updateTimestampTable(commonConn, "tasks.plwikt.CitationTypography.update");
 				}
 				
 				if (line.hasOption("edit")) {
 					wb.setThrottle(0);
 					wb.setMarkMinor(true);
 					
-					processPendingItems(conn, entryMap);
+					processPendingItems(vcConn, entryMap);
+					updateTimestampTable(commonConn, "tasks.plwikt.CitationTypography.edit");
 				}
 			}
 		}
@@ -306,9 +320,9 @@ public final class CitationTypography {
 		return Optional.ofNullable(apostrophes).orElse("") + sb.toString() + ".";
 	}
 	
-	@SuppressWarnings("unchecked")
 	private static void mapPageIds(List<Item> items) throws IOException {
-		String[] titles = items.stream().map(item -> item.title).toArray(String[]::new);
+		String[] titles = items.stream().map(item -> item.title).distinct().toArray(String[]::new);
+		@SuppressWarnings("unchecked")
 		Map<String, Object>[] infos = wb.getPageInfo(titles);
 		Map<String, Integer> titleToPageId = new HashMap<>(infos.length, 1);
 		
@@ -370,7 +384,7 @@ public final class CitationTypography {
 			storeNewItems(conn, items);
 		}
 		
-		// TODO: remove pending entries that have been removed
+		// TODO: review pending entries, remove the outdated ones
 		
 		return entryMap;
 	}
@@ -550,9 +564,11 @@ public final class CitationTypography {
 		System.out.printf("Gap timestamp set to %s (-%d hours).%n", gapTimestamp, HOURS_GAP);
 		
 		Map<Integer, Item> verifiedEntries = queryVerifiedEntries(conn, gapTimestamp);
+		int deletedEntries = deleteRejectedEntries(conn, gapTimestamp);
 		
 		System.out.printf("%d entries fetched from RC/read from dump.%n", entryMap.size());
-		System.out.printf("%d verified entries were retrieved from DB.%n", verifiedEntries.size());
+		System.out.printf("%d verified entries retrieved from DB.%n", verifiedEntries.size());
+		System.out.printf("%d rejected entries deleted from DB.%n", deletedEntries);
 		
 		entryMap.putAll(verifiedEntries);
 		conn.setAutoCommit(false);
@@ -604,6 +620,19 @@ public final class CitationTypography {
 		return entryMap;
 	}
 	
+	private static int deleteRejectedEntries(Connection conn, String gapTimestamp) throws SQLException {
+		String query = "DELETE pending"
+			+ " FROM pending"
+			+ " INNER JOIN reviewed"
+			+ " ON reviewed.entry_id = pending.entry_id"
+			+ " INNER JOIN review_log"
+			+ " ON review_log.review_log_id = reviewed.review_log_id"
+			+ " WHERE review_log.review_status = 0"
+			+ " AND review_log.timestamp <= " + gapTimestamp + ";";
+		
+		return conn.createStatement().executeUpdate(query);
+	}
+	
 	private static boolean editEntry(Connection conn, int entryId, Item item, String gapTimestamp)
 			throws SQLException {
 		Statement queryRevisionLog = conn.createStatement();
@@ -617,7 +646,7 @@ public final class CitationTypography {
 		);
 		
 		if (!rs.next()) {
-			System.out.printf("Entry not found: %s. %n", item.title);
+			System.out.printf("Entry not found: %s.%n", item.title);
 			conn.rollback();
 			return false;
 		}
@@ -693,6 +722,19 @@ public final class CitationTypography {
 		
 		conn.commit();
 		return optRevision.isPresent();
+	}
+	
+	private static void updateTimestampTable(Connection conn, String type) throws SQLException {
+		Calendar cal = Calendar.getInstance();
+		String timestamp = DATE_FORMAT.format(cal.getTime());
+		
+		String query = "INSERT INTO execution_log (type, timestamp)"
+			+ " VALUES ('" + type + "', " + timestamp + ")"
+			+ " ON DUPLICATE KEY"
+			+ " UPDATE timestamp = VALUES(timestamp);";
+		
+		conn.createStatement().executeUpdate(query);
+		System.out.printf("New timestamp (%s): %s.%n", type, timestamp);
 	}
 	
 	private static class Item implements Serializable, Comparable<Item> {
