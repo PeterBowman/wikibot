@@ -178,6 +178,7 @@ oftalmología = Oftalmología
 ornitología = Ornitología
 países = Países, Topónimos
 paleontología = Paleontología
+parentesco = Parentesco
 peces = Peces
 penínsulas = Penínsulas
 periodismo = Periodismo

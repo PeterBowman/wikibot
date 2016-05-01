@@ -36,7 +36,7 @@
 			Zostaw to pole niewypełnione, aby wyświetlić wszystkie morfemy użyte w hasłach esperanto.
 		</p>
 		<p>
-			Ostatnia aktualizacja bazy danych: <fmt:formatDate value="${date}" pattern="HH:mm, dd MMM yyyy (z)" />.
+			Ostatnia aktualizacja bazy danych: <fmt:formatDate value="${date}" pattern="HH:mm, d MMM yyyy (z)" />.
 		</p>
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<fieldset>
