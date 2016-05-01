@@ -69,8 +69,12 @@ public final class CitationTypography {
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	private static final int HOURS_GAP = 8;
-	private static final String SQL_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_verify_citations";
+	
+	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
+	private static final String SQL_VC_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_verify_citations";
+	private static final String SQL_COMMON_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_common";
 	private static final Properties defaultSQLProperties = new Properties();
+	
 	private static final String EDIT_SUMMARY = "[[WS:Głosowania/Pozycja odsyłacza przypisu względem kropki]]";
 	private static final int EDIT_THROTTLE_MS = 5000;
 	
@@ -85,10 +89,17 @@ public final class CitationTypography {
 		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
+		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
+		
+		// Don't use this, it either breaks the encoding or throws MysqlDataTruncation.
+		// defaultSQLProperties.setProperty("character_set_server", "utf8mb4");
 	}
 	
 	public static void main(String[] args) throws Exception {
 		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		
+		Class.forName("com.mysql.jdbc.Driver");
+		Properties properties = prepareSQLProperties();
 		
 		CommandLine line = readOptions(args);
 		Set<String> titles = new HashSet<>(0);
@@ -103,45 +114,76 @@ public final class CitationTypography {
 			titles.addAll(Arrays.asList(candidateTitles));
 		}
 		
-		List<Item> items;
+		List<Entry> entries;
+		Map<String, String> contentCache;
+		Map<String, Integer> titleToPageId = new HashMap<>(titles.size() * 2);
 		
 		if (!titles.isEmpty()) {
 			String[] combinedTitles = titles.toArray(new String[titles.size()]);
 			PageContainer[] pages = wb.getContentOfPages(combinedTitles, 400);
 			
-			items = Stream.of(pages).parallel()
+			entries = Stream.of(pages).parallel()
 				.flatMap(CitationTypography::mapOccurrences)
 				.collect(Collectors.toList());
 			
-			System.out.printf("%d items extracted.%n", items.size());
+			contentCache = Stream.of(pages)
+				.collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
 			
-			if (!items.isEmpty()) {
-				mapPageIds(items);
-				storeResults(items);
+			System.out.printf("%d entries extracted.%n", entries.size());
+			
+			if (!entries.isEmpty()) {
+				String[] arr = entries.stream().map(entry -> entry.title).distinct().toArray(String[]::new);
+				
+				try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
+					queryPageTable(plwiktConn, arr, titleToPageId);
+				} catch (SQLException e) {
+					queryPageIdsFallback(arr, titleToPageId, line.hasOption("debug"));
+				}
+				
+				entries.removeIf(entry -> !titleToPageId.containsKey(entry.title));
+				System.out.printf("%d entries after pageid mapping.%n", entries.size());
+				serializeResults(entries, titleToPageId);
 			}
 		} else {
 			System.out.println("No titles extracted.");
-			items = new ArrayList<>(0);
+			entries = new ArrayList<>(0);
+			contentCache = new HashMap<>(titles.size());
 		}
 		
-		if (line.hasOption("edit") || (!items.isEmpty() && line.hasOption("update"))) {
-			Class.forName("com.mysql.jdbc.Driver");
-			Properties properties = prepareSQLProperties();
-			
-			try (Connection conn = DriverManager.getConnection(SQL_URI, properties)) {
-				Map<Integer, Item> entryMap;
+		if (line.hasOption("edit") || line.hasOption("update")) {
+			try (
+				Connection vcConn = DriverManager.getConnection(SQL_VC_URI, properties);
+				Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties);
+			) {
+				vcConn.createStatement().executeQuery("SET NAMES utf8mb4;"); // important
+				Map<Integer, Entry> entryMap = new LinkedHashMap<>(5000);
 				
-				if (!items.isEmpty() && line.hasOption("update")) {
-					entryMap = updateSQLTables(conn, items);
-				} else {
-					entryMap = new LinkedHashMap<>();
+				if (line.hasOption("update")) {
+					if (!entries.isEmpty()) {
+						updatePageTitleTable(vcConn, entries, titleToPageId);
+						updateEntryAndPendingTables(vcConn, entries, entryMap);
+					}
+					
+					List<Entry> pendingEntries = queryPendingEntries(vcConn);
+					
+					if (!pendingEntries.isEmpty()) {
+						List<Entry> worklist = reviewPendingEntries(vcConn, pendingEntries,
+							contentCache, line.hasOption("dump"));
+						
+						if (!worklist.isEmpty()) {
+							deleteObsoletePendingEntries(vcConn, worklist);
+						}
+					}
+					
+					updateTimestampTable(commonConn, "tasks.plwikt.CitationTypography.update");
 				}
 				
 				if (line.hasOption("edit")) {
 					wb.setThrottle(0);
 					wb.setMarkMinor(true);
 					
-					processPendingItems(conn, entryMap);
+					processPendingEntries(vcConn, entryMap);
+					updateTimestampTable(commonConn, "tasks.plwikt.CitationTypography.edit");
 				}
 			}
 		}
@@ -154,6 +196,7 @@ public final class CitationTypography {
 		options.addOption("d", "dump", true, "read from dump file");
 		options.addOption("u", "update", false, "update database");
 		options.addOption("e", "edit", false, "edit verified entries");
+		options.addOption("g", "debug", false, "debug mode");
 		
 		if (args.length == 0) {
 			System.out.print("Option(s): ");
@@ -231,13 +274,13 @@ public final class CitationTypography {
 		}
 	}
 	
-	private static Stream<Item> mapOccurrences(PageContainer pc) {
+	private static Stream<Entry> mapOccurrences(PageContainer pc) {
 		return Page.wrap(pc).getAllSections().stream()
 			.map(Section::getAllFields)
 			.flatMap(Collection::stream)
 			.filter(CitationTypography::filterAllowedFields)
 			.filter(field -> !field.isEmpty())
-			.flatMap(CitationTypography::extractItems);
+			.flatMap(CitationTypography::extractEntriesFromField);
 	}
 	
 	private static boolean filterAllowedFields(Field field) {
@@ -251,10 +294,10 @@ public final class CitationTypography {
 		}
 	}
 	
-	private static Stream<Item> extractItems(Field field) {
+	private static Stream<Entry> extractEntriesFromField(Field field) {
 		boolean isForeignExample = isForeignExampleField(field);
 		Matcher mLine = P_LINE.matcher(field.getContent());
-		List<Item> items = new ArrayList<>();
+		List<Entry> entries = new ArrayList<>();
 		
 		while (mLine.find()) {
 			String line = mLine.group();
@@ -273,12 +316,12 @@ public final class CitationTypography {
 			String modified = mOccurence.appendTail(sb).toString();
 			
 			if (!modified.equals(line)) {
-				Item item = Item.constructNewItem(field, line, modified);
-				items.add(item);
+				Entry entry = Entry.constructNewEntry(field, line, modified);
+				entries.add(entry);
 			}
 		}
 		
-		return !items.isEmpty() ? items.stream() : Stream.empty();
+		return !entries.isEmpty() ? entries.stream() : Stream.empty();
 	}
 	
 	private static boolean isForeignExampleField(Field field) {
@@ -306,11 +349,48 @@ public final class CitationTypography {
 		return Optional.ofNullable(apostrophes).orElse("") + sb.toString() + ".";
 	}
 	
-	@SuppressWarnings("unchecked")
-	private static void mapPageIds(List<Item> items) throws IOException {
-		String[] titles = items.stream().map(item -> item.title).toArray(String[]::new);
+	private static void queryPageTable(Connection conn, String[] titles, Map<String, Integer> titleToPageId)
+			throws SQLException {
+		String values = Stream.of(titles)
+			.map(title -> String.format("'%s'", title.replace("'", "\\'").replace(" ", "_")))
+			.collect(Collectors.joining(", "));
+		
+		String query = "SELECT CONVERT(page_title USING utf8mb4) AS page_title, page_id"
+			+ " FROM page"
+			+ " WHERE page_namespace = 0"
+			+ " AND page_title IN (" + values + ");";
+		
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery(query);
+		
+		while (rs.next()) {
+			String title = rs.getString("page_title").replace("_", " ");
+			int pageId = rs.getInt("page_id");
+			titleToPageId.put(title, pageId);
+		}
+	}
+	
+	private static void queryPageIdsFallback(String[] titles, Map<String, Integer> titleToPageId, boolean dbg)
+			throws IOException {
+		if (dbg) {
+			try {
+				Map<String, Integer> stored = Misc.deserialize(LOCATION + "title_to_page_id.ser");
+				titleToPageId.putAll(stored);
+				
+				titles = Stream.of(titles)
+					.filter(title -> !stored.containsKey(title))
+					.toArray(String[]::new);
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+			}
+			
+			if (titles.length == 0) {
+				return;
+			}
+		}
+		
+		@SuppressWarnings("unchecked")
 		Map<String, Object>[] infos = wb.getPageInfo(titles);
-		Map<String, Integer> titleToPageId = new HashMap<>(infos.length, 1);
 		
 		for (int i = 0; i < infos.length; i++) {
 			Map<String, Object> info = infos[i];
@@ -323,21 +403,18 @@ public final class CitationTypography {
 			
 			titleToPageId.putIfAbsent(title, Math.toIntExact(pageId));
 		}
-		
-		items.removeIf(item -> !titleToPageId.containsKey(item.title));
-		items.forEach(item -> item.pageId = titleToPageId.get(item.title));
-		
-		System.out.printf("%d items after pageid mapping.%n", items.size());
 	}
 	
-	private static void storeResults(List<Item> items) throws FileNotFoundException, IOException {
-		Misc.serialize(items, LOCATION + "list.ser");
+	private static void serializeResults(List<Entry> entries, Map<String, Integer> titleToPageId)
+			throws FileNotFoundException, IOException {
+		Misc.serialize(entries, LOCATION + "entries.ser");
+		Misc.serialize(titleToPageId, LOCATION + "title_to_page_id.ser");
 		
-		Map<String, String> map = items.stream()
+		Map<String, String> map = entries.stream()
 			.collect(Collectors.toMap(
-				item -> item.title,
-				item -> String.format("%s%n%n%s", item.originalText, item.newText),
-				(i1, i2) -> i1,
+				entry -> entry.title,
+				entry -> String.format("%s%n%n%s", entry.originalText, entry.newText),
+				(e1, e2) -> e1,
 				TreeMap::new
 			));
 		
@@ -361,23 +438,10 @@ public final class CitationTypography {
 		return properties;
 	}
 	
-	private static Map<Integer, Item> updateSQLTables(Connection conn, List<Item> items) throws SQLException {
-		updatePageTitleTable(conn, items);
-		
-		Map<Integer, Item> entryMap = analyzeStoredEntries(conn, items);
-					
-		if (!items.isEmpty()) {
-			storeNewItems(conn, items);
-		}
-		
-		// TODO: remove pending entries that have been removed
-		
-		return entryMap;
-	}
-	
-	private static void updatePageTitleTable(Connection conn, List<Item> items) throws SQLException {
-		String values = items.stream()
-			.map(item -> String.format("(%d, '%s')", item.pageId, item.title.replace("'", "\\'")))
+	private static void updatePageTitleTable(Connection conn, List<Entry> entries, Map<String, Integer> titleToPageId)
+			throws SQLException {
+		String values = entries.stream()
+			.map(entry -> String.format("(%d, '%s')", titleToPageId.get(entry.title), entry.title.replace("'", "\\'")))
 			.distinct()
 			.collect(Collectors.joining(", "));
 		
@@ -388,84 +452,94 @@ public final class CitationTypography {
 		
 		Statement stmt = conn.createStatement();
 		int updatedRows = stmt.executeUpdate(query);
-		System.out.printf("%d rows updated.%n", updatedRows);
+		System.out.printf("%d rows inserted or updated in 'page_title' table.%n", updatedRows);
 	}
 	
-	private static Map<Integer, Item> analyzeStoredEntries(Connection conn, List<Item> items)
+	private static void updateEntryAndPendingTables(Connection conn, List<Entry> entries,
+			Map<Integer, Entry> storedEntries) throws SQLException {
+		Set<Entry> verifiedNonPendingEntries = new HashSet<>(entries.size());
+		Set<Entry> nonReviewedNonPendingEntries = new HashSet<>(entries.size());
+		
+		analyzeStoredEntries(conn, entries, storedEntries, verifiedNonPendingEntries, nonReviewedNonPendingEntries);
+		
+		System.out.printf("%d entries already stored in DB.%n", storedEntries.size());
+		System.out.printf("%d marked as verified and eligible for edit.%n", verifiedNonPendingEntries.size());
+		System.out.printf("%d not reviewed and not pending entries.%n", nonReviewedNonPendingEntries.size());
+		
+		List<Entry> newEntries = new ArrayList<>(entries);
+		newEntries.removeAll(new HashSet<>(storedEntries.values())); // remove stored entries
+		
+		if (!newEntries.isEmpty()) {
+			storeNewEntries(conn, newEntries);
+		}
+		
+		if (!nonReviewedNonPendingEntries.isEmpty()) {
+			List<Integer> list = storedEntries.entrySet().stream()
+				.filter(entry -> nonReviewedNonPendingEntries.contains(entry.getValue()))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList());
+			
+			populatePendingTable(conn, list);
+		}
+		
+		storedEntries.values().retainAll(verifiedNonPendingEntries);
+	}
+	
+	private static void analyzeStoredEntries(Connection conn, List<Entry> entries, Map<Integer, Entry> entryMap,
+			Set<Entry> verifiedNonPendingEntries, Set<Entry> nonReviewedNonPendingEntries)
 			throws SQLException {
-		String pageIdList = items.stream()
-			.map(item -> item.pageId)
-			.map(Object::toString)
-			.distinct()
+		String titles = entries.stream()
+			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
 			.collect(Collectors.joining(", "));
 		
-		String query = "SELECT entry.entry_id, entry.page_id, page_title.page_title,"
-				+ " entry.language, entry.field_id, source_line.source_text, edited_line.edited_text,"
-				+ " review_log.review_status, pending.entry_id AS pending_id"
-			+ " FROM entry"
-			+ " LEFT JOIN pending"
-			+ " ON pending.entry_id = entry.entry_id"
-			+ " INNER JOIN source_line"
-			+ " ON source_line.source_line_id = entry.source_line_id"
-			+ " INNER JOIN edited_line"
-			+ " ON edited_line.edited_line_id = entry.edited_line_id"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " LEFT JOIN reviewed"
-			+ " ON reviewed.entry_id = entry.entry_id"
-			+ " LEFT JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE entry.page_id IN (" + pageIdList + ");";
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text,"
+				+ " review_status, is_pending"
+			+ " FROM all_entries"
+			+ " WHERE page_title IN (" + titles + ");";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
-		
-		Map<Integer, Item> entryMap = new LinkedHashMap<>(items.size());
-		Set<Item> verifiedNonPendingItems = new HashSet<>(items.size());
+		Set<Entry> set = new HashSet<>(entries);
 		
 		while (rs.next()) {
-			Item item = processEntryResultSet(rs, entryMap);
+			Entry entry = processEntryResultSet(rs, entryMap);
 			
-			boolean verified = rs.getBoolean("review_status");
-			boolean isPending = rs.getInt("pending_id") != 0;
+			Boolean verified = rs.getBoolean("review_status");
+			verified = rs.wasNull() ? null : verified;
 			
-			if (verified && !isPending) {
-				verifiedNonPendingItems.add(item);
+			if (!rs.getBoolean("is_pending") && set.contains(entry)) {
+				if (verified != null && verified.booleanValue()) {
+					verifiedNonPendingEntries.add(entry);
+				} else if (verified == null) {
+					nonReviewedNonPendingEntries.add(entry);
+				}
 			}
 		}
 		
-		System.out.printf(
-			"%d items already stored in DB, %d marked as verified and eligible for automated edit.%n",
-			entryMap.size(), verifiedNonPendingItems.size()
-		);
-		
-		items.removeAll(new HashSet<>(entryMap.values()));
-		entryMap.keySet().retainAll(verifiedNonPendingItems);
-		
-		return entryMap;
+		entryMap.values().retainAll(set);
 	}
 	
-	private static Item processEntryResultSet(ResultSet rs, Map<Integer, Item> entryMap) throws SQLException {
+	private static Entry processEntryResultSet(ResultSet rs, Map<Integer, Entry> entryMap) throws SQLException {
 		int entryId = rs.getInt("entry_id");
-		int pageId = rs.getInt("page_id");
 		
 		String title = rs.getString("page_title");
 		String language = rs.getString("language");
 		
 		int fieldId = rs.getInt("field_id");
+		
 		FieldTypes fieldType = FieldTypes.values()[fieldId - 1];
 		
 		String sourceLineText = rs.getString("source_text");
 		String editedLineText = rs.getString("edited_text");
 		
-		Item item = new Item(pageId, title, language, fieldType, sourceLineText, editedLineText);
+		Entry entry = new Entry(title, language, fieldType, sourceLineText, editedLineText);
 		
-		entryMap.put(entryId, item);
+		entryMap.put(entryId, entry);
 		
-		return item;
+		return entry;
 	}
 	
-	private static void storeNewItems(Connection conn, List<Item> items) throws SQLException {
+	private static void storeNewEntries(Connection conn, List<Entry> entries) throws SQLException {
 		String preparedSourceLineQuery = "INSERT INTO source_line (source_text)"
 			+ " VALUES (?);";
 		
@@ -474,7 +548,9 @@ public final class CitationTypography {
 		
 		String preparedEntryQuery = "INSERT INTO entry"
 			+ " (page_id, language, field_id, source_line_id, edited_line_id)"
-			+ " VALUES (?, ?, ?, ?, ?);";
+			+ " SELECT page_id, ?, ?, ?, ?"
+			+ " FROM page_title"
+			+ " WHERE page_title.page_title = ?;";
 		
 		String preparedPendingQuery = "INSERT INTO pending (entry_id) VALUES (?);";
 		
@@ -487,25 +563,31 @@ public final class CitationTypography {
 		
 		conn.setAutoCommit(false);
 		
-		for (Item item : items) {
+		int sourceLineRows = 0;
+		int editedLineRows = 0;
+		int entryRows = 0;
+		int pendingRows = 0;
+		
+		for (Entry entry : entries) {
 			int sourceLineId;
 			int editedLineId;
 			int entryId;
 			
 			ResultSet rs;
 			
-			insertSourceLine.setString(1, item.originalText);
+			insertSourceLine.setString(1, entry.originalText);
 			insertSourceLine.executeUpdate();
 			
 			rs = insertSourceLine.getGeneratedKeys();
 			
 			if (rs.next()) {
-				sourceLineId = rs.getInt(1); 
+				sourceLineId = rs.getInt(1);
+				sourceLineRows++;
 			} else {
 				continue;
 			}
 			
-			insertEditedLine.setString(1, item.newText);
+			insertEditedLine.setString(1, entry.newText);
 			insertEditedLine.setString(2, "PBbot");
 			insertEditedLine.executeUpdate();
 			
@@ -513,51 +595,160 @@ public final class CitationTypography {
 			
 			if (rs.next()) {
 				editedLineId = rs.getInt(1);
+				editedLineRows++;
 			} else {
 				continue;
 			}
 			
-			insertEntry.setInt(1, item.pageId);
-			insertEntry.setString(2, item.langSection);
-			insertEntry.setInt(3, item.fieldType.ordinal() + 1);
-			insertEntry.setInt(4, sourceLineId);
-			insertEntry.setInt(5, editedLineId);
+			insertEntry.setString(1, entry.langSection);
+			insertEntry.setInt(2, entry.fieldType.ordinal() + 1);
+			insertEntry.setInt(3, sourceLineId);
+			insertEntry.setInt(4, editedLineId);
+			insertEntry.setString(5, entry.title);
 			insertEntry.executeUpdate();
 			
 			rs = insertEntry.getGeneratedKeys();
 			
 			if (rs.next()) {
 				entryId = rs.getInt(1);
+				entryRows++;
 			} else {
 				continue;
 			}
 			
 			insertPending.setInt(1, entryId);
 			insertPending.executeUpdate();
+			pendingRows++;
 			
 			conn.commit();
 		}
 		
 		conn.setAutoCommit(true);
+		
+		System.out.printf(
+			"Inserted rows: source_line - %d, edited_line - %d, entry - %d, pending - %d.%n",
+			sourceLineRows, editedLineRows, entryRows, pendingRows
+		);
+	}
+	
+	private static void populatePendingTable(Connection conn, List<Integer> entryIds) throws SQLException {
+		String values = entryIds.stream()
+			.map(id -> String.format("(%d)", id))
+			.collect(Collectors.joining(", "));
+		
+		String query = "INSERT INTO pending (entry_id)"
+			+ " VALUES " + values
+			+ " ON DUPLICATE KEY"
+			+ " UPDATE entry_id = VALUES(entry_id);";
+		
+		Statement stmt = conn.createStatement();
+		int insertedRows = stmt.executeUpdate(query);
+		System.out.printf("%d rows inserted into 'pending' table.%n", insertedRows);
+	}
+	
+	private static List<Entry> queryPendingEntries(Connection conn) throws SQLException {
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
+			+ " FROM all_entries"
+			+ " WHERE is_pending IS TRUE;";
+		
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery(query);
+		
+		Map<Integer, Entry> entryMap = new LinkedHashMap<>(1000);
+		
+		while (rs.next()) {
+			processEntryResultSet(rs, entryMap);
+		}
+		
+		return new ArrayList<>(entryMap.values());
+	}
+	
+	private static List<Entry> reviewPendingEntries(Connection conn, List<Entry> pendingEntries,
+			Map<String, String> contentCache, boolean isDump) throws SQLException {
+		Set<String> titles = pendingEntries.stream()
+			.map(entry -> entry.title)
+			.collect(Collectors.toSet());
+		
+		contentCache.keySet().retainAll(titles);
+		
+		if (isDump) {
+			titles.removeAll(contentCache.keySet());
+			
+			if (!titles.isEmpty()) {
+				String[] arr = titles.toArray(new String[titles.size()]);
+				
+				try {
+					Stream.of(wb.getContentOfPages(arr, 400)).forEach(pc ->
+						contentCache.putIfAbsent(pc.getTitle(), pc.getText())
+					);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		List<Entry> worklist = new ArrayList<>(300);
+		
+		for (Entry entry : pendingEntries) {
+			if (!contentCache.containsKey(entry.title)) {
+				continue;
+			}
+			
+			String pageText = contentCache.get(entry.title);
+			
+			boolean isPresent = Optional.of(Page.store(entry.title, pageText))
+				.flatMap(p -> p.getSection(entry.langSection))
+				.flatMap(s -> s.getField(entry.fieldType))
+				.filter(f -> !f.isEmpty())
+				.map(Field::getContent)
+				.filter(text -> !text.contains(entry.originalText))
+				.isPresent();
+			
+			if (isPresent) {
+				worklist.add(entry);
+			}
+		}
+		
+		return worklist;
+	}
+	
+	private static void deleteObsoletePendingEntries(Connection conn, List<Entry> entries) throws SQLException {
+		String values = entries.stream()
+			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
+			.collect(Collectors.joining(", "));
+		
+		String query = "DELETE pending"
+			+ " FROM pending"
+			+ " INNER JOIN entry"
+			+ " ON entry.entry_id = pending.entry_id"
+			+ " INNER JOIN page_title"
+			+ " ON page_title.page_id = entry.page_id"
+			+ " WHERE page_title IN (" + values + ");";
+		
+		Statement stmt = conn.createStatement();
+		int deletedRows = stmt.executeUpdate(query);
+		System.out.printf("%d rows deleted from 'pending' table.%n", deletedRows);
 	}
 	
 	private static String formatCalendar(Calendar cal) {
 		return DATE_FORMAT.format(cal.getTime());
 	}
 	
-	private static void processPendingItems(Connection conn, Map<Integer, Item> entryMap) throws SQLException {
+	private static void processPendingEntries(Connection conn, Map<Integer, Entry> entryMap) throws SQLException {
 		String gapTimestamp = getGapTimestamp();
 		System.out.printf("Gap timestamp set to %s (-%d hours).%n", gapTimestamp, HOURS_GAP);
 		
-		Map<Integer, Item> verifiedEntries = queryVerifiedEntries(conn, gapTimestamp);
+		Map<Integer, Entry> verifiedEntries = queryVerifiedEntries(conn, gapTimestamp);
+		int deletedEntries = deleteRejectedEntries(conn, gapTimestamp);
 		
 		System.out.printf("%d entries fetched from RC/read from dump.%n", entryMap.size());
-		System.out.printf("%d verified entries were retrieved from DB.%n", verifiedEntries.size());
+		System.out.printf("%d verified entries retrieved from DB.%n", verifiedEntries.size());
+		System.out.printf("%d rejected entries deleted from DB.%n", deletedEntries);
 		
 		entryMap.putAll(verifiedEntries);
 		conn.setAutoCommit(false);
 		
-		for (Map.Entry<Integer, Item> entry : entryMap.entrySet()) {
+		for (Map.Entry<Integer, Entry> entry : entryMap.entrySet()) {
 			if (editEntry(conn, entry.getKey(), entry.getValue(), gapTimestamp)) {
 				try {
 					Thread.sleep(EDIT_THROTTLE_MS);
@@ -574,28 +765,17 @@ public final class CitationTypography {
 		return DATE_FORMAT.format(cal.getTime());
 	}
 	
-	private static Map<Integer, Item> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
-		String query = "SELECT entry.entry_id, entry.page_id, page_title.page_id,"
-				+ " entry.language, entry.field_id, source_line.source_text, edited_line.edited_text"
-			+ " FROM entry"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " INNER JOIN source_line"
-			+ " ON source_line.source_line_id = entry.source_line_id"
-			+ " INNER JOIN edited_line"
-			+ " ON edited_line.edited_line_id = entry.edited_line_id"
-			+ " INNER JOIN reviewed"
-			+ " ON reviewed.entry_id = entry.entry_id"
-			+ " INNER JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE EXISTS (SELECT NULL FROM pending WHERE pending.entry_id = entry.entry_id)"
-			+ " AND review_log.review_status = 1"
-			+ " AND review_log.timestamp <= " + gapTimestamp + ";";
+	private static Map<Integer, Entry> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
+			+ " FROM all_entries"
+			+ " WHERE is_pending IS TRUE"
+			+ " AND review_status = 1"
+			+ " AND review_timestamp <= " + gapTimestamp + ";";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
 		
-		Map<Integer, Item> entryMap = new LinkedHashMap<>(1000);
+		Map<Integer, Entry> entryMap = new LinkedHashMap<>(1000);
 		
 		while (rs.next()) {
 			processEntryResultSet(rs, entryMap);
@@ -604,7 +784,20 @@ public final class CitationTypography {
 		return entryMap;
 	}
 	
-	private static boolean editEntry(Connection conn, int entryId, Item item, String gapTimestamp)
+	private static int deleteRejectedEntries(Connection conn, String gapTimestamp) throws SQLException {
+		String query = "DELETE pending"
+			+ " FROM pending"
+			+ " INNER JOIN reviewed"
+			+ " ON reviewed.entry_id = pending.entry_id"
+			+ " INNER JOIN review_log"
+			+ " ON review_log.review_log_id = reviewed.review_log_id"
+			+ " WHERE review_log.review_status = 0"
+			+ " AND review_log.timestamp <= " + gapTimestamp + ";";
+		
+		return conn.createStatement().executeUpdate(query);
+	}
+	
+	private static boolean editEntry(Connection conn, int entryId, Entry entry, String gapTimestamp)
 			throws SQLException {
 		Statement queryRevisionLog = conn.createStatement();
 		
@@ -617,7 +810,7 @@ public final class CitationTypography {
 		);
 		
 		if (!rs.next()) {
-			System.out.printf("Entry not found: %s. %n", item.title);
+			System.out.printf("Entry not found: %s.%n", entry.title);
 			conn.rollback();
 			return false;
 		}
@@ -626,7 +819,7 @@ public final class CitationTypography {
 		String timestamp = rs.getString("timestamp");
 		
 		if (Integer.parseUnsignedInt(timestamp) > Integer.parseUnsignedInt(gapTimestamp)) {
-			System.out.printf("log-timestamp > gap-timestamp (%s).%n", item.title);
+			System.out.printf("log-timestamp > gap-timestamp (%s).%n", entry.title);
 			conn.rollback();
 			return false;
 		}
@@ -638,32 +831,32 @@ public final class CitationTypography {
 		Optional<Wiki.Revision> optRevision = Optional.empty();
 		
 		try {
-			Calendar basetime = wb.getTopRevision(item.title).getTimestamp();
-			String pageText = wb.getPageText(item.title);
-			Page page = Page.store(item.title, pageText);
+			Calendar basetime = wb.getTopRevision(entry.title).getTimestamp();
+			String pageText = wb.getPageText(entry.title);
+			Page page = Page.store(entry.title, pageText);
 			
 			String summary = String.format(
 				"%1$s; weryfikacja: [[User:%2$s|%2$s]] (#%d)",
 				EDIT_SUMMARY, user, entryId
 			);
 			
-			Field field = page.getSection(item.langSection)
-				.flatMap(s -> s.getField(item.fieldType))
+			Field field = page.getSection(entry.langSection)
+				.flatMap(s -> s.getField(entry.fieldType))
 				.filter(f -> !f.isEmpty())
 				.filter(f -> Stream.of(f.getContent().split("\n"))
-					.anyMatch(s -> s.equals(item.originalText))
+					.anyMatch(s -> s.equals(entry.originalText))
 				)
-				.orElseThrow(() -> new Error("Could not find targeted text for page '" + item.title + "'."));
+				.orElseThrow(() -> new Error("Could not find targeted text for page '" + entry.title + "'."));
 			
 			String newContent = Stream.of(field.getContent().split("\n"))
-				.map(line -> line.equals(item.originalText) ? item.newText : line)
+				.map(line -> line.equals(entry.originalText) ? entry.newText : line)
 				.collect(Collectors.joining("\n"));
 			
 			field.editContent(newContent);
-			wb.edit(item.title, page.toString(), summary, basetime);
+			wb.edit(entry.title, page.toString(), summary, basetime);
 			
 			optRevision = Stream.of(wb.contribs("PBbot", "", now, null, 0))
-				 .filter(c -> c.getPage().equals(item.title) && c.getSummary().startsWith(EDIT_SUMMARY))
+				 .filter(c -> c.getPage().equals(entry.title) && c.getSummary().startsWith(EDIT_SUMMARY))
 				 .findAny();
 		} catch (AssertionError | AccountLockedException e) {
 			System.out.println(e.getMessage());
@@ -695,23 +888,29 @@ public final class CitationTypography {
 		return optRevision.isPresent();
 	}
 	
-	private static class Item implements Serializable, Comparable<Item> {
+	private static void updateTimestampTable(Connection conn, String type) throws SQLException {
+		Calendar cal = Calendar.getInstance();
+		String timestamp = DATE_FORMAT.format(cal.getTime());
+		
+		String query = "INSERT INTO execution_log (type, timestamp)"
+			+ " VALUES ('" + type + "', " + timestamp + ")"
+			+ " ON DUPLICATE KEY"
+			+ " UPDATE timestamp = VALUES(timestamp);";
+		
+		conn.createStatement().executeUpdate(query);
+		System.out.printf("New timestamp (%s): %s.%n", type, timestamp);
+	}
+	
+	private static class Entry implements Serializable, Comparable<Entry> {
 		private static final long serialVersionUID = 4565508346026187762L;
 		
-		int pageId;
 		String title;
 		String langSection;
 		FieldTypes fieldType;
 		String originalText;
 		String newText;
 		
-		Item(String title, String langSection, FieldTypes fieldType, String originalText, String newText) {
-			this(0, title, langSection, fieldType, originalText, newText);
-		}
-		
-		Item(int pageId, String title, String langSection, FieldTypes fieldType,
-				String originalText, String newText) {
-			this.pageId = pageId;
+		Entry(String title, String langSection, FieldTypes fieldType, String originalText, String newText) {
 			this.title = title;
 			this.langSection = langSection;
 			this.fieldType = fieldType;
@@ -719,16 +918,18 @@ public final class CitationTypography {
 			this.newText = Optional.ofNullable(newText).orElse("");
 		}
 		
-		static Item constructNewItem(Field field, String originalText, String newText) {
+		static Entry constructNewEntry(Field field, String originalText, String newText) {
 			Section section = field.getContainingSection().get();
 			String pageTitle = section.getContainingPage().get().getTitle();
-			return new Item(pageTitle, section.getLang(), field.getFieldType(), originalText, newText);
+			return new Entry(pageTitle, section.getLang(), field.getFieldType(), originalText, newText);
 		}
 		
 		@Override
 		public String toString() {
-			return String.format("[%d, %s, %s, %s]:%n%s%n%s%n",
-				pageId, title, langSection, fieldType, originalText, newText);
+			return String.format(
+				"['%s', %s, %s]:%n%s%n%s%n",
+				title, langSection, fieldType, originalText, newText
+			);
 		}
 		
 		@Override
@@ -737,41 +938,43 @@ public final class CitationTypography {
 				return true;
 			}
 			
-			if (!(o instanceof Item)) {
+			if (!(o instanceof Entry)) {
 				return false;
 			}
 			
-			Item i = (Item) o;
+			Entry e = (Entry) o;
 			
 			return
-				pageId == i.pageId && langSection.equals(i.langSection) &&
-				fieldType == i.fieldType && originalText.equals(i.originalText) &&
-				newText.equals(i.newText);
+				title.equals(e.title) &&
+				langSection.equals(e.langSection) &&
+				fieldType == e.fieldType &&
+				originalText.equals(e.originalText) &&
+				newText.equals(e.newText);
 		}
 		
 		@Override
 		public int hashCode() {
 			return
-				pageId + langSection.hashCode() + fieldType.hashCode() +
+				title.hashCode() + langSection.hashCode() + fieldType.hashCode() +
 				originalText.hashCode() + newText.hashCode();
 		}
 
 		@Override
-		public int compareTo(Item i) {
-			if (pageId != i.pageId) {
-				return Integer.compare(pageId, i.pageId);
+		public int compareTo(Entry e) {
+			if (!title.equals(e.title)) {
+				return title.compareTo(e.title);
 			}
 			
-			if (!langSection.equals(i.langSection)) {
+			if (!langSection.equals(e.langSection)) {
 				return langSection.compareTo(langSection);
 			}
 			
-			if (fieldType != i.fieldType) {
-				return fieldType.compareTo(i.fieldType);
+			if (fieldType != e.fieldType) {
+				return fieldType.compareTo(e.fieldType);
 			}
 			
-			if (!originalText.equals(i.originalText)) {
-				return originalText.compareTo(i.originalText);
+			if (!originalText.equals(e.originalText)) {
+				return originalText.compareTo(e.originalText);
 			}
 			
 			return 0;
