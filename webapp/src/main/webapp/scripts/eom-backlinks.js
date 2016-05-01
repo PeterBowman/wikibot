@@ -1,18 +1,18 @@
 // Based on MediaWiki's searchSuggest module.
 
 $( function () {
-	function request( query, response, maxRows ) {
+	function makeRequest( query, response, maxRows ) {
 		return $.getJSON( 'eom-backlinks/api', {
 			search: query,
 			limit: maxRows
-		}).done( function ( data ) {
+		} ).done( function ( data ) {
 			response( data.results );
 		} );
 	}
 	
 	$( '#morphem-input' ).suggestions( {
 		fetch: function ( query, response, maxRows ) {
-			$.data( this[ 0 ], 'request', request( query, response, maxRows ) );
+			$.data( this[ 0 ], 'request', makeRequest( query, response, maxRows ) );
 		},
 		cancel: function () {
 			var node = this[ 0 ];
