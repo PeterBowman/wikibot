@@ -492,23 +492,10 @@ public final class CitationTypography {
 			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
 			.collect(Collectors.joining(", "));
 		
-		String query = "SELECT entry.entry_id, page_title.page_title, entry.language,"
-				+ " entry.field_id, source_line.source_text, edited_line.edited_text,"
-				+ " review_log.review_status, pending.entry_id AS pending_id"
-			+ " FROM entry"
-			+ " LEFT JOIN pending"
-			+ " ON pending.entry_id = entry.entry_id"
-			+ " INNER JOIN source_line"
-			+ " ON source_line.source_line_id = entry.source_line_id"
-			+ " INNER JOIN edited_line"
-			+ " ON edited_line.edited_line_id = entry.edited_line_id"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " LEFT JOIN reviewed"
-			+ " ON reviewed.entry_id = entry.entry_id"
-			+ " LEFT JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE page_title.page_title IN (" + titles + ");";
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text,"
+				+ " review_status, is_pending"
+			+ " FROM all_entries"
+			+ " WHERE page_title IN (" + titles + ");";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -520,7 +507,7 @@ public final class CitationTypography {
 			Boolean verified = rs.getBoolean("review_status");
 			verified = rs.wasNull() ? null : verified;
 			
-			if (rs.getInt("pending_id") == 0 && set.contains(entry)) {
+			if (!rs.getBoolean("is_pending") && set.contains(entry)) {
 				if (verified != null && verified.booleanValue()) {
 					verifiedNonPendingEntries.add(entry);
 				} else if (verified == null) {
@@ -660,19 +647,9 @@ public final class CitationTypography {
 	}
 	
 	private static List<Entry> queryPendingEntries(Connection conn) throws SQLException {
-		String query = "SELECT entry.entry_id, page_title.page_title, entry.language,"
-				+ " entry.field_id, source_line.source_text, edited_line.edited_text"
-			+ " FROM entry"
-			+ " INNER JOIN pending"
-			+ " ON pending.entry_id = entry.entry_id"
-			+ " INNER JOIN source_line"
-			+ " ON source_line.source_line_id = entry.source_line_id"
-			+ " INNER JOIN edited_line"
-			+ " ON edited_line.edited_line_id = entry.edited_line_id"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " LEFT JOIN reviewed"
-			+ " ON reviewed.entry_id = entry.entry_id;";
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
+			+ " FROM all_entries"
+			+ " WHERE is_pending IS TRUE;";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -789,22 +766,11 @@ public final class CitationTypography {
 	}
 	
 	private static Map<Integer, Entry> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
-		String query = "SELECT entry.entry_id, page_title.page_title, entry.language,"
-				+ " entry.field_id, source_line.source_text, edited_line.edited_text"
-			+ " FROM entry"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " INNER JOIN source_line"
-			+ " ON source_line.source_line_id = entry.source_line_id"
-			+ " INNER JOIN edited_line"
-			+ " ON edited_line.edited_line_id = entry.edited_line_id"
-			+ " INNER JOIN reviewed"
-			+ " ON reviewed.entry_id = entry.entry_id"
-			+ " INNER JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE EXISTS (SELECT NULL FROM pending WHERE pending.entry_id = entry.entry_id)"
-			+ " AND review_log.review_status = 1"
-			+ " AND review_log.timestamp <= " + gapTimestamp + ";";
+		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
+			+ " FROM all_entries"
+			+ " WHERE is_pending IS TRUE"
+			+ " AND review_status = 1"
+			+ " AND review_timestamp <= " + gapTimestamp + ";";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
