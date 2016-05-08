@@ -313,7 +313,7 @@ public final class MorfeoDatabase {
 			
 			List<String> morphems = items.get(title);
 			String extractedMorphem = morphems.set(position - 1, null);
-			byte morphemType = morphemInfo.get(morphem);
+			byte morphemType = morphemInfo.get(extractedMorphem);
 			boolean isUpdatedRow = false;
 			
 			if (!morphem.equals(extractedMorphem)) {
