@@ -26,7 +26,7 @@
 	HAVING
 		<eombl:query-builder />
 	ORDER BY
-		title COLLATE utf8mb4_general_ci;
+		title COLLATE utf8mb4_esperanto_ci;
 </sql:query>
 
 <c:choose>

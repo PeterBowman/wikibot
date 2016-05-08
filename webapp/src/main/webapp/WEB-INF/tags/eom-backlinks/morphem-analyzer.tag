@@ -23,7 +23,7 @@
 			<c:remove var="trimmed" />
 		</c:forTokens>
 	ORDER BY
-		morphem COLLATE utf8mb4_general_ci;
+		morphem COLLATE utf8mb4_esperanto_ci;
 </sql:query>
 
 <c:set var="missingPage" value="0" />
