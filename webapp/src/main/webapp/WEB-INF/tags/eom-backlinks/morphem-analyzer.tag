@@ -51,7 +51,7 @@
 			<c:if test="${not isFirst}">,${" "}</c:if>
 			<c:set var="isFirst" value="${false}" />morfem przyrostkowy</c:if>
 		<c:if test="${utils:bitCompare(row.type, grammaticalEnding)}">
-			<c:if test="${not isFirst}">,${" "}</c:if>
-			końcówka gramatyczna</c:if>)<%--
+			<c:if test="${not isFirst}">,${" "}</c:if><%--
+			--%>końcówka gramatyczna</c:if>)<%--
 	--%></c:if><c:if test="${not status.last}">, </c:if>
 </c:forEach>
