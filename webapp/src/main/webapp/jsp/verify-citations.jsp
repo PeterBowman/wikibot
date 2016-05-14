@@ -8,12 +8,9 @@
 
 <t:template title="Weryfikacja typografii przypisów" firstHeading="Weryfikacja typografii przypisów">
 	<jsp:attribute name="cactions">
-		<t:cactions targetPath="${basePath}" currentPath="${servletPath}" label="strona główna" />
-		<t:cactions targetPath="${basePath}/entries" currentPath="${servletPath}" label="lista" />
-		<t:cactions targetPath="${basePath}/review-log" currentPath="${servletPath}" label="oznaczanie" />
-		<t:cactions targetPath="${basePath}/edit-log" currentPath="${servletPath}" label="edycja" />
-		<t:cactions targetPath="${basePath}/diff" currentPath="${servletPath}" label="diff" />
-		<t:cactions targetPath="${basePath}/ranking" currentPath="${servletPath}" label="ranking" />
+		<t:cactions basePath="${basePath}" defaultTab="strona główna"
+			entries="lista" review-log="oznaczanie" edit-log="edycja"
+			diff="diff" ranking="ranking" />
 	</jsp:attribute>
 	<jsp:attribute name="headerNotice">
 		<t:ambox type="warning">
@@ -22,8 +19,8 @@
 	</jsp:attribute>
 	<jsp:body>
 		<c:choose>
-			<c:when test="">
-				
+			<c:when test="${servletPath eq '/verify-citations/entries'}">
+				<p>test</p>
 			</c:when>
 			<c:otherwise>
 				<%-- TODO: include action or directive? --%>
