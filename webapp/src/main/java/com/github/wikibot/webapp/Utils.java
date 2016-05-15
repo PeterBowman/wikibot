@@ -25,4 +25,8 @@ public final class Utils {
 	public static boolean bitCompare(int bitmask, int target) {
 		return (bitmask & target) == target;
 	}
+	
+	public static String lastPathPart(String path) {
+		return path.substring(path.lastIndexOf("/") + 1);
+	}
 }

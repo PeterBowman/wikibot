@@ -42,7 +42,7 @@
 			<fieldset>
 				<legend>Wyszukiwarka morfemów</legend>
 				<label for="morphem">Morfem(y):</label>
-				<input id="morphem-input" name="morphem" size="20" value="${param.morphem}" multiple>
+				<input id="morphem-input" name="morphem" size="20" value="${param.morphem}">
 				<input type="submit" value="Pokaż" >
 			</fieldset>
 		</form>
