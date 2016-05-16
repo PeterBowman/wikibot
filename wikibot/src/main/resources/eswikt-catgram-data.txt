@@ -242,6 +242,13 @@ f sg = de forma verbal
 m pl = de formas verbales
 f pl = de formas verbales
 
+ILLATIVE
+type = QUALIFIER
+m sg = ilativo
+f sg = ilativa
+m pl = ilativos
+f pl = ilativas
+
 IMPERFECTIVE
 type = QUALIFIER
 m sg = imperfectivo

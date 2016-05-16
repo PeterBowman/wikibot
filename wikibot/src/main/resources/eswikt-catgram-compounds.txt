@@ -23,6 +23,7 @@ adverbio relativo = ADVERB, RELATIVE
 artículo determinado = ARTICLE, DETERMINATE
 artículo indeterminado = ARTICLE, INDETERMINATE
 conjunción adversativa = CONJUNCTION, ADVERSATIVE
+conjunción ilativa = CONJUNCTION, ILLATIVE
 locución adjetiva = PHRASE, ADJECTIVE
 locución adverbial = PHRASE, ADVERB
 locución conjuntiva = PHRASE, CONJUNCTION
