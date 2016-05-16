@@ -7,8 +7,6 @@
 <%@ taglib tagdir="/WEB-INF/tags/verify-citations" prefix="vc" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
-<c:set var="defaultLimit" value="100" />
-
 <p>
 	Lista wszystkich wystąpień wykrytych w hasłach i zapisanych w bazie.
 	Wystąpienie oczekujące na przetworzenie to takie, które znajduje się na osobnej liście
@@ -20,17 +18,17 @@
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
 		<legend>Lista wystąpień</legend>
-		<label for="title">Tytuł strony:</label>
-		<input id="entry-title" name="title" size="20" value="${param.title}">
-		<input type="checkbox" id="hideprocessed" name="hideprocessed"
+		<label for="vc-entries-title">Tytuł strony:</label>
+		<input id="vc-entries-title" name="title" size="20" value="${param.title}">
+		<input type="checkbox" id="vc-entries-hideprocessed" name="hideprocessed"
 			<c:if test="${not empty param.hideprocessed}">checked</c:if>>
-		<label for="hideprocessed">ukryj przetworzone</label>
-		<input type="checkbox" id="hideverified" name="hideverified"
+		<label for="vc-entries-hideprocessed">ukryj przetworzone</label>
+		<input type="checkbox" id="vc-entries-hide-verified" name="hideverified"
 			<c:if test="${not empty param.hideverified}">checked</c:if>>
-		<label for="hideverified">ukryj zatwierdzone</label>
-		<input type="checkbox" id="hiderejected" name="hiderejected"
+		<label for="vc-entries-hide-verified">ukryj zatwierdzone</label>
+		<input type="checkbox" id="vc-entries-hide-rejected" name="hiderejected"
 			<c:if test="${not empty param.hiderejected}">checked</c:if>>
-		<label for="hiderejected">ukryj odrzucone</label>
+		<label for="vc-entries-hide-rejected">ukryj odrzucone</label>
 		<input type="submit" value="Pokaż" >
 	</fieldset>
 </form>
@@ -38,7 +36,7 @@
 <c:set var="limit" value="${not empty param.limit ? utils:max(param.limit, 0) : defaultLimit}" />
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
 
-<sql:query var="result" dataSource="jdbc/VerifyCitations" startRow="${offset}" maxRows="${limit}">
+<sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
 		entry_id, page_id, page_title, language, field_localized, is_pending, review_status, reviewer
 	FROM

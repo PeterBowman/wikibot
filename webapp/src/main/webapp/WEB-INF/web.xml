@@ -20,8 +20,9 @@
   	<url-pattern>/verify-citations/*</url-pattern>
   	<url-pattern>/verify-citations/entries</url-pattern>
   	<url-pattern>/verify-citations/review-log</url-pattern>
+  	<url-pattern>/verify-citations/change-log</url-pattern>
   	<url-pattern>/verify-citations/edit-log</url-pattern>
-  	<url-pattern>/verify-citations/diff</url-pattern>
+  	<url-pattern>/verify-citations/info</url-pattern>
   	<url-pattern>/verify-citations/ranking</url-pattern>
   </servlet-mapping>
   <servlet-mapping>

@@ -9,7 +9,7 @@
 (#${row.entry_id})
 <a href="https://pl.wiktionary.org/w/index.php?curid=${row.page_id}">${row.page_title}</a>
 .&nbsp;.
-(${row.language}, ${row.field_localized})
+(${row.language} • ${row.field_localized})
 <c:if test="${row.is_pending eq 1}">
 	.&nbsp;.
 	oczekuje na przetworzenie

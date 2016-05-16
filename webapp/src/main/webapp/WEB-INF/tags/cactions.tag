@@ -1,8 +1,8 @@
-<%@ tag description="c-actions toolbar section" pageEncoding="UTF-8" dynamic-attributes="tabs"
-	trimDirectiveWhitespaces="true" %>
+<%@ tag description="c-actions toolbar section" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%@ attribute name="basePath" required="true" %>
 <%@ attribute name="defaultTab" %>
+<%@ attribute name="tabs" required="true" type="java.util.LinkedHashMap" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
