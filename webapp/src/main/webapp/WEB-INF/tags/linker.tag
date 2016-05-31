@@ -5,12 +5,17 @@
 <%@ attribute name="testMissingPage" %>
 <%@ attribute name="testMissingSection" %>
 <%@ attribute name="sectionName" %>
+<%@ attribute name="display" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <c:set var="normalized" value="${fn:replace(target, '_', ' ')}" />
 <c:set var="escaped" value="${fn:escapeXml(target)}" />
+
+<c:if test="${empty display}">
+	<c:set var="display" value="${normalized}" />
+</c:if>
 
 <c:choose>
 	<c:when test="${testMissingPage eq true}">
@@ -38,4 +43,4 @@
 <a href="${fn:replace(hrefPattern, '$1', href)}" 
 		title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
 		<c:if test="${not empty classVar}">class="${classVar}"</c:if>
-	>${normalized}</a><%-- No trailing newlines! --%>
+	>${display}</a><%-- No trailing newlines! --%>

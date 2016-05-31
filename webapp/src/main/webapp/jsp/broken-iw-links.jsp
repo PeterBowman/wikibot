@@ -31,10 +31,15 @@
 		</c:if>
 		<fieldset>
 			<legend>Zerwane linki</legend>
-			<t:select parameter="project" label="Projekt" defaultOption="Wybierz opcję"
-				plwikisource="Wikizródła" plwikiquote="Wikicytaty" plwiki="Wikipedia"
-				plwikibooks="Wikibooks" plwikinews="Wikinews" plwikivoyage="Wikipodróże"
-				specieswiki="Wikispecies" />
+			<t:select parameter="project" label="Projekt" defaultOption="Wybierz opcję">
+				<jsp:attribute name="plwikisource">Wikizródła</jsp:attribute>
+				<jsp:attribute name="plwikiquote">Wikicytaty</jsp:attribute>
+				<jsp:attribute name="plwiki">Wikipedia</jsp:attribute>
+				<jsp:attribute name="plwikibooks">Wikibooks</jsp:attribute>
+				<jsp:attribute name="plwikinews">Wikinews</jsp:attribute>
+				<jsp:attribute name="plwikivoyage">Wikipodróże</jsp:attribute>
+				<jsp:attribute name="specieswiki">Wikispecies</jsp:attribute>
+			</t:select>
 			<input type="checkbox" id="ignorelc" name="ignorelc"
 				<c:if test="${not empty param.ignorelc}">checked</c:if>>
 			<label for="ignorelc">ukryj strony docelowe zaczynające się od małej litery</label>

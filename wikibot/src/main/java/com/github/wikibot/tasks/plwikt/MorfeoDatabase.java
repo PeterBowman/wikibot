@@ -11,7 +11,6 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -371,15 +370,11 @@ public final class MorfeoDatabase {
 	}
 	
 	private static void updateTimestampTable(Connection conn) throws SQLException {
-		Calendar cal = Calendar.getInstance();
-		String timestamp = DATE_FORMAT.format(cal.getTime());
-		
-		String query = "INSERT INTO execution_log (type, timestamp)"
-			+ " VALUES ('tasks.plwikt.MorfeoDatabase', " + timestamp + ")"
+		String query = "INSERT INTO execution_log (type)"
+			+ " VALUES ('tasks.plwikt.MorfeoDatabase')"
 			+ " ON DUPLICATE KEY"
-			+ " UPDATE timestamp = VALUES(timestamp);";
+			+ " UPDATE timestamp = NOW();";
 		
 		conn.createStatement().executeUpdate(query);
-		System.out.printf("New timestamp: %s.%n", timestamp);
 	}
 }
