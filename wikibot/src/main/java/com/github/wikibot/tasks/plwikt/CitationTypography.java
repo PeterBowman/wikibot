@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -542,9 +543,7 @@ public final class CitationTypography {
 	private static void storeNewEntries(Connection conn, List<Entry> entries) throws SQLException {
 		String preparedSourceLineQuery = "INSERT INTO source_line (source_text) VALUES (?);";
 		String preparedEditedLineQuery = "INSERT INTO edited_line (edited_text) VALUES (?);";
-		
-		String preparedChangeLogQuery = "INSERT INTO change_log (edited_line_id, timestamp)"
-			+ " VALUES (?, '" + formatCalendar(Calendar.getInstance()) + "');";
+		String preparedChangeLogQuery = "INSERT INTO change_log (edited_line_id) VALUES (?);";
 		
 		String preparedEntryQuery = "INSERT INTO entry"
 			+ " (page_id, language, field_id, source_line_id, current_change_id)"
@@ -742,10 +741,6 @@ public final class CitationTypography {
 		System.out.printf("%d rows deleted from 'pending' table.%n", deletedRows);
 	}
 	
-	private static String formatCalendar(Calendar cal) {
-		return DATE_FORMAT.format(cal.getTime());
-	}
-	
 	private static void processPendingEntries(Connection conn, Map<Integer, Entry> entryMap) throws SQLException {
 		String gapTimestamp = getGapTimestamp();
 		System.out.printf("Gap timestamp set to %s (-%d hours).%n", gapTimestamp, HOURS_GAP);
@@ -840,7 +835,7 @@ public final class CitationTypography {
 		deletePending.executeUpdate("DELETE FROM pending WHERE pending.entry_id = " + entryId + ";");
 		
 		Calendar now = Calendar.getInstance();
-		Optional<Wiki.Revision> optRevision = Optional.empty();
+		Optional<Wiki.Revision> optRevision;
 		
 		try {
 			Calendar basetime = wb.getTopRevision(entry.title).getTimestamp();
@@ -869,11 +864,12 @@ public final class CitationTypography {
 			
 			optRevision = Stream.of(wb.contribs("PBbot", "", now, null, 0))
 				 .filter(c -> c.getPage().equals(entry.title) && c.getSummary().startsWith(EDIT_SUMMARY))
-				 .findAny();
+				 .findFirst();
 		} catch (AssertionError | AccountLockedException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
 			System.exit(0);
+			return false;
 		} catch (IOException | LoginException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
@@ -887,30 +883,32 @@ public final class CitationTypography {
 		if (optRevision.isPresent()) {
 			Wiki.Revision revision = optRevision.get();
 			long revId = revision.getRevid();
-			String revTimestamp = formatCalendar(revision.getTimestamp());
-			Statement insertEditLog = conn.createStatement();
+			Timestamp revTimestamp = new Timestamp(revision.getTimestamp().getTime().getTime());
 			
-			insertEditLog.executeUpdate("INSERT INTO edit_log"
+			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
+			PreparedStatement st = conn.prepareStatement("INSERT INTO edit_log"
 				+ " (entry_id, rev_id, edit_timestamp)"
-				+ " VALUES (" + entryId + ", " + revId + ", " + revTimestamp + ");"
+				+ " VALUES (?, ?, ?);"
 			);
+			
+			st.setInt(1, entryId);
+			st.setInt(2, (int) revId);
+			st.setTimestamp(3, revTimestamp);
+			
+			st.executeUpdate();
 		}
 		
 		conn.commit();
-		return optRevision.isPresent();
+		return true;
 	}
 	
 	private static void updateTimestampTable(Connection conn, String type) throws SQLException {
-		Calendar cal = Calendar.getInstance();
-		String timestamp = DATE_FORMAT.format(cal.getTime());
-		
-		String query = "INSERT INTO execution_log (type, timestamp)"
-			+ " VALUES ('" + type + "', " + timestamp + ")"
+		String query = "INSERT INTO execution_log (type)"
+			+ " VALUES ('" + type + "')"
 			+ " ON DUPLICATE KEY"
-			+ " UPDATE timestamp = VALUES(timestamp);";
+			+ " UPDATE timestamp = NOW();";
 		
 		conn.createStatement().executeUpdate(query);
-		System.out.printf("New timestamp (%s): %s.%n", type, timestamp);
 	}
 	
 	private static class Entry implements Serializable, Comparable<Entry> {

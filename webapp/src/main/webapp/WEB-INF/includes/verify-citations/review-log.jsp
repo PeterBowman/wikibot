@@ -36,7 +36,7 @@
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
 		entry_id, page_id, page_title, language, field_localized, review_status, reviewer,
-		review_timestamp, edited_line_id
+		review_timestamp, current_change_id
 	FROM
 		all_entries
 	WHERE

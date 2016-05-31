@@ -22,7 +22,7 @@
 		odrzuca
 	</c:otherwise>
 </c:choose>
-wersję #${row.edited_line_id} wystąpienia #${row.entry_id}
+wersję #${row.current_change_id} wystąpienia #${row.entry_id}
 (<a href="https://pl.wiktionary.org/w/index.php?curid=${row.page_id}">${row.page_title}</a> •
 ${row.language} • ${row.field_localized})
 (szczegóły)

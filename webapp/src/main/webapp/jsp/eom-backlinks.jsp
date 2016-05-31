@@ -10,7 +10,7 @@
 
 <sql:query var="lastUpdate" dataSource="jdbc/tools-db">
 	SELECT
-		CONVERT(timestamp USING utf8) AS timestamp
+		timestamp
 	FROM
 		s52584__plwikt_common.execution_log
 	WHERE
@@ -25,10 +25,6 @@
 		<script src="scripts/eom-backlinks.js"></script>
 	</jsp:attribute>
 	<jsp:body>
-		<c:set var="timestamp" value="${lastUpdate.rows[0].timestamp}" />
-		<fmt:parseDate var="date" value="${timestamp}" pattern="yyyyMMddHHmmss" timeZone="UTC" />
-		<fmt:setLocale value="pl_PL" />
-		<fmt:setTimeZone value="Europe/Madrid" />
 		<p>
 			Spis haseł esperanto, w których występuje wskazany morfem w szablonie <code>{{morfeo}}</code>.
 			Można też wyszukać wspólne wystąpienia dwóch lub więcej morfemów, oddzielając je znakiem
@@ -36,7 +32,11 @@
 			Zostaw to pole niewypełnione, aby wyświetlić wszystkie morfemy użyte w hasłach esperanto.
 		</p>
 		<p>
-			Ostatnia aktualizacja bazy danych: <fmt:formatDate value="${date}" pattern="HH:mm, d MMM yyyy (z)" />.
+			<%-- It's important to set this values BEFORE the call to fmt:formatDate. --%>
+			<fmt:setLocale value="pl_PL" />
+			<fmt:setTimeZone value="Europe/Madrid" />
+			<fmt:formatDate var="date" value="${lastUpdate.rows[0].timestamp}" pattern="HH:mm, d MMM yyyy (z)" />
+			Ostatnia aktualizacja bazy danych: ${date}.
 		</p>
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<fieldset>
