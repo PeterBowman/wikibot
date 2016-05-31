@@ -543,13 +543,15 @@ public final class CitationTypography {
 	private static void storeNewEntries(Connection conn, List<Entry> entries) throws SQLException {
 		String preparedSourceLineQuery = "INSERT INTO source_line (source_text) VALUES (?);";
 		String preparedEditedLineQuery = "INSERT INTO edited_line (edited_text) VALUES (?);";
-		String preparedChangeLogQuery = "INSERT INTO change_log (edited_line_id) VALUES (?);";
 		
 		String preparedEntryQuery = "INSERT INTO entry"
-			+ " (page_id, language, field_id, source_line_id, current_change_id)"
+			+ " (page_id, language, field_id, source_line_id, edited_line_id)"
 			+ " SELECT page_id, ?, ?, ?, ?"
 			+ " FROM page_title"
 			+ " WHERE page_title.page_title = ?;";
+		
+		String preparedChangeLogQuery = "INSERT INTO change_log (change_log_id, entry_id)"
+			+ " VALUES (?, ?);";
 		
 		String preparedPendingQuery = "INSERT INTO pending (entry_id) VALUES (?);";
 		
@@ -557,8 +559,8 @@ public final class CitationTypography {
 		
 		PreparedStatement insertSourceLine = conn.prepareStatement(preparedSourceLineQuery, opt);
 		PreparedStatement insertEditedLine = conn.prepareStatement(preparedEditedLineQuery, opt);
-		PreparedStatement insertChangeLog = conn.prepareStatement(preparedChangeLogQuery, opt);
 		PreparedStatement insertEntry = conn.prepareStatement(preparedEntryQuery, opt);
+		PreparedStatement insertChangeLog = conn.prepareStatement(preparedChangeLogQuery, opt);
 		PreparedStatement insertPending = conn.prepareStatement(preparedPendingQuery, opt);
 		
 		conn.setAutoCommit(false);
@@ -571,7 +573,6 @@ public final class CitationTypography {
 		for (Entry entry : entries) {
 			int sourceLineId;
 			int editedLineId;
-			int changeLogId;
 			int entryId;
 			
 			ResultSet rs;
@@ -600,21 +601,10 @@ public final class CitationTypography {
 				continue;
 			}
 			
-			insertChangeLog.setInt(1, editedLineId);
-			insertChangeLog.executeUpdate();
-			
-			rs = insertChangeLog.getGeneratedKeys();
-			
-			if (rs.next()) {
-				changeLogId = rs.getInt(1);
-			} else {
-				continue;
-			}
-			
 			insertEntry.setString(1, entry.langSection);
 			insertEntry.setInt(2, entry.fieldType.ordinal() + 1);
 			insertEntry.setInt(3, sourceLineId);
-			insertEntry.setInt(4, changeLogId);
+			insertEntry.setInt(4, editedLineId);
 			insertEntry.setString(5, entry.title);
 			insertEntry.executeUpdate();
 			
@@ -626,6 +616,10 @@ public final class CitationTypography {
 			} else {
 				continue;
 			}
+			
+			insertChangeLog.setInt(1, editedLineId);
+			insertChangeLog.setInt(2, entryId);
+			insertChangeLog.executeUpdate();
 			
 			insertPending.setInt(1, entryId);
 			insertPending.executeUpdate();
