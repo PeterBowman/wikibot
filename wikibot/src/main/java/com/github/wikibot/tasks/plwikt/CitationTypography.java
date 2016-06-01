@@ -165,14 +165,13 @@ public final class CitationTypography {
 						updateEntryAndPendingTables(vcConn, entries, entryMap);
 					}
 					
-					List<Entry> pendingEntries = queryPendingEntries(vcConn);
+					Map<Integer, Entry> pendingMap = queryPendingEntries(vcConn);
 					
-					if (!pendingEntries.isEmpty()) {
-						List<Entry> worklist = reviewPendingEntries(vcConn, pendingEntries,
-							contentCache, line.hasOption("dump"));
+					if (!pendingMap.isEmpty()) {
+						reviewPendingEntries(vcConn, pendingMap, contentCache, line.hasOption("dump"));
 						
-						if (!worklist.isEmpty()) {
-							deleteObsoletePendingEntries(vcConn, worklist);
+						if (!pendingMap.isEmpty()) {
+							deleteObsoletePendingEntries(vcConn, pendingMap);
 						}
 					}
 					
@@ -490,7 +489,9 @@ public final class CitationTypography {
 			Set<Entry> verifiedNonPendingEntries, Set<Entry> nonReviewedNonPendingEntries)
 			throws SQLException {
 		String titles = entries.stream()
-			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
+			.map(entry -> entry.title)
+			.distinct()
+			.map(title -> String.format("'%s'", title.replace("'", "\\'")))
 			.collect(Collectors.joining(", "));
 		
 		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text,"
@@ -651,7 +652,7 @@ public final class CitationTypography {
 		System.out.printf("%d rows inserted into 'pending' table.%n", insertedRows);
 	}
 	
-	private static List<Entry> queryPendingEntries(Connection conn) throws SQLException {
+	private static Map<Integer, Entry> queryPendingEntries(Connection conn) throws SQLException {
 		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
 			+ " FROM all_entries"
 			+ " WHERE is_pending IS TRUE;";
@@ -665,12 +666,12 @@ public final class CitationTypography {
 			processEntryResultSet(rs, entryMap);
 		}
 		
-		return new ArrayList<>(entryMap.values());
+		return entryMap;
 	}
 	
-	private static List<Entry> reviewPendingEntries(Connection conn, List<Entry> pendingEntries,
-			Map<String, String> contentCache, boolean isDump) throws SQLException {
-		Set<String> titles = pendingEntries.stream()
+	private static void reviewPendingEntries(Connection conn, Map<Integer, Entry> pendingMap,
+			Map<String, String> contentCache, boolean isDump) {
+		Set<String> titles = pendingMap.values().stream()
 			.map(entry -> entry.title)
 			.collect(Collectors.toSet());
 		
@@ -692,46 +693,29 @@ public final class CitationTypography {
 			}
 		}
 		
-		List<Entry> worklist = new ArrayList<>(300);
-		
-		for (Entry entry : pendingEntries) {
-			if (!contentCache.containsKey(entry.title)) {
-				continue;
-			}
-			
-			String pageText = contentCache.get(entry.title);
-			
-			boolean isPresent = Optional.of(Page.store(entry.title, pageText))
+		pendingMap.values().removeIf(entry ->
+			!contentCache.containsKey(entry.title) ||
+			Optional.of(Page.store(entry.title, contentCache.get(entry.title)))
 				.flatMap(p -> p.getSection(entry.langSection))
 				.flatMap(s -> s.getField(entry.fieldType))
 				.filter(f -> !f.isEmpty())
 				.map(Field::getContent)
-				.filter(text -> !text.contains(entry.originalText))
-				.isPresent();
-			
-			if (isPresent) {
-				worklist.add(entry);
-			}
-		}
-		
-		return worklist;
+				.filter(text -> Pattern.compile("\n").splitAsStream(text)
+					.anyMatch(line -> line.equals(entry.originalText))
+				)
+				.isPresent()
+		);
 	}
 	
-	private static void deleteObsoletePendingEntries(Connection conn, List<Entry> entries) throws SQLException {
-		String values = entries.stream()
-			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
+	private static void deleteObsoletePendingEntries(Connection conn, Map<Integer, Entry> pendingMap)
+			throws SQLException {
+		String values = pendingMap.keySet().stream()
+			.map(Object::toString)
 			.collect(Collectors.joining(", "));
 		
-		String query = "DELETE pending"
-			+ " FROM pending"
-			+ " INNER JOIN entry"
-			+ " ON entry.entry_id = pending.entry_id"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " WHERE page_title IN (" + values + ");";
+		String query = "DELETE FROM pending WHERE entry_id IN (" + values + ");";
+		int deletedRows = conn.createStatement().executeUpdate(query);
 		
-		Statement stmt = conn.createStatement();
-		int deletedRows = stmt.executeUpdate(query);
 		System.out.printf("%d rows deleted from 'pending' table.%n", deletedRows);
 	}
 	
