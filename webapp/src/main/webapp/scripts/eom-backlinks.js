@@ -40,4 +40,6 @@ $( function () {
 			.data.$container.css( 'fontSize', $this.css( 'fontSize' ) );
 	} )
 	.focus();
+	
+	$( '.wikilink[data-section^="esperanto"]' ).definitionPopups();
 } );
