@@ -16,9 +16,9 @@
 			// zamiana pogrubień na cudzysłowy (np. w czasownikach zwrotnych)
 			.replace( /'''(.+?)'''/g, '„$1”' )
 			// obsługa szablonu "morfem" z parametrem
-			.replace( /\{\{morfem\|[^\|]*\| *(przedrostkowy|przedrostek) *\}\}/, 'morfem przedrostkowy' )
-			.replace( /\{\{morfem\|[^\|]*\| *(przyrostkowy|przyrostek) *\}\}/, 'morfem przyrostkowy' )
-			.replace( /\{\{morfem\|[^\|]*\| *gramatyczny *\}\}/, 'końcówka gramatyczna' )
+			.replace( /\{\{morfem\|[^\|]*\| *(przedrostkowy|przedrostek) *\}\}/, '\'\'morfem przedrostkowy\'\'' )
+			.replace( /\{\{morfem\|[^\|]*\| *(przyrostkowy|przyrostek) *\}\}/, '\'\'morfem przyrostkowy\'\'' )
+			.replace( /\{\{morfem\|[^\|]*\| *gramatyczny *\}\}/, '\'\'końcówka gramatyczna\'\'' )
 			// wykrywanie nagłówka znaczeń; pogrubienie i pochylenie
 			.replace( /\n[']{0,2}\{\{(.*?)(\|[^\}]+)?\}\}[']{0,2}\n/g, '\n<i><b>$1</b></i>\n' )
 			.replace( /\n''(.+?)''/g, '\n<i><b>$1</b></i>' )
