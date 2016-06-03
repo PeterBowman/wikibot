@@ -24,7 +24,7 @@
 			odrzucone
 		</c:when>
 	</c:choose>
-	przez:
+	przez
 	<t:linker hrefPattern="https://pl.wiktionary.org/$1" target="User:${row.reviewer}" display="${row.reviewer}" />
 </c:if>
 .&nbsp;.

@@ -8,21 +8,26 @@
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
 <p>
-	Rejest oznaczania wystąpień na <a href="./entries?hideprocessed=on">liście roboczej</a>.
-	Dostępne poziomy: „zatwierdzone” oraz „odrzucone”.
+	Rejest zmian w stosunku do wersji pierwotnej danego wystąpienia. Lista zawiera zarówno zmiany
+	wprowadzone przez użytkowników, jak i wygenerowane przez automat (zaznaczywszy tę opcję).
 </p>
 
 <%-- TODO: filter by timestamp + recalculate offset --%>
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
-		<legend>Rejestr oznaczania</legend>
+		<legend>Rejestr zmian</legend>
 		<span class="mw-input-with-label">
-			<label for="vc-review-log-user">Użytkownik:</label>
-			<input id="vc-review-log-user" name="user" size="15" value="${param.user}">
+			<label for="vc-change-log-user">Użytkownik:</label>
+			<input id="vc-change-log-user" name="user" size="15" value="${param.user}">
 		</span>
 		<span class="mw-input-with-label">
-			<label for="vc-review-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-review-log-entry" name="entry" size="20" value="${param.entry}">
+			<label for="vc-change-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
+			<input id="vc-change-log-entry" name="entry" size="20" value="${param.entry}">
+		</span>
+		<span class="mw-input-with-label">
+			<input type="checkbox" id="vc-change-log-show-generated" name="showgenerated"
+				<c:if test="${not empty param.showgenerated}">checked</c:if>>
+			<label for="vc-change-log-show-generated">pokaż wygenerowane</label>
 		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>
@@ -33,21 +38,23 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
-		entry_id, page_id, page_title, language, field_localized, review_status, reviewer,
-		review_timestamp, current_change_id
+		entry.entry_id, entry.page_id, page_title, language, localized, user, change_timestamp, change_log_id
 	FROM
-		all_entries
+		change_log
+			INNER JOIN entry ON entry.entry_id = change_log.entry_id
+			INNER JOIN page_title ON page_title.page_id = entry.page_id
+			INNER JOIN field ON field.field_id = entry.field_id
 	WHERE
-		review_status IS NOT NULL
+		TRUE
 		<c:if test="${not empty fn:trim(param.user)}">
-			AND reviewer = ?
+			AND change_log.user = ?
 			<sql:param value="${fn:trim(param.user)}" />
 		</c:if>
 		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
 		<c:if test="${not empty trimmedEntry}">
 			<c:choose>
 				<c:when test="${fn:startsWith(trimmedEntry, '#')}">
-					AND entry_id = ${fn:substringAfter(trimmedEntry, '#')}
+					AND entry.entry_id = ${fn:substringAfter(trimmedEntry, '#')}
 				</c:when>
 				<c:otherwise>
 					AND page_title = ?
@@ -56,8 +63,11 @@
 			</c:choose>
 		</c:if>
 		<c:remove var="trimmedEntry" />
+		<c:if test="${empty param.showgenerated}">
+			AND user NOT LIKE '@%'
+		</c:if>
 	ORDER BY
-		review_timestamp DESC, entry_id DESC;
+		change_timestamp DESC, change_log_id DESC;
 </sql:query>
 
 <c:choose>
@@ -69,7 +79,7 @@
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">
-				<li><vc:review-log row="${row}" /></li>
+				<li><vc:change-log row="${row}" /></li>
 			</c:forEach>
 		</ul>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />

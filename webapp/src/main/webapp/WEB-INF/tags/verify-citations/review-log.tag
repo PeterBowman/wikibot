@@ -7,11 +7,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
-<fmt:parseDate var="date" value="${row.review_timestamp}" pattern="yyyyMMddHHmmss" timeZone="UTC" />
-<fmt:setLocale value="pl_PL" />
-<fmt:setTimeZone value="Europe/Madrid" />
-
-<fmt:formatDate value="${date}" pattern="HH:mm, d MMM yyyy" />
+<fmt:formatDate value="${row.review_timestamp}" pattern="HH:mm, d MMM yyyy" />
 .&nbsp;.
 <t:linker hrefPattern="https://pl.wiktionary.org/$1" target="User:${row.reviewer}" display="${row.reviewer}" />
 <c:choose>

@@ -41,8 +41,10 @@
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<fieldset>
 				<legend>Wyszukiwarka morfemów</legend>
-				<label for="morphem">Morfem(y):</label>
-				<input id="morphem-input" name="morphem" size="20" value="${param.morphem}">
+				<span class="mw-input-with-label">
+					<label for="morphem">Morfem(y):</label>
+					<input id="morphem-input" name="morphem" size="20" value="${param.morphem}">
+				</span>
 				<input type="submit" value="Pokaż" >
 			</fieldset>
 		</form>

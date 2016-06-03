@@ -8,21 +8,16 @@
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
 <p>
-	Rejest oznaczania wystąpień na <a href="./entries?hideprocessed=on">liście roboczej</a>.
-	Dostępne poziomy: „zatwierdzone” oraz „odrzucone”.
+	Rejest edycji wykonanych przez bota.
 </p>
 
 <%-- TODO: filter by timestamp + recalculate offset --%>
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
-		<legend>Rejestr oznaczania</legend>
+		<legend>Rejestr edycji bota</legend>
 		<span class="mw-input-with-label">
-			<label for="vc-review-log-user">Użytkownik:</label>
-			<input id="vc-review-log-user" name="user" size="15" value="${param.user}">
-		</span>
-		<span class="mw-input-with-label">
-			<label for="vc-review-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-review-log-entry" name="entry" size="20" value="${param.entry}">
+			<label for="vc-edit-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
+			<input id="vc-edit-log-entry" name="entry" size="20" value="${param.entry}">
 		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>
@@ -33,21 +28,19 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
-		entry_id, page_id, page_title, language, field_localized, review_status, reviewer,
-		review_timestamp, current_change_id
+		entry.entry_id, entry.page_id, page_title, language, localized, edit_timestamp, edit_log_id, rev_id
 	FROM
-		all_entries
+		edit_log
+			INNER JOIN entry ON entry.entry_id = edit_log.entry_id
+			INNER JOIN page_title ON page_title.page_id = entry.page_id
+			INNER JOIN field ON field.field_id = entry.field_id
 	WHERE
-		review_status IS NOT NULL
-		<c:if test="${not empty fn:trim(param.user)}">
-			AND reviewer = ?
-			<sql:param value="${fn:trim(param.user)}" />
-		</c:if>
+		TRUE
 		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
 		<c:if test="${not empty trimmedEntry}">
 			<c:choose>
 				<c:when test="${fn:startsWith(trimmedEntry, '#')}">
-					AND entry_id = ${fn:substringAfter(trimmedEntry, '#')}
+					AND entry.entry_id = ${fn:substringAfter(trimmedEntry, '#')}
 				</c:when>
 				<c:otherwise>
 					AND page_title = ?
@@ -57,7 +50,7 @@
 		</c:if>
 		<c:remove var="trimmedEntry" />
 	ORDER BY
-		review_timestamp DESC, entry_id DESC;
+		edit_log_id DESC;
 </sql:query>
 
 <c:choose>
@@ -69,7 +62,7 @@
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">
-				<li><vc:review-log row="${row}" /></li>
+				<li><vc:edit-log row="${row}" /></li>
 			</c:forEach>
 		</ul>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />

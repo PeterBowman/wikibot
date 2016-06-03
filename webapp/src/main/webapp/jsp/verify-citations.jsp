@@ -2,6 +2,7 @@
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
@@ -10,6 +11,13 @@
 <%-- http://www.coderanch.com/t/177671 --%>
 <c:set var="defaultLimit" value="100" scope="request" />
 <sql:setDataSource var="verifyCitationsDS" dataSource="jdbc/VerifyCitations" scope="request" />
+
+<fmt:setLocale value="pl_PL" scope="request" />
+<fmt:setTimeZone value="Europe/Madrid" scope="request" />
+
+<c:set var="entryInputInfoTag" scope="request">
+	<sup><span title="Poprzedzony znakiem '#', np. #1234" style="cursor: help;">(?)</span></sup>
+</c:set>
 
 <jsp:useBean id="cactionsMap" class="java.util.LinkedHashMap" />
 <c:set target="${cactionsMap}" property="entries" value="lista" />
@@ -36,6 +44,12 @@
 			</c:when>
 			<c:when test="${subPath eq 'review-log'}">
 				<jsp:include page="/WEB-INF/includes/verify-citations/review-log.jsp" />
+			</c:when>
+			<c:when test="${subPath eq 'change-log'}">
+				<jsp:include page="/WEB-INF/includes/verify-citations/change-log.jsp" />
+			</c:when>
+			<c:when test="${subPath eq 'edit-log'}">
+				<jsp:include page="/WEB-INF/includes/verify-citations/edit-log.jsp" />
 			</c:when>
 			<c:otherwise>
 				<jsp:include page="/WEB-INF/includes/verify-citations/main.jsp" />
