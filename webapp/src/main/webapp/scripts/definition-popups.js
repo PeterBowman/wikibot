@@ -4,7 +4,7 @@
 	var cache = {},
 		defaultTipsyOptions = {
 			gravity: $.fn.tipsy.autoNS,
-			hmtl: true
+			html: true
 		},
 		API_DELAY = 100,
 		timerID = null;
@@ -102,7 +102,6 @@
 	
 	function bindTipsyActions( $el, cacheKey ) {
 		$el.tipsy( $.extend( {}, defaultTipsyOptions, {
-			html: true,
 			title: function () {
 				return cache[ cacheKey ];
 			}
@@ -137,7 +136,6 @@
 							parsed = parseArticle( pageText, section );
 							cache[ cacheKey ] = parsed.toString(); // force an exception if null
 						} catch ( TypeError ) {
-							cache[ cacheKey ] === null;
 							return;
 						}
 						
