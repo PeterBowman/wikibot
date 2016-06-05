@@ -24,10 +24,17 @@
 <c:set target="${cactionsMap}" property="review-log" value="oznaczanie" />
 <c:set target="${cactionsMap}" property="change-log" value="zmiany" />
 <c:set target="${cactionsMap}" property="edit-log" value="edycja" />
-<c:set target="${cactionsMap}" property="info" value="info" />
+<c:set target="${cactionsMap}" property="diff" value="diff" />
 <c:set target="${cactionsMap}" property="ranking" value="ranking" />
 
+<c:set var="subPath" value="${utils:lastPathPart(pageContext.request.servletPath)}" />
+
 <t:template title="${heading}" firstHeading="${heading}">
+	<jsp:attribute name="head">
+		<c:if test="${subPath eq 'diff'}">
+			<link href="${pageContext.request.contextPath}/styles/diff.css" type="text/css" rel="stylesheet">
+		</c:if>
+	</jsp:attribute>
 	<jsp:attribute name="cactions">
 		<t:cactions basePath="/verify-citations" defaultTab="strona główna" tabs="${cactionsMap}" />
 	</jsp:attribute>
@@ -37,7 +44,6 @@
 		</t:ambox>
 	</jsp:attribute>
 	<jsp:body>
-		<c:set var="subPath" value="${utils:lastPathPart(pageContext.request.servletPath)}" />
 		<c:choose>
 			<c:when test="${subPath eq 'entries'}">
 				<jsp:include page="/WEB-INF/includes/verify-citations/entries.jsp" />
@@ -50,6 +56,9 @@
 			</c:when>
 			<c:when test="${subPath eq 'edit-log'}">
 				<jsp:include page="/WEB-INF/includes/verify-citations/edit-log.jsp" />
+			</c:when>
+			<c:when test="${subPath eq 'diff'}">
+				<jsp:include page="/WEB-INF/includes/verify-citations/diff.jsp" />
 			</c:when>
 			<c:otherwise>
 				<jsp:include page="/WEB-INF/includes/verify-citations/main.jsp" />
