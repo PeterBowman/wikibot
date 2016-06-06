@@ -8,11 +8,11 @@
 
 <c:set var="heading" value="Linkujące morfemów esperanto" />
 
-<sql:query var="lastUpdate" dataSource="jdbc/tools-db">
+<sql:query var="lastUpdate" dataSource="jdbc/plwikt-common">
 	SELECT
 		timestamp
 	FROM
-		s52584__plwikt_common.execution_log
+		execution_log
 	WHERE
 		type = 'tasks.plwikt.MorfeoDatabase';
 </sql:query>

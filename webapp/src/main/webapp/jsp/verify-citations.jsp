@@ -46,7 +46,8 @@
 	</jsp:attribute>
 	<jsp:attribute name="headerNotice">
 		<t:ambox type="warning">
-			Strona w trakcie budowy.
+			Narzędzie znajduje się w fazie ukończenia i testów. Przedstawiona zawartość bazy danych
+			nie jest ostateczna i może ulec zmianie lub całkowitym skasowaniu w dowolnej chwili.
 		</t:ambox>
 	</jsp:attribute>
 	<jsp:body>
