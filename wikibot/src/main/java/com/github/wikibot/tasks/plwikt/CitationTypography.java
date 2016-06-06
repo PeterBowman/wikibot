@@ -865,13 +865,17 @@ public final class CitationTypography {
 			
 			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
 			PreparedStatement st = conn.prepareStatement("INSERT INTO edit_log"
-				+ " (entry_id, rev_id, edit_timestamp)"
-				+ " VALUES (?, ?, ?);"
+				+ " (change_log_id, rev_id, edit_timestamp)"
+				+ " SELECT change_log.change_log_id, ?, ?"
+				+ " FROM change_log"
+				+ " WHERE entry_id = " + entryId
+				+ " AND change_timestamp <= " + gapTimestamp
+				+ " ORDER BY change_log_id DESC"
+				+ " LIMIT 1;"
 			);
 			
-			st.setInt(1, entryId);
-			st.setInt(2, (int) revId);
-			st.setTimestamp(3, revTimestamp);
+			st.setInt(1, (int) revId);
+			st.setTimestamp(2, revTimestamp);
 			
 			st.executeUpdate();
 		}
