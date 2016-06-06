@@ -11,7 +11,6 @@
 	Rejest edycji wykonanych przez bota.
 </p>
 
-<%-- TODO: filter by timestamp + recalculate offset --%>
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
 		<legend>Rejestr edycji bota</legend>
@@ -28,19 +27,18 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
-		entry.entry_id, entry.page_id, page_title, language, localized, edit_timestamp, edit_log_id, rev_id
+		entry_id, page_id, page_title, language, field_localized, all_changes.change_log_id,
+		edit_timestamp, rev_id
 	FROM
-		edit_log
-			INNER JOIN entry ON entry.entry_id = edit_log.entry_id
-			INNER JOIN page_title ON page_title.page_id = entry.page_id
-			INNER JOIN field ON field.field_id = entry.field_id
+		all_changes
+			INNER JOIN edit_log ON edit_log.change_log_id = all_changes.change_log_id
 	WHERE
 		TRUE
 		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
 		<c:if test="${not empty trimmedEntry}">
 			<c:choose>
 				<c:when test="${fn:startsWith(trimmedEntry, '#')}">
-					AND entry.entry_id = ${fn:substringAfter(trimmedEntry, '#')}
+					AND entry_id = ${fn:substringAfter(trimmedEntry, '#')}
 				</c:when>
 				<c:otherwise>
 					AND page_title = ?
@@ -58,7 +56,6 @@
 		<p>Nie znaleziono pozycji odpowiadających zapytaniu.</p> 
 	</c:when>
 	<c:otherwise>
-		<%-- TODO: allow to sort by oldest first --%>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">

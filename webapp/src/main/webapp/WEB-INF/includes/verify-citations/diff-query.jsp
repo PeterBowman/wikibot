@@ -11,21 +11,27 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}">
 	SELECT
+		<%-- FIXME: some column aliases are no longer recognized after joining `edit_log` --%>
+		<%-- This affects: `editor`, `field_localized`, `current_change_id` --%>
 		entry_id, page_id, page_title, language, field_localized, editor, change_timestamp,
 		is_pending, review_status, reviewer, review_timestamp, current_change_id,
-		source_text, edited_text, change_log_id
+		source_text, edited_text, all_changes.change_log_id,
+		edit_log_id, rev_id, edit_timestamp
 	FROM
 		all_changes
+			LEFT JOIN edit_log ON edit_log.change_log_id = all_changes.change_log_id
 	WHERE
 		entry_id = ${param.entry}
 		<c:choose>
 			<c:when test="${hasChangeId}">
-				AND change_log_id = ${fn:trim(param.changeid)}
+				AND all_changes.change_log_id = ${fn:trim(param.changeid)}
 			</c:when>
 			<c:otherwise>
-				AND change_log_id = current_change_id
+				AND all_changes.change_log_id = current_change_id
 			</c:otherwise>
 		</c:choose>
+	ORDER BY
+		edit_log_id DESC
 	LIMIT
 		1;
 </sql:query>
@@ -38,9 +44,9 @@
 		<c:set var="row" value="${result.rows[0]}" />
 		<p>
 			Hasło <strong><a href="https://pl.wiktionary.org/w/index.php?curid=${row.page_id}"
-				>${row.page_title}</a></strong>,
+				target="_blank">${row.page_title}</a></strong>,
 			sekcja <strong>${row.language}</strong>,
-			pole <strong>${row.field_localized}</strong>.
+			pole <strong>${row.localized}</strong>.
 		</p>
 		<p>
 			Wystąpienie #${row.entry_id}, różnice ze zmianą
@@ -49,7 +55,7 @@
 					#${row.change_log_id}:
 				</c:when>
 				<c:otherwise>
-					#${row.current_change_id} (obecna):
+					#${row.edited_line_id} (obecna):
 				</c:otherwise>
 			</c:choose>
 		</p>
@@ -73,12 +79,12 @@
 			</li>
 			<li>
 				<c:choose>
-					<c:when test="${fn:startsWith(row.editor, '@')}">
+					<c:when test="${fn:startsWith(row.user, '@')}">
 						Wygenerowano automatycznie.
 					</c:when>
 					<c:otherwise>
 						Zmiana autorstwa
-						<a href="change-log?user=${fn:escapeXml(row.editor)}">${row.editor}</a>.
+						<a href="change-log?user=${fn:escapeXml(row.user)}">${row.user}</a>.
 					</c:otherwise>
 				</c:choose>
 				Sygnatura czasowa:
@@ -103,6 +109,19 @@
 						<a href="review-log?user=${fn:escapeXml(row.reviewer)}">${row.reviewer}</a>.
 						Sygnatura czasowa:
 						<fmt:formatDate value="${row.review_timestamp}" pattern="HH:mm, d MMM yyyy" />.
+					</c:otherwise>
+				</c:choose>
+			</li>
+			<li>
+				Ostatnia edycja:
+				<c:choose>
+					<c:when test="${not empty row.edit_log_id}">
+						<fmt:formatDate value="${row.edit_timestamp}" pattern="HH:mm, d MMM yyyy" />
+						(<a href="https://pl.wiktionary.org/w/index.php?diff=${row.rev_id}"
+							target="_blank">diff</a>).
+					</c:when>
+					<c:otherwise>
+						nigdy.
 					</c:otherwise>
 				</c:choose>
 			</li>

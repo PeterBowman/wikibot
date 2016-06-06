@@ -43,4 +43,5 @@
 <a href="${fn:replace(hrefPattern, '$1', href)}" 
 		title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
 		<c:if test="${not empty classVar}">class="${classVar}"</c:if>
+		target="_blank"
 	>${display}</a><%-- No trailing newlines! --%>

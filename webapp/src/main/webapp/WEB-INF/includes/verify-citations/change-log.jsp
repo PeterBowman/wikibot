@@ -12,7 +12,6 @@
 	wprowadzone przez użytkowników, jak i wygenerowane przez automat (zaznaczywszy tę opcję).
 </p>
 
-<%-- TODO: filter by timestamp + recalculate offset --%>
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
 		<legend>Rejestr zmian</legend>
@@ -38,23 +37,20 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
-		entry.entry_id, entry.page_id, page_title, language, localized, user, change_timestamp, change_log_id
+		entry_id, page_id, page_title, language, field_localized, editor, change_timestamp, change_log_id
 	FROM
-		change_log
-			INNER JOIN entry ON entry.entry_id = change_log.entry_id
-			INNER JOIN page_title ON page_title.page_id = entry.page_id
-			INNER JOIN field ON field.field_id = entry.field_id
+		all_changes
 	WHERE
 		TRUE
 		<c:if test="${not empty fn:trim(param.user)}">
-			AND change_log.user = ?
+			AND editor = ?
 			<sql:param value="${fn:trim(param.user)}" />
 		</c:if>
 		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
 		<c:if test="${not empty trimmedEntry}">
 			<c:choose>
 				<c:when test="${fn:startsWith(trimmedEntry, '#')}">
-					AND entry.entry_id = ${fn:substringAfter(trimmedEntry, '#')}
+					AND entry_id = ${fn:substringAfter(trimmedEntry, '#')}
 				</c:when>
 				<c:otherwise>
 					AND page_title = ?
@@ -64,10 +60,10 @@
 		</c:if>
 		<c:remove var="trimmedEntry" />
 		<c:if test="${empty param.showgenerated}">
-			AND user NOT LIKE '@%'
+			AND editor NOT LIKE '@%'
 		</c:if>
 	ORDER BY
-		change_timestamp DESC, change_log_id DESC;
+		change_log_id DESC;
 </sql:query>
 
 <c:choose>
@@ -75,7 +71,6 @@
 		<p>Nie znaleziono pozycji odpowiadających zapytaniu.</p> 
 	</c:when>
 	<c:otherwise>
-		<%-- TODO: allow to sort by oldest first --%>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">

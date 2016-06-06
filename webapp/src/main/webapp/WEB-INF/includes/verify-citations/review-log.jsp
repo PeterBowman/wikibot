@@ -12,7 +12,6 @@
 	Dostępne poziomy: „zatwierdzone” oraz „odrzucone”.
 </p>
 
-<%-- TODO: filter by timestamp + recalculate offset --%>
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
 		<legend>Rejestr oznaczania</legend>
@@ -34,9 +33,9 @@
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
 		entry_id, page_id, page_title, language, field_localized, review_status, reviewer,
-		review_timestamp, current_change_id
+		review_timestamp, change_log_id
 	FROM
-		all_entries
+		all_changes
 	WHERE
 		review_status IS NOT NULL
 		<c:if test="${not empty fn:trim(param.user)}">
@@ -57,7 +56,7 @@
 		</c:if>
 		<c:remove var="trimmedEntry" />
 	ORDER BY
-		review_timestamp DESC, entry_id DESC;
+		review_log_id DESC;
 </sql:query>
 
 <c:choose>
@@ -65,7 +64,6 @@
 		<p>Nie znaleziono pozycji odpowiadających zapytaniu.</p> 
 	</c:when>
 	<c:otherwise>
-		<%-- TODO: allow to sort by oldest first --%>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">

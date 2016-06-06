@@ -6,7 +6,7 @@
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
 <p>
-	Ranking najaktywniejszych użytkowników pod względem oznaczonych wystąpień i wprowadzonych zmian.
+	Ranking użytkowników uporządkowanych pod względem oznaczonych wystąpień i wprowadzonych zmian.
 	Kliknij na podlinkowane liczby w komórkach tabelki, aby przejrzeć szczegółowe rejestry.
 </p>
 
