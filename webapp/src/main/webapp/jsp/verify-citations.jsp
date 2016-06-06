@@ -27,13 +27,19 @@
 <c:set target="${cactionsMap}" property="diff" value="diff" />
 <c:set target="${cactionsMap}" property="ranking" value="ranking" />
 
+<c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="subPath" value="${utils:lastPathPart(pageContext.request.servletPath)}" />
 
-<t:template title="${heading}" firstHeading="${heading}">
+<t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
 		<c:if test="${subPath eq 'diff'}">
-			<link href="${pageContext.request.contextPath}/styles/diff.css" type="text/css" rel="stylesheet">
+			<link href="${contextPath}/styles/diff.css" type="text/css" rel="stylesheet">
 		</c:if>
+		<c:if test="${subPath eq 'ranking'}">
+			<script src="//tools-static.wmflabs.org/static/jquery-tablesorter/2.0.5/jquery.tablesorter.min.js"></script>
+		</c:if>
+		<link href="${contextPath}/styles/verify-citations.css" type="text/css" rel="stylesheet">
+		<script src="${contextPath}/scripts/verify-citations.js"></script>
 	</jsp:attribute>
 	<jsp:attribute name="cactions">
 		<t:cactions basePath="/verify-citations" defaultTab="strona główna" tabs="${cactionsMap}" />
@@ -59,6 +65,9 @@
 			</c:when>
 			<c:when test="${subPath eq 'diff'}">
 				<jsp:include page="/WEB-INF/includes/verify-citations/diff.jsp" />
+			</c:when>
+			<c:when test="${subPath eq 'ranking'}">
+				<jsp:include page="/WEB-INF/includes/verify-citations/ranking.jsp" />
 			</c:when>
 			<c:otherwise>
 				<jsp:include page="/WEB-INF/includes/verify-citations/main.jsp" />
