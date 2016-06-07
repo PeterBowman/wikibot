@@ -32,6 +32,13 @@
 
 <t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
+		<c:if test="${
+			subPath eq 'entries' or subPath eq 'review-log' or
+			subPath eq 'change-log' or subPath eq 'edit-log'
+		}">
+			<link href="${contextPath}/styles/suggestions.css" type="text/css" rel="stylesheet">
+			<script src="${contextPath}/scripts/suggestions.js"></script>
+		</c:if>
 		<c:if test="${subPath eq 'diff'}">
 			<link href="${contextPath}/styles/diff.css" type="text/css" rel="stylesheet">
 		</c:if>

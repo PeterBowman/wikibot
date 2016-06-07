@@ -17,11 +17,11 @@
 		<legend>Rejestr zmian</legend>
 		<span class="mw-input-with-label">
 			<label for="vc-change-log-user">Użytkownik:</label>
-			<input id="vc-change-log-user" name="user" size="15" value="${param.user}">
+			<input id="vc-change-log-user" name="user" size="15" value="${param.user}" data-api-type="user">
 		</span>
 		<span class="mw-input-with-label">
 			<label for="vc-change-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-change-log-entry" name="entry" size="20" value="${param.entry}">
+			<input id="vc-change-log-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
 		</span>
 		<span class="mw-input-with-label">
 			<input type="checkbox" id="vc-change-log-show-generated" name="showgenerated"

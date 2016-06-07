@@ -17,11 +17,11 @@
 		<legend>Rejestr oznaczania</legend>
 		<span class="mw-input-with-label">
 			<label for="vc-review-log-user">Użytkownik:</label>
-			<input id="vc-review-log-user" name="user" size="15" value="${param.user}">
+			<input id="vc-review-log-user" name="user" size="15" value="${param.user}" data-api-type="user">
 		</span>
 		<span class="mw-input-with-label">
 			<label for="vc-review-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-review-log-entry" name="entry" size="20" value="${param.entry}">
+			<input id="vc-review-log-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
 		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>

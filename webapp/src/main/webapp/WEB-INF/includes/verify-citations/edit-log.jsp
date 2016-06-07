@@ -16,7 +16,7 @@
 		<legend>Rejestr edycji bota</legend>
 		<span class="mw-input-with-label">
 			<label for="vc-edit-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-edit-log-entry" name="entry" size="20" value="${param.entry}">
+			<input id="vc-edit-log-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
 		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>

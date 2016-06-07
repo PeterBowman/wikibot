@@ -20,7 +20,7 @@
 		<legend>Lista wystąpień</legend>
 		<span class="mw-input-with-label">
 			<label for="vc-entries-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-entries-entry" name="entry" size="20" value="${param.entry}">
+			<input id="vc-entries-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
 		</span>
 		Ukryj:
 		<span class="mw-input-with-label">

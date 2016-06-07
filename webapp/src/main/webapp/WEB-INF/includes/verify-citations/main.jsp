@@ -110,8 +110,8 @@
 </p>
 
 <ul>
-	<li>kropka kończąca skrót (np. <code>itd.</code>),</li>
-	<li>kropka po liczebniku porządkowym zapisanym cyframi (np. <code>10.</code>).</li>
+	<li>kropkę kończącą skrót (np. <code>itd.</code>),</li>
+	<li>kropkę po liczebniku porządkowym zapisanym cyframi (np. <code>10.</code>).</li>
 </ul>
 
 
