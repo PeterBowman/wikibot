@@ -18,6 +18,7 @@
 <sql:query var="result1" dataSource="${verifyCitationsDS}">
 	SELECT
 		COUNT(*) AS total_entries,
+		COUNT(DISTINCT page_title) AS total_pages,
 	    SUM(IF(is_pending, 1, 0)) AS total_pending,
 	    SUM(IF(review_status, 1, 0)) AS total_verified,
 	    SUM(IF(NOT review_status, 1, 0)) AS total_rejected
@@ -68,7 +69,7 @@
 	<t:linker hrefPattern="https://pl.wiktionary.org/$1"
 		target="Wikisłownik:Głosowania/Pozycja odsyłacza przypisu względem kropki" />.
 	Celem narzędzia jest ujednolicenie zapisu odsyłacza przypisu względem kropki zamykającej zdanie.
-	Ujednolicenie obejmuje (ekstrakt ze strony głosowania):
+	Ujednolicenie obejmuje (wyciąg ze strony głosowania):
 </p>
 
 <ul>
@@ -160,6 +161,10 @@
 	<tr>
 		<td><a href="verify-citations/entries">Wszystkie</a></td>
 		<td class="mw-statistics-numbers">${row1.total_entries}</td>
+	</tr>
+	<tr>
+		<td>Wszystkie (jednakowe strony)</td>
+		<td class="mw-statistics-numbers">${row1.total_pages}</td>
 	</tr>
 	<tr>
 		<th colspan="2">Weryfikacja</th>
