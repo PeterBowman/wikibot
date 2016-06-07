@@ -351,5 +351,6 @@ Transporte = transporte
 Vestimenta = vestimenta
 Veterinaria = veterinaria
 Vivienda = vivienda
+yerbas = hierbas
 Zoología = zoología
 Zootomía = zootomía

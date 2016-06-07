@@ -117,6 +117,7 @@ gimnasia = Gimnasia
 guarismos = Guarismos
 heráldica = Heráldica
 herramientas = Herramientas
+hierbas = Hierbas
 historia = Historia
 historieta = Historieta
 hockey sobre césped = Hockey sobre césped
