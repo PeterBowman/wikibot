@@ -8,20 +8,15 @@
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
 <p>
-	Rejest oznaczania wystąpień na <a href="./entries?hideprocessed=on">liście roboczej</a>.
-	Dostępne poziomy: „zatwierdzone” oraz „odrzucone”.
+	Rejest edycji wykonanych przez bota.
 </p>
 
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
-		<legend>Rejestr oznaczania</legend>
+		<legend>Rejestr edycji bota</legend>
 		<span class="mw-input-with-label">
-			<label for="vc-review-log-user">Użytkownik:</label>
-			<input id="vc-review-log-user" name="user" size="15" value="${param.user}" data-api-type="user">
-		</span>
-		<span class="mw-input-with-label">
-			<label for="vc-review-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
-			<input id="vc-review-log-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
+			<label for="vc-edit-log-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
+			<input id="vc-edit-log-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
 		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>
@@ -32,16 +27,13 @@
 
 <sql:query var="result" dataSource="${verifyCitationsDS}" startRow="${offset}" maxRows="${limit}">
 	SELECT
-		entry_id, page_id, page_title, language, field_localized, review_status, reviewer,
-		review_timestamp, change_log_id
+		entry_id, page_id, page_title, language, field_localized, all_changes.change_log_id,
+		edit_timestamp, rev_id
 	FROM
 		all_changes
+			INNER JOIN edit_log ON edit_log.change_log_id = all_changes.change_log_id
 	WHERE
-		review_status IS NOT NULL
-		<c:if test="${not empty fn:trim(param.user)}">
-			AND reviewer = ?
-			<sql:param value="${fn:trim(param.user)}" />
-		</c:if>
+		TRUE
 		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
 		<c:if test="${not empty trimmedEntry}">
 			<c:choose>
@@ -56,7 +48,7 @@
 		</c:if>
 		<c:remove var="trimmedEntry" />
 	ORDER BY
-		review_log_id DESC;
+		edit_log_id DESC;
 </sql:query>
 
 <c:choose>
@@ -67,7 +59,7 @@
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />
 		<ul>
 			<c:forEach var="row" items="${result.rows}">
-				<li><vc:review-log row="${row}" /></li>
+				<li><vc:edit-log row="${row}" /></li>
 			</c:forEach>
 		</ul>
 		<t:paginator limit="${limit}" offset="${offset}" hasNext="${result.limitedByMaxRows}" />

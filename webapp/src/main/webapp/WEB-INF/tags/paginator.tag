@@ -1,3 +1,9 @@
+<%--
+	TODO: implement sorting by oldest/last first
+	* http://stackoverflow.com/questions/17522850
+	* http://stackoverflow.com/questions/3879248
+	* http://stackoverflow.com/questions/712046
+--%>
 <%@ tag description="Pagination tag for browsing variable-size lists of results" pageEncoding="UTF-8"
 	trimDirectiveWhitespaces="true" %>
 

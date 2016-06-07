@@ -40,12 +40,16 @@
 				<jsp:attribute name="plwikivoyage">Wikipodróże</jsp:attribute>
 				<jsp:attribute name="specieswiki">Wikispecies</jsp:attribute>
 			</t:select>
-			<input type="checkbox" id="ignorelc" name="ignorelc"
-				<c:if test="${not empty param.ignorelc}">checked</c:if>>
-			<label for="ignorelc">ukryj strony docelowe zaczynające się od małej litery</label>
-			<input type="checkbox" id="hideprefixes" name="hideprefixes"
-				<c:if test="${not empty param.hideprefixes}">checked</c:if>>
-			<label for="hideprefixes">ukryj prefiksy interwiki</label>
+			<span class="mw-input-with-label">
+				<input type="checkbox" id="ignorelc" name="ignorelc"
+					<c:if test="${not empty param.ignorelc}">checked</c:if>>
+				<label for="ignorelc">ukryj strony docelowe zaczynające się od małej litery</label>
+			</span>
+			<span class="mw-input-with-label">
+				<input type="checkbox" id="hideprefixes" name="hideprefixes"
+					<c:if test="${not empty param.hideprefixes}">checked</c:if>>
+				<label for="hideprefixes">ukryj prefiksy interwiki</label>
+			</span>
 			<input type="submit" value="Pokaż" >
 		</fieldset>
 	</form>

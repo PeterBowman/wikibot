@@ -8,11 +8,11 @@
 
 <c:set var="heading" value="Linkujące morfemów esperanto" />
 
-<sql:query var="lastUpdate" dataSource="jdbc/tools-db">
+<sql:query var="lastUpdate" dataSource="jdbc/plwikt-common">
 	SELECT
 		timestamp
 	FROM
-		s52584__plwikt_common.execution_log
+		execution_log
 	WHERE
 		type = 'tasks.plwikt.MorfeoDatabase';
 </sql:query>
@@ -46,8 +46,10 @@
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<fieldset>
 				<legend>Wyszukiwarka morfemów</legend>
-				<label for="morphem">Morfem(y):</label>
-				<input id="morphem-input" name="morphem" size="20" value="${param.morphem}">
+				<span class="mw-input-with-label">
+					<label for="morphem">Morfem(y):</label>
+					<input id="morphem-input" name="morphem" size="20" value="${param.morphem}">
+				</span>
 				<input type="submit" value="Pokaż" >
 			</fieldset>
 		</form>

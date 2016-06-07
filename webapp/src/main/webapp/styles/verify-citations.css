@@ -1,0 +1,15 @@
+th.header {
+	background-image: url(../images/asc-desc.gif);
+	cursor: pointer;
+	background-repeat: no-repeat;
+	background-position: center right;
+	padding-right: 20px !important;
+}
+
+th.headerSortUp {
+	background-image: url(../images/asc.gif);
+}
+
+th.headerSortDown {
+	background-image: url(../images/desc.gif);
+}

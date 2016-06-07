@@ -18,17 +18,26 @@
 <form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 	<fieldset>
 		<legend>Lista wystąpień</legend>
-		<label for="vc-entries-title">Tytuł strony:</label>
-		<input id="vc-entries-title" name="title" size="20" value="${param.title}">
-		<input type="checkbox" id="vc-entries-hideprocessed" name="hideprocessed"
-			<c:if test="${not empty param.hideprocessed}">checked</c:if>>
-		<label for="vc-entries-hideprocessed">ukryj przetworzone</label>
-		<input type="checkbox" id="vc-entries-hide-verified" name="hideverified"
-			<c:if test="${not empty param.hideverified}">checked</c:if>>
-		<label for="vc-entries-hide-verified">ukryj zatwierdzone</label>
-		<input type="checkbox" id="vc-entries-hide-rejected" name="hiderejected"
-			<c:if test="${not empty param.hiderejected}">checked</c:if>>
-		<label for="vc-entries-hide-rejected">ukryj odrzucone</label>
+		<span class="mw-input-with-label">
+			<label for="vc-entries-entry">Tytuł strony lub identyfikator wystąpienia${entryInputInfoTag}:</label>
+			<input id="vc-entries-entry" name="entry" size="20" value="${param.entry}" data-api-type="title">
+		</span>
+		Ukryj:
+		<span class="mw-input-with-label">
+			<input type="checkbox" id="vc-entries-hideprocessed" name="hideprocessed"
+				<c:if test="${not empty param.hideprocessed}">checked</c:if>>
+			<label for="vc-entries-hideprocessed">przetworzone</label>
+		</span>
+		<span class="mw-input-with-label">
+			<input type="checkbox" id="vc-entries-hide-verified" name="hideverified"
+				<c:if test="${not empty param.hideverified}">checked</c:if>>
+			<label for="vc-entries-hide-verified">zatwierdzone</label>
+		</span>
+		<span class="mw-input-with-label">
+			<input type="checkbox" id="vc-entries-hide-rejected" name="hiderejected"
+				<c:if test="${not empty param.hiderejected}">checked</c:if>>
+			<label for="vc-entries-hide-rejected">odrzucone</label>
+		</span>
 		<input type="submit" value="Pokaż" >
 	</fieldset>
 </form>
@@ -41,33 +50,30 @@
 		entry_id, page_id, page_title, language, field_localized, is_pending, review_status, reviewer
 	FROM
 		all_entries
-	<c:if test="${
-		not empty fn:trim(param.title) or not empty param.hideprocessed or
-		not empty param.hideverified or not empty param.hiderejected
-	}">
 	WHERE
-		<c:set var="isFirst" value="${true}" />
-		<c:if test="${not empty fn:trim(param.title)}">
-			page_title = ?
-			<sql:param value="${fn:trim(param.title)}" />
-			<c:set var="isFirst" value="${false}" />
+		TRUE
+		<c:set var="trimmedEntry" value="${fn:trim(param.entry)}" />
+		<c:if test="${not empty trimmedEntry}">
+			<c:choose>
+				<c:when test="${fn:startsWith(trimmedEntry, '#')}">
+					AND entry_id = ${fn:substringAfter(trimmedEntry, '#')}
+				</c:when>
+				<c:otherwise>
+					AND page_title = ?
+					<sql:param value="${trimmedEntry}" />
+				</c:otherwise>
+			</c:choose>
 		</c:if>
+		<c:remove var="trimmedEntry" />
 		<c:if test="${not empty param.hideprocessed}">
-			<c:if test="${not isFirst}">AND</c:if>
-			is_pending IS TRUE
-			<c:set var="isFirst" value="${false}" />
+			AND is_pending IS TRUE
 		</c:if>
 		<c:if test="${not empty param.hideverified}">
-			<c:if test="${not isFirst}">AND</c:if>
-			(review_status IS NULL OR review_status IS FALSE)
-			<c:set var="isFirst" value="${false}" />
+			AND (review_status IS NULL OR review_status IS FALSE)
 		</c:if>
 		<c:if test="${not empty param.hiderejected}">
-			<c:if test="${not isFirst}">AND</c:if>
-			(review_status IS NULL OR review_status IS TRUE)
+			AND (review_status IS NULL OR review_status IS TRUE)
 		</c:if>
-		<c:remove var="isFirst" />
-	</c:if>	
 	ORDER BY
 		entry_id DESC;
 </sql:query>

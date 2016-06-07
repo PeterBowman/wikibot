@@ -4,12 +4,12 @@
 <%@ attribute name="row" required="true" type="java.util.SortedMap" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 (#${row.entry_id})
-<a href="https://pl.wiktionary.org/w/index.php?curid=${row.page_id}">${row.page_title}</a>
-.&nbsp;.
-(${row.language} • ${row.field_localized})
+<a href="https://pl.wiktionary.org/w/index.php?curid=${row.page_id}" target="_blank">${row.page_title}</a>
+•
+${row.language} • ${row.field_localized}
 <c:if test="${row.is_pending eq 1}">
 	.&nbsp;.
 	oczekuje na przetworzenie
@@ -24,8 +24,8 @@
 			odrzucone
 		</c:when>
 	</c:choose>
-	przez:
-	<t:linker hrefPattern="https://pl.wiktionary.org/$1" target="User:${row.reviewer}" display="${row.reviewer}" />
+	przez
+	<a href="review-log?user=${fn:escapeXml(row.reviewer)}">${row.reviewer}</a>
 </c:if>
 .&nbsp;.
-(szczegóły)
+(<a href="diff?entry=${row.entry_id}">szczegóły</a>)

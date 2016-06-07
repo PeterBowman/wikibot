@@ -1,5 +1,3 @@
-// Based on MediaWiki's searchSuggest module.
-
 $( function () {
 	function makeRequest( query, response, maxRows ) {
 		return $.getJSON( 'eom-backlinks/api', {
@@ -10,6 +8,7 @@ $( function () {
 		} );
 	}
 	
+	// Based on MediaWiki's searchSuggest module.
 	$( '#morphem-input' ).suggestions( {
 		fetch: function ( query, response, maxRows ) {
 			$.data( this[ 0 ], 'request', makeRequest( query, response, maxRows ) );

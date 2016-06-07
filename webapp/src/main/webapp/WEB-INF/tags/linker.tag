@@ -47,4 +47,5 @@
 		data-target="${normalized}"
 		<c:if test="${not empty sectionName}">data-section="${sectionName}"</c:if> 
 		title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
+		target="_blank"
 	>${display}</a><%-- No trailing newlines! --%>

@@ -165,14 +165,13 @@ public final class CitationTypography {
 						updateEntryAndPendingTables(vcConn, entries, entryMap);
 					}
 					
-					List<Entry> pendingEntries = queryPendingEntries(vcConn);
+					Map<Integer, Entry> pendingMap = queryPendingEntries(vcConn);
 					
-					if (!pendingEntries.isEmpty()) {
-						List<Entry> worklist = reviewPendingEntries(vcConn, pendingEntries,
-							contentCache, line.hasOption("dump"));
+					if (!pendingMap.isEmpty()) {
+						reviewPendingEntries(vcConn, pendingMap, contentCache, line.hasOption("dump"));
 						
-						if (!worklist.isEmpty()) {
-							deleteObsoletePendingEntries(vcConn, worklist);
+						if (!pendingMap.isEmpty()) {
+							deleteObsoletePendingEntries(vcConn, pendingMap);
 						}
 					}
 					
@@ -490,7 +489,9 @@ public final class CitationTypography {
 			Set<Entry> verifiedNonPendingEntries, Set<Entry> nonReviewedNonPendingEntries)
 			throws SQLException {
 		String titles = entries.stream()
-			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
+			.map(entry -> entry.title)
+			.distinct()
+			.map(title -> String.format("'%s'", title.replace("'", "\\'")))
 			.collect(Collectors.joining(", "));
 		
 		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text,"
@@ -543,13 +544,15 @@ public final class CitationTypography {
 	private static void storeNewEntries(Connection conn, List<Entry> entries) throws SQLException {
 		String preparedSourceLineQuery = "INSERT INTO source_line (source_text) VALUES (?);";
 		String preparedEditedLineQuery = "INSERT INTO edited_line (edited_text) VALUES (?);";
-		String preparedChangeLogQuery = "INSERT INTO change_log (edited_line_id) VALUES (?);";
 		
 		String preparedEntryQuery = "INSERT INTO entry"
-			+ " (page_id, language, field_id, source_line_id, current_change_id)"
+			+ " (page_id, language, field_id, source_line_id, edited_line_id)"
 			+ " SELECT page_id, ?, ?, ?, ?"
 			+ " FROM page_title"
 			+ " WHERE page_title.page_title = ?;";
+		
+		String preparedChangeLogQuery = "INSERT INTO change_log (change_log_id, entry_id)"
+			+ " VALUES (?, ?);";
 		
 		String preparedPendingQuery = "INSERT INTO pending (entry_id) VALUES (?);";
 		
@@ -557,8 +560,8 @@ public final class CitationTypography {
 		
 		PreparedStatement insertSourceLine = conn.prepareStatement(preparedSourceLineQuery, opt);
 		PreparedStatement insertEditedLine = conn.prepareStatement(preparedEditedLineQuery, opt);
-		PreparedStatement insertChangeLog = conn.prepareStatement(preparedChangeLogQuery, opt);
 		PreparedStatement insertEntry = conn.prepareStatement(preparedEntryQuery, opt);
+		PreparedStatement insertChangeLog = conn.prepareStatement(preparedChangeLogQuery, opt);
 		PreparedStatement insertPending = conn.prepareStatement(preparedPendingQuery, opt);
 		
 		conn.setAutoCommit(false);
@@ -571,7 +574,6 @@ public final class CitationTypography {
 		for (Entry entry : entries) {
 			int sourceLineId;
 			int editedLineId;
-			int changeLogId;
 			int entryId;
 			
 			ResultSet rs;
@@ -600,21 +602,10 @@ public final class CitationTypography {
 				continue;
 			}
 			
-			insertChangeLog.setInt(1, editedLineId);
-			insertChangeLog.executeUpdate();
-			
-			rs = insertChangeLog.getGeneratedKeys();
-			
-			if (rs.next()) {
-				changeLogId = rs.getInt(1);
-			} else {
-				continue;
-			}
-			
 			insertEntry.setString(1, entry.langSection);
 			insertEntry.setInt(2, entry.fieldType.ordinal() + 1);
 			insertEntry.setInt(3, sourceLineId);
-			insertEntry.setInt(4, changeLogId);
+			insertEntry.setInt(4, editedLineId);
 			insertEntry.setString(5, entry.title);
 			insertEntry.executeUpdate();
 			
@@ -626,6 +617,10 @@ public final class CitationTypography {
 			} else {
 				continue;
 			}
+			
+			insertChangeLog.setInt(1, editedLineId);
+			insertChangeLog.setInt(2, entryId);
+			insertChangeLog.executeUpdate();
 			
 			insertPending.setInt(1, entryId);
 			insertPending.executeUpdate();
@@ -657,7 +652,7 @@ public final class CitationTypography {
 		System.out.printf("%d rows inserted into 'pending' table.%n", insertedRows);
 	}
 	
-	private static List<Entry> queryPendingEntries(Connection conn) throws SQLException {
+	private static Map<Integer, Entry> queryPendingEntries(Connection conn) throws SQLException {
 		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
 			+ " FROM all_entries"
 			+ " WHERE is_pending IS TRUE;";
@@ -671,12 +666,12 @@ public final class CitationTypography {
 			processEntryResultSet(rs, entryMap);
 		}
 		
-		return new ArrayList<>(entryMap.values());
+		return entryMap;
 	}
 	
-	private static List<Entry> reviewPendingEntries(Connection conn, List<Entry> pendingEntries,
-			Map<String, String> contentCache, boolean isDump) throws SQLException {
-		Set<String> titles = pendingEntries.stream()
+	private static void reviewPendingEntries(Connection conn, Map<Integer, Entry> pendingMap,
+			Map<String, String> contentCache, boolean isDump) {
+		Set<String> titles = pendingMap.values().stream()
 			.map(entry -> entry.title)
 			.collect(Collectors.toSet());
 		
@@ -698,46 +693,29 @@ public final class CitationTypography {
 			}
 		}
 		
-		List<Entry> worklist = new ArrayList<>(300);
-		
-		for (Entry entry : pendingEntries) {
-			if (!contentCache.containsKey(entry.title)) {
-				continue;
-			}
-			
-			String pageText = contentCache.get(entry.title);
-			
-			boolean isPresent = Optional.of(Page.store(entry.title, pageText))
+		pendingMap.values().removeIf(entry ->
+			!contentCache.containsKey(entry.title) ||
+			Optional.of(Page.store(entry.title, contentCache.get(entry.title)))
 				.flatMap(p -> p.getSection(entry.langSection))
 				.flatMap(s -> s.getField(entry.fieldType))
 				.filter(f -> !f.isEmpty())
 				.map(Field::getContent)
-				.filter(text -> !text.contains(entry.originalText))
-				.isPresent();
-			
-			if (isPresent) {
-				worklist.add(entry);
-			}
-		}
-		
-		return worklist;
+				.filter(text -> Pattern.compile("\n").splitAsStream(text)
+					.anyMatch(line -> line.equals(entry.originalText))
+				)
+				.isPresent()
+		);
 	}
 	
-	private static void deleteObsoletePendingEntries(Connection conn, List<Entry> entries) throws SQLException {
-		String values = entries.stream()
-			.map(entry -> String.format("'%s'", entry.title.replace("'", "\\'")))
+	private static void deleteObsoletePendingEntries(Connection conn, Map<Integer, Entry> pendingMap)
+			throws SQLException {
+		String values = pendingMap.keySet().stream()
+			.map(Object::toString)
 			.collect(Collectors.joining(", "));
 		
-		String query = "DELETE pending"
-			+ " FROM pending"
-			+ " INNER JOIN entry"
-			+ " ON entry.entry_id = pending.entry_id"
-			+ " INNER JOIN page_title"
-			+ " ON page_title.page_id = entry.page_id"
-			+ " WHERE page_title IN (" + values + ");";
+		String query = "DELETE FROM pending WHERE entry_id IN (" + values + ");";
+		int deletedRows = conn.createStatement().executeUpdate(query);
 		
-		Statement stmt = conn.createStatement();
-		int deletedRows = stmt.executeUpdate(query);
 		System.out.printf("%d rows deleted from 'pending' table.%n", deletedRows);
 	}
 	
@@ -887,13 +865,17 @@ public final class CitationTypography {
 			
 			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
 			PreparedStatement st = conn.prepareStatement("INSERT INTO edit_log"
-				+ " (entry_id, rev_id, edit_timestamp)"
-				+ " VALUES (?, ?, ?);"
+				+ " (change_log_id, rev_id, edit_timestamp)"
+				+ " SELECT change_log.change_log_id, ?, ?"
+				+ " FROM change_log"
+				+ " WHERE entry_id = " + entryId
+				+ " AND change_timestamp <= " + gapTimestamp
+				+ " ORDER BY change_log_id DESC"
+				+ " LIMIT 1;"
 			);
 			
-			st.setInt(1, entryId);
-			st.setInt(2, (int) revId);
-			st.setTimestamp(3, revTimestamp);
+			st.setInt(1, (int) revId);
+			st.setTimestamp(2, revTimestamp);
 			
 			st.executeUpdate();
 		}

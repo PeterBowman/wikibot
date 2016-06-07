@@ -19,3 +19,7 @@ a.false-blue {
 a.false-blue:visited {
 	color: #900070;
 }
+
+td.mw-statistics-numbers {
+	text-align: right;
+}
