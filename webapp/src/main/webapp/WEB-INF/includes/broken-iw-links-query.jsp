@@ -71,10 +71,21 @@
 			WHERE iwl_title LIKE CONCAT(meta_wiki.lang, ":%")
 		) AND
 		</c:if>
-		NOT EXISTS (
+		(NOT EXISTS (
 			SELECT NULL
 			FROM ${param.project}_p.page AS foreign_page
 			WHERE foreign_page.page_title = iwl_title
+		)
+		<c:if test="${empty param.hidedisambigs}">
+		OR EXISTS (
+			SELECT NULL
+			FROM ${param.project}_p.page AS foreign_page
+			INNER JOIN ${param.project}_p.page_props AS foreign_page_props
+			ON foreign_page_props.pp_page = foreign_page.page_id
+			WHERE foreign_page.page_title = iwl_title
+			AND foreign_page_props.pp_propname = "disambiguation"
+		)
+		</c:if>
 		)
 	ORDER BY
 		CONVERT(page_title USING utf8) COLLATE utf8_polish_ci, iwl_title

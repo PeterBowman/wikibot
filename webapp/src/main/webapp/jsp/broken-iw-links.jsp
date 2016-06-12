@@ -8,7 +8,7 @@
 <t:template title="${heading}" firstHeading="${heading}">
 	<p>
 		Wystąpienia linków w przestrzeni głównej polskiego Wikisłownika, które kierują do
-		nieistniejących stron w projektach siostrzanych.
+		nieistniejących stron lub ujednoznacznień w projektach siostrzanych.
 	</p>
 	<p>
 		Wyszukiwarka nie rozpoznaje haseł w projekcie docelowym, jeżeli link został zapisany
@@ -49,6 +49,11 @@
 				<input type="checkbox" id="hideprefixes" name="hideprefixes"
 					<c:if test="${not empty param.hideprefixes}">checked</c:if>>
 				<label for="hideprefixes">ukryj prefiksy interwiki</label>
+			</span>
+			<span class="mw-input-with-label">
+				<input type="checkbox" id="hidedisambigs" name="hidedisambigs"
+					<c:if test="${not empty param.hidedisambigs}">checked</c:if>>
+				<label for="hidedisambigs">ukryj strony ujednoznaczniające</label>
 			</span>
 			<input type="submit" value="Pokaż" >
 		</fieldset>
