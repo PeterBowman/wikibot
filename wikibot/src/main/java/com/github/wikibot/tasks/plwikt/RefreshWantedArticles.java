@@ -1,5 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,8 +11,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.xml.bind.ValidationException;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,10 +30,13 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class RefreshWantedArticles {
+	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
 	private static final String TARGET_PAGE = "Szablon:Potrzebne";
 	private static final String REFILL_PAGE = "Wikipedysta:AlkamidBot/listy/Najbardziej potrzebne";
+	
 	private static final int MAX_LENGHT = 100;
-	private static final int REFILL_SIZE = 25;
+	private static final int REFILL_SIZE = 10;
+	private static final int REFILL_THRESHOLD = 15;
 	
 	private static final Pattern P_LINK;
 	private static final Pattern P_OCCURRENCES_TARGET;
@@ -52,25 +54,16 @@ public final class RefreshWantedArticles {
 		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		
 		String content = wb.getPageText(TARGET_PAGE);
+		
 		Document doc = Jsoup.parseBodyFragment(content);
 		doc.outputSettings().prettyPrint(false);
 		
-		Element targetElement;
-		
-		try {
-			targetElement = selectTargetElement(doc);
-		} catch (ValidationException e) {
-			System.out.println(e.getMessage());
-			return;
-		}
+		Element targetElement = selectTargetElement(doc.body());
 		
 		List<String> visibleTitles = extractTitles(targetElement.previousSibling());
 		List<String> hiddenTitles = extractTitles(targetElement);
 		
-		if (visibleTitles.isEmpty() || hiddenTitles.isEmpty()) {
-			System.out.println("No titles extracted.");
-			return;
-		}
+		Set<String> storeSet = manageStoredTitles(visibleTitles, hiddenTitles);
 		
 		List<String> doneVisible = filterDoneArticles(visibleTitles);
 		
@@ -81,7 +74,7 @@ public final class RefreshWantedArticles {
 		
 		List<String> doneHidden = filterDoneArticles(hiddenTitles);
 		
-		processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden);
+		processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden, storeSet);
 		
 		String text = doc.body().html();
 		String counter = Misc.makePluralPL(doneVisible.size() + doneHidden.size(), "utworzone", "utworzonych");
@@ -90,40 +83,40 @@ public final class RefreshWantedArticles {
 		wb.edit(TARGET_PAGE, text, summary);
 	}
 	
-	private static Element selectTargetElement(Document doc) throws ValidationException {
-		Elements els = doc.getElementsByTag("noinclude");
+	private static Element selectTargetElement(Element body) {
+		Elements els = body.getElementsByTag("noinclude");
 		
 		if (els.isEmpty()) {
-			throw new ValidationException("No <noinclude> tags found.");
+			throw new RuntimeException("No <noinclude> tags found.");
 		}
 		
 		Element parent = els.get(0).parent();
 		
 		if (els.stream().anyMatch(el -> el.parent() != parent)) {
-			throw new ValidationException("Multiple <noinclude> tags with no common parent.");
+			throw new RuntimeException("Multiple <noinclude> tags with no common parent.");
 		}
 		
 		Element targetElement = els.stream()
-			.filter(el -> P_OCCURRENCES_TARGET.matcher(el.html()).matches())
+			.filter(el -> P_OCCURRENCES_TARGET.matcher(el.html().trim()).matches())
 			.findFirst()
-			.orElseThrow(() -> new ValidationException("No matching <noinclude> target element found."));
+			.orElseThrow(() -> new RuntimeException("No matching <noinclude> target element found."));
 		
 		if (!targetElement.children().isEmpty()) {
-			throw new ValidationException("Target <noinclude> node has inner elements.");
+			throw new RuntimeException("Target <noinclude> node has inner elements.");
 		}
 		
 		Node previousSibling = targetElement.previousSibling();
 		
 		if (previousSibling == null) {
-			throw new ValidationException("Target <noinclude> node has no previous sibling.");
+			throw new RuntimeException("Target <noinclude> node has no previous sibling.");
 		}
 		
 		if (!(previousSibling instanceof TextNode)) {
-			throw new ValidationException("Target <noinclude> node has no previous TextNode sibling.");
+			throw new RuntimeException("Target <noinclude> node has no previous TextNode sibling.");
 		}
 		
 		if (!P_OCCURRENCES_TARGET.matcher(previousSibling.toString()).matches()) {
-			throw new ValidationException("TextNode sibling does not match the expected pattern.");
+			throw new RuntimeException("TextNode sibling does not match the expected pattern.");
 		}
 		
 		return targetElement;
@@ -145,7 +138,29 @@ public final class RefreshWantedArticles {
 			list.add(m.group(1).trim());
 		}
 		
+		if (list.isEmpty()) {
+			throw new RuntimeException("No titles have been extracted from " + node.getClass() + ".");
+		}
+		
 		return list;
+	}
+	
+	private static Set<String> manageStoredTitles(List<String> visible, List<String> hidden) throws IOException {
+		final String fileName = "store.ser";
+		Set<String> storeSet;
+		
+		try {
+			storeSet = Misc.deserialize(LOCATION + fileName);
+		} catch (ClassNotFoundException | FileNotFoundException e) {
+			storeSet = new HashSet<>();
+		}
+		
+		storeSet.addAll(visible);
+		storeSet.addAll(hidden);
+		
+		Misc.serialize(storeSet, LOCATION + fileName);
+		
+		return storeSet;
 	}
 	
 	private static List<String> filterDoneArticles(List<String> titles) throws IOException {
@@ -163,20 +178,26 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static void processElement(Element el, List<String> visibleTitles, List<String> doneVisible,
-			List<String> hiddenTitles, List<String> doneHidden) throws IOException {
+			List<String> hiddenTitles, List<String> doneHidden, Set<String> storeSet) {
 		List<String> visibleList = new ArrayList<>(visibleTitles);
 		visibleList.removeAll(doneVisible);
 		
 		List<String> hiddenList = new ArrayList<>(hiddenTitles);
 		hiddenList.removeAll(doneHidden);
 		
-		Set<String> storeSet = new HashSet<>();
-		storeSet.addAll(visibleTitles);
-		storeSet.addAll(hiddenTitles);
-		
 		while (!checkLength(visibleList)) {
+			if (hiddenList.size() < REFILL_THRESHOLD) {
+				try {
+					fetchMoreArticles(hiddenList, storeSet);
+					storeSet.addAll(hiddenList);
+				} catch (IOException e) {
+					e.printStackTrace();
+					break;
+				}
+			}
+			
 			if (hiddenList.isEmpty()) {
-				fetchMoreArticles(hiddenList, storeSet);
+				break;
 			}
 			
 			visibleList.add(hiddenList.remove(0));
