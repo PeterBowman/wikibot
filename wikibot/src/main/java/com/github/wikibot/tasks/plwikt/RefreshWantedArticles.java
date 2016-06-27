@@ -2,8 +2,10 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,16 +32,20 @@ import com.github.wikibot.utils.Users;
 
 public final class RefreshWantedArticles {
 	private static final String TARGET_PAGE = "Szablon:Potrzebne";
+	private static final String REFILL_PAGE = "Wikipedysta:AlkamidBot/listy/Najbardziej potrzebne";
 	private static final int MAX_LENGHT = 100;
+	private static final int REFILL_SIZE = 25;
 	
 	private static final Pattern P_LINK;
-	private static final Pattern P_OCCURRENCES;
+	private static final Pattern P_OCCURRENCES_TARGET;
+	private static final Pattern P_OCCURRENCES_REFILL;
 	
 	private static Wikibot wb;
 	
 	static {
 		P_LINK = Pattern.compile("\\[\\[([^\\]\n]+?)\\]\\]");
-		P_OCCURRENCES = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
+		P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
+		P_OCCURRENCES_REFILL = Pattern.compile("\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -78,10 +84,9 @@ public final class RefreshWantedArticles {
 		processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden);
 		
 		String text = doc.body().html();
-		String counter = Misc.makePluralPL(doneVisible.size(), "utworzone", "utworzonych");
+		String counter = Misc.makePluralPL(doneVisible.size() + doneHidden.size(), "utworzone", "utworzonych");
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
-		wb.setMarkBot(false);
 		wb.edit(TARGET_PAGE, text, summary);
 	}
 	
@@ -99,7 +104,7 @@ public final class RefreshWantedArticles {
 		}
 		
 		Element targetElement = els.stream()
-			.filter(el -> P_OCCURRENCES.matcher(el.html()).matches())
+			.filter(el -> P_OCCURRENCES_TARGET.matcher(el.html()).matches())
 			.findFirst()
 			.orElseThrow(() -> new ValidationException("No matching <noinclude> target element found."));
 		
@@ -117,7 +122,7 @@ public final class RefreshWantedArticles {
 			throw new ValidationException("Target <noinclude> node has no previous TextNode sibling.");
 		}
 		
-		if (!P_OCCURRENCES.matcher(previousSibling.toString()).matches()) {
+		if (!P_OCCURRENCES_TARGET.matcher(previousSibling.toString()).matches()) {
 			throw new ValidationException("TextNode sibling does not match the expected pattern.");
 		}
 		
@@ -158,14 +163,22 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static void processElement(Element el, List<String> visibleTitles, List<String> doneVisible,
-			List<String> hiddenTitles, List<String> doneHidden) {
+			List<String> hiddenTitles, List<String> doneHidden) throws IOException {
 		List<String> visibleList = new ArrayList<>(visibleTitles);
 		visibleList.removeAll(doneVisible);
 		
 		List<String> hiddenList = new ArrayList<>(hiddenTitles);
 		hiddenList.removeAll(doneHidden);
 		
-		while (!hiddenList.isEmpty() && !checkLength(visibleList)) {
+		Set<String> storeSet = new HashSet<>();
+		storeSet.addAll(visibleTitles);
+		storeSet.addAll(hiddenTitles);
+		
+		while (!checkLength(visibleList)) {
+			if (hiddenList.isEmpty()) {
+				fetchMoreArticles(hiddenList, storeSet);
+			}
+			
 			visibleList.add(hiddenList.remove(0));
 		}
 		
@@ -184,5 +197,26 @@ public final class RefreshWantedArticles {
 		return list.stream()
 			.map(s -> String.format(fmt, s))
 			.collect(Collectors.joining(" • "));
+	}
+	
+	private static void fetchMoreArticles(List<String> list, Set<String> storeSet) throws IOException {
+		String text = wb.getPageText(REFILL_PAGE);
+		Matcher m = P_OCCURRENCES_REFILL.matcher(text);
+		List<String> titles = new ArrayList<>(500);
+		
+		while (m.find()) {
+			String title = m.group(1).trim();
+			
+			if (!storeSet.contains(title)) {
+				titles.add(title);
+			}
+		}
+		
+		Set<String> doneSet = new HashSet<>(filterDoneArticles(titles));
+		
+		titles.stream()
+			.filter(title -> !doneSet.contains(title))
+			.limit(REFILL_SIZE)
+			.forEach(list::add);
 	}
 }
