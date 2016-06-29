@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,9 +19,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -36,7 +33,7 @@ public final class RefreshWantedArticles {
 	
 	private static final int MAX_LENGHT = 100;
 	private static final int REFILL_SIZE = 10;
-	private static final int REFILL_THRESHOLD = 15;
+	private static final int REFILL_THRESHOLD = 20;
 	
 	private static final Pattern P_LINK;
 	private static final Pattern P_OCCURRENCES_TARGET;
@@ -47,7 +44,7 @@ public final class RefreshWantedArticles {
 	static {
 		P_LINK = Pattern.compile("\\[\\[([^\\]\n]+?)\\]\\]");
 		P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
-		P_OCCURRENCES_REFILL = Pattern.compile("\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
+		P_OCCURRENCES_REFILL = Pattern.compile("^\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -81,6 +78,7 @@ public final class RefreshWantedArticles {
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
 		wb.edit(TARGET_PAGE, text, summary);
+		wb.purge(true, TARGET_PAGE);
 	}
 	
 	private static Element selectTargetElement(Element body) {
@@ -168,12 +166,8 @@ public final class RefreshWantedArticles {
 		
 		return Stream.of(pages)
 			.map(Page::wrap)
-			.map(Page::getPolishSection)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.map(Section::getContainingPage)
-			.map(Optional::get)
-			.map(AbstractPage::getTitle)
+			.filter(page -> page.getPolishSection().isPresent())
+			.map(Page::getTitle)
 			.collect(Collectors.toList());
 	}
 	
@@ -203,8 +197,9 @@ public final class RefreshWantedArticles {
 			visibleList.add(hiddenList.remove(0));
 		}
 		
-		String visibleText = buildString(visibleList, "[[%s]]");
-		String hiddenText = " • " + buildString(hiddenList, "[[%s]]");
+		final String fmt = "[[%s]]";
+		String visibleText = buildString(visibleList, fmt);
+		String hiddenText = " • " + buildString(hiddenList, fmt);
 		
 		((TextNode) el.previousSibling()).text(visibleText);
 		el.text(hiddenText);
