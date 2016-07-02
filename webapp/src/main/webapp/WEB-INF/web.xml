@@ -42,13 +42,26 @@
   	<url-pattern>/eom-backlinks</url-pattern>
   </servlet-mapping>
   <resource-ref>
-  	<description>DB connection: s52584__plwikt_verify_citations</description>
+  	<res-ref-name>jdbc/tools-db</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
   	<res-ref-name>jdbc/VerifyCitations</res-ref-name>
   	<res-type>javax.sql.DataSource</res-type>
   	<res-auth>Container</res-auth>
   </resource-ref>
   <resource-ref>
-  	<description>DB connection: plwiktionary</description>
+  	<res-ref-name>jdbc/EomBacklinks</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
+  	<res-ref-name>jdbc/plwikt-common</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
   	<res-ref-name>jdbc/plwiktionary</res-ref-name>
   	<res-type>javax.sql.DataSource</res-type>
   	<res-auth>Container</res-auth>
