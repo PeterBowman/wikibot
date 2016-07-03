@@ -12,6 +12,10 @@
   	<jsp-file>/jsp/broken-iw-links.jsp</jsp-file>
   </servlet>
   <servlet>
+  	<servlet-name>BrokenInterwikiLinksQuery</servlet-name>
+  	<servlet-class>com.github.wikibot.webapp.BrokenInterwikiLinksServlet</servlet-class>
+  </servlet>
+  <servlet>
   	<servlet-name>EomBacklinks</servlet-name>
   	<jsp-file>/jsp/eom-backlinks.jsp</jsp-file>
   </servlet>
@@ -36,6 +40,10 @@
   <servlet-mapping>
   	<servlet-name>BrokenInterwikiLinks</servlet-name>
   	<url-pattern>/broken-iw-links</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>BrokenInterwikiLinksQuery</servlet-name>
+  	<url-pattern>/broken-iw-links/query</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
   	<servlet-name>EomBacklinks</servlet-name>

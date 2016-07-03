@@ -108,6 +108,16 @@
     	<artifactId>diff-match-patch</artifactId>
     	<version>1.1</version>
     </dependency>
+    <dependency>
+    	<groupId>org.apache.commons</groupId>
+    	<artifactId>commons-lang3</artifactId>
+    	<version>3.4</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.wikipedia</groupId>
+    	<artifactId>wiki-java</artifactId>
+    	<version>0.31-SNAPSHOT</version>
+    </dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

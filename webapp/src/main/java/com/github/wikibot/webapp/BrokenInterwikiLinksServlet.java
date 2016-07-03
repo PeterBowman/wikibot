@@ -1,0 +1,726 @@
+package com.github.wikibot.webapp;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.wikipedia.Wiki;
+
+public class BrokenInterwikiLinksServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private static final int DEFAULT_LIMIT = 100;
+	private static final Pattern P_TARGET_LINK = Pattern.compile("_*:_*");
+	
+	private static final Map<String, String> PREFIX_TO_DATABASE_FAMILY;
+	private static final Set<String> MULTILINGUAL_PROJECTS;
+	
+	private static final Set<Project> projects = new HashSet<>(1300);
+	private static final Set<String> langCodes = new HashSet<>(500);
+	
+	private static final ConcurrentMap<Project, Map<String, Integer>> namespaces = new ConcurrentHashMap<>();
+	
+	private DataSource dataSource;
+	
+	static {
+		Map<String, List<String>> _databaseFamilyToPrefixes = new HashMap<>(40);
+		
+		// https://meta.wikimedia.org/wiki/Help:Interwiki_linking#Project_titles_and_shortcuts
+		// https://noc.wikimedia.org/conf/highlight.php?file=interwiki.php
+		
+		_databaseFamilyToPrefixes.put("wiki", Arrays.asList("wikipedia", "w"));
+		_databaseFamilyToPrefixes.put("wiktionary", Arrays.asList("wiktionary", "wikt"));
+		_databaseFamilyToPrefixes.put("wikinews", Arrays.asList("wikinews", "n"));
+		_databaseFamilyToPrefixes.put("wikibooks", Arrays.asList("wikibooks", "b"));
+		_databaseFamilyToPrefixes.put("wikiquote", Arrays.asList("wikiquote", "q"));
+		_databaseFamilyToPrefixes.put("wikisource", Arrays.asList("wikisource", "s"));
+		_databaseFamilyToPrefixes.put("specieswiki", Arrays.asList("wikispecies", "species"));
+		_databaseFamilyToPrefixes.put("wikiversity", Arrays.asList("wikiversity", "v"));
+		_databaseFamilyToPrefixes.put("wikivoyage", Arrays.asList("wikivoyage", "voy"));
+		_databaseFamilyToPrefixes.put("foundationwiki", Arrays.asList("wikimedia", "foundation", "wmf"));
+		_databaseFamilyToPrefixes.put("commonswiki", Arrays.asList("commons", "c"));
+		_databaseFamilyToPrefixes.put("metawiki", Arrays.asList("metawikipedia", "meta", "m"));
+		_databaseFamilyToPrefixes.put("incubatorwiki", Arrays.asList("incubator"));
+		_databaseFamilyToPrefixes.put("outreachwiki", Arrays.asList("outreachwiki", "outreach"));
+		_databaseFamilyToPrefixes.put("mediawikiwiki", Arrays.asList("mw"));
+		_databaseFamilyToPrefixes.put("testwiki", Arrays.asList("testwiki"));
+		_databaseFamilyToPrefixes.put("wikidatawiki", Arrays.asList("wikidata", "d"));
+		//_databaseToPrefixes.put("betawikiversity", Arrays.asList("betawikiversity"));
+		_databaseFamilyToPrefixes.put("qualitywiki", Arrays.asList("quality"));
+		_databaseFamilyToPrefixes.put("testwikidatawiki", Arrays.asList("testwikidata"));
+		_databaseFamilyToPrefixes.put("advisorywiki", Arrays.asList("advisory"));
+		_databaseFamilyToPrefixes.put("donatewiki", Arrays.asList("donate"));
+		_databaseFamilyToPrefixes.put("nostalgiawiki", Arrays.asList("nostalgia", "nost"));
+		_databaseFamilyToPrefixes.put("tenwiki", Arrays.asList("tenwiki"));
+		_databaseFamilyToPrefixes.put("test2wiki", Arrays.asList("test2wiki"));
+		_databaseFamilyToPrefixes.put("usabilitywiki", Arrays.asList("usability"));
+		_databaseFamilyToPrefixes.put("wikimedia", Arrays.asList("chapter"));
+		
+		Map<String, String> _prefixToDatabase = new HashMap<>(42, 1);
+		
+		for (Map.Entry<String, List<String>> entry : _databaseFamilyToPrefixes.entrySet()) {
+			for (String prefix : entry.getValue()) {
+				_prefixToDatabase.put(prefix, entry.getKey());
+			}
+		}
+		
+		List<String> _multilingualProjects = Arrays.asList(
+			"specieswiki", "foundationwiki", "commonswiki", "metawiki", "incubatorwiki", "outreachwiki",
+			"mediawikiwiki", "testwiki", "wikidatawiki", "qualitywiki", "testwikidatawiki",
+			"advisorywiki", "donatewiki", "nostalgiawiki", "tenwiki", "test2wiki", "usabilitywiki"
+		);
+		
+		PREFIX_TO_DATABASE_FAMILY = Collections.unmodifiableMap(_prefixToDatabase);
+		MULTILINGUAL_PROJECTS = Collections.unmodifiableSet(new HashSet<>(_multilingualProjects));
+	}
+	
+	@Override
+	public void init() throws ServletException {
+		try {
+			System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
+			Context context = (Context) new InitialContext().lookup("java:comp/env");
+			dataSource = (DataSource) context.lookup("jdbc/plwiktionary");
+		} catch (NamingException | SecurityException e) {
+			throw new UnavailableException(e.getMessage());
+		}
+		
+		try (Connection conn = dataSource.getConnection()) {
+			String query = "SELECT dbname, lang, family, url, is_sensitive FROM meta_p.wiki;";
+			ResultSet rs = conn.createStatement().executeQuery(query);
+			
+			while (rs.next()) {
+				String database = rs.getString("dbname");
+				String lang = rs.getString("lang");
+				String family = rs.getString("family");
+				String url = rs.getString("url");
+				boolean isCaseSensitive = rs.getBoolean("is_sensitive");
+				
+				if (url == null) { //e.g. adywiki, jamwiki
+					continue;
+				}
+				
+				langCodes.add(lang);
+				
+				Project project = new Project(database, lang, family, url, isCaseSensitive);
+				projects.add(project);
+			}
+		} catch (SQLException e) {
+			throw new UnavailableException(e.getMessage());
+		}
+	}
+	
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		final String targetDB = request.getParameter("targetdb").trim(); // always present
+		final boolean onlyMainNamespace = request.getParameter("onlymainnamespace") != null;
+		final boolean showRedirects = request.getParameter("showredirects") != null;
+		final boolean showDisambigs = request.getParameter("showdisambigs") != null;
+		final boolean includeCreated = request.getParameter("includecreated") != null;
+		
+		final String limitStr = request.getParameter("limit");
+		final int limit;
+		
+		if (limitStr != null) {
+			int temp;
+					
+			try {
+				temp = Math.max(Integer.parseInt(limitStr), 0);
+			} catch (NumberFormatException e) {
+				temp = DEFAULT_LIMIT;
+			}
+			
+			limit = temp;
+		} else {
+			limit = DEFAULT_LIMIT;
+		}
+		
+		final String offsetStr = request.getParameter("offset");
+		final int offset;
+		
+		if (offsetStr != null) {
+			int temp;
+			
+			try {
+				temp = Math.max(Integer.parseInt(offsetStr), 0);
+			} catch (NumberFormatException e) {
+				temp = 0;
+			}
+			
+			offset = temp;
+		} else {
+			offset = 0;
+		}
+		
+		try (Connection conn = dataSource.getConnection()) {
+			PrintWriter writer = response.getWriter();
+			final long startTimer = System.currentTimeMillis();
+			
+			Project sourceProject = Project.retrieveProject("plwiktionary");
+			Project targetProject;
+			
+			try {
+				targetProject = Project.retrieveProject(targetDB);
+			} catch (NoSuchElementException e) {
+				writer.append("<p>")
+					.append("Nie rozpoznano bazy danych <em>").append(targetDB).append("</em>.")
+					.append("</p>");
+				
+				return;
+			}
+			
+			if (!onlyMainNamespace && !namespaces.containsKey(sourceProject)) {
+				fetchNamespaces(sourceProject);
+			}
+			
+			if (!namespaces.containsKey(targetProject)) {
+				fetchNamespaces(targetProject);
+			}
+			
+			List<Item> items = fetchInterwikiLinks(conn, sourceProject, targetProject, onlyMainNamespace);
+			final int totalFetched = items.size();
+			
+			if (!items.isEmpty()) {
+				filterMissingTargets(conn, targetProject, items, showRedirects, showDisambigs, includeCreated);
+			}
+			
+			final long endTimer = System.currentTimeMillis();
+			
+			writer.append("<p>");
+			
+			writer.append("Czas przetwarzania zapytania: ")
+				.append(String.format("%.3f", ((float) (endTimer - startTimer)) / 1000))
+				.append(" sekund.");
+			
+			writer.append(" Wszystkich linków: ")
+				.append("<strong>").append(formatNumber(totalFetched)).append("</strong>.");
+			
+			if (!includeCreated) {
+				writer.append(" Spełniających kryteria zapytania: ")
+					.append("<strong>").append(formatNumber(items.size())).append("</strong>.");
+			}
+			
+			writer.append("</p>");
+			
+			if (!items.isEmpty()) {
+				Collections.sort(items, new ItemComparator(sourceProject.lang, targetProject.lang));
+				
+				writer.append("\n").append("<ul>");
+				
+				for (Item item : items) {
+					writer.append(item.printHTML()).append("\n");
+				}
+				
+				writer.append("</ul>");
+			}
+		} catch (SQLException | IOException e) {
+			throw new UnavailableException(e.getMessage());
+		}
+	}
+	
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		doGet(request, response);
+	}
+	
+	private static String formatNumber(int n) {
+		String strValue = Integer.toString(n);
+		int length = strValue.length();
+		
+		if (length > 4) {
+			return strValue.substring(0, length - 3) + "&nbsp;" + strValue.substring(length - 3);
+		} else {
+			return strValue;
+		}
+	}
+	
+	private static void fetchNamespaces(Project project) throws IOException {
+		String url = project.url.replaceFirst("^https?://", "");
+		Wiki wiki = new Wiki(url);
+		Map<String, Integer> info = wiki.getNamespaces();
+		Map<String, Integer> copy = new LinkedHashMap<>(info.size(), 1);
+		
+		for (Map.Entry<String, Integer> entry : info.entrySet()) {
+			String key = entry.getKey().toLowerCase().replace(" ", "_");
+			copy.put(key, entry.getValue());
+		}
+		
+		namespaces.put(project, Collections.unmodifiableMap(copy));
+	}
+	
+	private List<Item> fetchInterwikiLinks(Connection conn, Project sourceProject, Project targetProject,
+			boolean onlyMainNamespace) throws SQLException {
+		String query = "SELECT"
+				+ " CONVERT(page_title USING utf8mb4) AS page_title,"
+				+ " CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,"
+				+ " CONVERT(iwl_title USING utf8mb4) AS iwl_title,"
+				+ " page_namespace"
+			+ " FROM iwlinks INNER JOIN page ON iwl_from = page_id"
+			+ " WHERE iwl_title != ''";
+		
+		if (onlyMainNamespace) {
+			query += " AND page_namespace = 0";
+		}
+		
+		ResultSet rs = conn.createStatement().executeQuery(query);
+		List<Item> list = new ArrayList<>(5000);
+		
+		while (rs.next()) {
+			String sourceTitle = rs.getString("page_title");
+			int sourceNamespace = rs.getInt("page_namespace");
+			
+			String link = rs.getString("iwl_prefix") + ":" + rs.getString("iwl_title");
+			Item.Page targetPage;
+			
+			try {
+				targetPage = processLink(sourceProject, targetProject, link);
+			} catch (NoSuchElementException | NullPointerException e) {
+				System.out.println(e.getMessage() + ": " + link);
+				continue;
+			}
+			
+			if (targetPage != null) {
+				Item.Page sourcePage = new Item.Page(sourceTitle, sourceNamespace);
+				Item item = new Item(sourcePage, sourceProject, targetPage, targetProject, link);
+				list.add(item);
+			}
+		}
+		
+		return list;
+	}
+	
+	private static Item.Page processLink(Project context, Project reference, String link) {
+		Matcher m = P_TARGET_LINK.matcher(link);
+		StringBuffer sb = new StringBuffer();
+		
+		Project currentProject = context;
+		int currentNamespace = 0;
+		
+		while (m.find()) {
+			m.appendReplacement(sb, "");
+			String token = sb.toString().toLowerCase();
+			
+			if (langCodes.contains(token)) {
+				if (MULTILINGUAL_PROJECTS.contains(currentProject.database)) {
+					currentProject = Project.retrieveProject(token + "wiki");
+				} else if (token.equals(currentProject.lang)) {
+					// do nothing
+				} else {
+					currentProject = Project.retrieveProject(token + currentProject.databaseFamily);
+				}
+				
+				sb.setLength(0);
+				continue;
+			}
+			
+			String databaseFamily = PREFIX_TO_DATABASE_FAMILY.get(token);
+			
+			if (databaseFamily != null) {
+				if (MULTILINGUAL_PROJECTS.contains(databaseFamily)) {
+					if (!databaseFamily.equals(currentProject.database)) {
+						currentProject = Project.retrieveProject(databaseFamily);
+					}
+				} else if (MULTILINGUAL_PROJECTS.contains(currentProject.database)) {
+					currentProject = Project.retrieveProject("en" + databaseFamily);
+				} else {
+					if (currentProject.databaseFamily.equals(databaseFamily)) {
+						currentProject = Project.retrieveProject("en" + databaseFamily);
+					} else {
+						currentProject = Project.retrieveProject(currentProject.lang + databaseFamily);
+					}
+				}
+				
+				sb.setLength(0);
+				continue;
+			}
+			
+			// No language nor interwiki prefixes left, analyze last stored project.
+			if (!currentProject.equals(reference)) {
+				return null;
+			}
+			
+			// Might return null if something goes wrong.
+			Map<String, Integer> namespaceAliases = namespaces.get(currentProject);
+			Integer namespace = namespaceAliases.get(token);
+			
+			if (namespace != null) {
+				currentNamespace = namespace;
+				sb.setLength(0);
+			} else {
+				sb.append(m.group());
+			}
+			
+			break; // omit any colons in page title
+		}
+		
+		String remainder = m.appendTail(sb).toString();
+		
+		if (remainder.contains("#")) {
+			remainder = remainder.substring(0, remainder.indexOf("#"));
+		}
+		
+		if (remainder.contains("%")) {
+			try {
+				remainder = URLDecoder.decode(remainder, "UTF-8");
+			} catch (UnsupportedEncodingException e) {}
+		}
+		
+		if (!remainder.matches("_*") && !remainder.contains("?") && currentProject.equals(reference)) {
+			if (!reference.isCaseSensitive) {
+				remainder = StringUtils.capitalize(remainder);
+			}
+			
+			return new Item.Page(remainder, currentNamespace);
+		} else {
+			return null;
+		}
+	}
+	
+	private void filterMissingTargets(Connection conn, Project targetProject, List<Item> items,
+			boolean showRedirects, boolean showDisambigs, boolean includeCreated) throws SQLException {
+		Set<String> targets = new HashSet<>(items.size());
+		
+		for (Item item : items) {
+			String target = item.targetPage.title;
+			target = "'" + target.replace("'", "\\'") + "'";
+			targets.add(target);
+		}
+		
+		String values = StringUtils.join(targets, ',');
+		
+		String query = "SELECT"
+			+ " CONVERT(tpage.page_title USING utf8mb4) AS page_title,"
+			+ " tpage.page_namespace,"
+			+ " tpage.page_is_redirect";
+		
+		if (includeCreated || showDisambigs) {
+			query += ", EXISTS("
+					+ "SELECT NULL"
+					+ " FROM " + targetProject.database + "_p.page_props AS tpage_props"
+					+ " WHERE tpage_props.pp_page = tpage.page_id"
+					+ " AND tpage_props.pp_propname = 'disambiguation'"
+				+ ") AS is_disambig";
+		}
+		
+		query += " FROM " + targetProject.database + "_p.page AS tpage";
+		query += " WHERE tpage.page_title IN (" + values + ")";
+		
+		ResultSet rs = conn.createStatement().executeQuery(query);
+		
+		Set<Item.Page> results = new HashSet<>(targets.size());
+		Set<Item.Page> redirects = new HashSet<>();
+		Set<Item.Page> disambigs = new HashSet<>();
+		
+		while (rs.next()) {
+			String title = rs.getString("page_title");
+			int ns = rs.getInt("page_namespace");
+			
+			Item.Page page = new Item.Page(title, ns);
+			
+			if ((includeCreated || showRedirects) && rs.getBoolean("page_is_redirect")) {
+				redirects.add(page);
+				continue;
+			}
+			
+			if ((includeCreated || showDisambigs) && rs.getBoolean("is_disambig")) {
+				disambigs.add(page);
+				continue;
+			}
+			
+			results.add(page);
+		}
+		
+		Iterator<Item> i = items.iterator();
+		
+		while (i.hasNext()) {
+			Item item = i.next();
+			Item.Page targetPage = item.targetPage;
+			
+			if (targetPage.ns > -1 && !results.contains(targetPage)) {
+				if (redirects.contains(targetPage)) {
+					item.isRedirect = true;
+				} else if (disambigs.contains(targetPage)) {
+					item.isDisambig = true;
+				} else {
+					item.isMissing = true;
+				}
+			} else if (!includeCreated) {
+				i.remove();
+			}
+		}
+	}
+	
+	private static class Project {
+		String database;
+		String lang;
+		String family;
+		String databaseFamily;
+		String url;
+		boolean isCaseSensitive;
+		
+		Project(String database, String lang, String family, String url, boolean isCaseSensitive) {
+			this.database = database;
+			this.lang = lang;
+			this.family = family;
+			this.url = url;
+			this.isCaseSensitive = isCaseSensitive;
+			
+			if (!lang.isEmpty() && database.startsWith(lang)) {
+				databaseFamily = database.substring(lang.length()); 
+			}
+		}
+		
+		static Project retrieveProject(String database) {
+			database = database.replace("be-tarask", "be-x-old");
+			database = database.replace("-", "_");
+			
+			for (Project project : projects) {
+				if (project.database.equals(database)) {
+					return project;
+				}
+			}
+			
+			throw new NoSuchElementException(database);
+		}
+		
+		@Override
+		public int hashCode() {
+			return database.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) {
+				return true;
+			}
+			
+			if (!(o instanceof Project)) {
+				return false;
+			}
+			
+			Project p = (Project) o;
+			return database.equals(p.database);
+		}
+		
+		@Override
+		public String toString() {
+			return String.format(
+				"[%s, %s:%s (%s), %s; case_sensitive: %s]",
+				database, lang, databaseFamily, family, url, isCaseSensitive
+			);
+		}
+	}
+	
+	private static class Item {
+		Page sourcePage;
+		Project sourceProject;
+		
+		Page targetPage;
+		Project targetProject;
+		
+		String link;
+		
+		boolean isMissing;
+		boolean isRedirect;
+		boolean isDisambig;
+		
+		Item(Page sourcePage, Project sourceProject, Page targetPage, Project targetProject, String link) {
+			this.sourcePage = sourcePage;
+			this.sourceProject = sourceProject;
+			this.targetPage = targetPage;
+			this.targetProject = targetProject;
+			this.link = link;
+		}
+		
+		@Override
+		public String toString() {
+			return String.format(
+				"%s || %s (%s) || missing: %s, redir: %s, disambig: %s",
+				sourcePage, link, targetPage, isMissing, isRedirect, isDisambig
+			);
+		}
+		
+		String printHTML() throws UnsupportedEncodingException {
+			String sourceLink = "<a href=\"" + sourceProject.url + "/wiki/";
+			String sourceArticle = "";
+			
+			if (sourcePage.ns != 0) {
+				for (Map.Entry<String, Integer> entry : namespaces.get(sourceProject).entrySet()) {
+					if (entry.getValue().equals(sourcePage.ns)) {
+						sourceArticle = entry.getKey() + ":";
+						break;
+					}
+				}
+			}
+			
+			sourceArticle += sourcePage.title;
+			
+			sourceLink += URLEncoder.encode(sourceArticle, "UTF-8");
+			sourceLink += "\" target=\"_blank\">" + sourceArticle.replace("_", " ") + "</a>";
+			
+			String targetLink = "<a href=\"" + targetProject.url + "/wiki/";
+			String targetArticle = "";
+			
+			if (targetPage.ns != 0) {
+				for (Map.Entry<String, Integer> entry : namespaces.get(targetProject).entrySet()) {
+					if (entry.getValue().equals(targetPage.ns)) {
+						targetArticle = entry.getKey() + ":";
+						break;
+					}
+				}
+			}
+			
+			targetArticle += targetPage.title;
+			
+			targetLink += URLEncoder.encode(targetArticle, "UTF-8");
+			targetLink += "\" target=\"_blank\"";
+			
+			if (isMissing) {
+				targetLink += " class=\"new\"";
+			} else if (isRedirect) {
+				targetLink += " class=\"redirect\"";
+			} else if (isDisambig) {
+				targetLink += " class=\"disambig\"";
+			}
+			
+			targetLink += ">" + link.replace("_", " ") + "</a>";
+			
+			return "<li>" + sourceLink + " → " + targetLink + "</li>";
+		}
+		
+		private static class Page {
+			String title;
+			int ns;
+			
+			Page(String title, int ns) {
+				this.title = title;
+				this.ns = ns;
+			}
+			
+			@Override
+			public int hashCode() {
+				return title.hashCode() + ns;
+			}
+			
+			@Override
+			public boolean equals(Object o) {
+				if (o == this) {
+					return true;
+				}
+				
+				if (!(o instanceof Page)) {
+					return false;
+				}
+				
+				Page p = (Page) o;
+				return title.equals(p.title) && ns == p.ns;
+			}
+			
+			@Override
+			public String toString() {
+				return ns + ":" + title;
+			}
+		}
+	}
+	
+	private static class ItemComparator implements Comparator<Item> {
+		Collator sourceCollator;
+		Collator targetCollator;
+		
+		public ItemComparator(String sourceLang, String targetLang) {
+			sourceCollator = Collator.getInstance(new Locale(sourceLang));
+			sourceCollator.setStrength(Collator.TERTIARY);
+			targetCollator = Collator.getInstance(new Locale(targetLang));
+			targetCollator.setStrength(Collator.TERTIARY);
+		}
+		
+		@Override
+		public int compare(Item i1, Item i2) {
+			if (i1.sourcePage.ns != i2.sourcePage.ns) {
+				return Integer.compare(i1.sourcePage.ns, i2.sourcePage.ns);
+			}
+			
+			if (!i1.sourcePage.title.equals(i2.sourcePage.title)) {
+				return sourceCollator.compare(i1.sourcePage.title, i2.sourcePage.title);
+			}
+			
+			if (i1.targetPage.ns != i2.targetPage.ns) {
+				return Integer.compare(i1.targetPage.ns, i2.targetPage.ns);
+			}
+			
+			if (!i1.targetPage.title.equals(i2.targetPage.title)) {
+				return targetCollator.compare(i1.targetPage.title, i2.targetPage.title);
+			}
+			
+			return i1.link.compareTo(i2.link);
+		}
+	}
+	
+	private static class LinkTarget {
+		String remainder;
+		Project context;
+		String langPrefix;
+		String interwikiPrefix;
+		int ns;
+		Map<String, Integer> namespaceAliases;
+		
+		LinkTarget(String target, Project context) {
+			this.remainder = target;
+			this.context = context;
+			this.langPrefix = "";
+			this.interwikiPrefix = "";
+			this.ns = 0;
+			this.namespaceAliases = namespaces.get(context);
+		}
+		
+		void updateLangPrefix(String token) {
+			if (MULTILINGUAL_PROJECTS.contains(context.database)) {
+				langPrefix = token;
+				interwikiPrefix = "w";
+			} else {
+				
+			}
+		}
+		
+		void updateInterwikiPrefix(String token) {
+			
+		}
+		
+		void updateNamespace(String token) {
+			
+		}
+	}
+}
