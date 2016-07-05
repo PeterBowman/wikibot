@@ -63,13 +63,15 @@ public final class RefreshWantedArticles {
 		Set<String> storeSet = manageStoredTitles(visibleTitles, hiddenTitles);
 		
 		List<String> doneVisible = filterDoneArticles(visibleTitles);
+		List<String> doneHidden = filterDoneArticles(hiddenTitles);
 		
-		if (doneVisible.isEmpty()) {
-			System.out.println("No articles from the visible list have been created yet.");
+		if (
+			doneVisible.isEmpty() && doneHidden.size() < REFILL_SIZE &&
+			hiddenTitles.size() - doneHidden.size() > REFILL_THRESHOLD
+		) {
+			System.out.println("No edit action triggered, aborting.");
 			return;
 		}
-		
-		List<String> doneHidden = filterDoneArticles(hiddenTitles);
 		
 		processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden, storeSet);
 		
@@ -179,22 +181,30 @@ public final class RefreshWantedArticles {
 		List<String> hiddenList = new ArrayList<>(hiddenTitles);
 		hiddenList.removeAll(doneHidden);
 		
-		while (!checkLength(visibleList)) {
-			if (hiddenList.size() < REFILL_THRESHOLD) {
-				try {
-					fetchMoreArticles(hiddenList, storeSet);
-					storeSet.addAll(hiddenList);
-				} catch (IOException e) {
-					e.printStackTrace();
+		if (!doneVisible.isEmpty()) {
+			while (!checkLength(visibleList)) {
+				if (hiddenList.size() < REFILL_THRESHOLD) {
+					try {
+						fetchMoreArticles(hiddenList, storeSet);
+						storeSet.addAll(hiddenList);
+					} catch (IOException e) {
+						e.printStackTrace();
+						break;
+					}
+				}
+				
+				if (hiddenList.isEmpty()) {
 					break;
 				}
+				
+				visibleList.add(hiddenList.remove(0));
 			}
-			
-			if (hiddenList.isEmpty()) {
-				break;
+		} else if (hiddenList.size() < REFILL_THRESHOLD) {
+			try {
+				fetchMoreArticles(hiddenList, storeSet);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			
-			visibleList.add(hiddenList.remove(0));
 		}
 		
 		final String fmt = "[[%s]]";
@@ -232,7 +242,7 @@ public final class RefreshWantedArticles {
 		
 		titles.stream()
 			.filter(title -> !doneSet.contains(title))
-			.limit(REFILL_SIZE)
+			.limit(Math.max(REFILL_SIZE, REFILL_THRESHOLD - list.size()))
 			.forEach(list::add);
 	}
 }
