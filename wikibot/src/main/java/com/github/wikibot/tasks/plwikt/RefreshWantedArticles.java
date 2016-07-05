@@ -33,7 +33,7 @@ public final class RefreshWantedArticles {
 	
 	private static final int MAX_LENGHT = 100;
 	private static final int REFILL_SIZE = 10;
-	private static final int REFILL_THRESHOLD = 20;
+	private static final int REFILL_THRESHOLD = 25;
 	
 	private static final Pattern P_LINK;
 	private static final Pattern P_OCCURRENCES_TARGET;
