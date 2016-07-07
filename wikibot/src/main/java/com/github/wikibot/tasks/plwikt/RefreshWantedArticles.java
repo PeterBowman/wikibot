@@ -76,7 +76,8 @@ public final class RefreshWantedArticles {
 		processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden, storeSet);
 		
 		String text = doc.body().html();
-		String counter = Misc.makePluralPL(doneVisible.size() + doneHidden.size(), "utworzone", "utworzonych");
+		int totalDone = doneVisible.size() + doneHidden.size();
+		String counter = Misc.makePluralPL(totalDone, "utworzone", "utworzone", "utworzonych");
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
 		wb.edit(TARGET_PAGE, text, summary);
