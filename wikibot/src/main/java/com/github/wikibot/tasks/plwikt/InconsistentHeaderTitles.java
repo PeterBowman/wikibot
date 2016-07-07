@@ -58,7 +58,8 @@ public final class InconsistentHeaderTitles {
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]");
 	
 	// https://en.wikipedia.org/wiki/Whitespace_character#Unicode
-	private static final Pattern P_WHITESPACE = Pattern.compile("[\u0009\u00a0\u1680\u180e\u2000-\u200d\u2028-\u2029\u202f\u205f-\u2060\u3000\ufeff]");
+	// + SOFT HYPHEN (00AD), LEFT-TO-RIGHT MARK (200E), RIGHT-TO-LEFT MARK (200F)
+	private static final Pattern P_WHITESPACE = Pattern.compile("[\u0009\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u2029\u202f\u205f-\u2060\u3000\ufeff]");
 	
 	// http://www.freeformatter.com/html-entities.html
 	private static final Pattern P_ENTITIES = Pattern.compile("&(nbsp|ensp|emsp|thinsp|zwnj|zwj|lrm|rlm);");
@@ -170,7 +171,14 @@ public final class InconsistentHeaderTitles {
 	}
 
 	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
-		XMLDumpReader reader = new XMLDumpReader(path);
+		XMLDumpReader reader;
+		
+		if (path.equals("local")) {
+			reader = new XMLDumpReader(Domains.PLWIKT);
+		} else {
+			reader = new XMLDumpReader(path);
+		}
+		
 		int size = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
