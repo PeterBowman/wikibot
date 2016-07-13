@@ -11,19 +11,19 @@
 	</jsp:attribute>
 	<jsp:body>
 		<p>
-			Wystąpienia linków w przestrzeni głównej polskiego Wikisłownika, które kierują do
-			nieistniejących stron lub ujednoznacznień w projektach siostrzanych.
+			Wystąpienia linków interwiki w polskim Wikisłowniku, które kierują do nieistniejących stron,
+			przekierowań lub ujednoznacznień w projektach siostrzanych.
 		</p>
 		<p>
-			Wyszukiwarka nie rozpoznaje haseł w projekcie docelowym, jeżeli link został zapisany
-			początkową, małą literą (na przykład <code>[[s:link]]</code> zamiast <code>[[s:Link]]</code>).
-			Nie potrafi też interpretować przekierowań między projektami za pośrednictwem prefiksów
-			interwiki (na przykład <code>[[q:de:Link]]</code> → https://de.wikiquote.org/wiki/<i>Link</i>).
-			Zestawienie nie obejmuje linków zewnętrznych (https://pl.<i>projekt</i>.org/wiki/<i>Link</i>).
+			Narzędzie wyszukuje linki w formacie <code>[[<i>prefiks</i>:<i>tytuł_strony</i>]]</code>,
+			np. <code>[[s:Test]]</code>. Potrafi rozwinąć prefiksy zagnieżdżone
+			(np. <code>[[s:q:w:de:Test]]</code>). Nie obsługuje linków o pustym tytule strony
+			(kierujących do strony głównej projektu docelowego) lub zawierającym niedozwolone znaki.
+			Wykrywa zarówno te linki, które występują w wikikodzie, jak i transkludowane przez szablony. 
 		</p>
 		<p>
-			<strong>Uwaga:</strong> niektóre zapytania mogą zająć kilka minut w zależności od rozmiaru bazy
-			danych (szczególnie w przypadku Wikipedii). 
+			<strong>Uwaga:</strong> niektóre zapytania mogą zająć kilkadziesiąt sekund w zależności od
+			rozmiaru bazy danych (szczególnie w przypadku Wikipedii). 
 		</p>
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
 			<%-- TODO: don't use this if the 'project' parameter has been changed --%>

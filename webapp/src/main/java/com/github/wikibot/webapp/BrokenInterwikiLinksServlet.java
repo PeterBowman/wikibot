@@ -47,6 +47,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static final Map<String, String> PREFIX_TO_DATABASE_FAMILY;
 	private static final Set<String> MULTILINGUAL_PROJECTS;
+	private static final Set<String> LONG_PREFIXES;
 	
 	private static final Set<Project> projects = new HashSet<>(1300);
 	private static final Set<String> langCodes = new HashSet<>(500);
@@ -56,42 +57,42 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	private DataSource dataSource;
 	
 	static {
-		Map<String, List<String>> _databaseFamilyToPrefixes = new HashMap<>(40);
+		Map<String, String[]> _databaseFamilyToPrefixes = new HashMap<>(40);
 		
 		// https://meta.wikimedia.org/wiki/Help:Interwiki_linking#Project_titles_and_shortcuts
 		// https://noc.wikimedia.org/conf/highlight.php?file=interwiki.php
 		
-		_databaseFamilyToPrefixes.put("wiki", Arrays.asList("wikipedia", "w"));
-		_databaseFamilyToPrefixes.put("wiktionary", Arrays.asList("wiktionary", "wikt"));
-		_databaseFamilyToPrefixes.put("wikinews", Arrays.asList("wikinews", "n"));
-		_databaseFamilyToPrefixes.put("wikibooks", Arrays.asList("wikibooks", "b"));
-		_databaseFamilyToPrefixes.put("wikiquote", Arrays.asList("wikiquote", "q"));
-		_databaseFamilyToPrefixes.put("wikisource", Arrays.asList("wikisource", "s"));
-		_databaseFamilyToPrefixes.put("specieswiki", Arrays.asList("wikispecies", "species"));
-		_databaseFamilyToPrefixes.put("wikiversity", Arrays.asList("wikiversity", "v"));
-		_databaseFamilyToPrefixes.put("wikivoyage", Arrays.asList("wikivoyage", "voy"));
-		_databaseFamilyToPrefixes.put("foundationwiki", Arrays.asList("wikimedia", "foundation", "wmf"));
-		_databaseFamilyToPrefixes.put("commonswiki", Arrays.asList("commons", "c"));
-		_databaseFamilyToPrefixes.put("metawiki", Arrays.asList("metawikipedia", "meta", "m"));
-		_databaseFamilyToPrefixes.put("incubatorwiki", Arrays.asList("incubator"));
-		_databaseFamilyToPrefixes.put("outreachwiki", Arrays.asList("outreachwiki", "outreach"));
-		_databaseFamilyToPrefixes.put("mediawikiwiki", Arrays.asList("mw"));
-		_databaseFamilyToPrefixes.put("testwiki", Arrays.asList("testwiki"));
-		_databaseFamilyToPrefixes.put("wikidatawiki", Arrays.asList("wikidata", "d"));
-		//_databaseToPrefixes.put("betawikiversity", Arrays.asList("betawikiversity"));
-		_databaseFamilyToPrefixes.put("qualitywiki", Arrays.asList("quality"));
-		_databaseFamilyToPrefixes.put("testwikidatawiki", Arrays.asList("testwikidata"));
-		_databaseFamilyToPrefixes.put("advisorywiki", Arrays.asList("advisory"));
-		_databaseFamilyToPrefixes.put("donatewiki", Arrays.asList("donate"));
-		_databaseFamilyToPrefixes.put("nostalgiawiki", Arrays.asList("nostalgia", "nost"));
-		_databaseFamilyToPrefixes.put("tenwiki", Arrays.asList("tenwiki"));
-		_databaseFamilyToPrefixes.put("test2wiki", Arrays.asList("test2wiki"));
-		_databaseFamilyToPrefixes.put("usabilitywiki", Arrays.asList("usability"));
-		_databaseFamilyToPrefixes.put("wikimedia", Arrays.asList("chapter"));
+		_databaseFamilyToPrefixes.put("wiki", new String[]{"wikipedia", "w"});
+		_databaseFamilyToPrefixes.put("wiktionary", new String[]{"wiktionary", "wikt"});
+		_databaseFamilyToPrefixes.put("wikinews", new String[]{"wikinews", "n"});
+		_databaseFamilyToPrefixes.put("wikibooks", new String[]{"wikibooks", "b"});
+		_databaseFamilyToPrefixes.put("wikiquote", new String[]{"wikiquote", "q"});
+		_databaseFamilyToPrefixes.put("wikisource", new String[]{"wikisource", "s"});
+		_databaseFamilyToPrefixes.put("specieswiki", new String[]{"wikispecies", "species"});
+		_databaseFamilyToPrefixes.put("wikiversity", new String[]{"wikiversity", "v"});
+		_databaseFamilyToPrefixes.put("wikivoyage", new String[]{"wikivoyage", "voy"});
+		_databaseFamilyToPrefixes.put("foundationwiki", new String[]{"wikimedia", "foundation", "wmf"});
+		_databaseFamilyToPrefixes.put("commonswiki", new String[]{"commons", "c"});
+		_databaseFamilyToPrefixes.put("metawiki", new String[]{"metawikipedia", "meta", "m"});
+		_databaseFamilyToPrefixes.put("incubatorwiki", new String[]{"incubator"});
+		_databaseFamilyToPrefixes.put("outreachwiki", new String[]{"outreachwiki", "outreach"});
+		_databaseFamilyToPrefixes.put("mediawikiwiki", new String[]{"mw"});
+		_databaseFamilyToPrefixes.put("testwiki", new String[]{"testwiki"});
+		_databaseFamilyToPrefixes.put("wikidatawiki", new String[]{"wikidata", "d"});
+		//_databaseToPrefixes.put("betawikiversity", new String[]{"betawikiversity"});
+		_databaseFamilyToPrefixes.put("qualitywiki", new String[]{"quality"});
+		_databaseFamilyToPrefixes.put("testwikidatawiki", new String[]{"testwikidata"});
+		_databaseFamilyToPrefixes.put("advisorywiki", new String[]{"advisory"});
+		_databaseFamilyToPrefixes.put("donatewiki", new String[]{"donate"});
+		_databaseFamilyToPrefixes.put("nostalgiawiki", new String[]{"nostalgia", "nost"});
+		_databaseFamilyToPrefixes.put("tenwiki", new String[]{"tenwiki"});
+		_databaseFamilyToPrefixes.put("test2wiki", new String[]{"test2wiki"});
+		_databaseFamilyToPrefixes.put("usabilitywiki", new String[]{"usability"});
+		_databaseFamilyToPrefixes.put("wikimedia", new String[]{"chapter"});
 		
 		Map<String, String> _prefixToDatabase = new HashMap<>(42, 1);
 		
-		for (Map.Entry<String, List<String>> entry : _databaseFamilyToPrefixes.entrySet()) {
+		for (Map.Entry<String, String[]> entry : _databaseFamilyToPrefixes.entrySet()) {
 			for (String prefix : entry.getValue()) {
 				_prefixToDatabase.put(prefix, entry.getKey());
 			}
@@ -103,8 +104,14 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			"advisorywiki", "donatewiki", "nostalgiawiki", "tenwiki", "test2wiki", "usabilitywiki"
 		);
 		
+		List<String> _longPrefixes = Arrays.asList(
+			"wikipedia", "wiktionary", "wikinews", "wikibooks", "wikiquote", "wikisource", "wikispecies",
+			"wikiversity", "wikivoyage", "wikimedia", "commons", "meta", "wikidata" // "nost"?
+		);
+		
 		PREFIX_TO_DATABASE_FAMILY = Collections.unmodifiableMap(_prefixToDatabase);
 		MULTILINGUAL_PROJECTS = Collections.unmodifiableSet(new HashSet<>(_multilingualProjects));
+		LONG_PREFIXES = Collections.unmodifiableSet(new HashSet<>(_longPrefixes));
 	}
 	
 	@Override
@@ -184,8 +191,9 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			offset = 0;
 		}
 		
+		PrintWriter writer = response.getWriter();
+		
 		try (Connection conn = dataSource.getConnection()) {
-			PrintWriter writer = response.getWriter();
 			final long startTimer = System.currentTimeMillis();
 			
 			Project sourceProject = Project.retrieveProject("plwiktionary");
@@ -237,16 +245,21 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			if (!items.isEmpty()) {
 				Collections.sort(items, new ItemComparator(sourceProject.lang, targetProject.lang));
 				
-				writer.append("\n").append("<ul>");
+				writer.append("\n").append("<ol>");
 				
 				for (Item item : items) {
 					writer.append(item.printHTML()).append("\n");
 				}
 				
-				writer.append("</ul>");
+				writer.append("</ol>");
 			}
 		} catch (SQLException | IOException e) {
-			throw new UnavailableException(e.getMessage());
+			writer.append("<p>")
+				.append("Komunikacja z bazą danych się nie powiodła. Komunikat błędu: ")
+				.append("</p>").append("\n")
+				.append("<pre>")
+				.append(e.getClass().getName()).append(": ").append(e.getMessage())
+				.append("</pre>");
 		}
 	}
 	
@@ -308,7 +321,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			try {
 				targetPage = processLink(sourceProject, targetProject, link);
 			} catch (NoSuchElementException | NullPointerException e) {
-				System.out.println(e.getMessage() + ": " + link);
+				System.out.println(e.getClass() + ": " + link);
 				continue;
 			}
 			
@@ -335,11 +348,11 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			if (langCodes.contains(token)) {
 				if (MULTILINGUAL_PROJECTS.contains(currentProject.database)) {
-					currentProject = Project.retrieveProject(token + "wiki");
+					currentProject = Project.retrieveProject(token, "wiki");
 				} else if (token.equals(currentProject.lang)) {
 					// do nothing
 				} else {
-					currentProject = Project.retrieveProject(token + currentProject.databaseFamily);
+					currentProject = Project.retrieveProject(token, currentProject.databaseFamily);
 				}
 				
 				sb.setLength(0);
@@ -349,17 +362,31 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			String databaseFamily = PREFIX_TO_DATABASE_FAMILY.get(token);
 			
 			if (databaseFamily != null) {
-				if (MULTILINGUAL_PROJECTS.contains(databaseFamily)) {
-					if (!databaseFamily.equals(currentProject.database)) {
-						currentProject = Project.retrieveProject(databaseFamily);
-					}
-				} else if (MULTILINGUAL_PROJECTS.contains(currentProject.database)) {
-					currentProject = Project.retrieveProject("en" + databaseFamily);
-				} else {
+				if (LONG_PREFIXES.contains(token)) {
 					if (currentProject.databaseFamily.equals(databaseFamily)) {
-						currentProject = Project.retrieveProject("en" + databaseFamily);
+						currentNamespace = 4; // 'Project' namespace
+						sb.setLength(0);
+						break;
 					} else {
-						currentProject = Project.retrieveProject(currentProject.lang + databaseFamily);
+						if (MULTILINGUAL_PROJECTS.contains(databaseFamily)) {
+							currentProject = Project.retrieveProject(databaseFamily);
+						} else {
+							currentProject = Project.retrieveProject("en", databaseFamily);
+						}
+					}
+				} else {
+					if (MULTILINGUAL_PROJECTS.contains(databaseFamily)) {
+						if (!currentProject.database.equals(databaseFamily)) {
+							currentProject = Project.retrieveProject(databaseFamily);
+						}
+					} else if (MULTILINGUAL_PROJECTS.contains(currentProject.database)) {
+						currentProject = Project.retrieveProject("en", databaseFamily);
+					} else {
+						if (currentProject.databaseFamily.equals(databaseFamily)) {
+							currentProject = Project.retrieveProject("en", databaseFamily);
+						} else {
+							currentProject = Project.retrieveProject(currentProject.lang, databaseFamily);
+						}
 					}
 				}
 				
@@ -500,13 +527,32 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			if (!lang.isEmpty() && database.startsWith(lang)) {
 				databaseFamily = database.substring(lang.length()); 
+			} else {
+				databaseFamily = database;
+			}
+			
+			// 'simplewiki' and 'simplewiktionary' are configured as 'en' projects
+			if (lang.equals("en") && database.startsWith("simple")) {
+				this.lang = "simple";
 			}
 		}
 		
-		static Project retrieveProject(String database) {
-			database = database.replace("be-tarask", "be-x-old");
-			database = database.replace("-", "_");
+		static Project retrieveProject(String lang, String databaseFamily) {
+			switch (lang) {
+				case "be-tarask":
+					lang = "be-x-old";
+					break;
+				case "nb":
+					lang = "no";
+					break;
+			}
 			
+			lang = lang.replace("-", "_");
+			
+			return retrieveProject(lang + databaseFamily);
+		}
+		
+		static Project retrieveProject(String database) {
 			for (Project project : projects) {
 				if (project.database.equals(database)) {
 					return project;
@@ -686,41 +732,6 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			}
 			
 			return i1.link.compareTo(i2.link);
-		}
-	}
-	
-	private static class LinkTarget {
-		String remainder;
-		Project context;
-		String langPrefix;
-		String interwikiPrefix;
-		int ns;
-		Map<String, Integer> namespaceAliases;
-		
-		LinkTarget(String target, Project context) {
-			this.remainder = target;
-			this.context = context;
-			this.langPrefix = "";
-			this.interwikiPrefix = "";
-			this.ns = 0;
-			this.namespaceAliases = namespaces.get(context);
-		}
-		
-		void updateLangPrefix(String token) {
-			if (MULTILINGUAL_PROJECTS.contains(context.database)) {
-				langPrefix = token;
-				interwikiPrefix = "w";
-			} else {
-				
-			}
-		}
-		
-		void updateInterwikiPrefix(String token) {
-			
-		}
-		
-		void updateNamespace(String token) {
-			
 		}
 	}
 }
