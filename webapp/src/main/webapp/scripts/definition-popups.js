@@ -6,8 +6,7 @@
 			gravity: $.fn.tipsy.autoNS,
 			html: true
 		},
-		API_DELAY = 100,
-		timerID = null;
+		API_DELAY = 100;
 	
 	function processExtract( extract ) {
 		return extract
@@ -84,19 +83,19 @@
 	};
 	
 	function makeRequest( title ) {
-		// TODO: convert to an anonymous CORS request (T62835), implement abort()
 		return $.ajax( {
-		    url: 'https://pl.wiktionary.org/w/api.php',
-		    data: {
-		        action: 'query',
-		        prop: 'revisions',
+			url: 'https://pl.wiktionary.org/w/api.php',
+			data: {
+				action: 'query',
+				prop: 'revisions',
 				rvprop: 'content',
 				titles: title,
-		        format: 'json',
-				formatversion: 2
-		    },
+				format: 'json',
+				formatversion: 2,
+				origin: '*'
+			},
 			contentType: 'application/json',
-		    dataType: 'jsonp'
+			dataType: 'json'
 		} );
 	}
 	
@@ -115,21 +114,25 @@
 				section = $el.attr( 'data-section' ),
 				cacheKey = target + '#' + section;
 			
-			// JSONP request cannot be aborted, see:
-			// * http://stackoverflow.com/questions/9533848
-			// * http://stackoverflow.com/questions/6472509
 			$el.on( 'mouseenter.definition', function ( evt ) {
-				timerID = setTimeout( function () {
+				var timerID;
+				
+				if ( cache.hasOwnProperty( cacheKey ) && cache[ cacheKey ] !== null ) {
 					$el.off( 'mouseenter.definition mouseleave.definition' );
+					bindTipsyActions( $el, cacheKey );
+					$el.trigger( 'mouseenter' );
+					return;
+				}
+				
+				timerID = setTimeout( function () {
+					var request = makeRequest( target );
 					
-					if ( cache.hasOwnProperty( cacheKey ) && cache[ cacheKey ] !== null ) {
-						bindTipsyActions( $el, cacheKey );
-						$el.trigger( 'mouseenter' );
-						return;
-					}
+					$el.data( 'request', request ).removeData( 'timer-id' );
 					
-					makeRequest( target ).done( function ( json ) {
+					request.done( function ( json ) {
 						var pageText, parsed;
+					
+						$el.off( 'mouseenter.definition mouseleave.definition' );
 						
 						try {
 							pageText = json.query.pages[0].revisions[0].content;
@@ -146,12 +149,23 @@
 						}
 					} );
 				}, API_DELAY );
+				
+				$el.data( 'timer-id', timerID );
 			} );
 			
 			$el.on( 'mouseleave.definition', function ( evt ) {
-				if ( timerID !== null ) {
+				var timerID = $el.data( 'timer-id' ),
+					request = $el.data( 'request' );
+				
+				if ( timerID !== undefined ) {
 					clearTimeout( timerID );
 				}
+				
+				if ( request !== undefined ) {
+					request.abort();
+				}
+				
+				$el.removeData( [ 'timer-id', 'request' ] );
 			} );
 		} );
 	};
