@@ -35,6 +35,7 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -42,7 +43,6 @@ import org.wikipedia.Wiki;
 
 public class BrokenInterwikiLinksServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private static final int DEFAULT_LIMIT = 100;
 	private static final Pattern P_TARGET_LINK = Pattern.compile("_*:_*");
 	
 	private static final Map<String, String> PREFIX_TO_DATABASE_FAMILY;
@@ -90,7 +90,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		_databaseFamilyToPrefixes.put("usabilitywiki", new String[]{"usability"});
 		_databaseFamilyToPrefixes.put("wikimedia", new String[]{"chapter"});
 		
-		Map<String, String> _prefixToDatabase = new HashMap<>(42, 1);
+		Map<String, String> _prefixToDatabase = new HashMap<>(60);
 		
 		for (Map.Entry<String, String[]> entry : _databaseFamilyToPrefixes.entrySet()) {
 			for (String prefix : entry.getValue()) {
@@ -135,7 +135,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				String url = rs.getString("url");
 				boolean isCaseSensitive = rs.getBoolean("is_sensitive");
 				
-				if (url == null) { //e.g. adywiki, jamwiki
+				if (url == null) { // e.g. adywiki, jamwiki
 					continue;
 				}
 				
@@ -150,66 +150,49 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	}
 	
 	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		final String targetDB = request.getParameter("targetdb").trim(); // always present
-		final boolean onlyMainNamespace = request.getParameter("onlymainnamespace") != null;
-		final boolean showRedirects = request.getParameter("showredirects") != null;
-		final boolean showDisambigs = request.getParameter("showdisambigs") != null;
-		final boolean includeCreated = request.getParameter("includecreated") != null;
-		
-		final String limitStr = request.getParameter("limit");
-		final int limit;
-		
-		if (limitStr != null) {
-			int temp;
-					
-			try {
-				temp = Math.max(Integer.parseInt(limitStr), 0);
-			} catch (NumberFormatException e) {
-				temp = DEFAULT_LIMIT;
-			}
-			
-			limit = temp;
-		} else {
-			limit = DEFAULT_LIMIT;
-		}
-		
-		final String offsetStr = request.getParameter("offset");
-		final int offset;
-		
-		if (offsetStr != null) {
-			int temp;
-			
-			try {
-				temp = Math.max(Integer.parseInt(offsetStr), 0);
-			} catch (NumberFormatException e) {
-				temp = 0;
-			}
-			
-			offset = temp;
-		} else {
-			offset = 0;
-		}
-		
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		RequestInfo currentRequest = new RequestInfo(request);
 		PrintWriter writer = response.getWriter();
+		
+		Project sourceProject = Project.retrieveProject("plwiktionary");
+		Project targetProject;
+		
+		try {
+			targetProject = Project.retrieveProject(currentRequest.targetDB);
+		} catch (NoSuchElementException e) {
+			writer.append("<p>")
+				.append("Nie rozpoznano bazy danych <em>").append(e.getMessage()).append("</em>.")
+				.append("</p>");
+			
+			return;
+		}
+		
+		HttpSession session = request.getSession();
+		RequestInfo lastRequest = null;
+		
+		try {
+			lastRequest = (RequestInfo) session.getAttribute("lastRequest");
+		} catch (IllegalStateException e) {
+			// do nothing
+		} catch (ClassCastException e) {
+			session.removeAttribute("lastRequest");
+		}
+		
+		if (lastRequest != null) {
+			if (lastRequest.equals(currentRequest) && lastRequest.output != null && lastRequest.items != null) {
+				lastRequest.limit = currentRequest.limit;
+				lastRequest.offset = currentRequest.offset;
+				printResults(writer, sourceProject, targetProject, lastRequest);
+				return;
+			} else {
+				session.removeAttribute("lastRequest");			}
+		}
 		
 		try (Connection conn = dataSource.getConnection()) {
 			final long startTimer = System.currentTimeMillis();
 			
-			Project sourceProject = Project.retrieveProject("plwiktionary");
-			Project targetProject;
-			
-			try {
-				targetProject = Project.retrieveProject(targetDB);
-			} catch (NoSuchElementException e) {
-				writer.append("<p>")
-					.append("Nie rozpoznano bazy danych <em>").append(targetDB).append("</em>.")
-					.append("</p>");
-				
-				return;
-			}
-			
-			if (!onlyMainNamespace && !namespaces.containsKey(sourceProject)) {
+			if (!currentRequest.onlyMainNamespace && !namespaces.containsKey(sourceProject)) {
 				fetchNamespaces(sourceProject);
 			}
 			
@@ -217,42 +200,23 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				fetchNamespaces(targetProject);
 			}
 			
-			List<Item> items = fetchInterwikiLinks(conn, sourceProject, targetProject, onlyMainNamespace);
+			List<Item> items = fetchInterwikiLinks(conn, sourceProject, targetProject, currentRequest);
+			
 			final int totalFetched = items.size();
 			
 			if (!items.isEmpty()) {
-				filterMissingTargets(conn, targetProject, items, showRedirects, showDisambigs, includeCreated);
+				filterMissingTargets(conn, targetProject, items, currentRequest);
 			}
 			
 			final long endTimer = System.currentTimeMillis();
 			
-			writer.append("<p>");
+			currentRequest.output = new RequestInfo.Output(endTimer - startTimer, totalFetched, items.size());
 			
-			writer.append("Czas przetwarzania zapytania: ")
-				.append(String.format("%.3f", ((float) (endTimer - startTimer)) / 1000))
-				.append(" sekund.");
+			Collections.sort(items, new ItemComparator(sourceProject.lang, targetProject.lang));
+			currentRequest.items = items;
 			
-			writer.append(" Wszystkich linków: ")
-				.append("<strong>").append(formatNumber(totalFetched)).append("</strong>.");
-			
-			if (!includeCreated) {
-				writer.append(" Spełniających kryteria zapytania: ")
-					.append("<strong>").append(formatNumber(items.size())).append("</strong>.");
-			}
-			
-			writer.append("</p>");
-			
-			if (!items.isEmpty()) {
-				Collections.sort(items, new ItemComparator(sourceProject.lang, targetProject.lang));
-				
-				writer.append("\n").append("<ol>");
-				
-				for (Item item : items) {
-					writer.append(item.printHTML()).append("\n");
-				}
-				
-				writer.append("</ol>");
-			}
+			printResults(writer, sourceProject, targetProject, currentRequest);
+			session.setAttribute("lastRequest", currentRequest);
 		} catch (SQLException | IOException e) {
 			writer.append("<p>")
 				.append("Komunikacja z bazą danych się nie powiodła. Komunikat błędu: ")
@@ -260,6 +224,8 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				.append("<pre>")
 				.append(e.getClass().getName()).append(": ").append(e.getMessage())
 				.append("</pre>");
+		} catch (IllegalStateException e) {
+			// do nothing
 		}
 	}
 	
@@ -267,17 +233,6 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		doGet(request, response);
-	}
-	
-	private static String formatNumber(int n) {
-		String strValue = Integer.toString(n);
-		int length = strValue.length();
-		
-		if (length > 4) {
-			return strValue.substring(0, length - 3) + "&nbsp;" + strValue.substring(length - 3);
-		} else {
-			return strValue;
-		}
 	}
 	
 	private static void fetchNamespaces(Project project) throws IOException {
@@ -294,8 +249,8 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		namespaces.put(project, Collections.unmodifiableMap(copy));
 	}
 	
-	private List<Item> fetchInterwikiLinks(Connection conn, Project sourceProject, Project targetProject,
-			boolean onlyMainNamespace) throws SQLException {
+	private static List<Item> fetchInterwikiLinks(Connection conn, Project sourceProject, Project targetProject,
+			RequestInfo request) throws SQLException {
 		String query = "SELECT"
 				+ " CONVERT(page_title USING utf8mb4) AS page_title,"
 				+ " CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,"
@@ -304,7 +259,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			+ " FROM iwlinks INNER JOIN page ON iwl_from = page_id"
 			+ " WHERE iwl_title != ''";
 		
-		if (onlyMainNamespace) {
+		if (request.onlyMainNamespace) {
 			query += " AND page_namespace = 0";
 		}
 		
@@ -436,8 +391,8 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		}
 	}
 	
-	private void filterMissingTargets(Connection conn, Project targetProject, List<Item> items,
-			boolean showRedirects, boolean showDisambigs, boolean includeCreated) throws SQLException {
+	private static void filterMissingTargets(Connection conn, Project targetProject, List<Item> items,
+			RequestInfo request) throws SQLException {
 		Set<String> targets = new HashSet<>(items.size());
 		
 		for (Item item : items) {
@@ -453,7 +408,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			+ " tpage.page_namespace,"
 			+ " tpage.page_is_redirect";
 		
-		if (includeCreated || showDisambigs) {
+		if (request.includeCreated || request.showDisambigs) {
 			query += ", EXISTS("
 					+ "SELECT NULL"
 					+ " FROM " + targetProject.database + "_p.page_props AS tpage_props"
@@ -477,12 +432,12 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			Item.Page page = new Item.Page(title, ns);
 			
-			if ((includeCreated || showRedirects) && rs.getBoolean("page_is_redirect")) {
+			if ((request.includeCreated || request.showRedirects) && rs.getBoolean("page_is_redirect")) {
 				redirects.add(page);
 				continue;
 			}
 			
-			if ((includeCreated || showDisambigs) && rs.getBoolean("is_disambig")) {
+			if ((request.includeCreated || request.showDisambigs) && rs.getBoolean("is_disambig")) {
 				disambigs.add(page);
 				continue;
 			}
@@ -504,8 +459,145 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				} else {
 					item.isMissing = true;
 				}
-			} else if (!includeCreated) {
+			} else if (!request.includeCreated) {
 				i.remove();
+			}
+		}
+	}
+	
+	private static void printResults(PrintWriter writer, Project sourceProject, Project targetProject,
+			RequestInfo request) throws UnsupportedEncodingException {
+		writer.append("<p>");
+		
+		writer.append("Czas przetwarzania zapytania: ")
+			.append(String.format("%.3f", ((float) request.output.timeElapsedMs) / 1000))
+			.append(" sekund.");
+		
+		writer.append(" Wszystkich linków: ")
+			.append("<strong>").append(formatNumber(request.output.totalSize)).append("</strong>.");
+		
+		if (!request.includeCreated) {
+			writer.append(" Spełniających kryteria zapytania: ")
+				.append("<strong>").append(formatNumber(request.output.filteredSize)).append("</strong>.");
+		}
+		
+		writer.append("</p>");
+		
+		if (request.items.isEmpty()) {
+			return;
+		}
+		
+		final int limit = request.limit;
+		final int offset = request.offset;
+		
+		writer.append("\n");
+		writer.append("<ol ").append("start=\"").append(Integer.toString(offset + 1)).append("\">");
+		writer.append("\n");
+		
+		for (int i = offset, max = Math.min(request.items.size(), offset + limit); i < max; i++) {
+			Item item = request.items.get(i);
+			writer.append(item.printHTML()).append("\n");
+		}
+		
+		writer.append("</ol>");
+	}
+	
+	private static String formatNumber(int n) {
+		String strValue = Integer.toString(n);
+		int length = strValue.length();
+		
+		if (length > 4) {
+			return strValue.substring(0, length - 3) + "&nbsp;" + strValue.substring(length - 3);
+		} else {
+			return strValue;
+		}
+	}
+	
+	private static class RequestInfo {
+		String targetDB;
+		boolean onlyMainNamespace;
+		boolean showRedirects;
+		boolean showDisambigs;
+		boolean includeCreated;
+		
+		int limit = 100;
+		int offset = 0;
+		
+		Output output;
+		List<Item> items;
+		
+		public RequestInfo(HttpServletRequest request) {
+			targetDB = request.getParameter("targetdb").trim(); // always present
+			onlyMainNamespace = request.getParameter("onlymainnamespace") != null;
+			showRedirects = request.getParameter("showredirects") != null;
+			showDisambigs = request.getParameter("showdisambigs") != null;
+			includeCreated = request.getParameter("includecreated") != null;
+			
+			final String limitStr = request.getParameter("limit");
+			
+			if (limitStr != null) {
+				try {
+					limit = Math.max(Integer.parseInt(limitStr), 0);
+				} catch (NumberFormatException e) {}
+			}
+			
+			final String offsetStr = request.getParameter("offset");
+			
+			if (offsetStr != null) {
+				try {
+					offset = Math.max(Integer.parseInt(offsetStr), 0);
+				} catch (NumberFormatException e) {}
+			}
+		}
+		
+		@Override
+		public int hashCode() {
+			return
+				targetDB.hashCode() +
+				Boolean.hashCode(onlyMainNamespace) + Boolean.hashCode(showRedirects) +
+				Boolean.hashCode(showDisambigs) + Boolean.hashCode(includeCreated);
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) {
+				return true;
+			}
+			
+			if (!(o instanceof RequestInfo)) {
+				return false;
+			}
+			
+			RequestInfo r = (RequestInfo) o;
+			
+			return
+				targetDB.equals(r.targetDB) && onlyMainNamespace == r.onlyMainNamespace &&
+				showRedirects == r.showRedirects && showDisambigs == r.showDisambigs &&
+				includeCreated == r.includeCreated;
+		}
+		
+		@Override
+		public String toString() {
+			return String.format(
+				"[%s, mainNS: %s, redir: %s, disambig: %s, all: %s, output: %s]",
+				targetDB, onlyMainNamespace, showRedirects, showDisambigs, includeCreated, output
+			);
+		}
+		
+		private static class Output {
+			long timeElapsedMs;
+			int totalSize;
+			int filteredSize;
+			
+			Output(long elapsedMs, int totalSize, int filteredSize) {
+				this.timeElapsedMs = elapsedMs;
+				this.totalSize = totalSize;
+				this.filteredSize = filteredSize;
+			}
+			
+			@Override
+			public String toString() {
+				return String.format("[%d, %d, %d]", timeElapsedMs, totalSize, filteredSize);
 			}
 		}
 	}
