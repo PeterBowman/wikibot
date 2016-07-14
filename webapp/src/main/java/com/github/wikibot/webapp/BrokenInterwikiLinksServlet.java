@@ -152,14 +152,14 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		RequestInfo currentRequest = new RequestInfo(request);
+		RequestInfo requestInfo = new RequestInfo(request);
 		PrintWriter writer = response.getWriter();
 		
 		Project sourceProject = Project.retrieveProject("plwiktionary");
 		Project targetProject;
 		
 		try {
-			targetProject = Project.retrieveProject(currentRequest.targetDB);
+			targetProject = Project.retrieveProject(requestInfo.targetDB);
 		} catch (NoSuchElementException e) {
 			writer.append("<p>")
 				.append("Nie rozpoznano bazy danych <em>").append(e.getMessage()).append("</em>.")
@@ -180,10 +180,10 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		}
 		
 		if (lastRequest != null) {
-			if (lastRequest.equals(currentRequest) && lastRequest.output != null && lastRequest.items != null) {
-				lastRequest.limit = currentRequest.limit;
-				lastRequest.offset = currentRequest.offset;
-				printResults(writer, sourceProject, targetProject, lastRequest);
+			if (lastRequest.equals(requestInfo) && lastRequest.output != null && lastRequest.items != null) {
+				lastRequest.limit = requestInfo.limit;
+				lastRequest.offset = requestInfo.offset;
+				printResults(writer, sourceProject, targetProject, request, lastRequest);
 				return;
 			} else {
 				session.removeAttribute("lastRequest");			}
@@ -192,7 +192,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		try (Connection conn = dataSource.getConnection()) {
 			final long startTimer = System.currentTimeMillis();
 			
-			if (!currentRequest.onlyMainNamespace && !namespaces.containsKey(sourceProject)) {
+			if (!requestInfo.onlyMainNamespace && !namespaces.containsKey(sourceProject)) {
 				fetchNamespaces(sourceProject);
 			}
 			
@@ -200,23 +200,23 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				fetchNamespaces(targetProject);
 			}
 			
-			List<Item> items = fetchInterwikiLinks(conn, sourceProject, targetProject, currentRequest);
+			List<Item> items = fetchInterwikiLinks(conn, sourceProject, targetProject, requestInfo);
 			
 			final int totalFetched = items.size();
 			
 			if (!items.isEmpty()) {
-				filterMissingTargets(conn, targetProject, items, currentRequest);
+				filterMissingTargets(conn, targetProject, items, requestInfo);
 			}
 			
 			final long endTimer = System.currentTimeMillis();
 			
-			currentRequest.output = new RequestInfo.Output(endTimer - startTimer, totalFetched, items.size());
+			requestInfo.output = new RequestInfo.Output(endTimer - startTimer, totalFetched, items.size());
 			
 			Collections.sort(items, new ItemComparator(sourceProject.lang, targetProject.lang));
-			currentRequest.items = items;
+			requestInfo.items = items;
 			
-			printResults(writer, sourceProject, targetProject, currentRequest);
-			session.setAttribute("lastRequest", currentRequest);
+			printResults(writer, sourceProject, targetProject, request, requestInfo);
+			session.setAttribute("lastRequest", requestInfo);
 		} catch (SQLException | IOException e) {
 			writer.append("<p>")
 				.append("Komunikacja z bazą danych się nie powiodła. Komunikat błędu: ")
@@ -466,43 +466,48 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	}
 	
 	private static void printResults(PrintWriter writer, Project sourceProject, Project targetProject,
-			RequestInfo request) throws UnsupportedEncodingException {
+			HttpServletRequest request, RequestInfo requestInfo) throws UnsupportedEncodingException {
 		writer.append("<p>");
 		
 		writer.append("Czas przetwarzania zapytania: ")
-			.append(String.format("%.3f", ((float) request.output.timeElapsedMs) / 1000))
+			.append(String.format(new Locale("pl"), "%.3f", ((float) requestInfo.output.timeElapsedMs) / 1000))
 			.append(" sekund.");
 		
 		writer.append(" Wszystkich linków: ")
-			.append("<strong>").append(formatNumber(request.output.totalSize)).append("</strong>.");
+			.append("<strong>").append(formatNumber(requestInfo.output.totalSize)).append("</strong>.");
 		
-		if (!request.includeCreated) {
+		if (!requestInfo.includeCreated) {
 			writer.append(" Spełniających kryteria zapytania: ")
-				.append("<strong>").append(formatNumber(request.output.filteredSize)).append("</strong>.");
+				.append("<strong>").append(formatNumber(requestInfo.output.filteredSize)).append("</strong>.");
 		}
 		
 		writer.append("</p>");
 		
-		if (request.items.isEmpty()) {
+		if (requestInfo.items.isEmpty()) {
 			return;
 		}
 		
-		final int limit = request.limit;
-		final int offset = request.offset;
+		final int limit = requestInfo.limit;
+		final int offset = requestInfo.offset;
 		
-		writer.append("\n");
+		String paginator = generatePaginator(limit, offset, requestInfo.output.filteredSize, request);
+		
+		writer.append("\n").append(paginator).append("\n");
 		writer.append("<ol ").append("start=\"").append(Integer.toString(offset + 1)).append("\">");
 		writer.append("\n");
 		
-		for (int i = offset, max = Math.min(request.items.size(), offset + limit); i < max; i++) {
-			Item item = request.items.get(i);
+		for (int i = offset, max = Math.min(requestInfo.items.size(), offset + limit); i < max; i++) {
+			Item item = requestInfo.items.get(i);
 			writer.append(item.printHTML()).append("\n");
 		}
 		
-		writer.append("</ol>");
+		writer.append("</ol>").append("\n").append(paginator);
 	}
 	
 	private static String formatNumber(int n) {
+		// TODO: investigate java.text.NumberFormat and java.text.DecimalFormat
+		// http://stackoverflow.com/questions/3672731
+		// http://stackoverflow.com/questions/10411414
 		String strValue = Integer.toString(n);
 		int length = strValue.length();
 		
@@ -511,6 +516,95 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		} else {
 			return strValue;
 		}
+	}
+	
+	private static String generatePaginator(final int limit, final int offset, final int totalSize,
+			HttpServletRequest request) {
+		// TODO: move presentation layer to the JSP caller, use paginator.tag
+		Map<String, String[]> params = request.getParameterMap();
+		Map<String, Object> tempMap = new HashMap<>();
+		
+		StringBuilder sb = new StringBuilder(500);
+		sb.append("<p>").append("Zobacz (");
+		
+		if (offset == 0) {
+			sb.append("poprzednie ").append(limit);
+		} else {
+			tempMap.put("offset", Math.max(offset - limit, 0));
+			sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">");
+			sb.append("poprzednie ").append(limit);
+			sb.append("</a>");
+		}
+		
+		sb.append(" | ");
+		
+		if (offset + limit >= totalSize) {
+			sb.append("następne ").append(limit);
+		} else {
+			tempMap.put("offset", offset + limit);
+			sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">");
+			sb.append("następne ").append(limit);
+			sb.append("</a>");
+		}
+		
+		sb.append(") (");
+		
+		tempMap.put("limit", 20);
+		tempMap.put("offset", offset);
+		
+		sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">").append(20).append("</a>");
+		sb.append(" | ");
+		
+		tempMap.put("limit", 50);
+		
+		sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">").append(50).append("</a>");
+		sb.append(" | ");
+		
+		tempMap.put("limit", 100);
+		
+		sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">").append(100).append("</a>");
+		sb.append(" | ");
+		
+		tempMap.put("limit", 250);
+		
+		sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">").append(250).append("</a>");
+		sb.append(" | ");
+		
+		tempMap.put("limit", 500);
+		
+		sb.append("<a href=\"").append(replaceParams(params, tempMap)).append("\">").append(500).append("</a>");
+		sb.append(")</p>");
+		
+		return sb.toString();
+	}
+	
+	private static String replaceParams(Map<String, String[]> oldParams, Map<String, Object> newParams) {
+		StringBuilder sb = new StringBuilder(100);
+		
+		for (Map.Entry<String, String[]> entry : oldParams.entrySet()) {
+			String key = entry.getKey();
+			
+			if (newParams.containsKey(key)) {
+				sb.append(key).append("=").append(newParams.get(key)).append("&");
+			} else {
+				for (String value : entry.getValue()) {
+					sb.append(key).append("=").append(value).append("&");
+				}
+			}
+		}
+		
+		for (Map.Entry<String, Object> entry : newParams.entrySet()) {
+			if (!oldParams.containsKey(entry.getKey())) {
+				sb.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+			}
+		}
+		
+		if (sb.length() != 0 && sb.charAt(sb.length() - 1) == '&') {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		
+		// Assume URL encoding is not needed here.
+		return "?" + sb.toString();
 	}
 	
 	private static class RequestInfo {

@@ -19,20 +19,13 @@
 			np. <code>[[s:Test]]</code>. Potrafi rozwinąć prefiksy zagnieżdżone
 			(np. <code>[[s:q:w:de:Test]]</code>). Nie obsługuje linków o pustym tytule strony
 			(kierujących do strony głównej projektu docelowego) lub zawierającym niedozwolone znaki.
-			Wykrywa zarówno te linki, które występują w wikikodzie, jak i transkludowane przez szablony. 
+			Wykrywa zarówno linki, które występują w wikikodzie, jak i te transkludowane przez szablony. 
 		</p>
 		<p>
 			<strong>Uwaga:</strong> niektóre zapytania mogą zająć kilkadziesiąt sekund w zależności od
 			rozmiaru bazy danych (szczególnie w przypadku Wikipedii). 
 		</p>
 		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
-			<%-- TODO: don't use this if the 'project' parameter has been changed --%>
-			<c:if test="${not empty param.limit}">
-				<input type="hidden" name="limit" value="${param.limit}">
-			</c:if>
-			<c:if test="${not empty param.offset}">
-				<input type="hidden" name="offset" value="${param.offset}">
-			</c:if>
 			<fieldset>
 				<legend>Zerwane linki</legend>
 				<span class="mw-input-with-label">
