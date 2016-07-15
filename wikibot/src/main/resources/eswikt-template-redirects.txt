@@ -19,6 +19,8 @@ tit ref = título referencias
 sustantivo masculino y femenino = sustantivo femenino y masculino
 acrónimo = sigla
 redireccion suave = redirección suave
+Hipónimos = hipónimo
+Hiperónimos = hiperónimo
 
 Ampliable = ampliable
 Definición = definición
