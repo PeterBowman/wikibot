@@ -14,8 +14,8 @@ $( function () {
 			$.data( this[ 0 ], 'request', makeRequest( query, response, maxRows ) );
 		},
 		cancel: function () {
-			var node = this[ 0 ];
-			var request = $.data( node, 'request' );
+			var node = this[ 0 ],
+				request = $.data( node, 'request' );
 			
 			if ( request ) {
 				request.abort();
