@@ -114,6 +114,8 @@
 				section = $el.attr( 'data-section' ),
 				cacheKey = target + '#' + section;
 			
+			$el.attr( 'original-title', $el.attr( 'title' ) ).removeAttr( 'title' );
+			
 			$el.on( 'mouseenter.definition', function ( evt ) {
 				var timerID;
 				
