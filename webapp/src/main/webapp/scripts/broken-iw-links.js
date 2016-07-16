@@ -1,6 +1,9 @@
 $( function () {
+	var $conditionalInputs = $( '#showredirects, #showdisambigs' ),
+		$includeCreated = $( '#includecreated' );
+	
 	function makeRequest( query, response, maxRows ) {
-		return $.getJSON( 'eom-backlinks/api', {
+		return $.getJSON( 'broken-iw-links/api', {
 			search: query,
 			limit: maxRows
 		} ).done( function ( data ) {
@@ -8,8 +11,16 @@ $( function () {
 		} );
 	}
 	
+	function toggleConditionalInputs( evt ) {
+		$conditionalInputs.prop( 'disabled', $( this ).is( ':checked' ) )
+	}
+	
+	$includeCreated.on( 'change', toggleConditionalInputs );
+	
+	toggleConditionalInputs.apply( $includeCreated );
+	
 	// Based on MediaWiki's searchSuggest module.
-	$( '#morphem-input' ).suggestions( {
+	$( '#targetdb' ).suggestions( {
 		fetch: function ( query, response, maxRows ) {
 			$.data( this[ 0 ], 'request', makeRequest( query, response, maxRows ) );
 		},
@@ -23,8 +34,10 @@ $( function () {
 			}
 		},
 		result: {
-			select: function () {
-				return true;
+			render: function ( suggestion, context ) {
+				this
+					.text( suggestion.dbname + ' (' + suggestion.url + ')' )
+					.data( 'text', suggestion.dbname );
 			}
 		},
 		cache: true
@@ -34,11 +47,10 @@ $( function () {
 	} )
 	.each( function () {
 		var $this = $( this );
+		
 		$this
 			.data( 'suggestions-context' )
 			.data.$container.css( 'fontSize', $this.css( 'fontSize' ) );
 	} )
 	.focus();
-	
-	$( '.wikilink[data-section^="esperanto"]' ).definitionPopups();
 } );

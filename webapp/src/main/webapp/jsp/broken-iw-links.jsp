@@ -5,60 +5,70 @@
 
 <c:set var="heading" value="Zerwane linki do siostrzanych" />
 
-<t:template title="${heading}" firstHeading="${heading}">
-	<p>
-		Wystąpienia linków w przestrzeni głównej polskiego Wikisłownika, które kierują do
-		nieistniejących stron lub ujednoznacznień w projektach siostrzanych.
-	</p>
-	<p>
-		Wyszukiwarka nie rozpoznaje haseł w projekcie docelowym, jeżeli link został zapisany
-		początkową, małą literą (na przykład <code>[[s:link]]</code> zamiast <code>[[s:Link]]</code>).
-		Nie potrafi też interpretować przekierowań między projektami za pośrednictwem prefiksów
-		interwiki (na przykład <code>[[q:de:Link]]</code> → https://de.wikiquote.org/wiki/<i>Link</i>).
-		Zestawienie nie obejmuje linków zewnętrznych (https://pl.<i>projekt</i>.org/wiki/<i>Link</i>).
-	</p>
-	<p>
-		<strong>Uwaga:</strong> niektóre zapytania mogą zająć kilka minut w zależności od rozmiaru bazy
-		danych (szczególnie w przypadku Wikipedii). 
-	</p>
-	<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
-		<%-- TODO: don't use this if the 'project' parameter has been changed --%>
-		<c:if test="${not empty param.limit}">
-			<input type="hidden" name="limit" value="${param.limit}">
+<t:template title="${heading}" firstHeading="${heading}" enableJS="true">
+	<jsp:attribute name="head">
+		<link href="styles/suggestions.css" type="text/css" rel="stylesheet">
+		<script src="scripts/suggestions.js"></script>
+		<script src="scripts/broken-iw-links.js"></script>
+	</jsp:attribute>
+	<jsp:body>
+		<p>
+			Wystąpienia linków interwiki w polskim Wikisłowniku, które kierują do nieistniejących stron,
+			przekierowań lub ujednoznacznień w projektach siostrzanych.
+		</p>
+		<p>
+			Narzędzie wyszukuje linki w formacie <code>[[<i>prefiks</i>:<i>tytuł_strony</i>]]</code>,
+			np. <code>[[s:Test]]</code>. Potrafi rozwinąć prefiksy zagnieżdżone
+			(np. <code>[[s:q:w:de:Test]]</code>). Nie obsługuje linków o pustym tytule strony
+			(kierujących do strony głównej projektu docelowego) lub zawierającym niedozwolone znaki.
+			Wykrywa zarówno linki, które występują w wikikodzie, jak i te transkludowane przez szablony.
+			Selektor projektu rozpoznaje nazwę bazy danych, język domyślny, nazwę wiki
+			(np. <i>Викисловарь</i>) oraz adres (można wkleić URL do pola wyszukiwania). 
+		</p>
+		<p>
+			<strong>Uwaga:</strong> niektóre zapytania mogą zająć kilkadziesiąt sekund w zależności od
+			rozmiaru bazy danych (szczególnie w przypadku Wikipedii). 
+		</p>
+		<form action="${pageContext.request.contextPath}${pageContext.request.servletPath}" method="GET">
+			<fieldset>
+				<legend>Zerwane linki</legend>
+				<span class="mw-input-with-label">
+					<label for="targetdb">Projekt:</label>
+					<input id="targetdb" name="targetdb" size="20" value="${param.targetdb}">
+					(<a href="/tools-info/?listmetap" target="_blank">pełna lista</a>)
+				</span>
+				<p>
+					Opcje:
+					<span class="mw-input-with-label">
+						<input type="checkbox" id="onlymainnamespace" name="onlymainnamespace"
+							<c:if test="${not empty param.onlymainnamespace}">checked</c:if>>
+						<label for="onlymainnamespace">tylko przestrzeń główna</label>
+					</span>
+					<span class="mw-input-with-label">
+						<input type="checkbox" id="showredirects" name="showredirects"
+							<c:if test="${not empty param.showredirects}">checked</c:if>>
+						<label for="showredirects">uwzględnij
+							<span style="color: green;">przekierowania</span>
+						</label>
+					</span>
+					<span class="mw-input-with-label">
+						<input type="checkbox" id="showdisambigs" name="showdisambigs"
+							<c:if test="${not empty param.showdisambigs}">checked</c:if>>
+						<label for="showdisambigs">uwzględnij
+							<span style="color: maroon;">strony ujednoznaczniające</span>
+						</label>
+					</span>
+					<span class="mw-input-with-label">
+						<input type="checkbox" id="includecreated" name="includecreated"
+							<c:if test="${not empty param.includecreated}">checked</c:if>>
+						<label for="includecreated">pokaż wszystkie</label>
+					</span>
+				</p>
+				<input type="submit" value="Szukaj" >
+			</fieldset>
+		</form>
+		<c:if test="${not empty param.targetdb}">
+			<jsp:include page="/broken-iw-links/query" />
 		</c:if>
-		<c:if test="${not empty param.offset}">
-			<input type="hidden" name="offset" value="${param.offset}">
-		</c:if>
-		<fieldset>
-			<legend>Zerwane linki</legend>
-			<t:select parameter="project" label="Projekt" defaultOption="Wybierz opcję">
-				<jsp:attribute name="plwikisource">Wikizródła</jsp:attribute>
-				<jsp:attribute name="plwikiquote">Wikicytaty</jsp:attribute>
-				<jsp:attribute name="plwiki">Wikipedia</jsp:attribute>
-				<jsp:attribute name="plwikibooks">Wikibooks</jsp:attribute>
-				<jsp:attribute name="plwikinews">Wikinews</jsp:attribute>
-				<jsp:attribute name="plwikivoyage">Wikipodróże</jsp:attribute>
-				<jsp:attribute name="specieswiki">Wikispecies</jsp:attribute>
-			</t:select>
-			<span class="mw-input-with-label">
-				<input type="checkbox" id="ignorelc" name="ignorelc"
-					<c:if test="${not empty param.ignorelc}">checked</c:if>>
-				<label for="ignorelc">ukryj strony docelowe zaczynające się od małej litery</label>
-			</span>
-			<span class="mw-input-with-label">
-				<input type="checkbox" id="hideprefixes" name="hideprefixes"
-					<c:if test="${not empty param.hideprefixes}">checked</c:if>>
-				<label for="hideprefixes">ukryj prefiksy interwiki</label>
-			</span>
-			<span class="mw-input-with-label">
-				<input type="checkbox" id="hidedisambigs" name="hidedisambigs"
-					<c:if test="${not empty param.hidedisambigs}">checked</c:if>>
-				<label for="hidedisambigs">ukryj strony ujednoznaczniające</label>
-			</span>
-			<input type="submit" value="Pokaż" >
-		</fieldset>
-	</form>
-	<c:if test="${not empty param.project}">
-		<jsp:include page="/WEB-INF/includes/broken-iw-links-query.jsp" />
-	</c:if>
+	</jsp:body>
 </t:template>

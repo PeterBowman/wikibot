@@ -20,6 +20,16 @@ a.false-blue:visited {
 	color: #900070;
 }
 
+a.redirect,
+a.redirect:visited {
+	color: green;
+}
+
+a.disambig,
+a.disambig:visited {
+	color: maroon;
+}
+
 td.mw-statistics-numbers {
 	text-align: right;
 }
