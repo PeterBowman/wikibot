@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,7 +264,11 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			query += " AND page_namespace = 0";
 		}
 		
-		ResultSet rs = conn.createStatement().executeQuery(query);
+		// https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
+		// http://stackoverflow.com/a/2448019
+		Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		stmt.setFetchSize(Integer.MIN_VALUE);
+		ResultSet rs = stmt.executeQuery(query);
 		List<Item> list = new ArrayList<>(5000);
 		
 		while (rs.next()) {
