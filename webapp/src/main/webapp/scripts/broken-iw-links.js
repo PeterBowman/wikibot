@@ -1,3 +1,7 @@
+if ( window.history && /(\?|&)usecache=/.test( location.href ) ) {
+	history.replaceState( '', '', location.href.replace( /&?usecache=[^&]+/, '' ).replace( '?&', '?' ) );
+}
+
 $( function () {
 	var $conditionalInputs = $( '#showredirects, #showdisambigs' ),
 		$includeCreated = $( '#includecreated' );

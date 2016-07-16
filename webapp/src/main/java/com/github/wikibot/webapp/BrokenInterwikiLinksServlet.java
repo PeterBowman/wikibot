@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -171,12 +172,14 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		HttpSession session = request.getSession();
 		RequestInfo lastRequest = null;
 		
-		try {
-			lastRequest = (RequestInfo) session.getAttribute("lastRequest");
-		} catch (IllegalStateException e) {
-			// do nothing
-		} catch (ClassCastException e) {
-			session.removeAttribute("lastRequest");
+		if (requestInfo.useCache) {
+			try {
+				lastRequest = (RequestInfo) session.getAttribute("lastRequest");
+			} catch (IllegalStateException e) {
+				// do nothing
+			} catch (ClassCastException e) {
+				session.removeAttribute("lastRequest");
+			}
 		}
 		
 		if (lastRequest != null) {
@@ -263,7 +266,11 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			query += " AND page_namespace = 0";
 		}
 		
-		ResultSet rs = conn.createStatement().executeQuery(query);
+		// https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
+		// http://stackoverflow.com/a/2448019
+		Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		stmt.setFetchSize(Integer.MIN_VALUE);
+		ResultSet rs = stmt.executeQuery(query);
 		List<Item> list = new ArrayList<>(5000);
 		
 		while (rs.next()) {
@@ -523,6 +530,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		// TODO: move presentation layer to the JSP caller, use paginator.tag
 		Map<String, String[]> params = request.getParameterMap();
 		Map<String, Object> tempMap = new HashMap<>();
+		tempMap.put("usecache", "on");
 		
 		StringBuilder sb = new StringBuilder(500);
 		sb.append("<p>").append("Zobacz (");
@@ -613,6 +621,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		boolean showRedirects;
 		boolean showDisambigs;
 		boolean includeCreated;
+		boolean useCache;
 		
 		int limit = 100;
 		int offset = 0;
@@ -626,6 +635,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			showRedirects = request.getParameter("showredirects") != null;
 			showDisambigs = request.getParameter("showdisambigs") != null;
 			includeCreated = request.getParameter("includecreated") != null;
+			useCache = request.getParameter("usecache") != null;
 			
 			final String limitStr = request.getParameter("limit");
 			
