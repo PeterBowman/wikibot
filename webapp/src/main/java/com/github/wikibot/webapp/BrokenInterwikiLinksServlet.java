@@ -172,12 +172,14 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		HttpSession session = request.getSession();
 		RequestInfo lastRequest = null;
 		
-		try {
-			lastRequest = (RequestInfo) session.getAttribute("lastRequest");
-		} catch (IllegalStateException e) {
-			// do nothing
-		} catch (ClassCastException e) {
-			session.removeAttribute("lastRequest");
+		if (requestInfo.useCache) {
+			try {
+				lastRequest = (RequestInfo) session.getAttribute("lastRequest");
+			} catch (IllegalStateException e) {
+				// do nothing
+			} catch (ClassCastException e) {
+				session.removeAttribute("lastRequest");
+			}
 		}
 		
 		if (lastRequest != null) {
@@ -528,6 +530,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		// TODO: move presentation layer to the JSP caller, use paginator.tag
 		Map<String, String[]> params = request.getParameterMap();
 		Map<String, Object> tempMap = new HashMap<>();
+		tempMap.put("usecache", "on");
 		
 		StringBuilder sb = new StringBuilder(500);
 		sb.append("<p>").append("Zobacz (");
@@ -618,6 +621,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		boolean showRedirects;
 		boolean showDisambigs;
 		boolean includeCreated;
+		boolean useCache;
 		
 		int limit = 100;
 		int offset = 0;
@@ -631,6 +635,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			showRedirects = request.getParameter("showredirects") != null;
 			showDisambigs = request.getParameter("showdisambigs") != null;
 			includeCreated = request.getParameter("includecreated") != null;
+			useCache = request.getParameter("usecache") != null;
 			
 			final String limitStr = request.getParameter("limit");
 			
