@@ -68,6 +68,8 @@ public final class InconsistentHeaderTitles {
 	
 	private static PLWikt wb;
 	
+	private static Map<String, Collection<Item>> map;
+	
 	static {
 		PAGE_INTRO =
 			"Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej. " +
@@ -84,7 +86,7 @@ public final class InconsistentHeaderTitles {
 		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		
 		Collator collator = Misc.getCollator("pl");
-		Map<String, Collection<Item>> map = new ConcurrentSkipListMap<>(collator::compare);
+		map = new ConcurrentSkipListMap<>(collator::compare);
 		
 		CommandLine line = readOptions(args);
 		
@@ -92,10 +94,10 @@ public final class InconsistentHeaderTitles {
 			return;
 		} else if (line.hasOption("patrol")) {
 			String[] storedTitles = extractStoredTitles();
-			analyzeRecentChanges(storedTitles, map);
+			analyzeRecentChanges(storedTitles);
 		} else if (line.hasOption("dump")) {
 			String[] candidateTitles = readDumpFile(line.getOptionValue("dump"));
-			analyzeRecentChanges(candidateTitles, map);
+			analyzeRecentChanges(candidateTitles);
 		} else {
 			System.out.printf("No options specified: %s%n", Arrays.asList(args));
 			return;
@@ -115,7 +117,8 @@ public final class InconsistentHeaderTitles {
 			Misc.serialize(map.hashCode(), fHash);
 			
 			String[] arr = map.values().stream()
-				.flatMap(coll -> coll.stream().map(item -> item.pageTitle))
+				.flatMap(Collection::stream)
+				.map(item -> item.pageTitle)
 				.distinct()
 				.toArray(String[]::new);
 			
@@ -123,7 +126,7 @@ public final class InconsistentHeaderTitles {
 			System.out.printf("%d titles stored.%n", arr.length);
 		}
 		
-		com.github.wikibot.parsing.Page page = makePage(map);
+		com.github.wikibot.parsing.Page page = makePage();
 		IOUtils.writeToFile(page.toString(), LOCATION + "page.txt");
 		
 		wb.setMarkBot(false);
@@ -153,7 +156,7 @@ public final class InconsistentHeaderTitles {
 		}
 	}
 
-	private static void analyzeRecentChanges(String[] bufferedTitles, Map<String, Collection<Item>> map)
+	private static void analyzeRecentChanges(String[] bufferedTitles)
 			throws IOException {
 		String[] newTitles = extractRecentChanges();
 		
@@ -167,7 +170,7 @@ public final class InconsistentHeaderTitles {
 		}
 		
 		PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
-		Stream.of(pages).parallel().forEach(pc -> findErrors(pc, map));
+		Stream.of(pages).parallel().forEach(InconsistentHeaderTitles::findErrors);
 	}
 
 	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
@@ -249,7 +252,7 @@ public final class InconsistentHeaderTitles {
 		return titles;
 	}
 	
-	private static void findErrors(PageContainer pc, Map<String, Collection<Item>> map) {
+	private static void findErrors(PageContainer pc) {
 		Page page;
 		
 		try {
@@ -321,7 +324,7 @@ public final class InconsistentHeaderTitles {
 		return m.appendTail(sb).toString();
 	}
 	
-	private static com.github.wikibot.parsing.Page makePage(Map<String, Collection<Item>> map) {
+	private static com.github.wikibot.parsing.Page makePage() {
 		List<String> values = map.values().stream()
 			.flatMap(coll -> coll.stream().map(item -> item.pageTitle))
 			.collect(Collectors.toList());
