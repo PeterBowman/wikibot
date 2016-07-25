@@ -108,7 +108,7 @@
 	}
 	
 	$.fn.definitionPopups = function () {
-		return this.filter( '[data-target][data-section]' ).not( '.new, false-blue' ).each( function () {
+		return this.filter( '[data-target][data-section]' ).not( '.new, .false-blue' ).each( function () {
 			var $el = $( this ),
 				target = $el.attr( 'data-target' ),
 				section = $el.attr( 'data-section' ),
