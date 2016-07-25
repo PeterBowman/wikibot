@@ -115,7 +115,7 @@ public final class InconsistentHeaderTitles {
 			Misc.serialize(map.hashCode(), fHash);
 			
 			String[] arr = map.values().stream()
-				.flatMap(coll -> coll.stream().map(item -> item.page))
+				.flatMap(coll -> coll.stream().map(item -> item.pageTitle))
 				.distinct()
 				.toArray(String[]::new);
 			
@@ -262,7 +262,7 @@ public final class InconsistentHeaderTitles {
 			.filter(InconsistentHeaderTitles::filterSections)
 			.forEach(section -> {
 				String lang = section.getLangShort();
-				String headerTitle = normalizeHeaderTitle(section.getHeaderTitle());
+				String headerTitle = section.getHeaderTitle();
 				Item item = new Item(pc.getTitle(), headerTitle);
 				
 				// http://stackoverflow.com/a/10743710
@@ -321,18 +321,9 @@ public final class InconsistentHeaderTitles {
 		return m.appendTail(sb).toString();
 	}
 	
-	private static String normalizeHeaderTitle(String title) {
-		final String blankCharEntity = "&#9251;";
-		title = title.replace("&#", "&amp;#");
-		title = title.replace("<", "&lt;").replace(">", "&gt;");
-		title = P_WHITESPACE.matcher(title).replaceAll(blankCharEntity);
-		title = P_ENTITIES.matcher(title).replaceAll(blankCharEntity);
-		return title;
-	}
-	
 	private static com.github.wikibot.parsing.Page makePage(Map<String, Collection<Item>> map) {
 		List<String> values = map.values().stream()
-			.flatMap(coll -> coll.stream().map(item -> item.page))
+			.flatMap(coll -> coll.stream().map(item -> item.pageTitle))
 			.collect(Collectors.toList());
 		
 		int total = values.size();
@@ -366,7 +357,7 @@ public final class InconsistentHeaderTitles {
 				sb.append("\n");
 				
 				entry.getValue().stream()
-					.map(item -> String.format("#[[%s]]: %s", item.page, item.headerTitle))
+					.map(item -> item.buildEntry("#[[%s]]: %s", "#[[%s|%s]]: %s"))
 					.forEach(formatted -> sb.append(formatted).append("\n"));
 				
 				if (useColumns) {
@@ -383,22 +374,42 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	private static class Item implements Comparable<Item> {
-		String page;
+		String pageTitle;
 		String headerTitle;
 		
-		Item(String page, String headerTitle) {
-			this.page = page;
+		Item(String pageTitle, String headerTitle) {
+			this.pageTitle = pageTitle;
 			this.headerTitle = headerTitle;
+		}
+		
+		String buildEntry(String simpleTargetFmt, String pipedTargetFmt) {
+			String normalizedPageTitle = normalizeTitle(pageTitle);
+			String normalizedHeaderTitle = normalizeTitle(headerTitle);
+			
+			if (normalizedPageTitle.equals(pageTitle)) {
+				return String.format(simpleTargetFmt, normalizedPageTitle, normalizedHeaderTitle);
+			} else {
+				return String.format(pipedTargetFmt, pageTitle, normalizedPageTitle, normalizedHeaderTitle);
+			}
+		}
+		
+		private static String normalizeTitle(String title) {
+			final String blankCharEntity = "&#9251;";
+			title = title.replace("&#", "&amp;#");
+			title = title.replace("<", "&lt;").replace(">", "&gt;");
+			title = P_WHITESPACE.matcher(title).replaceAll(blankCharEntity);
+			title = P_ENTITIES.matcher(title).replaceAll(blankCharEntity);
+			return title;
 		}
 		
 		@Override
 		public int compareTo(Item item) {
-			return page.compareTo(item.page);
+			return pageTitle.compareTo(item.pageTitle);
 		}
 		
 		@Override
 		public int hashCode() {
-			return page.hashCode() + headerTitle.hashCode();
+			return pageTitle.hashCode() + headerTitle.hashCode();
 		}
 		
 		@Override
@@ -412,12 +423,12 @@ public final class InconsistentHeaderTitles {
 			}
 			
 			Item i = (Item) o;
-			return page.equals(i.page) && headerTitle.equals(i.headerTitle);
+			return pageTitle.equals(i.pageTitle) && headerTitle.equals(i.headerTitle);
 		}
 		
 		@Override
 		public String toString() {
-			return String.format("[%s, %s]", page, headerTitle);
+			return String.format("[%s, %s]", pageTitle, headerTitle);
 		}
 	}
 }
