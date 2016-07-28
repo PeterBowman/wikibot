@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -27,7 +27,6 @@ public final class UpdateInterwikiPrefixes {
 			return;
 		}
 		
-		@SuppressWarnings("unchecked")
 		Collection<String> coll = CollectionUtils.disjunction(Arrays.asList(text.split("\n")), Arrays.asList(lines));
 		
 		if (!coll.isEmpty()) {

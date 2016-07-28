@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
@@ -104,7 +104,6 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 			.map(AbstractSection::getStrippedHeader)
 			.collect(Collectors.toList());
 		
-		@SuppressWarnings("unchecked")
 		Map<String, Integer> cardinalityMap = CollectionUtils.getCardinalityMap(headers);
 		
 		for (Entry<String, Integer> entry : cardinalityMap.entrySet()) {

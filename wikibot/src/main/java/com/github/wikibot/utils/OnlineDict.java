@@ -71,6 +71,7 @@ public abstract class OnlineDict<T> implements Callable<T> {
     	connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         connection.setInstanceFollowRedirects(true);
+        connection.setUseCaches(false);
         connection.connect();
                
         // get the text
