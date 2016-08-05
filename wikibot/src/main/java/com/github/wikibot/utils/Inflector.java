@@ -12,11 +12,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class Inflector extends OnlineDict<Inflector> {
-	private static final String MAIN_URL = "http://nlp.actaforte.pl:8080/Nomina/Nazwiska";
+	public static final String MAIN_URL = "http://nlp.actaforte.pl:8080/Nomina/Nazwiska";
+	public static final String CASE_SEPARATOR = ", ";
 	
 	protected boolean exists;
 	protected boolean inPESEL;
 	protected boolean inSGJP;
+	
 	private Gender gender;
 
 	public static enum Gender {
@@ -127,12 +129,8 @@ public class Inflector extends OnlineDict<Inflector> {
 		
 		return Optional.of(el.select("table:first-of-type div > b"))
 			.filter(els -> !els.isEmpty())
-			.map(els -> els.stream().map(Element::text).collect(Collectors.joining(", ")))
+			.map(els -> els.stream().map(Element::text).collect(Collectors.joining(CASE_SEPARATOR)))
 			.orElseThrow(() -> new InflectorException("missing case column: " + expectedCase));
-	}
-	
-	public static String getUrl() {
-		return MAIN_URL;
 	}
 	
 	public static void main(String[] args) throws Exception {

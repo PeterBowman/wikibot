@@ -52,7 +52,7 @@ public final class PolishSurnamesInflection {
 	private static final String DECLINABLE_NOUN_TEMPLATE_NAME = "odmiana-rzeczownik-polski";
 	private static final String INDECLINABLE_NOUN_TEMPLATE_NAME = "nieodm-rzeczownik-polski";
 	
-	private static final String EDIT_SUMMARY = "uzupełnienie odmiany na podstawie " + Inflector.getUrl();
+	private static final String EDIT_SUMMARY = "uzupełnienie odmiany na podstawie " + Inflector.MAIN_URL;
 	
 	private static final String LOG_TARGET_PAGE = "Wikipedysta:PBbot/odmiana polskich nazwisk";
 	private static final String ERROR_SUBPAGE = "/błędy";
@@ -83,8 +83,8 @@ public final class PolishSurnamesInflection {
 		LOG_INTRO = // TODO
 			"Spis wyjątków, ktore napotkał automat w trakcie weryfikowania odmiany polskich nazwisk. " +
 			//"Działa w podwójnym trybie: wstawia brakujące tabelki i weryfikuje zawartość istniejących. " +
-			"Dane pochodzą z serwisu " + Inflector.getUrl() + " " +
-			String.format("([[%s|podstrona z błędami]])", LOG_TARGET_PAGE, ERROR_SUBPAGE) + ". " +
+			"Dane pochodzą z witryny " + Inflector.MAIN_URL + " " +
+			String.format("([[%s%s|podstrona z błędami]])", LOG_TARGET_PAGE, ERROR_SUBPAGE) + ". " +
 			"Zmiany wykonane ręcznie na tej stronie nie zostaną uwzględnione przez bota.";
 	}
 	
@@ -313,7 +313,7 @@ public final class PolishSurnamesInflection {
 		
 		Map<String, String> params = ParseUtils.getTemplateParametersWithValue(declinableTemplates.get(0));
 		
-		// TODO: add test for the depreciative form
+		// TODO: add tests for depreciative forms and variants
 		
 		testCase("Mianownik lp", singular.getNominative(), params);
 		testCase("Dopełniacz lp", singular.getGenitive(), params);
@@ -340,15 +340,18 @@ public final class PolishSurnamesInflection {
 		
 		value = value.replaceAll("\\{\\{[^\\}]+?\\}\\}", "");
 		value = value.replaceAll("(?i)<ref\\b[^>]+?(?<=/)>", "");
-		value = value.replaceAll("(?i)<ref\\b[^>]*?>[^<]+?</ref *>", "");
+		value = value.replaceAll("(?i)<ref\\b[^>]*?>[^<]*?</ref *>", "");
 		
 		String msg = String.format(
 			"nieprawidłowa forma lub błąd odczytu dla parametru „%s” (wartość: <nowiki>%s</nowiki>, oczekiwano: %s)",
 			paramName, value, targetCase
 		);
 		
+		Set<String> set = Pattern.compile(Inflector.CASE_SEPARATOR).splitAsStream(targetCase).collect(Collectors.toSet());
+		
 		Pattern.compile("/|<(?i:br) */?>|,").splitAsStream(value)
-			.filter(v -> v.trim().equals(targetCase))
+			.map(String::trim)
+			.filter(set::contains)
 			.findAny()
 			.orElseThrow(() -> new RuntimeException(msg));
 	}
