@@ -77,7 +77,7 @@ public final class PolishSurnamesInflection {
 	static {
 		P_DEF = Pattern.compile("^: *( *\\((\\d)\\.(\\d)\\) *).+");
 		P_NUM = Pattern.compile("(\\d+)(?:\\.(\\d+)(?:[-–](\\d+))?)?", Pattern.MULTILINE);
-		Pattern temp = Pattern.compile(P_NUM.pattern() + "|(?:" + P_NUM.pattern() + ", *)+");
+		Pattern temp = Pattern.compile(P_NUM.pattern() + "|(?:" + P_NUM.pattern() + ",? *)+");
 		P_NUMS = Pattern.compile("^(?=(?:: *+)?((?:\\( *(?:" + temp.pattern() + ") *\\),? *)+) *(?!\\( *\\d))", Pattern.MULTILINE);
 		
 		LOG_INTRO = // TODO
@@ -125,7 +125,7 @@ public final class PolishSurnamesInflection {
 	}
 	
 	private static void doWork(PageContainer pc, Set<Item> storage, Set<Item> history, List<LogEntry> logs) {
-		InflectionStructure is = new InflectionStructure(pc.getTitle());
+		InflectionStructure is = new InflectionStructure(pc.getTitle(), storage);
 		FieldEditor fe;
 		
 		try {
@@ -237,6 +237,8 @@ public final class PolishSurnamesInflection {
 		for (Map.Entry<Inflector, Item> entry : fetchMap.entrySet()) {
 			Inflector inflector = entry.getKey();
 			Item item = entry.getValue();
+			
+			System.out.printf("Fetching %s (%s)...%n", item.surname, item.gender);
 			
 			try {
 				inflector.fetchEntry();
@@ -453,13 +455,27 @@ public final class PolishSurnamesInflection {
 		boolean isEditedMasculine;
 		boolean isEditedFemenine;
 		
-		InflectionStructure(String surname) {
+		InflectionStructure(String surname, Set<Item> storage) {
 			this.surname = surname;
 			
-			masculineSingular = new Item(surname, Inflector.Gender.MASCULINE_SINGULAR);
-			masculinePlural = new Item(surname, Inflector.Gender.MASCULINE_PLURAL);
-			femenineSingular = new Item(surname, Inflector.Gender.FEMENINE_SINGULAR);
-			femeninePlural = new Item(surname, Inflector.Gender.FEMENINE_PLURAL);
+			masculineSingular = initializeItem(Inflector.Gender.MASCULINE_SINGULAR, storage);
+			masculinePlural = initializeItem(Inflector.Gender.MASCULINE_PLURAL, storage);
+			femenineSingular = initializeItem(Inflector.Gender.FEMENINE_SINGULAR, storage);
+			femeninePlural = initializeItem(Inflector.Gender.FEMENINE_PLURAL, storage);
+		}
+		
+		private Item initializeItem(Inflector.Gender gender, Set<Item> storage) {
+			Item item = new Item(surname, gender);
+			
+			if (storage.contains(item)) {
+				item.cases = storage.stream()
+					.filter(item::equals)
+					.map(i -> i.cases)
+					.findAny()
+					.orElse(null);
+			}
+			
+			return item;
 		}
 		
 		View getView(SurnameGender gender) {
@@ -666,13 +682,22 @@ public final class PolishSurnamesInflection {
 				for (int i = 0; i < mns.size(); i++) {
 					MeaningNumber current = mns.get(i);
 					
-					if (last != null && current.compareTo(last) != 1) {
-						msg += " " + String.format("(„%s” względem „%s”)", current, last);
-						throw new ValidationException(msg);
+					if (last != null) {
+						int comparison = current.compareTo(last);
+						
+						if (comparison == 0) {
+							msg += " " + String.format("(powtórzone „%s”)", current);
+							throw new ValidationException(msg);
+						} else if (comparison == -1) {
+							msg += " " + String.format("(„%s” względem „%s”)", current, last);
+							throw new ValidationException(msg);
+						}
 					}
 					
 					last = current;
 				}
+				
+				last = mns.get(0);
 			}
 		}
 		
