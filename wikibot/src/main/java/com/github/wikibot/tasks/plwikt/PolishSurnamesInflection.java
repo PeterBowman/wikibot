@@ -47,7 +47,7 @@ public final class PolishSurnamesInflection {
 	private static final String SURNAME_CATEGORY = "Język polski - nazwiska";
 	
 	private static final String MASCULINE_SURNAME_TEMPLATE_NAME = "polskie nazwisko męskie";
-	private static final String FEMENINE_SURNAME_TEMPLATE_NAME = "polskie nazwisko żeńskie";
+	private static final String FEMININE_SURNAME_TEMPLATE_NAME = "polskie nazwisko żeńskie";
 	
 	private static final String DECLINABLE_NOUN_TEMPLATE_NAME = "odmiana-rzeczownik-polski";
 	private static final String INDECLINABLE_NOUN_TEMPLATE_NAME = "nieodm-rzeczownik-polski";
@@ -71,7 +71,7 @@ public final class PolishSurnamesInflection {
 	
 	private static enum SurnameGender {
 		MASCULINE,
-		FEMENINE
+		FEMININE
 	}
 	
 	static {
@@ -85,6 +85,10 @@ public final class PolishSurnamesInflection {
 			//"Działa w podwójnym trybie: wstawia brakujące tabelki i weryfikuje zawartość istniejących. " +
 			"Dane pochodzą z witryny " + Inflector.MAIN_URL + " " +
 			String.format("([[%s%s|podstrona z błędami]])", LOG_TARGET_PAGE, ERROR_SUBPAGE) + ". " +
+			"Rozpoznawane są wyłącznie te hasła, które zawierają następujące szablony w polu znaczeń: " +
+			Stream.of(MASCULINE_SURNAME_TEMPLATE_NAME, FEMININE_SURNAME_TEMPLATE_NAME)
+				.map(templateName -> String.format("{{s|%s}}", templateName))
+				.collect(Collectors.joining(", ")) + ". " +
 			"Zmiany wykonane ręcznie na tej stronie nie zostaną uwzględnione przez bota.";
 	}
 	
@@ -147,14 +151,14 @@ public final class PolishSurnamesInflection {
 		}
 		
 		try {
-			is.isEditedFemenine = processInflection(is.getView(SurnameGender.FEMENINE), fe, storage, history);
+			is.isEditedFeminine = processInflection(is.getView(SurnameGender.FEMININE), fe, storage, history);
 		} catch (RuntimeException e) {
-			String msg = String.format("%s (zn. %s)", e.getMessage(), is.femenineNum);
+			String msg = String.format("%s (zn. %s)", e.getMessage(), is.feminineNum);
 			LogEntry le = new LogEntry(pc.getTitle(), msg);
 			logs.add(le);
 		}
 		
-		if (is.isEditedMasculine || is.isEditedFemenine) {
+		if (is.isEditedMasculine || is.isEditedFeminine) {
 			try {
 				wb.edit(pc.getTitle(), fe.getPageContainer().toString(), EDIT_SUMMARY, pc.getTimestamp());
 				is.insertIntoSet(history);
@@ -193,15 +197,15 @@ public final class PolishSurnamesInflection {
 				is.masculineNum = extractDefinitionNumber(content, MASCULINE_SURNAME_TEMPLATE_NAME);
 			}
 			
-			if (!ParseUtils.getTemplates(FEMENINE_SURNAME_TEMPLATE_NAME, content).isEmpty()) {
-				is.femenineNum = extractDefinitionNumber(content, FEMENINE_SURNAME_TEMPLATE_NAME);
+			if (!ParseUtils.getTemplates(FEMININE_SURNAME_TEMPLATE_NAME, content).isEmpty()) {
+				is.feminineNum = extractDefinitionNumber(content, FEMININE_SURNAME_TEMPLATE_NAME);
 			}
 		} catch (NoSuchElementException e) {
 			String escaped = String.format("<nowiki>{{%s}}</nowiki>", e.getMessage());
 			throw new RuntimeException("nie udało się wydobyć numeru znaczenia dla szablonu " + escaped);
 		}
 		
-		if (is.masculineNum == null && is.femenineNum == null) {
+		if (is.masculineNum == null && is.feminineNum == null) {
 			throw new RuntimeException("nie rozpoznano żadnego szablonu nazwisk w polu znaczeń");
 		}
 		
@@ -228,7 +232,7 @@ public final class PolishSurnamesInflection {
 		Map<Inflector, Item> fetchMap = new HashMap<>();
 		
 		fillFetchMap(is.getView(SurnameGender.MASCULINE), fetchMap, storage);
-		fillFetchMap(is.getView(SurnameGender.FEMENINE), fetchMap, storage);
+		fillFetchMap(is.getView(SurnameGender.FEMININE), fetchMap, storage);
 		
 		if (fetchMap.isEmpty()) {
 			return;
@@ -446,22 +450,22 @@ public final class PolishSurnamesInflection {
 		
 		final Item masculineSingular;
 		final Item masculinePlural;
-		final Item femenineSingular;
-		final Item femeninePlural;
+		final Item feminineSingular;
+		final Item femininePlural;
 		
 		MeaningNumber masculineNum;
-		MeaningNumber femenineNum;
+		MeaningNumber feminineNum;
 		
 		boolean isEditedMasculine;
-		boolean isEditedFemenine;
+		boolean isEditedFeminine;
 		
 		InflectionStructure(String surname, Set<Item> storage) {
 			this.surname = surname;
 			
 			masculineSingular = initializeItem(Inflector.Gender.MASCULINE_SINGULAR, storage);
 			masculinePlural = initializeItem(Inflector.Gender.MASCULINE_PLURAL, storage);
-			femenineSingular = initializeItem(Inflector.Gender.FEMENINE_SINGULAR, storage);
-			femeninePlural = initializeItem(Inflector.Gender.FEMENINE_PLURAL, storage);
+			feminineSingular = initializeItem(Inflector.Gender.FEMININE_SINGULAR, storage);
+			femininePlural = initializeItem(Inflector.Gender.FEMININE_PLURAL, storage);
 		}
 		
 		private Item initializeItem(Inflector.Gender gender, Set<Item> storage) {
@@ -482,8 +486,8 @@ public final class PolishSurnamesInflection {
 			switch (gender) {
 				case MASCULINE:
 					return new View(surname, masculineSingular, masculinePlural, masculineNum);
-				case FEMENINE:
-					return new View(surname, femenineSingular, femeninePlural, femenineNum);
+				case FEMININE:
+					return new View(surname, feminineSingular, femininePlural, feminineNum);
 				default:
 					throw new UnsupportedOperationException(gender.toString());
 			}
@@ -495,9 +499,9 @@ public final class PolishSurnamesInflection {
 				set.add(masculinePlural);
 			}
 			
-			if (isEditedFemenine) {
-				set.add(femenineSingular);
-				set.add(femeninePlural);
+			if (isEditedFeminine) {
+				set.add(feminineSingular);
+				set.add(femininePlural);
 			}
 		}
 		
@@ -506,7 +510,7 @@ public final class PolishSurnamesInflection {
 			return String.format(
 				"[%s %s: %s, %s || %s %s: %s, %s]",
 				surname, masculineNum, masculineSingular, masculinePlural,
-				surname, femenineNum, femenineSingular, femeninePlural
+				surname, feminineNum, feminineSingular, femininePlural
 			);
 		}
 		

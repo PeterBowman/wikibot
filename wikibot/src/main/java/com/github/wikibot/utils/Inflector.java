@@ -23,9 +23,9 @@ public class Inflector extends OnlineDict<Inflector> {
 
 	public static enum Gender {
 		MASCULINE_SINGULAR ("m"),
-		FEMENINE_SINGULAR ("f"),
+		FEMININE_SINGULAR ("f"),
 		MASCULINE_PLURAL ("p1"),
-		FEMENINE_PLURAL ("p2");
+		FEMININE_PLURAL ("p2");
 		
 		private final String param;
 		
