@@ -17,6 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,7 +52,8 @@ public final class PolishSurnamesInflection {
 	
 	private static final String DECLINABLE_NOUN_TEMPLATE_NAME = "odmiana-rzeczownik-polski";
 	private static final String INDECLINABLE_NOUN_TEMPLATE_NAME = "nieodm-rzeczownik-polski";
-	private static final String ADJECTIVE_INFLECTION_TEMPLATE_NAME = "odmiana-nazwisko-polskie-ki";
+	private static final String MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME = "odmiana-męskie-nazwisko-polskie-ki";
+	private static final String FEMININE_ADJ_INFLECTION_TEMPLATE_NAME = "odmiana-żeńskie-nazwisko-polskie-ka";
 	
 	private static final String EDIT_SUMMARY = "uzupełnienie odmiany na podstawie " + Inflector.MAIN_URL;
 	
@@ -301,13 +303,20 @@ public final class PolishSurnamesInflection {
 	private static void compareTemplateData(String text, Inflector.Cases singular, Inflector.Cases plural) {
 		List<String> declinableTemplates = ParseUtils.getTemplates(DECLINABLE_NOUN_TEMPLATE_NAME, text);
 		List<String> indeclinableTemplates = ParseUtils.getTemplates(INDECLINABLE_NOUN_TEMPLATE_NAME, text);
-		List<String> specialTemplates = ParseUtils.getTemplates(ADJECTIVE_INFLECTION_TEMPLATE_NAME, text);
+		List<String> masculineAdjTemplates = ParseUtils.getTemplates(MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME, text);
+		List<String> feminineAdjTemplates = ParseUtils.getTemplates(FEMININE_ADJ_INFLECTION_TEMPLATE_NAME, text);
 		
-		if (declinableTemplates.isEmpty() && indeclinableTemplates.isEmpty() && specialTemplates.isEmpty()) {
+		if (
+			declinableTemplates.isEmpty() && indeclinableTemplates.isEmpty() &&
+			masculineAdjTemplates.isEmpty() && feminineAdjTemplates.isEmpty()
+		) {
 			throw new RuntimeException("odmiana dla danego znaczenia istnieje, lecz brak szablonu");
 		}
 		
-		if (declinableTemplates.size() + indeclinableTemplates.size() + specialTemplates.size() > 1) {
+		if (
+			declinableTemplates.size() + indeclinableTemplates.size() +
+			masculineAdjTemplates.size() + feminineAdjTemplates.size() > 1
+		) {
 			throw new RuntimeException("więcej niż jeden szablon odmiany");
 		}
 		
@@ -321,28 +330,31 @@ public final class PolishSurnamesInflection {
 		
 		Map<String, String> params;
 		
-		if (specialTemplates.isEmpty()) {
-			params = ParseUtils.getTemplateParametersWithValue(declinableTemplates.get(0));
-		} else {
+		if (!masculineAdjTemplates.isEmpty() || !feminineAdjTemplates.isEmpty()) {
 			params = new HashMap<>(14, 1);
 			
-			String starter = singular.getNominative();
-			starter = starter.substring(0, starter.length() - 2);
+			String nominative = singular.getNominative();
+			String starter = nominative.substring(0, nominative.length() - 2);
 			
-			params.put("Mianownik lp", starter + "ki");
-			params.put("Dopełniacz lp", starter + "kiego");
-			params.put("Celownik lp", starter + "kiemu");
-			params.put("Biernik lp", starter + "kiego");
-			params.put("Narzędnik lp", starter + "kim");
-			params.put("Miejscownik lp", starter + "kim");
-			params.put("Wołacz lp", starter + "ki");
-			params.put("Mianownik lm", starter + "cy / " + starter + "kie");
-			params.put("Dopełniacz lm", starter + "kich");
-			params.put("Celownik lm", starter + "kim");
-			params.put("Biernik lm", starter + "kich");
-			params.put("Narzędnik lm", starter + "kimi");
-			params.put("Miejscownik lm", starter + "kich");
-			params.put("Wołacz lm", starter + "cy / " + starter + "kie");
+			BiFunction<String, String, String> buildCase = (masc, fem) ->
+				starter + (!masculineAdjTemplates.isEmpty() ? masc : fem);
+			
+			params.put("Mianownik lp", buildCase.apply("ki", "ka"));
+			params.put("Dopełniacz lp", buildCase.apply("kiego", "kiej"));
+			params.put("Celownik lp", buildCase.apply("kiemu", "kiej"));
+			params.put("Biernik lp", buildCase.apply("kiego", "ką"));
+			params.put("Narzędnik lp", buildCase.apply("kim", "ką"));
+			params.put("Miejscownik lp", buildCase.apply("kim", "kiej"));
+			params.put("Wołacz lp", buildCase.apply("ki", "ka"));
+			params.put("Mianownik lm", buildCase.apply("cy", "kie")); // obviate depreciative form
+			params.put("Dopełniacz lm", buildCase.apply("kich", "kich"));
+			params.put("Celownik lm", buildCase.apply("kim", "kim"));
+			params.put("Biernik lm", buildCase.apply("kich", "kie"));
+			params.put("Narzędnik lm", buildCase.apply("kimi", "kimi"));
+			params.put("Miejscownik lm", buildCase.apply("kich", "kich"));
+			params.put("Wołacz lm", buildCase.apply("cy", "kie"));
+		} else {
+			params = ParseUtils.getTemplateParametersWithValue(declinableTemplates.get(0));
 		}
 		
 		// TODO: add tests for depreciative forms and variants
