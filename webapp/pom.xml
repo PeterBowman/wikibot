@@ -123,6 +123,11 @@
     	<artifactId>wiki-java</artifactId>
     	<version>0.31-SNAPSHOT</version>
     </dependency>
+    <dependency>
+    	<groupId>org.nibor.autolink</groupId>
+    	<artifactId>autolink</artifactId>
+    	<version>0.5.0</version>
+    </dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

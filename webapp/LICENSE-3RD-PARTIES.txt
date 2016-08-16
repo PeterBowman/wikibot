@@ -5,6 +5,8 @@ This license applies to the following files:
 * /src/main/webapp/WEB-INF/tags/replace-param.tag
 * /src/main/webapp/scripts/suggestions.js
 * /src/main/webapp/styles/suggestions.css
+* /src/main/java/com/github/wikibot/webapp/PrettyRefServlet.java
+* /src/main/webapp/jsp/pretty-ref.jsp
 
 -------------------------------------------------------------------------
 
