@@ -171,6 +171,7 @@ public class PrettyRefServlet extends HttpServlet {
 	}
 	
 	private static String cleanRefs(String text) {
+		// TODO: detect {{odn}} templates (see article "Wambola")
 		text = text.replace("<!-- Tytuł wygenerowany przez bota -->", "");
 		
 		// merge {{lang}} inside cite templates
@@ -179,21 +180,21 @@ public class PrettyRefServlet extends HttpServlet {
 		// build list of refs
 		Matcher m = Pattern.compile(Ref.REF_OPEN_RE.pattern() + "([\\s\\S]+?)" + Ref.REF_CLOSE_RE.pattern()).matcher(text);
 		List<Ref> refs = new ArrayList<>();
+		RefBuilder refBuilder = new RefBuilder();
 		
 		while (m.find()) {
 			String group = m.group();
-			refs.add(new Ref(group, false));
+			refs.add(refBuilder.createRef(group, false));
 		}
 		
 		// check for name conflicts
-		// FIXME: review
 		Set<Ref> set = new HashSet<>(refs);
 		
 		if (set.size() != refs.size()) {
 			Map<String, Integer> map = new HashMap<>();
 			
 			for (Ref ref : refs) {
-				if (map.containsKey(ref)) {
+				if (map.containsKey(ref.name)) {
 					int count = map.get(ref.name);
 					map.put(ref.name, ++count);
 					ref.name += count;
@@ -248,14 +249,14 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		while (m.find()) {
 			String group = m.group();
-			shortRefs.add(new Ref(group, true));
+			shortRefs.add(refBuilder.createRef(group, true));
 		}
 		
 		m = Ref.REF_RETAG.matcher(text);
 		
 		while (m.find()) {
 			String group = m.group();
-			shortRefs.add(new Ref(group, true));
+			shortRefs.add(refBuilder.createRef(group, true));
 		}
 		
 		for (Ref shortRef : shortRefs) {
@@ -475,6 +476,18 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 	}
 
+	private static class RefBuilder {
+		private final Map<String, Integer> groupRefCounter;
+		
+		RefBuilder() {
+			groupRefCounter = new HashMap<>();
+		}
+		
+		Ref createRef(String str, boolean isShortTag) {
+			return new Ref(str, isShortTag, groupRefCounter);
+		}
+	}
+
 	private static class Ref {
 		// Matches a HTML-like key=value attribute.
 		private static final Pattern ATTR_RE = Pattern.compile("(\\w+) *= *(\"[^\">\n]+\"|'[^'>\n]+'|[^\\s'\"<>/]+)");
@@ -525,14 +538,15 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		private String orig, name, origName, group, content;
 		
-		private static Map<String, Integer> groupRefCounter = new HashMap<>();
+		private final Map<String, Integer> groupRefCounter;
 		
 		static {
 			TLD_RE = Pattern.compile("\\.(" + StringUtils.join(TLD, '|') + ")$");
 			CCTLD_RE = Pattern.compile("\\.(" + StringUtils.join(CCTLD, '|') + ")$");
 		}
 		
-		Ref(String str, boolean isShortTag) {
+		private Ref(String str, boolean isShortTag, Map<String, Integer> groupRefCounter) {
+			this.groupRefCounter = groupRefCounter;
 			orig = str;
 			
 			if (!isShortTag) {
@@ -615,7 +629,6 @@ public class PrettyRefServlet extends HttpServlet {
 						break;
 					case "group":
 						group = value;
-						
 						Integer count = groupRefCounter.get(group);
 						
 						if (count == null) {
@@ -623,7 +636,6 @@ public class PrettyRefServlet extends HttpServlet {
 						}
 						
 						groupRefCounter.put(group, ++count);
-						
 						name = group + count;
 						break;
 				}
@@ -875,7 +887,7 @@ public class PrettyRefServlet extends HttpServlet {
 			return result;
 		}
 		
-		private String toShortTag() {
+		String toShortTag() {
 			if (group == null) {
 				return String.format("{{r|%s}}", name);
 			} else if (group.equals("uwaga")) {

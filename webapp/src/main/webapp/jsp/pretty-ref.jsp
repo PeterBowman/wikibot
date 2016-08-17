@@ -19,7 +19,7 @@
 			autorstwa
 			<a href="https://pl.wikipedia.org/wiki/Wikipedysta:Matma_Rex" target="_blank">w:pl:User:Matma Rex</a>
 			na licencji
-			<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.pl" target="_blank">CC-BY-SA 3.0</a>.
+			<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.pl" target="_blank">CC BY-SA 3.0</a>.
 		</p>
 		<form action="/pbbot/pretty-ref" method="POST"
 			onsubmit="if (this.text.value === '') this.method = 'get'; else this.method = 'post';">
