@@ -1499,6 +1499,11 @@ public class Editor extends AbstractEditor {
 				HashMap<String, String> params = getTemplateParametersWithValue(template);
 				String name = params.get("templateName");
 				
+				// Avoid matching templates like {{Collins-EN-ES}}
+				if (!name.equals("Chono-ES") && !name.equals(name.toUpperCase())) {
+					return;
+				}
+				
 				if (name.equals("lengua") || name.equals("translit")) {
 					m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
 					currentSectionLang.replace(0, currentSectionLang.length(),
@@ -4960,7 +4965,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "diablesse";
+		String title = "intradía";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
