@@ -2192,8 +2192,8 @@ public class Editor extends AbstractEditor {
 				
 				String newIntro = Stream.of(lines)
 					.sorted((line1, line2) -> -Boolean.compare(
-						line1.matches(P_AMBOX_TMPLS.toString()),
-						line2.matches(P_AMBOX_TMPLS.toString())
+						line1.matches(P_AMBOX_TMPLS.pattern()),
+						line2.matches(P_AMBOX_TMPLS.pattern())
 					))
 					.collect(Collectors.joining("\n"));
 				
