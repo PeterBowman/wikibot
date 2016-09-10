@@ -3,6 +3,8 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,9 +62,9 @@ public final class PolishSurnamesInflection {
 	private static final String LOG_TARGET_PAGE = "Wikipedysta:PBbot/odmiana polskich nazwisk";
 	private static final String ERROR_SUBPAGE = "/błędy";
 	
-	private static final int URL_CONSECUTIVE_REQUEST_THROTTLE_MS = 2000;
-	private static final int URL_BATCH_REQUEST_THROTTLE_MS = 10000;
-	private static final int IO_THROTTLE_MS = 60000;
+	private static final int URL_CONSECUTIVE_REQUEST_THROTTLE_MS = 30000;
+	private static final int URL_BATCH_REQUEST_THROTTLE_MS = 60000;
+	private static final int IO_THROTTLE_MS = 120000;
 	
 	private static final Pattern P_DEF;
 	private static final Pattern P_NUM;
@@ -143,7 +145,11 @@ public final class PolishSurnamesInflection {
 			return;
 		}
 		
-		maybeFetchInflection(storage, is, logs);
+		try {
+			maybeFetchInflection(storage, is, logs);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		
 		try {
 			is.isEditedMasculine = processInflection(is.getView(SurnameGender.MASCULINE), fe, storage, history);
@@ -231,7 +237,7 @@ public final class PolishSurnamesInflection {
 			.orElseThrow(() -> new NoSuchElementException(targetTemplate));
 	}
 	
-	private static void maybeFetchInflection(Set<Item> storage, InflectionStructure is, List<LogEntry> logs) {
+	private static void maybeFetchInflection(Set<Item> storage, InflectionStructure is, List<LogEntry> logs) throws IOException {
 		Map<Inflector, Item> fetchMap = new HashMap<>();
 		
 		fillFetchMap(is.getView(SurnameGender.MASCULINE), fetchMap, storage);
@@ -251,6 +257,8 @@ public final class PolishSurnamesInflection {
 				inflector.fetchEntry();
 				item.cases = inflector.getInflection();
 				storage.add(item);
+			} catch (UnknownHostException | SocketException e) {
+				throw e;
 			} catch (IOException e) {
 				e.printStackTrace();
 			} catch (Inflector.InflectorException e) {
