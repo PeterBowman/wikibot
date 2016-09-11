@@ -19,7 +19,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -54,8 +53,12 @@ public final class PolishSurnamesInflection {
 	
 	private static final String DECLINABLE_NOUN_TEMPLATE_NAME = "odmiana-rzeczownik-polski";
 	private static final String INDECLINABLE_NOUN_TEMPLATE_NAME = "nieodm-rzeczownik-polski";
-	private static final String MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME = "odmiana-męskie-nazwisko-polskie-ki";
-	private static final String FEMININE_ADJ_INFLECTION_TEMPLATE_NAME = "odmiana-żeńskie-nazwisko-polskie-ka";
+	
+	private static final String MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME_KI = "odmiana-męskie-nazwisko-polskie-ki";
+	private static final String FEMININE_ADJ_INFLECTION_TEMPLATE_NAME_KA = "odmiana-żeńskie-nazwisko-polskie-ka";
+	
+	private static final String MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME_NY = "odmiana-męskie-nazwisko-polskie-ny";
+	private static final String FEMININE_ADJ_INFLECTION_TEMPLATE_NAME_NA = "odmiana-żeńskie-nazwisko-polskie-na";
 	
 	private static final String EDIT_SUMMARY = "uzupełnienie odmiany na podstawie " + Inflector.MAIN_URL;
 	
@@ -311,19 +314,23 @@ public final class PolishSurnamesInflection {
 	private static void compareTemplateData(String text, Inflector.Cases singular, Inflector.Cases plural) {
 		List<String> declinableTemplates = ParseUtils.getTemplates(DECLINABLE_NOUN_TEMPLATE_NAME, text);
 		List<String> indeclinableTemplates = ParseUtils.getTemplates(INDECLINABLE_NOUN_TEMPLATE_NAME, text);
-		List<String> masculineAdjTemplates = ParseUtils.getTemplates(MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME, text);
-		List<String> feminineAdjTemplates = ParseUtils.getTemplates(FEMININE_ADJ_INFLECTION_TEMPLATE_NAME, text);
+		List<String> masculineAdjTemplatesKi = ParseUtils.getTemplates(MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME_KI, text);
+		List<String> feminineAdjTemplatesKa = ParseUtils.getTemplates(FEMININE_ADJ_INFLECTION_TEMPLATE_NAME_KA, text);
+		List<String> masculineAdjTemplatesNy = ParseUtils.getTemplates(MASCULINE_ADJ_INFLECTION_TEMPLATE_NAME_NY, text);
+		List<String> feminineAdjTemplatesNa = ParseUtils.getTemplates(FEMININE_ADJ_INFLECTION_TEMPLATE_NAME_NA, text);
 		
 		if (
 			declinableTemplates.isEmpty() && indeclinableTemplates.isEmpty() &&
-			masculineAdjTemplates.isEmpty() && feminineAdjTemplates.isEmpty()
+			masculineAdjTemplatesKi.isEmpty() && feminineAdjTemplatesKa.isEmpty() &&
+			masculineAdjTemplatesNy.isEmpty() && feminineAdjTemplatesNa.isEmpty()
 		) {
 			throw new RuntimeException("odmiana dla danego znaczenia istnieje, lecz brak szablonu");
 		}
 		
 		if (
 			declinableTemplates.size() + indeclinableTemplates.size() +
-			masculineAdjTemplates.size() + feminineAdjTemplates.size() > 1
+			masculineAdjTemplatesKi.size() + feminineAdjTemplatesKa.size() +
+			masculineAdjTemplatesNy.size() + feminineAdjTemplatesNa.size() > 1
 		) {
 			throw new RuntimeException("więcej niż jeden szablon odmiany");
 		}
@@ -338,29 +345,35 @@ public final class PolishSurnamesInflection {
 		
 		Map<String, String> params;
 		
-		if (!masculineAdjTemplates.isEmpty() || !feminineAdjTemplates.isEmpty()) {
+		if (
+			!masculineAdjTemplatesKi.isEmpty() || !feminineAdjTemplatesKa.isEmpty() ||
+			!masculineAdjTemplatesNy.isEmpty() || !feminineAdjTemplatesNa.isEmpty()
+		) {
 			params = new HashMap<>(14, 1);
 			
 			String nominative = singular.getNominative();
 			String starter = nominative.substring(0, nominative.length() - 2);
 			
-			BiFunction<String, String, String> buildCase = (masc, fem) ->
-				starter + (!masculineAdjTemplates.isEmpty() ? masc : fem);
+			final boolean isMasculine = !masculineAdjTemplatesKi.isEmpty() || !masculineAdjTemplatesNy.isEmpty();
+			final boolean isKiKaEnding = !masculineAdjTemplatesKi.isEmpty() || !feminineAdjTemplatesKa.isEmpty();
 			
-			params.put("Mianownik lp", buildCase.apply("ki", "ka"));
-			params.put("Dopełniacz lp", buildCase.apply("kiego", "kiej"));
-			params.put("Celownik lp", buildCase.apply("kiemu", "kiej"));
-			params.put("Biernik lp", buildCase.apply("kiego", "ką"));
-			params.put("Narzędnik lp", buildCase.apply("kim", "ką"));
-			params.put("Miejscownik lp", buildCase.apply("kim", "kiej"));
-			params.put("Wołacz lp", buildCase.apply("ki", "ka"));
-			params.put("Mianownik lm", buildCase.apply("cy", "kie")); // obviate depreciative form
-			params.put("Dopełniacz lm", buildCase.apply("kich", "kich"));
-			params.put("Celownik lm", buildCase.apply("kim", "kim"));
-			params.put("Biernik lm", buildCase.apply("kich", "kie"));
-			params.put("Narzędnik lm", buildCase.apply("kimi", "kimi"));
-			params.put("Miejscownik lm", buildCase.apply("kich", "kich"));
-			params.put("Wołacz lm", buildCase.apply("cy", "kie"));
+			StringQuadOperator buildCase = (mascKi, femKa, mascNy, femNa) ->
+				starter + (isMasculine ? (isKiKaEnding ? mascKi : mascNy) : (isKiKaEnding ? femKa : femNa));
+			
+			params.put("Mianownik lp", buildCase.apply("ki", "ka", "ny", "na"));
+			params.put("Dopełniacz lp", buildCase.apply("kiego", "kiej", "nego", "nej"));
+			params.put("Celownik lp", buildCase.apply("kiemu", "kiej", "nemu", "nej"));
+			params.put("Biernik lp", buildCase.apply("kiego", "ką", "nego", "ną"));
+			params.put("Narzędnik lp", buildCase.apply("kim", "ką", "nym", "ną"));
+			params.put("Miejscownik lp", buildCase.apply("kim", "kiej", "nym", "nej"));
+			params.put("Wołacz lp", buildCase.apply("ki", "ka", "ny", "na"));
+			params.put("Mianownik lm", buildCase.apply("cy", "kie", "ni", "ne")); // obviate depreciative form
+			params.put("Dopełniacz lm", buildCase.apply("kich", "kich", "nych", "nych"));
+			params.put("Celownik lm", buildCase.apply("kim", "kim", "nym", "nym"));
+			params.put("Biernik lm", buildCase.apply("kich", "kie", "nych", "ne"));
+			params.put("Narzędnik lm", buildCase.apply("kimi", "kimi", "nymi", "nymi"));
+			params.put("Miejscownik lm", buildCase.apply("kich", "kich", "nych", "nych"));
+			params.put("Wołacz lm", buildCase.apply("cy", "kie", "ni", "ne"));
 		} else {
 			params = ParseUtils.getTemplateParametersWithValue(declinableTemplates.get(0));
 		}
@@ -929,6 +942,11 @@ public final class PolishSurnamesInflection {
 				return collator.compare(le1.title, le2.title);
 			}
 		}
+	}
+	
+	@FunctionalInterface
+	private static interface StringQuadOperator {
+		String apply(String arg1, String arg2, String arg3, String arg4);
 	}
 }
 
