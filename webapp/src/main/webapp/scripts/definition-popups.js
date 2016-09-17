@@ -135,6 +135,7 @@
 						var pageText, parsed;
 					
 						$el.off( 'mouseenter.definition mouseleave.definition' );
+						$el.removeData( 'request' );
 						
 						try {
 							pageText = json.query.pages[0].revisions[0].content;
