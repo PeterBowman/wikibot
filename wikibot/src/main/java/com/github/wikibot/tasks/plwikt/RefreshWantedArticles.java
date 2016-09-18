@@ -33,7 +33,7 @@ public final class RefreshWantedArticles {
 	
 	private static final int MAX_LENGHT = 100;
 	private static final int REFILL_SIZE = 10;
-	private static final int REFILL_THRESHOLD = 25;
+	private static final int REFILL_THRESHOLD = 30;
 	
 	private static final Pattern P_LINK;
 	private static final Pattern P_OCCURRENCES_TARGET;
@@ -187,7 +187,6 @@ public final class RefreshWantedArticles {
 				if (hiddenList.size() < REFILL_THRESHOLD) {
 					try {
 						fetchMoreArticles(hiddenList, storeSet);
-						storeSet.addAll(hiddenList);
 					} catch (IOException e) {
 						e.printStackTrace();
 						break;
@@ -200,7 +199,9 @@ public final class RefreshWantedArticles {
 				
 				visibleList.add(hiddenList.remove(0));
 			}
-		} else if (hiddenList.size() < REFILL_THRESHOLD) {
+		}
+		
+		if (hiddenList.size() < REFILL_THRESHOLD) {
 			try {
 				fetchMoreArticles(hiddenList, storeSet);
 			} catch (IOException e) {
@@ -245,5 +246,7 @@ public final class RefreshWantedArticles {
 			.filter(title -> !doneSet.contains(title))
 			.limit(Math.max(REFILL_SIZE, REFILL_THRESHOLD - list.size()))
 			.forEach(list::add);
+		
+		storeSet.addAll(list);
 	}
 }
