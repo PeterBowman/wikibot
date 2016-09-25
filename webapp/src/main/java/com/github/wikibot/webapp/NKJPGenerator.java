@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -125,7 +126,7 @@ public class NKJPGenerator extends HttpServlet {
 				String regex;
 				
 				if (param.equals("pid")) {
-					regex = "[0-9a-z]{32}";
+					regex = "[0-9a-f]{32}";
 				} else {
 					regex = "\\d+";
 				}
@@ -331,7 +332,18 @@ public class NKJPGenerator extends HttpServlet {
 		void prepareOutput(Map<String, String> resultMap) {
 			String template = buildTemplate(resultMap);
 			json.put("output", template);
-			json.put("parameters", resultMap);
+			
+			// ensure that key order is preserved
+			JSONArray array = new JSONArray();
+			
+			for (Map.Entry<String, String> entry : resultMap.entrySet()) {
+				JSONObject object = new JSONObject();
+				object.put("name", entry.getKey());
+				object.put("value", entry.getValue());
+				array.put(object);
+			}
+			
+			json.put("parameters", array);
 		}
 		
 		@Override
