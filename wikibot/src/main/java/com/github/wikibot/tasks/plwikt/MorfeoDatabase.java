@@ -77,7 +77,7 @@ public final class MorfeoDatabase {
 		
 		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.length);
 		
-		Class.forName("com.mysql.jdbc.Driver");
+		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
 		Map<String, Byte> morphemInfo;
 		

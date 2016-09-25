@@ -30,17 +30,17 @@
   	<dependency>
   		<groupId>com.univocity</groupId>
   		<artifactId>univocity-parsers</artifactId>
-  		<version>2.1.1</version>
+  		<version>2.2.2</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.commons</groupId>
   		<artifactId>commons-compress</artifactId>
-  		<version>1.11</version>
+  		<version>1.12</version>
   	</dependency>
   	<dependency>
   		<groupId>net.sourceforge.htmlunit</groupId>
   		<artifactId>htmlunit</artifactId>
-  		<version>2.22</version>
+  		<version>2.23</version>
   	</dependency>
   	<dependency>
   		<groupId>org.wikipedia</groupId>
@@ -70,7 +70,7 @@
   	<dependency>
   		<groupId>mysql</groupId>
   		<artifactId>mysql-connector-java</artifactId>
-  		<version>5.1.39</version>
+  		<version>6.0.4</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.commons</groupId>
