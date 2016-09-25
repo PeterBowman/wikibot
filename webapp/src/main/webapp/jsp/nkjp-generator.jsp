@@ -37,10 +37,10 @@
 				<label for="address">Adres:</label>
 				<input id="address" name="address" size="70" value="${param.address}">
 			</span>
-			<input type="submit" value="Generuj" >
+			<input type="submit" value="Wyślij" >
 		</fieldset>
 	</form>
-	<c:if test="${not empty output}">
+	<c:if test="${not empty output or not empty error}">
 		<h2>Wynik</h2>
 		<c:choose>
 			<c:when test="${not empty error}">
@@ -59,7 +59,7 @@
 					<p>Parametry szablonu:</p>
 					<ul>
 						<c:forEach var="entry" items="${parameters}">
-							<li>${entry.key}: ${entry.value}</li>
+							<li><code>${entry.key}</code>: ${entry.value}</li>
 						</c:forEach>
 					</ul>
 				</c:if>

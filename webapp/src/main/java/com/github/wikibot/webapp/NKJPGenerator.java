@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import javax.servlet.RequestDispatcher;
@@ -56,11 +55,8 @@ public class NKJPGenerator extends HttpServlet {
 		if (request.getParameter("gui") != null || address == null) {
 			responseWrapper = new WebResponse(request, response);
 		} else {
-			String callback = request.getParameter("callback");
-			responseWrapper = new StructuredResponse(response, callback);
+			responseWrapper = new StructuredResponse(response);
 		}
-		
-		responseWrapper.setFormat(request.getParameter("format"));
 		
 		if (address == null) {
 			responseWrapper.send();
@@ -231,6 +227,7 @@ public class NKJPGenerator extends HttpServlet {
 			this.format = "";
 		}
 		
+		@SuppressWarnings("unused")
 		void setFormat(String format) {
 			if (format == null) {
 				format = "plain";
@@ -254,12 +251,10 @@ public class NKJPGenerator extends HttpServlet {
 		
 		abstract void prepareOutput(Map<String, String> resultMap);
 		
-		abstract void send() throws ServletException, IOException;
-		
-		List<String> buildExceptionBacktrace(Throwable t) {
+		List<String> buildExceptionBacktrace(Exception e) {
 			List<String> backTrace = new ArrayList<>();
 			
-			StackTraceElement[] stackTraceElements = t.getStackTrace();
+			StackTraceElement[] stackTraceElements = e.getStackTrace();
 			String canonicalName = NKJPGenerator.class.getCanonicalName();
 			
 			for (int i = 0; i < stackTraceElements.length; i++) {
@@ -276,6 +271,8 @@ public class NKJPGenerator extends HttpServlet {
 		}
 		
 		abstract void handleException(Exception e);
+		
+		abstract void send() throws ServletException, IOException;
 	}
 	
 	private class WebResponse extends ResponseWrapper {
@@ -302,41 +299,32 @@ public class NKJPGenerator extends HttpServlet {
 		}
 		
 		@Override
-		void send() throws ServletException, IOException {
-			if (request.getAttribute("output") == null) {
-				request.setAttribute("output", "");
-			}
-			
-			dispatcher.forward(request, response);
-		}
-		
-		@Override
 		void handleException(Exception e) {
 			List<String> backTrace = buildExceptionBacktrace(e);
 			request.setAttribute("error", e.toString());
 			request.setAttribute("backtrace", backTrace);
 		}
+		
+		@Override
+		void send() throws ServletException, IOException {
+			dispatcher.forward(request, response);
+		}
 	}
 	
 	private class StructuredResponse extends ResponseWrapper {
 		JSONObject json;
-		String callback;
 		
-		StructuredResponse(HttpServletResponse response, String callback) {
+		StructuredResponse(HttpServletResponse response) {
 			super(response);
 			this.json = new JSONObject();
-			this.callback = callback;
 			this.format = "json";
 		}
 		
 		@Override
 		void setFormat(String format) {
-			if (format.equals("plain")) {
-				json.put("warning", "\"plain\" format is not available for structured response data");
-				format = "json";
+			if (!format.equals("json")) {
+				json.put("warning", "only \"json\" format is available for structured response data");
 			}
-			
-			super.setFormat(format);
 		}
 		
 		@Override
@@ -347,36 +335,27 @@ public class NKJPGenerator extends HttpServlet {
 		}
 		
 		@Override
+		void handleException(Exception e) {
+			List<String> backTrace = buildExceptionBacktrace(e);
+			json.put("status", 500);
+			json.put("error", e.toString());
+			json.put("backtrace", backTrace.toArray(new String[backTrace.size()]));
+		}
+		
+		@Override
 		void send() throws ServletException, IOException {
 			response.setCharacterEncoding("UTF-8");
 			
 			String contentType = getContentType();
 			response.setHeader("Content-Type", contentType);
 			
-			if (!json.has("output")) {
-				json.put("output", "");
-			}
-			
+			// might have been previously set by exception handler
 			if (!json.has("status")) {
 				json.put("status", 200);
 			}
 			
 			String output = json.toString();
-			
-			if (format.equals("jsonp")) {
-				Objects.requireNonNull(callback);
-				output = String.format("%s(%s)", callback, output);
-			}
-			
 			response.getWriter().append(output);
-		}
-		
-		@Override
-		void handleException(Exception e) {
-			List<String> backTrace = buildExceptionBacktrace(e);
-			json.put("status", 500);
-			json.put("error", e.toString());
-			json.put("backtrace", StringUtils.join(backTrace, '\n'));
 		}
 	}
 }
