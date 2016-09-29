@@ -346,7 +346,11 @@ public class Wikibot extends WMFWiki {
 	
 	public Revision[] recentChanges(Calendar starttimestamp, Calendar endtimestamp, int rcoptions, int rctypes, boolean toponly, int... ns) throws IOException
 	{
-		return recentChanges(calendarToTimestamp(starttimestamp, true), calendarToTimestamp(endtimestamp, true), rcoptions, rctypes, toponly, ns);
+		Calendar startCal = (Calendar) starttimestamp.clone();
+		Calendar endCal = (Calendar) endtimestamp.clone();
+		startCal.setTimeZone(TimeZone.getTimeZone("UTC"));
+		endCal.setTimeZone(TimeZone.getTimeZone("UTC"));
+		return recentChanges(calendarToTimestamp(startCal, true), calendarToTimestamp(endCal, true), rcoptions, rctypes, toponly, ns);
 	}
 	
 	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, int... ns) throws IOException

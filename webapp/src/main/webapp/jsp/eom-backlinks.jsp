@@ -20,8 +20,11 @@
 <t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
 		<link href="styles/suggestions.css" type="text/css" rel="stylesheet">
+		<link href="styles/tipsy.css" type="text/css" rel="stylesheet">
 		<link href="styles/eom-backlinks.css" type="text/css" rel="stylesheet">
 		<script src="scripts/suggestions.js"></script>
+		<script src="scripts/tipsy.js"></script>
+		<script src="scripts/definition-popups.js"></script>
 		<script src="scripts/eom-backlinks.js"></script>
 	</jsp:attribute>
 	<jsp:body>
@@ -30,6 +33,8 @@
 			Można też wyszukać wspólne wystąpienia dwóch lub więcej morfemów, oddzielając je znakiem
 			<code>|</code> w polu wyszukiwania (na przykład <a href="?morphem=o|patr">„o|patr”</a>).
 			Zostaw to pole niewypełnione, aby wyświetlić wszystkie morfemy użyte w hasłach esperanto.
+			Najechanie kursorem na dowolny link poskutkuje wyświetleniem okienka z wyciągiem pola znaczeń
+			odpowiedniego hasła w Wikisłowniku.
 		</p>
 		<p>
 			<%-- It's important to set this values BEFORE the call to fmt:formatDate. --%>

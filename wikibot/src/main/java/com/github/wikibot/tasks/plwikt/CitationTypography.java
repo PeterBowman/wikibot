@@ -99,7 +99,7 @@ public final class CitationTypography {
 	public static void main(String[] args) throws Exception {
 		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		
-		Class.forName("com.mysql.jdbc.Driver");
+		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
 		
 		CommandLine line = readOptions(args);

@@ -232,7 +232,7 @@ public final class Misc {
 			draft = draft.trim();
 			String title = draft.substring(0, draft.indexOf("\n"));
 			String content = draft.substring(draft.indexOf("\n")).trim();
-			String[] contents = content.split(Pattern.compile(separator, Pattern.LITERAL).toString());
+			String[] contents = content.split(Pattern.compile(separator, Pattern.LITERAL).pattern());
 			map.put(title, contents);
 		}
 		

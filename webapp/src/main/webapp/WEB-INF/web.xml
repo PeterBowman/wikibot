@@ -12,12 +12,24 @@
   	<jsp-file>/jsp/broken-iw-links.jsp</jsp-file>
   </servlet>
   <servlet>
+  	<servlet-name>BrokenInterwikiLinksQuery</servlet-name>
+  	<servlet-class>com.github.wikibot.webapp.BrokenInterwikiLinksServlet</servlet-class>
+  </servlet>
+  <servlet>
   	<servlet-name>EomBacklinks</servlet-name>
   	<jsp-file>/jsp/eom-backlinks.jsp</jsp-file>
   </servlet>
   <servlet>
   	<servlet-name>VerifyCitationsAPI</servlet-name>
   	<servlet-class>com.github.wikibot.webapp.VerifyCitationsAPI</servlet-class>
+  </servlet>
+  <servlet>
+  	<servlet-name>PrettyRefServlet</servlet-name>
+  	<servlet-class>com.github.wikibot.webapp.PrettyRefServlet</servlet-class>
+  </servlet>
+  <servlet>
+  	<servlet-name>NKJPGenerator</servlet-name>
+  	<servlet-class>com.github.wikibot.webapp.NKJPGenerator</servlet-class>
   </servlet>
   <servlet-mapping>
   	<servlet-name>VerifyCitations</servlet-name>
@@ -38,17 +50,42 @@
   	<url-pattern>/broken-iw-links</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
+  	<servlet-name>BrokenInterwikiLinksQuery</servlet-name>
+  	<url-pattern>/broken-iw-links/query</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
   	<servlet-name>EomBacklinks</servlet-name>
   	<url-pattern>/eom-backlinks</url-pattern>
   </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>PrettyRefServlet</servlet-name>
+  	<url-pattern>/pretty-ref</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>NKJPGenerator</servlet-name>
+  	<url-pattern>/nkjp-generator</url-pattern>
+  </servlet-mapping>
   <resource-ref>
-  	<description>DB connection: s52584__plwikt_verify_citations</description>
+  	<res-ref-name>jdbc/tools-db</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
   	<res-ref-name>jdbc/VerifyCitations</res-ref-name>
   	<res-type>javax.sql.DataSource</res-type>
   	<res-auth>Container</res-auth>
   </resource-ref>
   <resource-ref>
-  	<description>DB connection: plwiktionary</description>
+  	<res-ref-name>jdbc/EomBacklinks</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
+  	<res-ref-name>jdbc/plwikt-common</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
   	<res-ref-name>jdbc/plwiktionary</res-ref-name>
   	<res-type>javax.sql.DataSource</res-type>
   	<res-auth>Container</res-auth>

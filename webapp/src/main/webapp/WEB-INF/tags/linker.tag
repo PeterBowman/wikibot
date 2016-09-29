@@ -40,8 +40,12 @@
 	</c:otherwise>
 </c:choose>
 
-<a href="${fn:replace(hrefPattern, '$1', href)}" 
+<c:set var="classVar" value="wikilink ${classVar}" />
+
+<a href="${fn:replace(hrefPattern, '$1', href)}"
+		class="${fn:trim(classVar)}"
+		data-target="${normalized}"
+		<c:if test="${not empty sectionName}">data-section="${sectionName}"</c:if> 
 		title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
-		<c:if test="${not empty classVar}">class="${classVar}"</c:if>
 		target="_blank"
 	>${display}</a><%-- No trailing newlines! --%>

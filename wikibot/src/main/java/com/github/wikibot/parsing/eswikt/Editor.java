@@ -67,7 +67,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_LINE_SPLITTER_LEFT;
 	private static final Pattern P_LINE_SPLITTER_BOTH;
 	private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
-	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?.+?-ES( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
+	private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?((Chono|[A-Z-]+?)-ES)( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
 	private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANS|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
 	private static final Pattern P_INFLECT_TMPLS = Pattern.compile("\\{\\{(inflect\\..+?)[\\|\\}]");
 	private static final Pattern P_ADAPT_PRON_TMPL;
@@ -1499,6 +1499,12 @@ public class Editor extends AbstractEditor {
 				HashMap<String, String> params = getTemplateParametersWithValue(template);
 				String name = params.get("templateName");
 				
+				// Avoid matching templates like {{Collins-EN-ES}}
+				// Special cases must be included in P_XX_ES_TEMPLATE
+				if (!name.equals("Chono-ES") && !name.equals(name.toUpperCase())) {
+					return;
+				}
+				
 				if (name.equals("lengua") || name.equals("translit")) {
 					m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
 					currentSectionLang.replace(0, currentSectionLang.length(),
@@ -2187,8 +2193,8 @@ public class Editor extends AbstractEditor {
 				
 				String newIntro = Stream.of(lines)
 					.sorted((line1, line2) -> -Boolean.compare(
-						line1.matches(P_AMBOX_TMPLS.toString()),
-						line2.matches(P_AMBOX_TMPLS.toString())
+						line1.matches(P_AMBOX_TMPLS.pattern()),
+						line2.matches(P_AMBOX_TMPLS.pattern())
 					))
 					.collect(Collectors.joining("\n"));
 				
@@ -4960,7 +4966,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "diablesse";
+		String title = "intradía";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")

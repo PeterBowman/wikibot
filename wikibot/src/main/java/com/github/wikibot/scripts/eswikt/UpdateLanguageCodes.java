@@ -62,15 +62,23 @@ public final class UpdateLanguageCodes {
 		}
 		
 		System.out.printf(
-			"Added: %d, removed: %d, modified: %d%n",
+			"Added: %d, removed: %d, modified: %d.%n",
 			addedCodes.size(), removedCodes.size(), modifiedCodes.size()
 		);
 		
-		String text = wb.getPageText(TARGET_PAGE);
-		text = makePage(text, storedLangs);
+		String fetchedText = wb.getPageText(TARGET_PAGE);
+		String generatedTable = generateTable(storedLangs);
+		
+		if (fetchedText.contains(generatedTable)) {
+			System.out.println("Target page is already up to date. Storing data and aborting...");
+			storeLangs(storedLangs);
+			return;
+		}
+		
+		String newText = makePage(fetchedText, generatedTable, storedLangs.size());
 		String summary = makeSummary(addedCodes, removedCodes, modifiedCodes);
 		
-		wb.edit(TARGET_PAGE, text, summary, false, false, -2, null);
+		wb.edit(TARGET_PAGE, newText, summary, false, false, -2, null);
 		wb.logout();
 		
 		storeLangs(storedLangs);
@@ -151,8 +159,8 @@ public final class UpdateLanguageCodes {
 		return codes;
 	}
 	
-	private static String buildTable(Map<String, String> map) {
-		StringBuilder sb = new StringBuilder();
+	private static String generateTable(Map<String, String> map) {
+		StringBuilder sb = new StringBuilder(25000);
 		
 		sb.append("{| class=\"wikitable sortable\"\n");
 		sb.append("! Código !! Idioma\n");
@@ -168,27 +176,26 @@ public final class UpdateLanguageCodes {
 		return sb.toString();
 	}
 	
-	private static String makePage(String pageText, Map<String, String> storedLangs) throws FileNotFoundException {
-		String table = buildTable(storedLangs);
-		int index = pageText.indexOf("<!--");
+	private static String makePage(String text, String table, int size) throws FileNotFoundException {
+		int index = text.indexOf("<!--");
 		
 		if (index == -1) {
-			pageText = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
-			return pageText + "\n" + table;
+			text = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
+			return text + "\n" + table;
 		}
 		
-		index = pageText.indexOf("\n", index);
-		index = (index != -1) ? index : pageText.length();
+		index = text.indexOf("\n", index);
+		index = (index != -1) ? index : text.length();
 		
-		String intro = pageText.substring(0, index);
+		String intro = text.substring(0, index);
 		Matcher m = Pattern.compile("<span class=\"update-timestamp\">(.+?)</span>").matcher(intro);
 		
 		if (!m.find()) {
-			pageText = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
-			return pageText + "\n" + table;
+			text = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
+			return text + "\n" + table;
 		}
 		
-		String timestamp = String.format("~~~~~ (%d idiomas)", storedLangs.size());
+		String timestamp = String.format("~~~~~ (%d idiomas)", size);
 		intro = intro.substring(0, m.start(1)) + timestamp + intro.substring(m.end(1));
 		
 		return intro + "\n" + table;
@@ -217,10 +224,7 @@ public final class UpdateLanguageCodes {
 			details.add(String.format("modificados: %s", String.join(", ", modifiedCodes)));
 		}
 		
-		sb.append(String.join("; ", details));
-		sb.append(")");
-		
-		return sb.toString();
+		return sb.append(String.join("; ", details)).append(")").toString();
 	}
 	
 	private static void storeLangs(Map<String, String> map) throws FileNotFoundException, UnsupportedEncodingException {
