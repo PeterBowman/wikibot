@@ -286,13 +286,13 @@ public class Editor extends AbstractEditor {
 			"<!-- ?(;2: )?si hay más acepciones.*?-->",
 			"<!-- ?si hay más que una acepción,.*?-->",
 			"(?s)<!-- ?puedes incluir uno o más de los siguientes campos .*?-->",
-			"<!-- ?\\{\\{ámbito(\\|leng=xx)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->",
-			"<!-- ?\\{\\{uso(\\|leng=xx)?\\|\\}\\}.*?-->",
-			"<!-- ?\\{\\{sinónimo(\\|leng=xx)?\\|<(SINÓNIMO )?1>\\|<(SINÓNIMO )?2>\\}\\}.*?-->",
-			"<!-- ?\\{\\{antónimo(\\|leng=xx)?\\|<(ANTÓNIMO )?1>\\|<(ANTÓNIMO )?2>\\}\\}.*?-->",
-			"<!-- ?\\{\\{hipónimo(\\|leng=xx)?\\|<(HIPÓNIMO )?1>\\|<(HIPÓNIMO )?2>\\}\\}.*?-->",
-			"<!-- ?\\{\\{hiperónimo(\\|leng=xx)?\\|<(HIPERÓNIMO )?1>\\|<(HIPERÓNIMO )?2>\\}\\}.*?-->",
-			"<!-- ?\\{\\{relacionado(\\|leng=xx)?\\|<1>\\|<2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{ámbito(\\|leng=[a-z-]*?)?\\|<ÁMBITO 1>\\|<ÁMBITO2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{uso(\\|leng=[a-z-]*?)?\\|\\}\\}.*?-->",
+			"<!-- ?\\{\\{sinónimo(\\|leng=[a-z-]*?)?\\|<(SINÓNIMO )?1>\\|<(SINÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{antónimo(\\|leng=[a-z-]*?)?\\|<(ANTÓNIMO )?1>\\|<(ANTÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{hipónimo(\\|leng=[a-z-]*?)?\\|<(HIPÓNIMO )?1>\\|<(HIPÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{hiperónimo(\\|leng=[a-z-]*?)?\\|<(HIPERÓNIMO )?1>\\|<(HIPERÓNIMO )?2>\\}\\}.*?-->",
+			"<!-- ?\\{\\{relacionado(\\|leng=[a-z-]*?)?\\|<1>\\|<2>\\}\\}.*?-->",
 			"<!-- ?\\{\\{ejemplo\\|<oración.*?-->",
 			"<!-- ?\\{\\{ejemplo\\}\\} ?-->",
 			"<!-- ?aquí pones una explicaci[óo]n .*?-->",
@@ -4966,7 +4966,7 @@ public class Editor extends AbstractEditor {
 		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
-		String title = "intradía";
+		String title = "Paronym";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
