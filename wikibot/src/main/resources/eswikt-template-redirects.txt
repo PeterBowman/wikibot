@@ -21,6 +21,7 @@ acrónimo = sigla
 redireccion suave = redirección suave
 Hipónimos = hipónimo
 Hiperónimos = hiperónimo
+locución preposicional = locución prepositiva
 
 Ampliable = ampliable
 Definición = definición

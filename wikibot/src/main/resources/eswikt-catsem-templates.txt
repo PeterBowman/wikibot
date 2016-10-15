@@ -199,6 +199,7 @@ profesiones = Profesiones
 psicología = Psicología
 psiquiatría = Psiquiatría
 química = Química
+química orgánica = Química orgánica
 regiones = Topónimos
 religión = Religión
 relojería = Relojería
