@@ -167,6 +167,23 @@ public final class RefreshWantedArticles {
 	private static List<String> filterDoneArticles(List<String> titles) throws IOException {
 		PageContainer[] pages = wb.getContentOfPages(titles.toArray(new String[titles.size()]));
 		
+		// Missing pages have been already filtered out
+		String[] nonMissingTitles = Stream.of(pages)
+			.map(PageContainer::getTitle)
+			.toArray(String[]::new);
+		
+		String[] redirects = wb.resolveRedirects(nonMissingTitles);
+		
+		for (int i = 0; i < pages.length; i++) {
+			String redirect = redirects[i];
+			
+			if (redirect != null) {
+				PageContainer old = pages[i];
+				String redirectText = wb.getPageText(redirect);
+				pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
+			}
+		}
+		
 		return Stream.of(pages)
 			.map(Page::wrap)
 			.filter(page -> page.getPolishSection().isPresent())
