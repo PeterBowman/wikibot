@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -239,7 +237,12 @@ public final class Edit implements Selectorizable {
 	
 	public static void getDiffs() throws IOException {
 		String[] lines = IOUtils.loadFromFile(difflist, "", "UTF8");
-		String[] titles = new HashSet<>(Arrays.asList(lines)).toArray(new String[lines.length]);
+		
+		String[] titles = Stream.of(lines)
+			.map(String::trim)
+			.filter(line -> !line.isEmpty())
+			.distinct()
+			.toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -248,10 +251,11 @@ public final class Edit implements Selectorizable {
 		}
 
 		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		
 		Map<String, String> map = Stream.of(pages)
 			.collect(Collectors.toMap(
-				page -> page.getTitle(),
-				page -> page.getText(),
+				PageContainer::getTitle,
+				PageContainer::getText,
 				(a, b) -> a,
 				LinkedHashMap::new
 			));
