@@ -738,7 +738,7 @@ public final class PolishSurnamesInflection {
 		}
 		
 		private void validateNumbering() {
-			String msg = "nieprawidłowa kolejność numeracji w polu „" + field.getFieldType().localised + "”";
+			String msg = "nieprawidłowa kolejność numeracji w polu „" + field.getFieldType().localised() + "”";
 			MeaningNumber last = null;
 			
 			for (List<MeaningNumber> mns : data.keySet()) {
@@ -765,7 +765,7 @@ public final class PolishSurnamesInflection {
 		}
 		
 		private void validateChunks() {
-			String msg = "nieprawidłowo sformatowany tekst w polu „" + field.getFieldType().localised + "”";
+			String msg = "nieprawidłowo sformatowany tekst w polu „" + field.getFieldType().localised() + "”";
 			
 			for (Map.Entry<List<MeaningNumber>, String> entry : data.entrySet()) {
 				String chunk = entry.getValue();

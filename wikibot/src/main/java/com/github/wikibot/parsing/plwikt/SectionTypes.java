@@ -260,9 +260,15 @@ public enum SectionTypes {
 	}),
 	UNKNOWN (null);
 	
-	public FieldTypes[] fieldTypes;
+	private final FieldTypes[] fieldTypes;
 	
 	private SectionTypes(FieldTypes[] fieldTypes) {
 		this.fieldTypes = fieldTypes;
+	}
+	
+	public FieldTypes[] fieldTypes() {
+		FieldTypes[] copy = new FieldTypes[fieldTypes.length];
+		System.arraycopy(fieldTypes, 0, copy, 0, fieldTypes.length);
+		return copy;
 	}
 }

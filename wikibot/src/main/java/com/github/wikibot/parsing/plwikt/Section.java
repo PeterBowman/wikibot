@@ -108,7 +108,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		
 		SortedMap<Integer, FieldTypes> indexMap = Stream.of(FieldTypes.values())
 			.collect(Collectors.toMap(
-				field -> intro.indexOf(String.format("{{%s}}", field.localised)),
+				field -> intro.indexOf(String.format("{{%s}}", field.localised())),
 				field -> field,
 				(k1, k2) -> k1,
 				TreeMap::new
@@ -119,7 +119,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		
 		for (int i = 0; i < keys.length; i++) {
 			FieldTypes fieldType = indexMap.get(keys[i]);
-			String template = String.format("{{%s}}", fieldType.localised);
+			String template = String.format("{{%s}}", fieldType.localised());
 			int bound;
 			
 			try {
@@ -204,7 +204,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	private void addMissingFields() {
-		for (FieldTypes field : sectionType.fieldTypes) {
+		for (FieldTypes field : sectionType.fieldTypes()) {
 			if (!fields.contains(field)) {
 				fields.add(Field.parseField(field, ""));
 			}
@@ -212,7 +212,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	private void removeWrongFields() {
-		List<FieldTypes> onlyThisFields = Arrays.asList(sectionType.fieldTypes);
+		List<FieldTypes> onlyThisFields = Arrays.asList(sectionType.fieldTypes());
 		Iterator<Field> iterator = fields.iterator();
 		
 		while (iterator.hasNext()) {

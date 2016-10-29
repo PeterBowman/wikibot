@@ -162,7 +162,7 @@ public class Field implements Comparable<Field> {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(content.length());
-		sb.append(String.format("{{%s}}", fieldType.localised));
+		sb.append(String.format("{{%s}}", fieldType.localised()));
 		
 		if (!content.isEmpty()) {
 			if (isNewLine) {

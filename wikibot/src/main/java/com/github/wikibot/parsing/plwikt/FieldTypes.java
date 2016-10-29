@@ -37,9 +37,13 @@ public enum FieldTypes {
 	TRANSLATIONS ("tłumaczenia"),
 	SOURCES ("źródła");
 	
-	public String localised;
+	private final String localised;
 	
 	private FieldTypes(String localised) {
 		this.localised = localised;
+	}
+	
+	public String localised() {
+		return localised;
 	}
 }

@@ -224,7 +224,7 @@ public final class MisusedRegTemplates {
 				Collectors.mapping(
 					item -> String.format(
 						"&#123;{%s}} (%s, %s)",
-						item.templateName, item.langName, item.fieldType.localised
+						item.templateName, item.langName, item.fieldType.localised()
 					),
 					Collectors.toList()
 				)
