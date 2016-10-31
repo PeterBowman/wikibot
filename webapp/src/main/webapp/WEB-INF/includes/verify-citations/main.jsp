@@ -1,7 +1,6 @@
 <%@ page language="java" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
@@ -58,7 +57,6 @@
 	<li>kropkę kończącą skrót (np. <code>itd.</code>),</li>
 	<li>kropkę po liczebniku porządkowym zapisanym cyframi (np. <code>10.</code>).</li>
 </ul>
-
 
 <fmt:formatDate var="updated" value="${rowCommon.updated}" pattern="HH:mm, d MMM yyyy" />
 <fmt:formatDate var="edited" value="${rowCommon.edited}" pattern="HH:mm, d MMM yyyy" />

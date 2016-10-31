@@ -55,7 +55,7 @@
 	) AS derived;
 </sql:query>
 
-<c:set var="rowCommon" value="${resultCommon.rows[0]}" />
+<c:set var="rowCommon" value="${resultCommon.rows[0]}" scope="request" /> <%-- used in main.jsp --%>
 <c:set var="row1" value="${result1.rows[0]}" />
 <c:set var="row2" value="${result2.rows[0]}" />
 <c:set var="row3" value="${result3.rows[0]}" />
