@@ -555,7 +555,7 @@ public final class Catgram {
 				}
 			} else {
 				Data[] ct = data.getCompoundTerms();
-				String temp = Stream.of(ct).map(t -> t.toString()).collect(Collectors.joining(", "));
+				String temp = Stream.of(ct).map(Data::toString).collect(Collectors.joining(", "));
 				sb.append("cterms = ").append(temp).append("\n");
 			}
 			

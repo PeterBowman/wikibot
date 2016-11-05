@@ -171,7 +171,7 @@ public final class ShortCommas implements Selectorizable {
 		if (map.size() != pages.size()) {
 			String[] errors = pages.stream()
 				.filter(page -> !map.containsKey(page.getTitle()))
-				.map(page -> page.getTitle())
+				.map(PageContainer::getTitle)
 				.toArray(String[]::new);
 			
 			System.out.printf("%d errores: %s%n", errors.length, errors.toString());

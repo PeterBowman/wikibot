@@ -82,7 +82,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			)
 			.collect(Collectors.toList());
 		
-		String[] verbs = Stream.of(pages).map(page -> page.getTitle()).toArray(String[]::new);
+		String[] verbs = Stream.of(pages).map(PageContainer::getTitle).toArray(String[]::new);
 		IOUtils.writeToFile(String.join("\n", verbs), location + "verbos.txt");
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
 	    
@@ -150,7 +150,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		for (String form : verb_forms) {
 			String content = Stream.of(pages2)
 				.filter(page -> page.getTitle().equals(form))
-				.map(page -> page.getText())
+				.map(PageContainer::getText)
 				.findAny()
 				.orElse(null);
 

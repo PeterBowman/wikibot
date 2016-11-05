@@ -79,7 +79,7 @@ public final class Replace implements Selectorizable {
 		Map<String, String> map = Stream.of(pages)
 			.filter(page -> page.getText().contains(target))
 			.collect(Collectors.toMap(
-				page -> page.getTitle(),
+				PageContainer::getTitle,
 				page -> replace(page.getText(), target, replacement)
 			));
 		
@@ -88,7 +88,7 @@ public final class Replace implements Selectorizable {
 		System.out.printf("Tamaño final: %d%n", map.size());
 		
 		if (map.size() != pages.length) {
-			List<String> all = Stream.of(pages).map(page -> page.getTitle()).collect(Collectors.toList());
+			List<String> all = Stream.of(pages).map(PageContainer::getTitle).collect(Collectors.toList());
 			Set<String> found = map.keySet();
 			all.removeAll(found);
 			

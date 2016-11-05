@@ -98,7 +98,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		}
 		
 		List<String> temp = Stream.of(pages)
-			.map(page -> page.getTitle())
+			.map(PageContainer::getTitle)
 			.collect(Collectors.toList());
 		
 		for (String title : list) {

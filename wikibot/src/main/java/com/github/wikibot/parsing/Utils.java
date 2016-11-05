@@ -164,7 +164,7 @@ public final class Utils {
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			BiConsumer<Matcher, StringBuffer> biCons) {
-		ToIntFunction<Matcher> func = m -> m.start();
+		ToIntFunction<Matcher> func = Matcher::start;
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
@@ -176,7 +176,7 @@ public final class Utils {
 	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
 			List<Range<Integer>> ignoredRanges) {
 		Pattern patt = Pattern.compile(regex);
-		ToIntFunction<Matcher> func = m -> m.start();
+		ToIntFunction<Matcher> func = Matcher::start;
 		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
 		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
 	}

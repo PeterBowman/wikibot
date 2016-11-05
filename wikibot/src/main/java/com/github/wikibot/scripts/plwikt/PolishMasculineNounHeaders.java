@@ -115,7 +115,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		
 		Map<String, Collection<String>> map = Stream.of(pages)
 			.collect(Collectors.toMap(
-				page -> page.getTitle(),
+				PageContainer::getTitle,
 				page -> {
 					Section s = Page.wrap(page).getPolishSection().get();
 					String[] data = new String[]{
