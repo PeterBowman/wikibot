@@ -81,7 +81,7 @@ public final class SurnameAppendices {
 			
 			List<String> links = getLinksOnPage(targetPage);
 			
-			if (!links.containsAll(Arrays.asList(surnameList))) {
+			if (!links.containsAll(surnameList)) {
 				List<String> mergedList = mergeLists(links, surnameList);
 				String pageText = prepareOutput(header, mergedList);
 				
