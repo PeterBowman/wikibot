@@ -224,6 +224,7 @@ tipografía = Tipografía
 topónimos = Topónimos
 transporte = Transporte
 tribus urbanas = Tribus urbanas
+unidades de tiempo = Unidades de tiempo
 urbanismo = Urbanismo
 utensilios = Utensilios
 varios = Varios
