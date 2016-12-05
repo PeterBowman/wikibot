@@ -196,6 +196,7 @@ poblaciones = Poblaciones, Topónimos
 poesía = Poesía
 política = Política
 profesiones = Profesiones
+provincias = Provincias
 psicología = Psicología
 psiquiatría = Psiquiatría
 química = Química
