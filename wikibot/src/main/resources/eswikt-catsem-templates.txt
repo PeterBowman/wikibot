@@ -119,6 +119,7 @@ guarismos = Guarismos
 heráldica = Heráldica
 herramientas = Herramientas
 hierbas = Hierbas
+hípica = Hípica
 historia = Historia
 historieta = Historieta
 hockey sobre césped = Hockey sobre césped
