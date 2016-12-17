@@ -4,10 +4,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -27,6 +31,7 @@ public class LonelyPages extends HttpServlet {
 	
 	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
 	private static final String JSP_DISPATCH_TARGET = "/jsp/lonely-pages.jsp";
+	private static final DateFormat sdf = new SimpleDateFormat("HH:mm, d MMM yyyy (z)", new Locale("es"));
 	
 	private static final File fData = new File(LOCATION + "data.ser");
 	private static final File fCtrl = new File(LOCATION + "UPDATED");
@@ -36,6 +41,10 @@ public class LonelyPages extends HttpServlet {
 	private static final Calendar calendar = Calendar.getInstance();
 	
 	private static final int DEFAULT_LIMIT = 500;
+	
+	static {
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+	}
 	
 	@Override
 	public void init() throws ServletException {
@@ -54,12 +63,13 @@ public class LonelyPages extends HttpServlet {
 		checkCurrentState(false);
 		
 		List<String> results = getDataView(limit, offset);
+		String timestamp = sdf.format(calendar.getTime());
 		
 		if (getInitParameter("API") != null) {
 			JSONObject json = new JSONObject();
 			json.put("results", new JSONArray(results));
 			json.put("total", storage.size());
-			json.put("timestamp", calendar.getTime());
+			json.put("timestamp", timestamp);
 			response.setCharacterEncoding("UTF-8");
 			response.setHeader("Content-Type", "application/json");
 			response.getWriter().append(json.toString());
@@ -67,7 +77,7 @@ public class LonelyPages extends HttpServlet {
 			RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
 			request.setAttribute("results", results);
 			request.setAttribute("total", storage.size());
-			request.setAttribute("timestamp", calendar.getTime());
+			request.setAttribute("timestamp", timestamp);
 			dispatcher.forward(request, response);
 		}
 	}

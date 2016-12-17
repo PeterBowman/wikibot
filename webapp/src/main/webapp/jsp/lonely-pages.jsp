@@ -1,7 +1,6 @@
 <%@ page language="java" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
@@ -38,10 +37,9 @@
 			Permite visualizar todas las páginas no enlazadas ni transcluidas en ninguna otra,
 			sin el límite de 5000 resultados impuesto por el software de MediaWiki.
 		</p>
-		<fmt:formatDate var="updated" value="${timestamp}" pattern="HH:mm, d MMM yyyy (z)" />
 		<div id="lonely-pages-content">
 			<p>
-				Última actualización: <span id="lonely-pages-timestamp">${updated}</span>.
+				Última actualización: <span id="lonely-pages-timestamp">${timestamp}</span>.
 				<c:if test="${total ne 0}">
 					El informe contiene <strong id="lonely-pages-total">${total}</strong> resultados.
 				</c:if>

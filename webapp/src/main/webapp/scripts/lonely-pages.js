@@ -79,7 +79,7 @@ $( function () {
 				'" data-target="' + item + '">' + item + '</a></li>';
 		} );
 		
-		//$timestamp = ...
+		$timestamp.text( data.timestamp );
 		$total.text( data.total );
 		
 		$summaryLimit.text( currentLimit );
