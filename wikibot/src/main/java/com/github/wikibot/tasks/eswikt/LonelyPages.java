@@ -9,10 +9,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,13 +33,13 @@ public final class LonelyPages {
 	public static void main(String[] args) throws Exception {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
-		Set<String> lonelyPages = new HashSet<>(75000);
+		List<String> lonelyPages = new ArrayList<>(75000);
 		
 		try (Connection eswiktConn = DriverManager.getConnection(SQL_ESWIKT_URI, properties)) {
 			double start = System.currentTimeMillis();
 			fetchLonelyPages(eswiktConn, lonelyPages);
 			double elapsed = (System.currentTimeMillis() - start) / 1000;
-			System.out.printf("%d titles fetched in %.3f seconds.\n", lonelyPages.size(), elapsed);
+			System.out.printf("%d titles fetched in %.3f seconds.%n", lonelyPages.size(), elapsed);
 		}
 		
 		storeData(lonelyPages);
@@ -62,7 +62,7 @@ public final class LonelyPages {
 		return properties;
 	}
 	
-	private static void fetchLonelyPages(Connection conn, Set<String> set) throws SQLException {
+	private static void fetchLonelyPages(Connection conn, List<String> list) throws SQLException {
 		String query = "SELECT CONVERT(page_title USING utf8mb4) AS title"
 			+ " FROM page"
 			+ " LEFT JOIN pagelinks"
@@ -83,17 +83,17 @@ public final class LonelyPages {
 		
 		while (rs.next()) {
 			String title = rs.getString("title").replace("_", " ");
-			set.add(title);
+			list.add(title);
 		}
 	}
 	
-	private static void storeData(Set<String> set) throws FileNotFoundException, IOException, ClassNotFoundException {
+	private static void storeData(List<String> list) throws FileNotFoundException, IOException, ClassNotFoundException {
 		File fData = new File(LOCATION + "data.ser");
 		File fCtrl = new File(LOCATION + "UPDATED");
 		File fCal = new File(LOCATION + "timestamp.ser");
 		
-		if (!fData.exists() || set.hashCode() != (int) Misc.deserialize(fData).hashCode()) {
-			Misc.serialize(set, fData);
+		if (!fData.exists() || list.hashCode() != (int) Misc.deserialize(fData).hashCode()) {
+			Misc.serialize(list, fData);
 			Misc.serialize(Calendar.getInstance(), fCal);
 			fCtrl.delete();
 		}
