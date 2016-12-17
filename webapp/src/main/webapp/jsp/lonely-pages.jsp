@@ -14,11 +14,22 @@
 
 <c:set var="columnThreshold" value="25" />
 
-<t:template title="${title}" firstHeading="${title}" enableJS="false">
+<t:template title="${title}" firstHeading="${title}" enableJS="true">
 	<jsp:attribute name="headerNotice">
 		<t:ambox type="warning">
 			Esta herramienta se encuentra en fase de pruebas.
 		</t:ambox>
+	</jsp:attribute>
+	<jsp:attribute name="head">
+		<script>
+			window.lonelyPages = {
+				defaultLimit: ${defaultLimit},
+				limit: ${limit},
+				offset: ${offset},
+				columnThreshold: ${columnThreshold}
+			};
+		</script>
+		<script src="scripts/lonely-pages.js"></script>
 	</jsp:attribute>
 	<jsp:body>
 		<p>
@@ -28,33 +39,37 @@
 			sin el límite de 5000 resultados impuesto por el software de MediaWiki.
 		</p>
 		<fmt:formatDate var="updated" value="${timestamp}" pattern="HH:mm, d MMM yyyy (z)" />
-		<p>
-			Última actualización: ${updated}.
-			<c:if test="${total ne 0}">
-				El informe contiene <strong>${total}</strong> resultados.
-			</c:if>
-		</p>
-		<c:choose>
-			<c:when test="${not empty results}">
-				<p>
-					Abajo se muestran hasta <strong>${limit}</strong> resultados entre el n.º
-					<strong>${offset + 1}</strong> y el n.º <strong>${utils:min(offset + limit, total)}</strong>.
-				</p>
-				<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
-				<ol start="${offset + 1}" <c:if test="${fn:length(results) gt columnThreshold}">class="column-list"</c:if>>
-					<c:forEach var="item" items="${results}">
-						<li>
-							<t:linker hrefPattern="https://es.wiktionary.org/$1" target="${item}" />
-						</li>
-					</c:forEach>
-				</ol>
-				<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
-			</c:when>
-			<c:otherwise>
-				<p>
-					No hay resultados para este informe.
-				</p>
-			</c:otherwise>
-		</c:choose>
+		<div id="lonely-pages-content">
+			<p>
+				Última actualización: <span id="lonely-pages-timestamp">${updated}</span>.
+				<c:if test="${total ne 0}">
+					El informe contiene <strong id="lonely-pages-total">${total}</strong> resultados.
+				</c:if>
+			</p>
+			<c:choose>
+				<c:when test="${not empty results}">
+					<p id="lonely-pages-summary">
+						Abajo se muestran hasta <strong id="lonely-pages-limit">${limit}</strong> resultados
+						entre el n.º <strong id="lonely-pages-start">${offset + 1}</strong>
+						y el n.º <strong id="lonely-pages-end">${utils:min(offset + limit, total)}</strong>.
+					</p>
+					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
+					<ol id="lonely-pages-results" start="${offset + 1}"
+						<c:if test="${fn:length(results) gt columnThreshold}">class="column-list"</c:if>>
+						<c:forEach var="item" items="${results}">
+							<li>
+								<t:linker hrefPattern="https://es.wiktionary.org/$1" target="${item}" />
+							</li>
+						</c:forEach>
+					</ol>
+					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
+				</c:when>
+				<c:otherwise>
+					<p>
+						No hay resultados que mostrar.
+					</p>
+				</c:otherwise>
+			</c:choose>
+		</div>
 	</jsp:body>
 </t:template>

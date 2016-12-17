@@ -33,3 +33,7 @@ a.disambig:visited {
 td.mw-statistics-numbers {
 	text-align: right;
 }
+
+.content-loading {
+	opacity: 0.5
+}

@@ -16,6 +16,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Servlet implementation class PrettyRefServlet
  */
@@ -52,11 +55,21 @@ public class LonelyPages extends HttpServlet {
 		
 		List<String> results = getDataView(limit, offset);
 		
-		RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
-		request.setAttribute("results", results);
-		request.setAttribute("total", storage.size());
-		request.setAttribute("timestamp", calendar.getTime());
-		dispatcher.forward(request, response);
+		if (getInitParameter("API") != null) {
+			JSONObject json = new JSONObject();
+			json.put("results", new JSONArray(results));
+			json.put("total", storage.size());
+			json.put("timestamp", calendar.getTime());
+			response.setCharacterEncoding("UTF-8");
+			response.setHeader("Content-Type", "application/json");
+			response.getWriter().append(json.toString());
+		} else {
+			RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
+			request.setAttribute("results", results);
+			request.setAttribute("total", storage.size());
+			request.setAttribute("timestamp", calendar.getTime());
+			dispatcher.forward(request, response);
+		}
 	}
 
 	@Override
@@ -105,7 +118,7 @@ public class LonelyPages extends HttpServlet {
 	private static List<String> getDataView(final int limit, final int offset) {
 		try {
 			return storage.subList(offset, Math.min(storage.size(), offset + limit));
-		} catch (IndexOutOfBoundsException e) {
+		} catch (IndexOutOfBoundsException | IllegalArgumentException e) {
 			return Collections.emptyList();
 		}
 	}
