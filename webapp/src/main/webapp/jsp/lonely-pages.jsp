@@ -30,6 +30,9 @@
 		<fmt:formatDate var="updated" value="${timestamp}" pattern="HH:mm, d MMM yyyy (z)" />
 		<p>
 			Última actualización: ${updated}.
+			<c:if test="${total ne 0}">
+				El informe contiene <strong>${total}</strong> resultados.
+			</c:if>
 		</p>
 		<c:choose>
 			<c:when test="${not empty results}">
