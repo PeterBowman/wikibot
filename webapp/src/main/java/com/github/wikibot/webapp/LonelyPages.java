@@ -31,7 +31,7 @@ public class LonelyPages extends HttpServlet {
 	
 	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
 	private static final String JSP_DISPATCH_TARGET = "/jsp/lonely-pages.jsp";
-	private static final DateFormat sdf = new SimpleDateFormat("HH:mm, d MMM yyyy (z)", new Locale("es"));
+	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
 	private static final File fData = new File(LOCATION + "data.ser");
 	private static final File fCtrl = new File(LOCATION + "UPDATED");
@@ -42,14 +42,10 @@ public class LonelyPages extends HttpServlet {
 	
 	private static final int DEFAULT_LIMIT = 500;
 	
-	static {
-		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
-	
 	@Override
 	public void init() throws ServletException {
 		try {
-			checkCurrentState(true);
+			checkCurrentState(true, null, null);
 		} catch (IOException e) {
 			throw new UnavailableException(e.getMessage());
 		}
@@ -60,15 +56,20 @@ public class LonelyPages extends HttpServlet {
 		int limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
 		int offset = handleIntParameter(request, "offset", 0);
 		
-		checkCurrentState(false);
+		List<String> localStorage = new ArrayList<>(0);
+		Calendar localCalendar = Calendar.getInstance();
 		
-		List<String> results = getDataView(limit, offset);
-		String timestamp = sdf.format(calendar.getTime());
+		checkCurrentState(false, localStorage, localCalendar); // synchronized, returns local copies
+		
+		List<String> results = getDataView(localStorage, limit, offset);
+		DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, new Locale("es"));
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		String timestamp = sdf.format(localCalendar.getTime()); // SimpleDateFormat.format is not thread safe!
 		
 		if (getInitParameter("API") != null) {
 			JSONObject json = new JSONObject();
 			json.put("results", new JSONArray(results));
-			json.put("total", storage.size());
+			json.put("total", localStorage.size());
 			json.put("timestamp", timestamp);
 			response.setCharacterEncoding("UTF-8");
 			response.setHeader("Content-Type", "application/json");
@@ -76,7 +77,7 @@ public class LonelyPages extends HttpServlet {
 		} else {
 			RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
 			request.setAttribute("results", results);
-			request.setAttribute("total", storage.size());
+			request.setAttribute("total", localStorage.size());
 			request.setAttribute("timestamp", timestamp);
 			dispatcher.forward(request, response);
 		}
@@ -97,8 +98,8 @@ public class LonelyPages extends HttpServlet {
 		}
 	}
 	
-	private static synchronized void checkCurrentState(boolean firstCall) throws IOException {
-		if (firstCall || !fCtrl.exists()) {
+	private static synchronized void checkCurrentState(boolean forced, List<String> l, Calendar c) throws IOException {
+		if (forced || !fCtrl.exists()) {
 			try {
 				List<String> list = deserialize(fData);
 				storage.clear();
@@ -116,6 +117,11 @@ public class LonelyPages extends HttpServlet {
 			
 			fCtrl.createNewFile();
 		}
+		
+		if (l != null && c != null) {
+			l.addAll(storage);
+			c.setTime(calendar.getTime());
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -125,9 +131,9 @@ public class LonelyPages extends HttpServlet {
 		}
 	}
 	
-	private static List<String> getDataView(final int limit, final int offset) {
+	private static List<String> getDataView(List<String> list, final int limit, final int offset) {
 		try {
-			return storage.subList(offset, Math.min(storage.size(), offset + limit));
+			return list.subList(offset, Math.min(list.size(), offset + limit));
 		} catch (IndexOutOfBoundsException | IllegalArgumentException e) {
 			return Collections.emptyList();
 		}
