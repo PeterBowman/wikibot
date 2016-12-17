@@ -1,17 +1,22 @@
 $( function () {
-	var $content = $( '#lonely-pages-content' ),
-		$results = $( '#lonely-pages-results' ),
-		$summaryLimit = $( '#lonely-pages-limit' ),
-		$summaryStart = $( '#lonely-pages-start' ),
-		$summaryEnd = $( '#lonely-pages-end' ),
-		$timestamp = $( '#lonely-pages-timestamp' ),
-		$total = $( '#lonely-pages-total' ),
-		$paginators = $( '.paginator' ),
+	var $content, $results, $summaryLimit, $summaryStart, $summaryEnd, $timestamp, $total, $paginators,
+		$container = $( '#mw-content-text' ),
 		URL = 'lonely-pages/api',
 		TIMEOUT = 5000,
 		currentLimit = lonelyPages.limit,
 		currentOffset = lonelyPages.offset,
 		disableClicks = false;
+	
+	function queryNodes( $el ) {
+		$content = $el.find( '#lonely-pages-content' );
+		$results = $el.find( '#lonely-pages-results' );
+		$summaryLimit = $el.find( '#lonely-pages-limit' );
+		$summaryStart = $el.find( '#lonely-pages-start' );
+		$summaryEnd = $el.find( '#lonely-pages-end' );
+		$timestamp = $el.find( '#lonely-pages-timestamp' );
+		$total = $el.find( '#lonely-pages-total' );
+		$paginators = $el.find( '.paginator' );
+	}
 	
 	function makeRequest( params ) {
 		return $.ajax( {
@@ -99,14 +104,16 @@ $( function () {
 		}
 		
 		history[url !== undefined ? 'pushState' : 'replaceState']( {
-			html: $( '<dummy>' ).append( $content.clone() ).html()
+			html: $( '<dummy>' ).append( $content.clone() ).html(),
+			offset: currentOffset,
+			limit: currentLimit
 		}, '', location.origin + location.pathname + ( url || location.search || '?' + $.param( {
 			offset: currentOffset,
 			limit: currentLimit
 		} ) ) );
 	}
 	
-	$paginators.on( 'click', 'a', function ( evt ) {
+	$container.on( 'click', '.paginator a', function ( evt ) {
 		var $this = $( this ),
 			href = $this.attr( 'href' );
 		
@@ -132,9 +139,13 @@ $( function () {
 	
 	window.onpopstate =  function ( evt ) {
 		if ( evt.state ) {
-			$content.replaceWith( $content = $( $.parseHTML( evt.state.html ) ) );
+			$content.replaceWith( $( $.parseHTML( evt.state.html ) ) );
+			queryNodes( $container );
+			currentOffset = evt.state.offset;
+			currentLimit = evt.state.limit;
 		}
 	};
 	
+	queryNodes( $container );
 	pushHistoryState();
 } );
