@@ -10,7 +10,8 @@ $( function () {
 		URL = 'lonely-pages/api',
 		TIMEOUT = 5000,
 		currentLimit = lonelyPages.limit,
-		currentOffset = lonelyPages.offset;
+		currentOffset = lonelyPages.offset,
+		disableClicks = false;
 	
 	function makeRequest( params ) {
 		return $.ajax( {
@@ -109,14 +110,20 @@ $( function () {
 		var $this = $( this ),
 			href = $this.attr( 'href' );
 		
+		if ( disableClicks ) {
+			return false;
+		}
+		
 		evt.preventDefault();
 		
 		$content.addClass( 'content-loading' );
+		disableClicks = true;
 		
 		return makeRequest( href ).then( function ( data ) {
 			handlePaginators( $this, data );
 			updateResults( data );
 			$content.removeClass( 'content-loading' );
+			disableClicks = false;
 			pushHistoryState( href );
 		},  function ( jqXHR, textStatus, errorThrown ) {
 			location.search = href;
