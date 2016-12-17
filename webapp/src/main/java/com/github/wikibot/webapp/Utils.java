@@ -1,5 +1,9 @@
 package com.github.wikibot.webapp;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.LinkedList;
 
 import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch;
@@ -94,5 +98,21 @@ public final class Utils {
 		table.appendChild(new Element(Tag.valueOf("tr"), "").appendChild(marker2).appendChild(td2));
 		
 		return doc.appendChild(table).outerHtml();
+	}
+	
+	public static String encodeUri(String str) {
+		try {
+			return new URI(null, str, null).toASCIIString();
+		} catch (URISyntaxException e) {
+			return str;
+		}
+	}
+	
+	public static String encodeParam(String str) {
+		try {
+			return URLEncoder.encode(str, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			return str;
+		}
 	}
 }

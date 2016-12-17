@@ -44,4 +44,16 @@
 		<function-signature>java.lang.String getDiff(java.lang.String, java.lang.String)</function-signature>
 	</function>
 	
+	<function>
+		<name>encodeUri</name>
+		<function-class>com.github.wikibot.webapp.Utils</function-class>
+		<function-signature>java.lang.String encodeUri(java.lang.String)</function-signature>
+	</function>
+	
+	<function>
+		<name>encodeParam</name>
+		<function-class>com.github.wikibot.webapp.Utils</function-class>
+		<function-signature>java.lang.String encodeParam(java.lang.String)</function-signature>
+	</function>
+	
 </taglib>

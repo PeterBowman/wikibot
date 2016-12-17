@@ -9,9 +9,12 @@
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="tld/utils" prefix="utils" %>
 
 <c:set var="normalized" value="${fn:replace(target, '_', ' ')}" />
-<c:set var="escaped" value="${fn:escapeXml(target)}" />
+<c:set var="escaped" value="${fn:escapeXml(normalized)}" />
+<c:set var="encoded" value="${utils:encodeUri(normalized)}" />
+<c:set var="encodedParam" value="${utils:encodeParam(normalized)}" />
 
 <c:if test="${empty display}">
 	<c:set var="display" value="${normalized}" />
@@ -19,12 +22,12 @@
 
 <c:choose>
 	<c:when test="${testMissingPage eq true}">
-		<c:set var="href" value="w/index.php?action=edit&redlink=1&title=${escaped}" />
+		<c:set var="href" value="w/index.php?action=edit&redlink=1&title=${encodedParam}" />
 		<c:set var="title" value="(strona nie istnieje)" />
 		<c:set var="classVar" value="new" />
 	</c:when>
 	<c:when test="${testMissingSection eq true}">
-		<c:set var="href" value="wiki/${escaped}" />
+		<c:set var="href" value="wiki/${encoded}" />
 		<c:choose>
 			<c:when test="${not empty sectionName}">
 				<c:set var="title" value='(brak sekcji ${sectionName})' />
@@ -36,7 +39,7 @@
 		<c:set var="classVar" value="false-blue" />
 	</c:when>
 	<c:otherwise>
-		<c:set var="href" value="wiki/${escaped}" />
+		<c:set var="href" value="wiki/${encoded}" />
 	</c:otherwise>
 </c:choose>
 
@@ -44,8 +47,8 @@
 
 <a href="${fn:replace(hrefPattern, '$1', href)}"
 		class="${fn:trim(classVar)}"
-		data-target="${normalized}"
+		data-target="${escaped}"
 		<c:if test="${not empty sectionName}">data-section="${sectionName}"</c:if> 
-		title='${normalized}<c:if test="${not empty title}">${" "}${title}</c:if>'
+		title='${escaped}<c:if test="${not empty title}">${" "}${title}</c:if>'
 		target="_blank"
 	>${display}</a><%-- No trailing newlines! --%>
