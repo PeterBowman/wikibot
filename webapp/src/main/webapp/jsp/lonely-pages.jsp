@@ -12,6 +12,7 @@
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
 
 <c:set var="columnThreshold" value="25" />
+<c:set var="paginatorLimits" value="100,250,500,1000,2000,5000" />
 
 <t:template title="${title}" firstHeading="${title}" enableJS="true">
 	<jsp:attribute name="headerNotice">
@@ -51,7 +52,8 @@
 						entre el n.º <strong id="lonely-pages-start">${offset + 1}</strong>
 						y el n.º <strong id="lonely-pages-end">${utils:min(offset + limit, total)}</strong>.
 					</p>
-					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
+					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}"
+						limits="${paginatorLimits}" />
 					<ol id="lonely-pages-results" start="${offset + 1}"
 						<c:if test="${fn:length(results) gt columnThreshold}">class="column-list"</c:if>>
 						<c:forEach var="item" items="${results}">
@@ -60,7 +62,8 @@
 							</li>
 						</c:forEach>
 					</ol>
-					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}" />
+					<t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}"
+						limits="${paginatorLimits}" />
 				</c:when>
 				<c:otherwise>
 					<p>

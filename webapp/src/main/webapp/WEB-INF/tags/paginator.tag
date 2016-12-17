@@ -10,6 +10,7 @@
 <%@ attribute name="limit" required="true" %>
 <%@ attribute name="offset" required="true" %>
 <%@ attribute name="hasNext" required="true" %>
+<%@ attribute name="limits" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
@@ -17,6 +18,10 @@
 
 <c:set var="limit" value="${utils:max(limit, 0)}" />
 <c:set var="offset" value="${utils:max(offset, 0)}" />
+
+<c:if test="${empty limits}">
+	<c:set var="limits" value="20,50,100,250,500" />
+</c:if>
 
 <p class="paginator">
 Zobacz
@@ -39,10 +44,12 @@ Zobacz
 	</c:otherwise>
 </c:choose>
 <span class="paginator-limits">
-(<a href='<t:replace-param limit="20" offset="${offset}" />'>20</a>
-| <a href='<t:replace-param limit="50" offset="${offset}" />'>50</a>
-| <a href='<t:replace-param limit="100" offset="${offset}" />'>100</a>
-| <a href='<t:replace-param limit="250" offset="${offset}" />'>250</a>
-| <a href='<t:replace-param limit="500" offset="${offset}" />'>500</a>)
+	<c:forTokens var="item" items="${limits}" delims="," varStatus="status">
+		<c:choose>
+			<c:when test="${status.first}">(</c:when>
+			<c:otherwise> | </c:otherwise>
+		</c:choose>
+	    <a href='<t:replace-param limit="${item}" offset="${offset}" />'>${item}</a><c:if test="${status.last}">)</c:if>
+	</c:forTokens>
 </span>
 </p>
