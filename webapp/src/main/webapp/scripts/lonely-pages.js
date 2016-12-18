@@ -26,10 +26,8 @@ $( function () {
 		} );
 	}
 	
-	function handlePaginators( $el, data ) {
-		var $parent = $el.parent();
-		
-		switch ( $parent.attr( 'class' ) ) {
+	function readPaginatorData( $el ) {
+		switch ( $el.parent().attr( 'class' ) ) {
 			case 'paginator-prev':
 				currentOffset -= currentLimit;
 				break;
@@ -43,7 +41,9 @@ $( function () {
 		
 		currentOffset = Math.max( currentOffset, 0 );
 		currentLimit = Math.max( currentLimit, 0 );
-		
+	}
+	
+	function handlePaginators( data, $el ) {
 		$paginators.find( '.paginator-prev-value, .paginator-next-value' ).text( currentLimit );
 		
 		$paginators.find( '.paginator-prev, .paginator-next' ).each( function () {
@@ -98,19 +98,33 @@ $( function () {
 		$results.html( arr.join( '' ) ).attr( 'start', currentOffset + 1 );
 	}
 	
-	function pushHistoryState( url ) {
+	function serializeData() {
+		return {
+			results: $.map( $results.find( 'a' ), function ( link ) {
+				return $( link ).text();
+			} ),
+			total: $total.text(),
+			timestamp: $timestamp.text()
+		};
+	}
+	
+	function pushHistoryState( url, data ) {
+		var paginatorValues;
+		
 		if ( !window.history ) {
 			return;
 		}
 		
-		history[url !== undefined ? 'pushState' : 'replaceState']( {
-			html: $( '<dummy>' ).append( $content.clone() ).html(),
+		paginatorValues = {
 			offset: currentOffset,
-			limit: currentLimit
-		}, '', location.origin + location.pathname + ( url || location.search || '?' + $.param( {
-			offset: currentOffset,
-			limit: currentLimit
-		} ) ) );
+			limit: currentLimit	
+		};
+		
+		history[url !== undefined ? 'pushState' : 'replaceState']( $.extend( {
+			data: data || serializeData()
+		}, paginatorValues ), '', location.origin + location.pathname + (
+			url || location.search || '?' + $.param( paginatorValues )
+		) );
 	}
 	
 	$container.on( 'click', '.paginator a', function ( evt ) {
@@ -127,22 +141,24 @@ $( function () {
 		disableClicks = true;
 		
 		return makeRequest( href ).then( function ( data ) {
-			handlePaginators( $this, data );
+			readPaginatorData( $this );
+			handlePaginators( data );
 			updateResults( data );
 			$content.removeClass( 'content-loading' );
 			disableClicks = false;
-			pushHistoryState( href );
+			pushHistoryState( href, data );
 		},  function ( jqXHR, textStatus, errorThrown ) {
 			location.search = href;
 		} );
 	} );
 	
-	window.onpopstate =  function ( evt ) {
+	window.onpopstate = function ( evt ) {
 		if ( evt.state ) {
-			$content.replaceWith( $( $.parseHTML( evt.state.html ) ) );
-			queryNodes( $container );
 			currentOffset = evt.state.offset;
 			currentLimit = evt.state.limit;
+			handlePaginators( evt.state.data );
+			updateResults( evt.state.data );
+			queryNodes( $container );
 		}
 	};
 	
