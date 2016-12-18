@@ -22,7 +22,6 @@ public final class LonelyPages {
 	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
 	private static final Properties defaultSQLProperties = new Properties();	
 	private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.labsdb:3306/eswiktionary_p";
-	private static final int TARGET_PAGE_ID = 919371; // TODO: remove after [[Usuario:PBbot/Páginas huérfanas]] is blanked
 	
 	static {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
@@ -68,11 +67,9 @@ public final class LonelyPages {
 			+ " LEFT JOIN pagelinks"
 			+ " ON pl_namespace = page_namespace"
 			+ " AND pl_title = page_title"
-			+ " AND pl_from != " + TARGET_PAGE_ID
 			+ " LEFT JOIN templatelinks"
 			+ " ON tl_namespace = page_namespace"
 			+ " AND tl_title = page_title"
-			+ " AND tl_from != " + TARGET_PAGE_ID
 			+ " WHERE pl_namespace IS NULL"
 			+ " AND page_namespace = 0"
 			+ " AND page_is_redirect = 0"
