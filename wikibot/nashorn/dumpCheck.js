@@ -1,5 +1,3 @@
-#!/data/project/pbbot/jdk/jdk1.8.0_74/bin/jjs -J-Dnashorn.args=-scripting -strict --language=es6
-
 const File = Java.type("java.io.File");
 const Files = Java.type("java.nio.file.Files");
 const Paths = Java.type("java.nio.file.Paths");
