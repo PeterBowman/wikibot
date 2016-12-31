@@ -43,6 +43,12 @@ dme1864 = DME1864
 dp2002 = DP2002
 drae1914 = DLC1914
 
+inflect.roa-ptg.adj = inflect.roa-opt.adj
+inflect.roa-ptg.adj.reg = inflect.roa-opt.adj.reg
+inflect.roa-ptg.adj.no-género = inflect.roa-opt.adj.no-género
+inflect.roa-ptg.sust.reg = inflect.roa-opt.sust.reg
+inflect.roa-ptg.sust.reg-cons = inflect.roa-opt.sust.reg-cons
+
 # TODO: these are not transcluded, analyze "leng" params instead
 
 aka = ak
@@ -93,6 +99,7 @@ ood = nai
 protoindoeuropeo = ine
 prv = oc
 roa-oca = oca
+roa-ptg = roa-opt
 roa-rup = rup
 roa-tara = roa-tar
 roh = rm
