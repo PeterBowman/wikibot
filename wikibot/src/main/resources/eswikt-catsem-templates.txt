@@ -84,6 +84,7 @@ enfermedades = Enfermedades
 enología = Enología
 enseñanza = Enseñanza
 entomología = Entomología
+equinodermos = Equinodermos
 equitación = Equitación
 escultura = Escultura
 esgrima = Esgrima
