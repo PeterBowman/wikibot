@@ -116,7 +116,7 @@ public final class RefreshWantedArticles {
 			throw new RuntimeException("Target <noinclude> node has no previous TextNode sibling.");
 		}
 		
-		if (!P_OCCURRENCES_TARGET.matcher(previousSibling.toString()).matches()) {
+		if (!P_OCCURRENCES_TARGET.matcher(previousSibling.toString().trim()).matches()) {
 			throw new RuntimeException("TextNode sibling does not match the expected pattern.");
 		}
 		
