@@ -1756,7 +1756,7 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^(?:Refranes|Dichos?)", "Refranes");
 			header = header.replaceFirst("(?iu)^Conjugaci[óo]n\\b", "Conjugación");
 			header = header.replaceFirst("(?iu)^Informaci[óo]n (?:adicional|avanzada)", "Información adicional");
-			header = header.replaceFirst("(?iu)^(?:Ver|V[ée]ase) tambi[ée]n", "Véase también");
+			header = header.replaceFirst("(?iu)^(?:Ver|Vea|V[ée]ase) tambi[ée]n", "Véase también");
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
 			header = header.replaceFirst("(?iu)^Acr[óo]nimo\\b$", "Sigla");
