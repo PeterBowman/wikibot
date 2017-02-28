@@ -424,7 +424,7 @@ public class PrettyRefServlet extends HttpServlet {
 			"Cytuj", "Cytuj grę komputerową", "Cytuj książkę", "Cytuj odcinek", "Cytuj pismo", "Cytuj stronę"
 		);
 		
-		private static final Pattern NAME_RE = Pattern.compile("^\\{\\{([^\\|\\}]+).*\\}\\}$");
+		private static final Pattern NAME_RE = Pattern.compile("^\\{\\{([^\\|\\}]+).*\\}\\}$", Pattern.DOTALL);
 		
 		private String name;
 		
@@ -673,7 +673,7 @@ public class PrettyRefServlet extends HttpServlet {
 				Map<String, String> params = tpl.getParamMap();
 				String templateName = tpl.getTemplateName();
 				
-				// keep this switch synced with the one in #to_s
+				// keep this switch synced with the one in toString()
 				switch (templateName) {
 					case "Cytuj":
 					case "Cytuj grę komputerową":
@@ -772,6 +772,20 @@ public class PrettyRefServlet extends HttpServlet {
 					case "Ludzie nauki":
 						String capture = str.replaceFirst(".*?(\\d+).*", "$1");
 						ident = String.format("ludzie-nauki-%s", capture);
+						break;
+					case "Simbad":
+						String id = params.get("ParamWithoutName1");
+						String description = params.get("ParamWithoutName2");
+						ident = templateName;
+						
+						if (id != null) {
+							ident += "-" + id;
+						}
+						
+						if (description != null) {
+							ident += "-" + description;
+						}
+						
 						break;
 					default:
 						throw new RuntimeException("Unsupported cite template: " + templateName);
@@ -910,7 +924,7 @@ public class PrettyRefServlet extends HttpServlet {
 				Template tpl = new Template(content);
 				String templateName = tpl.getTemplateName();
 				
-				// keep this switch synced with the one in #extract_name
+				// keep this switch synced with the one in extractName()
 				switch (templateName) {
 					case "Cytuj":
 					case "Cytuj grę komputerową":
@@ -920,6 +934,7 @@ public class PrettyRefServlet extends HttpServlet {
 					case "Cytuj stronę":
 					case "Dziennik Ustaw":
 					case "Monitor Polski":
+					case "Simbad":
 						cont = tpl.toString();
 						break;
 					case "Ludzie nauki":
