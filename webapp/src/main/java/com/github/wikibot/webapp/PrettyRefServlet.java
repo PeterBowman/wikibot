@@ -424,7 +424,7 @@ public class PrettyRefServlet extends HttpServlet {
 			"Cytuj", "Cytuj grę komputerową", "Cytuj książkę", "Cytuj odcinek", "Cytuj pismo", "Cytuj stronę"
 		);
 		
-		private static final Pattern NAME_RE = Pattern.compile("^\\{\\{([^\\|\\}]+).*\\}\\}$");
+		private static final Pattern NAME_RE = Pattern.compile("^\\{\\{([^\\|\\}]+).*\\}\\}$", Pattern.DOTALL);
 		
 		private String name;
 		
