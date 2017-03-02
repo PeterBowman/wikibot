@@ -43,6 +43,10 @@
   		<param-value>yes</param-value>
   	</init-param>
   </servlet>
+  <servlet>
+  	<servlet-name>WebLists</servlet-name>
+  	<jsp-file>/jsp/weblists.jsp</jsp-file>
+  </servlet>
   <servlet-mapping>
   	<servlet-name>VerifyCitations</servlet-name>
   	<url-pattern>/verify-citations/*</url-pattern>
@@ -84,6 +88,10 @@
   <servlet-mapping>
   	<servlet-name>LonelyPagesAPI</servlet-name>
   	<url-pattern>/lonely-pages/api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>WebLists</servlet-name>
+  	<url-pattern>/weblists</url-pattern>
   </servlet-mapping>
   <resource-ref>
   	<res-ref-name>jdbc/tools-db</res-ref-name>

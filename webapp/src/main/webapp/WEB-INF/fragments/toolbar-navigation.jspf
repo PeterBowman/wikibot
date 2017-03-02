@@ -5,4 +5,5 @@
 <li><a href="${pageContext.request.contextPath}/pretty-ref">Pretty ref (plwiki)</a></li>
 <li><a href="${pageContext.request.contextPath}/nkjp-generator">Generator {{NKJP}}</a></li>
 <li><a href="${pageContext.request.contextPath}/lonely-pages">Páginas huérfanas (eswikt)</a></li>
+<li><a href="${pageContext.request.contextPath}/weblists">Listy automatyczne</a></li>
 <li><a href="//tools-static.wmflabs.org/pbbot/" target="_blank">Serwer plików statycznych</a></li>
