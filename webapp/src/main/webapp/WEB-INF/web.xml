@@ -91,7 +91,8 @@
   </servlet-mapping>
   <servlet-mapping>
   	<servlet-name>WebLists</servlet-name>
-  	<url-pattern>/weblists</url-pattern>
+  	<url-pattern>/weblists/*</url-pattern>
+  	<url-pattern>/weblists/plwikt-polish-masculine-nouns</url-pattern>
   </servlet-mapping>
   <resource-ref>
   	<res-ref-name>jdbc/tools-db</res-ref-name>
