@@ -31,7 +31,7 @@
 		<p>
 			Spis haseł esperanto, w których występuje wskazany morfem w szablonie <code>{{morfeo}}</code>.
 			Można też wyszukać wspólne wystąpienia dwóch lub więcej morfemów, oddzielając je znakiem
-			<code>|</code> w polu wyszukiwania (na przykład <a href="?morphem=o|patr">„o|patr”</a>).
+			<code>|</code> w polu wyszukiwania (na przykład <a href="?morphem=o%7Cpatr">„o|patr”</a>).
 			Zostaw to pole niewypełnione, aby wyświetlić wszystkie morfemy użyte w hasłach esperanto.
 			Najechanie kursorem na dowolny link poskutkuje wyświetleniem okienka z wyciągiem pola znaczeń
 			odpowiedniego hasła w Wikisłowniku.
