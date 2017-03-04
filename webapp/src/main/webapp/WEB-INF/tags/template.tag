@@ -7,6 +7,7 @@
 <%@ attribute name="cactions" fragment="true" %>
 <%@ attribute name="toolbarExtra" fragment="true" %>
 <%@ attribute name="headerNotice" fragment="true" %>
+<%@ attribute name="contentSub" fragment="true" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
@@ -46,7 +47,9 @@
 					<h1 id="firstHeading" class="firstHeading">${firstHeading}</h1>
 				</c:if>
 				<div id="bodyContent" class="mw-body-content">
-					<div id="contentSub"></div>
+					<div id="contentSub">
+						<jsp:invoke fragment="contentSub" />
+					</div>
 					<div id="mw-content-text" class="mw-content-ltr" dir="ltr">
 						<p></p><jsp:doBody />
 					</div>
