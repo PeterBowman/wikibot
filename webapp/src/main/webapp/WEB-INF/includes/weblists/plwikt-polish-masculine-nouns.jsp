@@ -20,22 +20,22 @@
 		page
 			INNER JOIN categorylinks AS c_all ON
 				c_all.cl_from = page_id AND
-	            c_all.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskiego"
+				c_all.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskiego"
 			LEFT JOIN categorylinks AS c_mrz ON
 				c_mrz.cl_from = page_id AND
-	            c_mrz.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskorzeczowego"
+				c_mrz.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskorzeczowego"
 			LEFT JOIN categorylinks AS c_mzw ON
 				c_mzw.cl_from = page_id AND
-	            c_mzw.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskozwierzęcego"
+				c_mzw.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskozwierzęcego"
 			LEFT JOIN categorylinks AS c_mos ON
 				c_mos.cl_from = page_id AND
-	            c_mos.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskoosobowego"
+				c_mos.cl_to = "Język_polski_-_rzeczowniki_rodzaju_męskoosobowego"
 	WHERE
 		page_namespace = 0 AND
-	    page_is_redirect = 0 AND
-	    c_mrz.cl_to IS NULL AND
-	    c_mzw.cl_to IS NULL AND
-	    c_mos.cl_to IS NULL
+		page_is_redirect = 0 AND
+		c_mrz.cl_to IS NULL AND
+		c_mzw.cl_to IS NULL AND
+		c_mos.cl_to IS NULL
 	ORDER BY
 		CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;
 </sql:query>
