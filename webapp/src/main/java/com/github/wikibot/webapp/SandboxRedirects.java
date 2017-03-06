@@ -5,7 +5,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +58,7 @@ public class SandboxRedirects extends HttpServlet {
 		int limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
 		int offset = handleIntParameter(request, "offset", 0);
 		
-		List<Map<String, String>> results = new ArrayList<>(limit);
+		List<Map<String, Object>> results = new ArrayList<>(limit);
 		boolean hasNext = false;
 		
 		try (Connection conn = dataSource.getConnection()) {
@@ -91,12 +94,12 @@ public class SandboxRedirects extends HttpServlet {
 					break;
 				}
 				
-				Map<String, String> info = new HashMap<>();
+				Map<String, Object> info = new HashMap<>();
 				info.put("source", logTitle);
-				info.put("sourceExists", logData.sourceExists ? "1" : "0");
+				info.put("sourceExists", logData.sourceExists);
 				info.put("target", logData.targetPage);
 				info.put("targetDisplay", logData.targetDisplay);
-				info.put("timestamp", logTimestamp);
+				info.put("timestamp", formatDate(logTimestamp));
 				
 				results.add(info);
 			}
@@ -137,6 +140,16 @@ public class SandboxRedirects extends HttpServlet {
 			return logData;
 		} else {
 			throw new RuntimeException("Błąd odczytu danych: " + serialized);
+		}
+	}
+	
+	private static Date formatDate(String timestamp) {
+		SimpleDateFormat sdfDate = new SimpleDateFormat("yyyyMMddHHmmss");
+		
+	    try {
+			return sdfDate.parse(timestamp);
+		} catch (ParseException e) {
+			throw new RuntimeException("Nie udało się rozpoznać sygnatury czasowej: " + timestamp);
 		}
 	}
 	

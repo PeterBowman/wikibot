@@ -2,6 +2,7 @@
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
@@ -26,11 +27,15 @@
 				<ol start="${offset + 1}">
 					<c:forEach var="item" items="${results}">
 						<li>
+							<fmt:setLocale value="pl_PL" />
+				            <fmt:setTimeZone value="Europe/Madrid" />
+				            <fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
+				            &nbsp;
 							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
 								display="${item['targetDisplay']}" />
 							←
 							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['source']}"
-								testMissingPage="${item['sourceExists'] eq '0'}" />
+								testMissingPage="${not item['sourceExists']}" />
 						</li>
 					</c:forEach>
 				</ol>
