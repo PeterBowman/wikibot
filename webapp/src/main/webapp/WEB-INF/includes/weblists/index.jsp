@@ -15,5 +15,10 @@
 				(plwiktionary) polskie rzeczowniki rodzaju męskiego
 			</a>
 		</li>
+		<li>
+			<a href="${pageContext.request.contextPath}/weblists/plwiki-sandbox-redirects">
+				(plwiki) strony przeniesione do brudnopisu
+			</a>
+		</li>
 	</ul>
 </t:template>
