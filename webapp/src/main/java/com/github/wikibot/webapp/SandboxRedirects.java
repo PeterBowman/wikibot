@@ -36,7 +36,7 @@ public class SandboxRedirects extends HttpServlet {
 	private DataSource dataSource;
 
 	static {
-		P_MOVE_LOG = Pattern.compile("^a:3:\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:[^\"]+)\";s:10:\"5::noredir\";s:1:\"[01]\";s:17:\"associated_rev_id\";i:\\d+;\\}$");
+		P_MOVE_LOG = Pattern.compile("^a:[23]:\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:.+)\";s:10:\"5::noredir\";s:1:\"[01]\";(?:s:17:\"associated_rev_id\";i:\\d+;)?\\}$");
 	}
 
 	@Override
@@ -69,14 +69,15 @@ public class SandboxRedirects extends HttpServlet {
 					+ " log_namespace = 0 AND"
 					+ " log_comment = '" + MOVE_LOG_COMMENT + "' AND"
 					+ " log_params LIKE '%:\\\"Wikipedysta:%'"
-				+ " ORDER BY log_id DESC;";
+				+ " ORDER BY log_id DESC"
+				+ " LIMIT " + (limit + 10)
+				+ " OFFSET " + offset;
 			
 			Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setFetchSize(Integer.MIN_VALUE);
 			ResultSet rs = stmt.executeQuery(query);
 			
 			int touched = 0;
-			boolean touchOnceMore = true;
 			
 			while (rs.next()) {
 				String logTitle = rs.getString("log_title");
@@ -85,27 +86,17 @@ public class SandboxRedirects extends HttpServlet {
 				
 				String parsed = extractTargetPage(logParams);
 				
-				if (parsed != null) {
-					touched++;
-					
-					if (touched > offset) {
-						if (touched - offset > limit) {
-							if (touchOnceMore) {
-								touchOnceMore = false;
-								continue;
-							} else {
-								hasNext = true;
-								break;
-							}
-						}
-						
-						Map<String, String> info = new HashMap<>();
-						info.put("source", logTitle);
-						info.put("target", parsed);
-						info.put("timestamp", logTimestamp);
-						results.add(info);
-					}
+				if (++touched > limit) {
+					hasNext = true;
+					break;
 				}
+				
+				Map<String, String> info = new HashMap<>();
+				info.put("source", logTitle);
+				info.put("target", parsed);
+				info.put("timestamp", logTimestamp);
+				
+				results.add(info);
 			}
 		} catch (SQLException e) {
 			throw new UnavailableException(e.getMessage());
@@ -138,7 +129,7 @@ public class SandboxRedirects extends HttpServlet {
 		if (m.matches()) {
 			return m.group(1);
 		} else {
-			return null;
+			throw new RuntimeException("Błąd odczytu danych: " + serialized);
 		}
 	}
 }
