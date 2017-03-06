@@ -36,7 +36,7 @@ public class SandboxRedirects extends HttpServlet {
 	private DataSource dataSource;
 
 	static {
-		P_MOVE_LOG = Pattern.compile("^a:[23]:\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:.+)\";s:10:\"5::noredir\";s:1:\"[01]\";(?:s:17:\"associated_rev_id\";i:\\d+;)?\\}$");
+		P_MOVE_LOG = Pattern.compile("^a:([23]):\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:(.+))\";s:10:\"5::noredir\";s:1:\"[01]\";(?:s:17:\"associated_rev_id\";i:\\d+;)?\\}$");
 	}
 
 	@Override
@@ -84,7 +84,7 @@ public class SandboxRedirects extends HttpServlet {
 				String logParams = rs.getString("log_params");
 				String logTimestamp = rs.getString("log_timestamp");
 				
-				String parsed = extractTargetPage(logParams);
+				LogData logData = extractSerializedData(logParams);
 				
 				if (++touched > limit) {
 					hasNext = true;
@@ -93,7 +93,9 @@ public class SandboxRedirects extends HttpServlet {
 				
 				Map<String, String> info = new HashMap<>();
 				info.put("source", logTitle);
-				info.put("target", parsed);
+				info.put("sourceExists", logData.sourceExists ? "1" : "0");
+				info.put("target", logData.targetPage);
+				info.put("targetDisplay", logData.targetDisplay);
 				info.put("timestamp", logTimestamp);
 				
 				results.add(info);
@@ -123,13 +125,24 @@ public class SandboxRedirects extends HttpServlet {
 		}
 	}
 	
-	private static String extractTargetPage(String serialized) {
+	private static LogData extractSerializedData(String serialized) {
 		Matcher m = P_MOVE_LOG.matcher(serialized);
+		LogData logData = new LogData();
 		
 		if (m.matches()) {
-			return m.group(1);
+			String type = m.group(1);
+			logData.sourceExists = (type == "3");
+			logData.targetPage = m.group(2);
+			logData.targetDisplay = m.group(3);
+			return logData;
 		} else {
 			throw new RuntimeException("Błąd odczytu danych: " + serialized);
 		}
+	}
+	
+	private static class LogData {
+		boolean sourceExists;
+		String targetPage;
+		String targetDisplay;
 	}
 }

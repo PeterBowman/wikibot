@@ -26,9 +26,11 @@
 				<ol start="${offset + 1}">
 					<c:forEach var="item" items="${results}">
 						<li>
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}" />
+							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
+								display="${item['targetDisplay']}" />
 							←
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['source']}" />
+							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['source']}"
+								testMissingPage="${item['sourceExists'] eq '0'}" />
 						</li>
 					</c:forEach>
 				</ol>
