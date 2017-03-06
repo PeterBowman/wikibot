@@ -26,9 +26,9 @@
 				<ol start="${offset + 1}">
 					<c:forEach var="item" items="${results}">
 						<li>
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item[1]}" />
+							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}" />
 							←
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item[0]}" />
+							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['source']}" />
 						</li>
 					</c:forEach>
 				</ol>

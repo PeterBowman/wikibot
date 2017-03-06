@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,13 +55,14 @@ public class SandboxRedirects extends HttpServlet {
 		int limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
 		int offset = handleIntParameter(request, "offset", 0);
 		
-		List<String[]> results = new ArrayList<>(limit);
+		List<Map<String, String>> results = new ArrayList<>(limit);
 		boolean hasNext = false;
 		
 		try (Connection conn = dataSource.getConnection()) {
 			String query = "SELECT"
 					+ " CONVERT(log_title USING utf8mb4) AS log_title,"
-					+ " CONVERT(log_params USING utf8mb4) AS log_params"
+					+ " CONVERT(log_params USING utf8mb4) AS log_params,"
+					+ " log_timestamp"
 				+ " FROM plwiki_p.logging"
 				+ " WHERE"
 					+ " log_type = 'move' AND"
@@ -78,6 +81,8 @@ public class SandboxRedirects extends HttpServlet {
 			while (rs.next()) {
 				String logTitle = rs.getString("log_title");
 				String logParams = rs.getString("log_params");
+				String logTimestamp = rs.getString("log_timestamp");
+				
 				String parsed = extractTargetPage(logParams);
 				
 				if (parsed != null) {
@@ -94,7 +99,11 @@ public class SandboxRedirects extends HttpServlet {
 							}
 						}
 						
-						results.add(new String[]{logTitle, parsed});
+						Map<String, String> info = new HashMap<>();
+						info.put("source", logTitle);
+						info.put("target", parsed);
+						info.put("timestamp", logTimestamp);
+						results.add(info);
 					}
 				}
 			}
