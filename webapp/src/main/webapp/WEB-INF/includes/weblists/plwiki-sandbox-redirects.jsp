@@ -24,13 +24,13 @@
 		<c:choose>
 			<c:when test="${not empty results}">
 				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
-				<ol start="${offset + 1}">
+				<ul>
 					<c:forEach var="item" items="${results}">
 						<li>
 							<fmt:setLocale value="pl_PL" />
-				            <fmt:setTimeZone value="Europe/Madrid" />
-				            <fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
-				            &nbsp;
+							<fmt:setTimeZone value="Europe/Madrid" />
+							<fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
+							&nbsp;
 							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
 								display="${item['targetDisplay']}" />
 							←
@@ -38,7 +38,7 @@
 								testMissingPage="${not item['sourceExists']}" />
 						</li>
 					</c:forEach>
-				</ol>
+				</ul>
 				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
 			</c:when>
 			<c:otherwise>
