@@ -6,8 +6,10 @@
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
-<c:set var="title" value="Strony przeniesione do brudnopisu" />
+<fmt:setLocale value="pl_PL" />
+<fmt:setTimeZone value="Europe/Warsaw" />
 
+<c:set var="title" value="Strony przeniesione do brudnopisu" />
 <c:set var="defaultLimit" value="100" />
 <c:set var="limit" value="${not empty param.limit ? utils:max(param.limit, 0) : defaultLimit}" />
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
@@ -27,8 +29,6 @@
 				<ul>
 					<c:forEach var="item" items="${results}">
 						<li>
-							<fmt:setLocale value="pl_PL" />
-							<fmt:setTimeZone value="Europe/Madrid" />
 							<fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
 							&nbsp;
 							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
