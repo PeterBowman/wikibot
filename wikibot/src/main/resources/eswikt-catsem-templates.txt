@@ -79,6 +79,7 @@ educación = Educación
 electricidad = Electricidad
 electrónica = Electrónica
 elementos químicos = Elementos químicos
+emociones = Emociones
 emoticonos = Emoticonos
 enfermedades = Enfermedades
 enología = Enología
