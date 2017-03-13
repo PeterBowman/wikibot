@@ -20,8 +20,7 @@
 	</jsp:attribute>
 	<jsp:body>
 		<p>
-			Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:” z opisem
-			„artykuł należy dopracować”.
+			Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:”.
 		</p>
 		<c:choose>
 			<c:when test="${not empty results}">
