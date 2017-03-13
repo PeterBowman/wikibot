@@ -6,8 +6,10 @@
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
-<c:set var="title" value="Strony przeniesione do brudnopisu" />
+<fmt:setLocale value="pl_PL" />
+<fmt:setTimeZone value="Europe/Warsaw" />
 
+<c:set var="title" value="Strony przeniesione do brudnopisu" />
 <c:set var="defaultLimit" value="100" />
 <c:set var="limit" value="${not empty param.limit ? utils:max(param.limit, 0) : defaultLimit}" />
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
@@ -18,19 +20,16 @@
 	</jsp:attribute>
 	<jsp:body>
 		<p>
-			Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:” z opisem
-			„artykuł należy dopracować”.
+			Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:”.
 		</p>
 		<c:choose>
 			<c:when test="${not empty results}">
 				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
-				<ol start="${offset + 1}">
+				<ul>
 					<c:forEach var="item" items="${results}">
 						<li>
-							<fmt:setLocale value="pl_PL" />
-				            <fmt:setTimeZone value="Europe/Madrid" />
-				            <fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
-				            &nbsp;
+							<fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
+							&nbsp;
 							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
 								display="${item['targetDisplay']}" />
 							←
@@ -38,7 +37,7 @@
 								testMissingPage="${not item['sourceExists']}" />
 						</li>
 					</c:forEach>
-				</ol>
+				</ul>
 				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
 			</c:when>
 			<c:otherwise>

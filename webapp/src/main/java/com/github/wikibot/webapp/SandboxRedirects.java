@@ -32,7 +32,7 @@ import javax.sql.DataSource;
 public class SandboxRedirects extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final int DEFAULT_LIMIT = 100;
-	private static final String MOVE_LOG_COMMENT = "artykuł należy dopracować";
+	//private static final String MOVE_LOG_COMMENT = "artykuł należy dopracować";
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/plwiki-sandbox-redirects.jsp";
 	private static final Pattern P_MOVE_LOG;
 	
@@ -70,10 +70,10 @@ public class SandboxRedirects extends HttpServlet {
 				+ " WHERE"
 					+ " log_type = 'move' AND"
 					+ " log_namespace = 0 AND"
-					+ " log_comment = '" + MOVE_LOG_COMMENT + "' AND"
+					//+ " log_comment = '" + MOVE_LOG_COMMENT + "' AND"
 					+ " log_params LIKE '%:\\\"Wikipedysta:%'"
 				+ " ORDER BY log_id DESC"
-				+ " LIMIT " + (limit + 10)
+				+ " LIMIT " + (limit + 1)
 				+ " OFFSET " + offset;
 			
 			Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -146,7 +146,7 @@ public class SandboxRedirects extends HttpServlet {
 	private static Date formatDate(String timestamp) {
 		SimpleDateFormat sdfDate = new SimpleDateFormat("yyyyMMddHHmmss");
 		
-	    try {
+		try {
 			return sdfDate.parse(timestamp);
 		} catch (ParseException e) {
 			throw new RuntimeException("Nie udało się rozpoznać sygnatury czasowej: " + timestamp);
