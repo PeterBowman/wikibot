@@ -102,7 +102,9 @@ public final class SJPTemplates {
 	private static String makeTable(List<Wiki.Revision> revs) {
 		StringBuilder sb = new StringBuilder(revs.size() * 200);
 		
-		sb.append("Dyskusja w Barze: [[Specjalna:Niezmienny link/4933547#Szablon sjp.pl]].").append(" ");
+		sb.append("Dyskusja w Barze:").append("\n");
+		sb.append("* [[WS:Bar/Archiwum 16#Szablon sjp.pl]]").append("\n");
+		sb.append("* [[WS:Bar/Archiwum 18#Szablon sjp.pl (kontynuacja)]]").append("\n");
 		sb.append("Aktualizacja: ~~~~~.").append("\n\n");
 		sb.append("{{język linków|polski}}").append("\n");
 		sb.append("{| class=\"wikitable sortable autonumber\"").append("\n");
