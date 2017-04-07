@@ -228,6 +228,7 @@ Edafología = edafología
 Educación = educación
 Electricidad = electricidad
 Electrónica = electrónica
+emociones = sentimientos
 enfermedad = enfermedades
 Enología = enología
 Entomología = entomología
