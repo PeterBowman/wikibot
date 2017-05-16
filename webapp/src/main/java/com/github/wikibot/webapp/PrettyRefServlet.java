@@ -606,6 +606,10 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 				}
 			}
+			
+			if (name != null) {
+				sanitizeName();
+			}
 		}
 		
 		private void parseAttributes(String str) {
@@ -899,6 +903,12 @@ public class PrettyRefServlet extends HttpServlet {
 			}
 			
 			return result;
+		}
+		
+		private void sanitizeName() {
+			if (name.matches("\\d+")) {
+				name = "_" + name;
+			}
 		}
 		
 		String toShortTag() {
