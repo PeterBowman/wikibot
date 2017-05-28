@@ -89,6 +89,13 @@ f sg = cardinal
 m pl = cardinales
 f pl = cardinales
 
+CIRCUMFIX
+type = QUALIFIER
+m sg = circunfijo
+f sg = circunfija
+m pl = circunfijos
+f pl = circunfijas
+
 COLLECTIVE
 type = QUALIFIER
 m sg = colectivo
