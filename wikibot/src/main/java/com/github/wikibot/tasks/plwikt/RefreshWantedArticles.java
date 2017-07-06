@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -179,12 +180,20 @@ public final class RefreshWantedArticles {
 			
 			if (redirect != null) {
 				PageContainer old = pages[i];
-				String redirectText = wb.getPageText(redirect);
-				pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
+				
+				try {
+					String redirectText = wb.getPageText(redirect);
+					pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
+				} catch (FileNotFoundException e) {
+					System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
+					pages[i] = null;
+					continue;
+				}
 			}
 		}
 		
 		return Stream.of(pages)
+			.filter(Objects::nonNull)
 			.map(Page::wrap)
 			.filter(page -> page.getPolishSection().isPresent())
 			.map(Page::getTitle)
