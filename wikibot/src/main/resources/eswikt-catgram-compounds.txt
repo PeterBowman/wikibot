@@ -52,5 +52,6 @@ sustantivo común = NOUN, COMMON
 verbo auxiliar = VERB, AUXILIARY
 verbo impersonal = VERB, IMPERSONAL
 verbo intransitivo = VERB, INTRANSITIVE
+verbo modal = VERB, MODAL
 verbo pronominal = VERB, PRONOUN
 verbo transitivo = VERB, TRANSITIVE
