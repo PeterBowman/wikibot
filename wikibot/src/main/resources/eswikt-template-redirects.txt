@@ -286,6 +286,7 @@ Lucha = lucha
 Malabarismo = malabarismo
 mamífero = mamíferos
 Marina = náutica
+marina = náutica
 Matemática = matemáticas
 matemática = matemáticas
 Matemáticas = matemáticas
