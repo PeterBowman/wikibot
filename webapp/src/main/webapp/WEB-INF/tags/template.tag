@@ -25,12 +25,13 @@
 	<c:if test="${not empty headerNotice}">
 		<link href="${contextPath}/styles/ambox.css" type="text/css" rel="stylesheet">
 	</c:if>
-	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/admin/assets/favicon/favicon.ico" rel="shortcut icon" />
 	<title>
 		<c:choose>
 			<c:when test="${not empty title}">${title}</c:when>
 			<c:otherwise>PBbot</c:otherwise>
 		</c:choose>
+		- Wikimedia Toolforge
 	</title>
 	<c:if test="${enableJS}">
 		<script src="//tools-static.wmflabs.org/static/jquery/1.11.0/jquery.min.js"></script>

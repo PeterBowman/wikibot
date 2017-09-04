@@ -5,7 +5,7 @@
 </div>
 
 <div id="p-labs" class="portlet" role="navigation">
-	<h3>Tool labs</h3>
+	<h3>Toolforge</h3>
 	<div class="pBody">
 		<ul><%@ include file="/WEB-INF/fragments/toolbar-labs.jspf" %></ul>
 	</div>
