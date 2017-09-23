@@ -142,6 +142,7 @@ internet = Internet
 invertebrados = Invertebrados
 islam = Islam
 islas = Islas, Topónimos
+judaísmo = Judaísmo
 juegos = Juegos
 lagos = Lagos, Topónimos
 lenguas = Lenguas
