@@ -5,7 +5,7 @@ TEMPDIR=~tmp
 LOGFILE=.sgjp_last_timestamp
 LASTTS=
 RET=0
-WGETOPTS="--no-verbose --spider --recursive --level=1 --no-host-directories --cut-dirs=2 --directory-prefix=$TEMPDIR"
+WGETOPTS="--spider --recursive --level=1 --no-host-directories --cut-dirs=2 --directory-prefix=$TEMPDIR"
 
 date
 
@@ -18,12 +18,13 @@ else
   echo "no logfile found ($LOGFILE)"
 fi
 
-wget $WGETOPTS $SITE || return 1
+echo "fetching directory list from $SITE..."
+wget --quiet $WGETOPTS $SITE || return 1
 
 LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
 
 if [ -n "$LASTDUMP" ]; then
-  echo "last dump folder in $SITE: $LASTDUMP"
+  echo "last dump folder: $LASTDUMP"
 
   if [ -z "$LASTTS" ] || [ "$LASTDUMP" -gt "$LASTTS" ]; then
     echo "downloading .tar.gz..."
@@ -37,7 +38,7 @@ if [ -n "$LASTDUMP" ]; then
     sed -i '/\r/ s///g' sgjp-${LASTDUMP}.tab
 
     echo "removing older files..."
-    find sgjp-*.tab -type f | head -n -1 | xargs rm -v --
+    find sgjp-*.tab -type f | head -n -1 | xargs rm -v -f --
 
     echo "updating log file..."
     echo "$LASTDUMP" > $LOGFILE
