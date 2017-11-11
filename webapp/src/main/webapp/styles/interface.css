@@ -81,5 +81,6 @@ span.subpages {
 }
 
 .mw-wiki-logo {
-	background-image: url("/admin/assets/Toolforge.png");
+	background-image: url("//tools-static.wmflabs.org/toolforge/logos/logo-with-text.png");
+	background-size: 150px 150px;
 }
