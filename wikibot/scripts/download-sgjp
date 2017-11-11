@@ -1,0 +1,42 @@
+#!/bin/sh
+
+SITE=http://sgjp.pl/morfeusz/download
+TEMPDIR=~tmp
+LOGFILE=.sgjp_last_timestamp
+LASTTS=
+RET=0
+WGETOPTS="--no-verbose --spider --recursive --level=1 --no-host-directories --cut-dirs=2 --directory-prefix=$TEMPDIR"
+
+date
+
+cd ~/data/dumps/
+
+if [ -e "$LOGFILE" ]; then
+  LASTTS=`cat $LOGFILE || head -n 1`
+  echo "last timestamp: $LASTTS"
+else
+  echo "no logfile found ($LOGFILE)"
+fi
+
+wget $WGETOPTS $SITE || return 1
+
+LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
+
+if [ -n "$LASTDUMP" ]; then
+  echo "last dump folder in $SITE: $LASTDUMP"
+  
+  if [ -z "$LASTTS" ] || [ "$LASTDUMP" -gt "$LASTTS" ]; then
+    wget --no-verbose ${SITE}/${LASTDUMP}/sgjp-${LASTDUMP}.tab.gz
+  else
+    echo "not downloading, already have latest dump"
+  fi
+  
+  echo "$LASTDUMP" > $LOGFILE
+else
+  echo "unable to parse last dump folder"
+  RET=1
+fi
+
+rm -rf $TEMPDIR
+
+return $RET
