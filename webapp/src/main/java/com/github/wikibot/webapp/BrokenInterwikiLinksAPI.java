@@ -31,7 +31,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 		
 		try {
 			Context context = (Context) new InitialContext().lookup("java:comp/env");
-			dataSource = (DataSource) context.lookup("jdbc/plwiktionary");
+			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-analytics");
 		} catch (NamingException e) {
 			e.printStackTrace();
 		}

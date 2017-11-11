@@ -13,7 +13,7 @@
 <c:set var="limit" value="${not empty param.limit ? utils:max(param.limit, 0) : defaultLimit}" />
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
 
-<sql:query var="result" dataSource="jdbc/plwiktionary" startRow="${offset}" maxRows="${limit}">
+<sql:query var="result" dataSource="jdbc/plwiktionary-web" startRow="${offset}" maxRows="${limit}">
 	SELECT
 		CONVERT(page_title USING utf8) AS title
 	FROM
