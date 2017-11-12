@@ -89,6 +89,23 @@ public final class Misc {
 			return Integer.toString(value) + " " + singular;
 		}
 		
+		String strValue = makePluralPL(value);
+		
+		switch (strValue.charAt(strValue.length() - 1)) {
+			case '2':
+			case '3':
+			case '4':
+				if (strValue.length() > 1 && strValue.charAt(strValue.length() - 2) == '1') {
+					return strValue + " " + genitive;
+				} else {
+					return strValue + " " + nominative;
+				}
+			default:
+				return strValue + " " + genitive;
+		}
+	}
+	
+	public static String makePluralPL(int value) {
 		String strValue = Integer.toString(value);
 		char[] digits = new char[strValue.length()];
 		strValue.getChars(0, strValue.length(), digits, 0);
@@ -103,21 +120,11 @@ public final class Misc {
 					temp = " " + temp;
 				}
 			}
+			
 			strValue = temp;
 		}
 		
-		switch (strValue.charAt(strValue.length() - 1)) {
-			case '2':
-			case '3':
-			case '4':
-				if (strValue.length() > 1 && strValue.charAt(strValue.length() - 2) == '1') {
-					return strValue + " " + genitive;
-				} else {
-					return strValue + " " + nominative;
-				}
-			default:
-				return strValue + " " + genitive;
-		}
+		return strValue;
 	}
 	
 	public static void runTimer(Runnable runner) {

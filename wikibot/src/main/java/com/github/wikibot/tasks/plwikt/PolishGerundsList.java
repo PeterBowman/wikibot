@@ -160,7 +160,10 @@ public class PolishGerundsList implements Selectorizable {
 		Set<String> gers = new HashSet<>(300000);
 		Set<String> substs = new HashSet<>(150000);
 		
-		MorfeuszLookup.find(row -> {
+		MorfeuszLookup morfeuszLookup = new MorfeuszLookup("");
+		morfeuszLookup.setCompression(false);
+		
+		morfeuszLookup.find(row -> {
 			String form = (String) row[0];
 			String canonical = (String) row[1];
 			String info = (String) row[2];

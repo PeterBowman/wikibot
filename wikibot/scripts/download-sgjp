@@ -1,0 +1,55 @@
+#!/bin/sh
+
+SITE=http://sgjp.pl/morfeusz/download
+TEMPDIR=~tmp
+LOGFILE=.sgjp_last_timestamp
+LASTTS=
+RET=0
+WGETOPTS="--spider --recursive --level=1 --no-host-directories --cut-dirs=2 --directory-prefix=$TEMPDIR"
+
+date
+
+cd ~/data/dumps/
+
+if [ -e "$LOGFILE" ]; then
+  LASTTS=`cat $LOGFILE || head -n 1`
+  echo "last timestamp: $LASTTS"
+else
+  echo "no logfile found ($LOGFILE)"
+fi
+
+echo "fetching directory list from $SITE..."
+wget --quiet $WGETOPTS $SITE || return 1
+
+LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
+
+if [ -n "$LASTDUMP" ]; then
+  echo "last dump folder: $LASTDUMP"
+
+  if [ -z "$LASTTS" ] || [ "$LASTDUMP" -gt "$LASTTS" ]; then
+    echo "downloading .tar.gz..."
+    wget --no-verbose ${SITE}/${LASTDUMP}/sgjp-${LASTDUMP}.tab.gz
+
+    echo "decompressing archive..."
+    gzip -df sgjp-${LASTDUMP}.tab.gz
+
+    echo "converting Windows line endings to Unix..."
+    # https://unix.stackexchange.com/a/208167
+    sed -i '/\r/ s///g' sgjp-${LASTDUMP}.tab
+
+    echo "removing older files..."
+    find sgjp-*.tab -type f | head -n -1 | xargs rm -v -f --
+
+    echo "updating log file..."
+    echo "$LASTDUMP" > $LOGFILE
+  else
+    echo "not downloading, already have latest dump"
+  fi
+else
+  echo "unable to parse last dump folder"
+  RET=1
+fi
+
+rm -rf $TEMPDIR
+
+return $RET
