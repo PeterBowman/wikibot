@@ -43,10 +43,10 @@ public class MissingPolishEntries {
 			"Spis brakujących haseł polskich na podstawie bazy danych Morfeusz SGJP " +
 			"([http://sgjp.pl/morfeusz/dopobrania.html <tt>%1$s</tt>]). Poniższe strony istnieją, " +
 			"lecz brak sekcji polskiej.\n" + 
-			"* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$d\n" + 
-			"* haseł polskich: %3$d (podstawowe), %4$d (formy fleksyjne), %5$d (przekierowania), %6$d (łącznie)\n" + 
-			"* hasła w bazie SGJP: %7$d (wraz z formami odmienionymi: %8$d)\n" + 
-			"* rozmiar listy: %9$d\n" + 
+			"* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$s\n" + 
+			"* haseł polskich: %3$s (podstawowe), %4$s (formy fleksyjne), %5$s (przekierowania), %6$s (łącznie)\n" + 
+			"* hasła w bazie SGJP: %7$s (wraz z formami odmienionymi: %8$s)\n" + 
+			"* rozmiar listy: %9$s\n" + 
 			"Wygenerowano ~~~~~.";
 		
 		COLLATOR_PL = Misc.getCollator("pl");
@@ -58,15 +58,7 @@ public class MissingPolishEntries {
 		List<String> titles = retrieveNonPolishEntries();
 		retainSgjpEntries(titles);
 		
-		System.out.println("Reading from: " + stats.dumpFile);
-		System.out.println("Total worklist size: " + stats.worklistSize);
-		System.out.println("All entries: " + stats.allEntries);
-		System.out.println("Polish entries (base): " + stats.polishLemmas);
-		System.out.println("Polish entries (inflected): " + stats.polishInflectedEntries);
-		System.out.println("Polish entries (redirs): " + stats.polishRedirs);
-		System.out.println("Polish entries (overall): " + stats.polishOverall());
-		System.out.println("Database lemmas: " + stats.databaseLemmas);
-		System.out.println("Database overall size: " + stats.databaseOverall);
+		System.out.println(stats);
 		
 		Collections.sort(titles, COLLATOR_PL);
 		
@@ -106,7 +98,7 @@ public class MissingPolishEntries {
 		
 		stats.allEntries = allTitles.length;
 		stats.polishLemmas = polishTitles.length;
-		stats.polishInflectedEntries = polishInflected.length;
+		stats.polishInflected = polishInflected.length;
 		stats.polishRedirs = polishRedirs.length;
 		
 		return titles;
@@ -194,17 +186,18 @@ public class MissingPolishEntries {
 				)
 				.collect(Collectors.joining("\n\n"));
 		
-		return String.format(PAGE_INTRO,
-				stats.dumpFile, stats.allEntries, stats.polishLemmas, stats.polishInflectedEntries,
-				stats.polishRedirs, stats.polishOverall(), stats.databaseLemmas, stats.databaseOverall,
-				stats.worklistSize
+		return String.format(PAGE_INTRO, stats.dumpFile, Misc.makePluralPL(stats.allEntries),
+				Misc.makePluralPL(stats.polishLemmas), Misc.makePluralPL(stats.polishInflected),
+				Misc.makePluralPL(stats.polishRedirs), Misc.makePluralPL(stats.polishOverall()),
+				Misc.makePluralPL(stats.databaseLemmas), Misc.makePluralPL(stats.databaseOverall),
+				Misc.makePluralPL(stats.worklistSize)
 			) + "\n\n" + out;
 	}
 	
 	private static class Stats {
 		int allEntries;
 		int polishLemmas;
-		int polishInflectedEntries;
+		int polishInflected;
 		int polishRedirs;
 		int databaseLemmas;
 		int databaseOverall;
@@ -213,7 +206,21 @@ public class MissingPolishEntries {
 		String dumpFile;
 		
 		public int polishOverall() {
-			return polishLemmas + polishInflectedEntries + polishRedirs;
+			return polishLemmas + polishInflected + polishRedirs;
+		}
+		
+		@Override
+		public String toString() {
+			return "Stats for the current run:\n"
+				+ "* reading from: " + dumpFile + "\n"
+				+ "* total worklist size: " + worklistSize + "\n"
+				+ "* all entries: " + allEntries + "\n"
+				+ "* polish entries (lemmas): " + polishLemmas + "\n"
+				+ "* polish entries (inflected): " + polishInflected + "\n"
+				+ "* polish entries (redirs): " + polishRedirs + "\n"
+				+ "* polish entries (overall): " + polishOverall() + "\n"
+				+ "* database lemmas: " + databaseLemmas + "\n"
+				+ "* database overall size: " + databaseOverall;
 		}
 	}
 }
