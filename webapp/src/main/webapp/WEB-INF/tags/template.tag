@@ -25,7 +25,7 @@
 	<c:if test="${not empty headerNotice}">
 		<link href="${contextPath}/styles/ambox.css" type="text/css" rel="stylesheet">
 	</c:if>
-	<link href="/admin/assets/favicon/favicon.ico" rel="shortcut icon" />
+	<link href="//tools-static.wmflabs.org/toolforge/favicons/favicon.ico" rel="shortcut icon" />
 	<title>
 		<c:choose>
 			<c:when test="${not empty title}">${title}</c:when>
