@@ -59,7 +59,6 @@ public class MissingPolishEntries {
 		retainSgjpEntries(titles);
 		
 		System.out.println(stats);
-		
 		Collections.sort(titles, COLLATOR_PL);
 		
 		int hash = titles.hashCode();
@@ -151,7 +150,7 @@ public class MissingPolishEntries {
 		String regex = "sgjp-\\d{8}\\.tab";
 		
 		if (ALLOW_COMPRESSION) {
-			regex += "\\\\.gz";
+			regex += "\\.gz";
 		}
 		
 		File[] files = Paths.get(DUMPS_PATH).toFile().listFiles(file -> file.isFile() && file.getName().matches(regex));
