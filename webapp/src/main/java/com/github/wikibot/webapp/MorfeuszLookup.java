@@ -3,7 +3,6 @@ package com.github.wikibot.webapp;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -24,16 +23,6 @@ import pl.sgjp.morfeusz.MorphInterpretation;
  */
 public class MorfeuszLookup extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	
-	private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-		"pl.wiktionary.org",
-		"pl.wikipedia.org",
-		"pl.wikiquote.org",
-		"pl.wikisource.org",
-		"pl.wikibooks.org",
-		"pl.wikivoyage.org",
-		"pl.wikinews.org"
-	);
 	
 	private enum Action {
 		analyze,
@@ -59,16 +48,12 @@ public class MorfeuszLookup extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String remoteHost = request.getRemoteHost();
-		String actionStr = request.getParameter("action");
-		String target = request.getParameter("target");
-		
-		if (ALLOWED_ORIGINS.contains(remoteHost)) {
-			response.setHeader("Access-Control-Allow-Origin", String.format("https://%s", remoteHost));
-		}
-		
 		response.setContentType("application/json; charset=UTF-8");
 		response.setCharacterEncoding("UTF-8");
+		response.setHeader("Access-Control-Allow-Origin", "https://pl.wiktionary.org");
+		
+		String actionStr = request.getParameter("action");
+		String target = request.getParameter("target");
 		
 		PrintWriter writer = response.getWriter();
 		JSONObject json = new JSONObject();
