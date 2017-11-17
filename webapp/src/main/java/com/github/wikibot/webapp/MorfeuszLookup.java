@@ -163,8 +163,8 @@ public class MorfeuszLookup extends HttpServlet {
 	
 	private void addMetaData(JSONObject json) {
 		JSONObject meta = new JSONObject();
-		meta.append("version", versionStr);
-		meta.append("dictionaryId", dictID);
+		meta.put("version", versionStr);
+		meta.put("dictionaryId", dictID);
 		
 		json.put("meta", meta);
 	}
