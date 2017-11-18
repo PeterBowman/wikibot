@@ -32,18 +32,18 @@ public class MorfeuszLookup extends HttpServlet {
 	private Morfeusz morfeusz;
 	private String versionStr;
 	private String dictID;
-    
-    @Override
-    public void init() throws ServletException {
-    	try {
-    		versionStr = Morfeusz.getVersion();
-        	morfeusz = Morfeusz.createInstance(MorfeuszUsage.BOTH_ANALYSE_AND_GENERATE);
-        	dictID = morfeusz.getDictID();
-        } catch (Exception e) {
-        	throw new UnavailableException(e.getMessage());
-        }
-    }
-    
+	
+	@Override
+	public void init() throws ServletException {
+		try {
+			versionStr = Morfeusz.getVersion();
+			morfeusz = Morfeusz.createInstance(MorfeuszUsage.BOTH_ANALYSE_AND_GENERATE);
+			dictID = morfeusz.getDictID();
+		} catch (Exception e) {
+			throw new UnavailableException(e.getMessage());
+		}
+	}
+	
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
