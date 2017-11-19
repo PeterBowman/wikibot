@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,9 +14,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import pl.sgjp.morfeusz.CaseHandling;
 import pl.sgjp.morfeusz.Morfeusz;
 import pl.sgjp.morfeusz.MorfeuszUsage;
 import pl.sgjp.morfeusz.MorphInterpretation;
+import pl.sgjp.morfeusz.TokenNumbering;
+import pl.sgjp.morfeusz.WhitespaceHandling;
 
 /**
  * Servlet implementation class MorfeuszLookup
@@ -28,21 +31,6 @@ public class MorfeuszLookup extends HttpServlet {
 		analyze,
 		generate
 	};
-	
-	private Morfeusz morfeusz;
-	private String versionStr;
-	private String dictID;
-	
-	@Override
-	public void init() throws ServletException {
-		try {
-			versionStr = Morfeusz.getVersion();
-			morfeusz = Morfeusz.createInstance(MorfeuszUsage.BOTH_ANALYSE_AND_GENERATE);
-			dictID = morfeusz.getDictID();
-		} catch (Exception e) {
-			throw new UnavailableException(e.getMessage());
-		}
-	}
 	
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
@@ -56,34 +44,38 @@ public class MorfeuszLookup extends HttpServlet {
 		String target = request.getParameter("target");
 		
 		PrintWriter writer = response.getWriter();
+		
 		JSONObject json = new JSONObject();
+		JSONArray results = new JSONArray();
 		
 		Action action;
 		
 		try {
 			action = Action.valueOf(actionStr);
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException | NullPointerException e) {
 			handleIllegalAction(writer, json, actionStr);
 			return;
 		}
 		
-		JSONArray results = new JSONArray();
+		Morfeusz morfeusz = instantiateMorfeusz(action, request.getParameterMap(), json);
+		addMetaData(morfeusz, json);
 		
-		if (target == null) {
+		try {
+			target = handleTargetParameter(target, action);
+		} catch (NullPointerException e) {
 			writer.append(json.put("results", results).toString());
+			return;
+		} catch (UnsupportedOperationException e) {
+			json.append("errors", "target value must not contain whitespaces");
+			writer.append(json.toString());
 			return;
 		}
 		
-		target = handleWhitespaces(target);
+		List<MorphInterpretation> interpretationList = queryDatabase(morfeusz, action, target);
 		
-		synchronized (morfeusz) {
-			List<MorphInterpretation> interpretationList = queryDatabase(action, target);
-			fillResults(results, interpretationList);
-		}
-		
+		fillResults(morfeusz, results, interpretationList);
 		json.put("results", results);
 		
-		addMetaData(json);
 		writer.append(json.toString());
 	}
 	
@@ -94,6 +86,39 @@ public class MorfeuszLookup extends HttpServlet {
 		doGet(request, response);
 	}
 	
+	private Morfeusz instantiateMorfeusz(Action action, Map<String, String[]> params, JSONObject json)
+		throws IllegalArgumentException
+	{
+		Morfeusz morfeusz;
+		
+		synchronized (this) {
+			if (action == Action.analyze) {
+				morfeusz = Morfeusz.createInstance(MorfeuszUsage.ANALYSE_ONLY);
+			} else if (action == Action.generate) {
+				morfeusz = Morfeusz.createInstance(MorfeuszUsage.GENERATE_ONLY);
+			} else {
+				morfeusz = Morfeusz.createInstance(MorfeuszUsage.BOTH_ANALYSE_AND_GENERATE);
+			}
+		}
+		
+		MorfeuszOptions options = new MorfeuszOptions();
+		MorfeuszOptionParser optionParser = new MorfeuszOptionParser(morfeusz, options, action);
+		
+		optionParser.parse(params);
+		optionParser.notifyWarnings(json);
+		
+		if (action == Action.analyze) {
+			morfeusz.setTokenNumbering(options.tokenNumbering);
+			morfeusz.setCaseHandling(options.caseHandling);
+			morfeusz.setWhitespaceHandling(options.whitespaceHandling);
+		}
+		
+		morfeusz.setAggl(options.agglutinationRules);
+		morfeusz.setPraet(options.pastTenseSegmentation);
+		
+		return morfeusz;
+	}
+	
 	private static void handleIllegalAction(PrintWriter writer, JSONObject json, String act) {
 		List<String> list = new ArrayList<>();
 		
@@ -101,17 +126,30 @@ public class MorfeuszLookup extends HttpServlet {
 			list.add(action.toString());
 		}
 		
-		String err = String.format("unrecognized action: \"%s\"; available: %s", act, list);
+		String err = String.format("unrecognized action: '%s'; available: %s", act, list);
+		writer.append(json.put("error", err).toString());
+	}
+	
+	private static String handleTargetParameter(String target, Action action) {
+		if (target == null) {
+			throw new NullPointerException();
+		}
 		
-		json.put("error", err);
-		writer.append(json.toString());
+		if (action == Action.generate) {
+			target = target.trim();
+			
+			for (char c : target.toCharArray()) {
+				// unhandled swig exceptions if target string contains spaces
+				if (Character.isWhitespace(c)) {
+					throw new UnsupportedOperationException();
+				}
+			}
+		}
+		
+		return target;
 	}
 	
-	private static String handleWhitespaces(String target) {
-		return target.replaceAll("\\s", "");
-	}
-	
-	private List<MorphInterpretation> queryDatabase(Action action, String target) {
+	private List<MorphInterpretation> queryDatabase(Morfeusz morfeusz, Action action, String target) {
 		switch (action) {
 		case analyze:
 			return morfeusz.analyseAsList(target);
@@ -122,7 +160,7 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 	}
 	
-	private void fillResults(JSONArray results, List<MorphInterpretation> interpretationList) {
+	private void fillResults(Morfeusz morfeusz, JSONArray results, List<MorphInterpretation> interpretationList) {
 		for (MorphInterpretation interpretation : interpretationList) {
 			JSONObject data = new JSONObject();
 			
@@ -146,11 +184,172 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 	}
 	
-	private void addMetaData(JSONObject json) {
+	private void addMetaData(Morfeusz morfeusz, JSONObject json) {
 		JSONObject meta = new JSONObject();
-		meta.put("version", versionStr);
-		meta.put("dictionaryId", dictID);
+		meta.put("version", Morfeusz.getVersion());
+		meta.put("dictionaryId", morfeusz.getDictID());
 		
 		json.put("meta", meta);
+	}
+	
+	private static class MorfeuszOptions {
+		TokenNumbering tokenNumbering = TokenNumbering.SEPARATE_NUMBERING;
+		CaseHandling caseHandling = CaseHandling.CONDITIONALLY_CASE_SENSITIVE;
+		WhitespaceHandling whitespaceHandling = WhitespaceHandling.SKIP_WHITESPACES;
+		
+		String agglutinationRules = "strict";
+		String pastTenseSegmentation = "split";
+	}
+	
+	private static class MorfeuszOptionParser {
+		private Morfeusz morfeusz;
+		private MorfeuszOptions options;
+		private Action action;
+		private List<String> warnings;
+		
+		enum TokenNumberingValue {
+			separate(TokenNumbering.SEPARATE_NUMBERING),
+			continuous(TokenNumbering.CONTINUOUS_NUMBERING);
+			
+			private TokenNumbering morfeuszType;
+			
+			private TokenNumberingValue(TokenNumbering tokenNumbering) {
+				morfeuszType = tokenNumbering;
+			}
+		}
+		
+		enum CaseHandlingValue {
+			conditional(CaseHandling.CONDITIONALLY_CASE_SENSITIVE),
+			strict(CaseHandling.STRICTLY_CASE_SENSITIVE),
+			ignore(CaseHandling.IGNORE_CASE);
+			
+			private CaseHandling morfeuszType;
+			
+			private CaseHandlingValue(CaseHandling caseHandling) {
+				morfeuszType = caseHandling;
+			}
+		}
+		
+		enum WhitespaceHandlingValue {
+			skip(WhitespaceHandling.SKIP_WHITESPACES),
+			append(WhitespaceHandling.APPEND_WHITESPACES),
+			keep(WhitespaceHandling.KEEP_WHITESPACES);
+			
+			private WhitespaceHandling morfeuszType;
+			
+			private WhitespaceHandlingValue(WhitespaceHandling whitespaceHandling) {
+				morfeuszType = whitespaceHandling;
+			}
+		}
+		
+		public MorfeuszOptionParser(Morfeusz morfeusz, MorfeuszOptions options, Action action) {
+			this.morfeusz = morfeusz;
+			this.options = options;
+			this.action = action;
+			
+			warnings = new ArrayList<>();
+		}
+		
+		public void parse(Map<String, String[]> params) {
+			if (params.containsKey("tokenNumbering") && checkAnalyzerOptions("tokenNumbering")) {
+				parseEnumParam(TokenNumberingValue.class, params.get("tokenNumbering")[0],
+					new Consumer<TokenNumberingValue>() {
+						@Override
+						public void accept(TokenNumberingValue value) {
+							options.tokenNumbering = value.morfeuszType;
+						}
+					});
+			}
+			
+			if (params.containsKey("caseHandling") && checkAnalyzerOptions("caseHandling")) {
+				parseEnumParam(CaseHandlingValue.class, params.get("caseHandling")[0],
+					new Consumer<CaseHandlingValue>() {
+						@Override
+						public void accept(CaseHandlingValue value) {
+							options.caseHandling = value.morfeuszType;
+						}
+					});
+			}
+			
+			if (params.containsKey("whitespaceHandling") && checkAnalyzerOptions("whitespaceHandling")) {
+				parseEnumParam(WhitespaceHandlingValue.class, params.get("whitespaceHandling")[0],
+					new Consumer<WhitespaceHandlingValue>() {
+						@Override
+						public void accept(WhitespaceHandlingValue value) {
+							options.whitespaceHandling = value.morfeuszType;
+						}
+					});
+			}
+			
+			if (params.containsKey("agglutinationRules")) {
+				parseStringParam(params.get("agglutinationRules")[0], morfeusz.getAvailableAgglOptions(),
+					new Consumer<String>() {
+						@Override
+						public void accept(String value) {
+							options.agglutinationRules = value;
+						}
+					});
+			}
+			
+			if (params.containsKey("pastTenseSegmentation")) {
+				parseStringParam(params.get("pastTenseSegmentation")[0], morfeusz.getAvailablePraetOptions(),
+					new Consumer<String>() {
+						@Override
+						public void accept(String value) {
+							options.pastTenseSegmentation = value;
+						}
+					});
+			}
+		}
+		
+		private boolean checkAnalyzerOptions(String param) {
+			if (action == Action.generate) {
+				String message = String.format("option '%s' not available in generator mode", param);
+				warnings.add(message);
+				return false;
+			} else {
+				return true;
+			}
+		}
+		
+		public void notifyWarnings(JSONObject json) {
+			if (!warnings.isEmpty()) {
+				JSONArray arr = new JSONArray(warnings);
+				json.put("warnings", arr);
+			}
+		}
+		
+		private <E extends Enum<E>> void parseEnumParam(Class<E> enumClass, String param, Consumer<E> consumer) {
+			try {
+				// related: https://stackoverflow.com/q/4014117
+				E enumValue = Enum.valueOf(enumClass, param);
+				consumer.accept(enumValue);
+			} catch (IllegalArgumentException | NullPointerException e) {
+				List<String> values = new ArrayList<>();
+				
+				for (E enumValue : enumClass.getEnumConstants()) {
+					values.add(enumValue.toString());
+				}
+				
+				String message = String.format("unsupported option '%s'; available: %s", param, values);
+				warnings.add(message);
+			}
+		}
+		
+		private void parseStringParam(String param, List<String> availableOpts, Consumer<String> consumer) {
+			if (!availableOpts.contains(param)) {
+				String message = String.format("unrecognized value '%s'; available: %s", param, availableOpts);
+				warnings.add(message);
+			} else {
+				consumer.accept(param);
+			}
+		}
+	}
+	
+	/**
+	 * Java 7 polyfill of java.util.function.Consumer<T>
+	 */
+	private interface Consumer<T> {
+		public void accept(T t);
 	}
 }
