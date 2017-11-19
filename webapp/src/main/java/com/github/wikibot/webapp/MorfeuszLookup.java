@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -345,5 +344,12 @@ public class MorfeuszLookup extends HttpServlet {
 				consumer.accept(param);
 			}
 		}
+	}
+	
+	/**
+	 * Java 7 polyfill of java.util.function.Consumer<T>
+	 */
+	private interface Consumer<T> {
+		public void accept(T t);
 	}
 }
