@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -113,8 +114,8 @@ public class MorfeuszLookup extends HttpServlet {
 			morfeusz.setWhitespaceHandling(options.whitespaceHandling);
 		}
 		
-		morfeusz.setAggl(options.aggl);
-		morfeusz.setPraet(options.praet);
+		morfeusz.setAggl(options.agglutinationRules);
+		morfeusz.setPraet(options.pastTenseSegmentation);
 		
 		return morfeusz;
 	}
@@ -126,7 +127,7 @@ public class MorfeuszLookup extends HttpServlet {
 			list.add(action.toString());
 		}
 		
-		String err = String.format("unrecognized action: \"%s\"; available: %s", act, list);
+		String err = String.format("unrecognized action: '%s'; available: %s", act, list);
 		writer.append(json.put("error", err).toString());
 	}
 	
@@ -197,8 +198,8 @@ public class MorfeuszLookup extends HttpServlet {
 		CaseHandling caseHandling = CaseHandling.CONDITIONALLY_CASE_SENSITIVE;
 		WhitespaceHandling whitespaceHandling = WhitespaceHandling.SKIP_WHITESPACES;
 		
-		String aggl = "strict";
-		String praet = "split";
+		String agglutinationRules = "strict";
+		String pastTenseSegmentation = "split";
 	}
 	
 	private static class MorfeuszOptionParser {
@@ -208,20 +209,38 @@ public class MorfeuszLookup extends HttpServlet {
 		private List<String> warnings;
 		
 		enum TokenNumberingValue {
-			separate,
-			continuous
+			separate(TokenNumbering.SEPARATE_NUMBERING),
+			continuous(TokenNumbering.CONTINUOUS_NUMBERING);
+			
+			private TokenNumbering morfeuszType;
+			
+			private TokenNumberingValue(TokenNumbering tokenNumbering) {
+				morfeuszType = tokenNumbering;
+			}
 		}
 		
 		enum CaseHandlingValue {
-			conditional,
-			strict,
-			ignore
+			conditional(CaseHandling.CONDITIONALLY_CASE_SENSITIVE),
+			strict(CaseHandling.STRICTLY_CASE_SENSITIVE),
+			ignore(CaseHandling.IGNORE_CASE);
+			
+			private CaseHandling morfeuszType;
+			
+			private CaseHandlingValue(CaseHandling caseHandling) {
+				morfeuszType = caseHandling;
+			}
 		}
 		
 		enum WhitespaceHandlingValue {
-			skip,
-			append,
-			keep
+			skip(WhitespaceHandling.SKIP_WHITESPACES),
+			append(WhitespaceHandling.APPEND_WHITESPACES),
+			keep(WhitespaceHandling.KEEP_WHITESPACES);
+			
+			private WhitespaceHandling morfeuszType;
+			
+			private WhitespaceHandlingValue(WhitespaceHandling whitespaceHandling) {
+				morfeuszType = whitespaceHandling;
+			}
 		}
 		
 		public MorfeuszOptionParser(Morfeusz morfeusz, MorfeuszOptions options, Action action) {
@@ -233,30 +252,60 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 		
 		public void parse(Map<String, String[]> params) {
-			if (params.containsKey("tokenHandling") && checkAnalyzerOptions("tokenHandling")) {
-				parseTokenNumbering(params.get("tokenHandling")[0]);
+			if (params.containsKey("tokenNumbering") && checkAnalyzerOptions("tokenNumbering")) {
+				parseEnumParam(TokenNumberingValue.class, params.get("tokenNumbering")[0],
+					new Consumer<TokenNumberingValue>() {
+						@Override
+						public void accept(TokenNumberingValue value) {
+							options.tokenNumbering = value.morfeuszType;
+						}
+					});
 			}
 			
 			if (params.containsKey("caseHandling") && checkAnalyzerOptions("caseHandling")) {
-				parseCaseHandling(params.get("caseHandling")[0]);
+				parseEnumParam(CaseHandlingValue.class, params.get("caseHandling")[0],
+					new Consumer<CaseHandlingValue>() {
+						@Override
+						public void accept(CaseHandlingValue value) {
+							options.caseHandling = value.morfeuszType;
+						}
+					});
 			}
 			
 			if (params.containsKey("whitespaceHandling") && checkAnalyzerOptions("whitespaceHandling")) {
-				parseWhitespaceHandling(params.get("whitespaceHandling")[0]);
+				parseEnumParam(WhitespaceHandlingValue.class, params.get("whitespaceHandling")[0],
+					new Consumer<WhitespaceHandlingValue>() {
+						@Override
+						public void accept(WhitespaceHandlingValue value) {
+							options.whitespaceHandling = value.morfeuszType;
+						}
+					});
 			}
 			
 			if (params.containsKey("agglutinationRules")) {
-				parseAggl(params.get("agglutinationRules")[0]);
+				parseStringParam(params.get("agglutinationRules")[0], morfeusz.getAvailableAgglOptions(),
+					new Consumer<String>() {
+						@Override
+						public void accept(String value) {
+							options.agglutinationRules = value;
+						}
+					});
 			}
 			
 			if (params.containsKey("pastTenseSegmentation")) {
-				parsePraet(params.get("pastTenseSegmentation")[0]);
+				parseStringParam(params.get("pastTenseSegmentation")[0], morfeusz.getAvailablePraetOptions(),
+					new Consumer<String>() {
+						@Override
+						public void accept(String value) {
+							options.pastTenseSegmentation = value;
+						}
+					});
 			}
 		}
 		
 		private boolean checkAnalyzerOptions(String param) {
 			if (action == Action.generate) {
-				String message = String.format("option \"%s\" not available in generator mode", param);
+				String message = String.format("option '%s' not available in generator mode", param);
 				warnings.add(message);
 				return false;
 			} else {
@@ -271,89 +320,29 @@ public class MorfeuszLookup extends HttpServlet {
 			}
 		}
 		
-		private <E extends Enum<E>> E getEnumeration(Class<E> enumClass, final String param, final E defaultValue) {
+		private <E extends Enum<E>> void parseEnumParam(Class<E> enumClass, String param, Consumer<E> consumer) {
 			try {
 				// related: https://stackoverflow.com/q/4014117
-				return Enum.valueOf(enumClass, param);
-			} catch (IllegalArgumentException e) {
+				E enumValue = Enum.valueOf(enumClass, param);
+				consumer.accept(enumValue);
+			} catch (IllegalArgumentException | NullPointerException e) {
 				List<String> values = new ArrayList<>();
 				
 				for (E enumValue : enumClass.getEnumConstants()) {
 					values.add(enumValue.toString());
 				}
 				
-				String message = String.format("unsupported option \"%s\"; available: %s", param, values);
+				String message = String.format("unsupported option '%s'; available: %s", param, values);
 				warnings.add(message);
-				return defaultValue;
 			}
 		}
 		
-		private void parseTokenNumbering(final String param) {
-			switch (getEnumeration(TokenNumberingValue.class, param, TokenNumberingValue.separate)) {
-			case separate:
-				options.tokenNumbering = TokenNumbering.SEPARATE_NUMBERING;
-				break;
-			case continuous:
-				options.tokenNumbering = TokenNumbering.CONTINUOUS_NUMBERING;
-				break;
-			}
-		}
-		
-		private void parseCaseHandling(final String param) {
-			switch (getEnumeration(CaseHandlingValue.class, param, CaseHandlingValue.conditional)) {
-			case conditional:
-				options.caseHandling = CaseHandling.CONDITIONALLY_CASE_SENSITIVE;
-				break;
-			case strict:
-				options.caseHandling = CaseHandling.STRICTLY_CASE_SENSITIVE;
-				break;
-			case ignore:
-				options.caseHandling = CaseHandling.IGNORE_CASE;
-				break;
-			}
-		}
-		
-		private void parseWhitespaceHandling(final String param) {
-			switch (getEnumeration(WhitespaceHandlingValue.class, param, WhitespaceHandlingValue.skip)) {
-			case skip:
-				options.whitespaceHandling = WhitespaceHandling.SKIP_WHITESPACES;
-				break;
-			case append:
-				options.whitespaceHandling = WhitespaceHandling.APPEND_WHITESPACES;
-				break;
-			case keep:
-				options.whitespaceHandling = WhitespaceHandling.KEEP_WHITESPACES;
-				break;
-			}
-		}
-		
-		private void parseAggl(String param) {
-			List<String> availableOpts = morfeusz.getAvailableAgglOptions();
-			
+		private void parseStringParam(String param, List<String> availableOpts, Consumer<String> consumer) {
 			if (!availableOpts.contains(param)) {
-				String message = String.format(
-					"unrecognized agglutinationRules value \"%s\"; available: %s",
-					param, availableOpts
-				);
-				
+				String message = String.format("unrecognized value '%s'; available: %s", param, availableOpts);
 				warnings.add(message);
 			} else {
-				options.aggl = param;
-			}
-		}
-		
-		private void parsePraet(String param) {
-			List<String> availableOpts = morfeusz.getAvailablePraetOptions();
-			
-			if (!availableOpts.contains(param)) {
-				String message = String.format(
-					"unrecognized pastTenseSegmentation value \"%s\"; available: %s",
-					param, availableOpts
-				);
-				
-				warnings.add(message);
-			} else {
-				options.praet  = param;
+				consumer.accept(param);
 			}
 		}
 	}
