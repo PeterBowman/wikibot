@@ -256,7 +256,7 @@ public class MorfeuszLookup extends HttpServlet {
 		
 		private boolean checkAnalyzerOptions(String param) {
 			if (action == Action.generate) {
-				String message = String.format("option \"%s\"not available in generator mode", param);
+				String message = String.format("option \"%s\" not available in generator mode", param);
 				warnings.add(message);
 				return false;
 			} else {
@@ -271,7 +271,7 @@ public class MorfeuszLookup extends HttpServlet {
 			}
 		}
 		
-		private <E extends Enum<E>> E getEnumeration(Class<E> enumClass, final String param) {
+		private <E extends Enum<E>> E getEnumeration(Class<E> enumClass, final String param, final E defaultValue) {
 			try {
 				// related: https://stackoverflow.com/q/4014117
 				return Enum.valueOf(enumClass, param);
@@ -284,12 +284,12 @@ public class MorfeuszLookup extends HttpServlet {
 				
 				String message = String.format("unsupported option \"%s\"; available: %s", param, values);
 				warnings.add(message);
-				return null;
+				return defaultValue;
 			}
 		}
 		
 		private void parseTokenNumbering(final String param) {
-			switch (getEnumeration(TokenNumberingValue.class, param)) {
+			switch (getEnumeration(TokenNumberingValue.class, param, TokenNumberingValue.separate)) {
 			case separate:
 				options.tokenNumbering = TokenNumbering.SEPARATE_NUMBERING;
 				break;
@@ -300,7 +300,7 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 		
 		private void parseCaseHandling(final String param) {
-			switch (getEnumeration(CaseHandlingValue.class, param)) {
+			switch (getEnumeration(CaseHandlingValue.class, param, CaseHandlingValue.conditional)) {
 			case conditional:
 				options.caseHandling = CaseHandling.CONDITIONALLY_CASE_SENSITIVE;
 				break;
@@ -314,7 +314,7 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 		
 		private void parseWhitespaceHandling(final String param) {
-			switch (getEnumeration(WhitespaceHandlingValue.class, param)) {
+			switch (getEnumeration(WhitespaceHandlingValue.class, param, WhitespaceHandlingValue.skip)) {
 			case skip:
 				options.whitespaceHandling = WhitespaceHandling.SKIP_WHITESPACES;
 				break;
@@ -331,7 +331,11 @@ public class MorfeuszLookup extends HttpServlet {
 			List<String> availableOpts = morfeusz.getAvailableAgglOptions();
 			
 			if (!availableOpts.contains(param)) {
-				String message = String.format("unrecognized aggl value \"%s\"; available: %s", param, availableOpts);
+				String message = String.format(
+					"unrecognized agglutinationRules value \"%s\"; available: %s",
+					param, availableOpts
+				);
+				
 				warnings.add(message);
 			} else {
 				options.aggl = param;
@@ -342,7 +346,11 @@ public class MorfeuszLookup extends HttpServlet {
 			List<String> availableOpts = morfeusz.getAvailablePraetOptions();
 			
 			if (!availableOpts.contains(param)) {
-				String message = String.format("unrecognized praet value \"%s\"; available: %s", param, availableOpts);
+				String message = String.format(
+					"unrecognized pastTenseSegmentation value \"%s\"; available: %s",
+					param, availableOpts
+				);
+				
 				warnings.add(message);
 			} else {
 				options.praet  = param;
