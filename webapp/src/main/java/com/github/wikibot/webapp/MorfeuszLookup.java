@@ -245,12 +245,12 @@ public class MorfeuszLookup extends HttpServlet {
 				parseWhitespaceHandling(params.get("whitespaceHandling")[0]);
 			}
 			
-			if (params.containsKey("aggl")) {
-				parseAggl(params.get("aggl")[0]);
+			if (params.containsKey("agglutinationRules")) {
+				parseAggl(params.get("agglutinationRules")[0]);
 			}
 			
-			if (params.containsKey("praet")) {
-				parsePraet(params.get("praet")[0]);
+			if (params.containsKey("pastTenseSegmentation")) {
+				parsePraet(params.get("pastTenseSegmentation")[0]);
 			}
 		}
 		
