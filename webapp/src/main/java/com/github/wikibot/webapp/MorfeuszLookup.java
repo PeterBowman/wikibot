@@ -255,8 +255,8 @@ public class MorfeuszLookup extends HttpServlet {
 		}
 		
 		private boolean checkAnalyzerOptions(String param) {
-			if (action == Action.analyze) {
-				String message = String.format("option \"%s\"not available in analyzer mode", param);
+			if (action == Action.generate) {
+				String message = String.format("option \"%s\"not available in generator mode", param);
 				warnings.add(message);
 				return false;
 			} else {
