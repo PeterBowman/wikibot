@@ -378,11 +378,12 @@ public class PrettyRefServlet extends HttpServlet {
 				
 				List<String> lines = new ArrayList<>();
 				lines.add(String.format("%1$s %2$s %1$s", level, sectionMapping.get(group)));
-				lines.add(String.format(
-					"{{Przypisy-lista|%s%s",
-					group != null ? "grupa=" + group + "|" : "",
-					cols > 1 ? "l. kolumn=" + cols + "|" : ""
-				));
+				
+				if (group != null) {
+					lines.add("{{Uwagi|");
+				} else {
+					lines.add("{{Przypisy|");
+				}
 				
 				for (Ref ref : refsInGroup) {
 					lines.add(ref.toString());
