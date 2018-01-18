@@ -98,7 +98,7 @@ public class Editor extends AbstractEditor {
 		"diacrítico", "ampliable", "variante", "variante obsoleta", "grafía obsoleta", "grafía rara",
 		"sustantivo de verbo", "sustantivo de adjetivo", "antropónimo masculino", "antropónimo femenino",
 		"adjetivo de padecimiento", "adjetivo de sustantivo", "adjetivo de verbo", "adverbio de adjetivo",
-		"adverbio de sustantivo", "merónimo"
+		"adverbio de sustantivo", "merónimo", "holónimo"
 	);
 	
 	private static final List<String> PRON_TMPLS = Arrays.asList(
@@ -113,12 +113,12 @@ public class Editor extends AbstractEditor {
 	
 	private static final List<String> TERM_TMPLS = Arrays.asList(
 		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama",
-		"derivado", "merónimo"
+		"derivado", "merónimo", "holónimo"
 	);
 	
 	private static final List<String> TERM_TMPLS_ALIAS = Arrays.asList(
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas",
-		"derivados", "merónimos"
+		"derivados", "merónimos", "holónimos"
 	);
 	
 	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
