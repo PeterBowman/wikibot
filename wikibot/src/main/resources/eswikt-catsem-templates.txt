@@ -123,6 +123,7 @@ heráldica = Heráldica
 herramientas = Herramientas
 hidrología = Hidrología
 hierbas = Hierbas
+higiene = Higiene
 hípica = Hípica
 historia = Historia
 historieta = Historieta
