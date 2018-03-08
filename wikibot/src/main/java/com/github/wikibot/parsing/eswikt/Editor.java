@@ -3560,6 +3560,10 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void langTemplateParams() {
+		if (isOldStructure) {
+			return;
+		}
+		
 		// TODO: {{Matemáticas}}, {{mamíferos}}, etc.
 		
 		Page page = Page.store(title, text);
