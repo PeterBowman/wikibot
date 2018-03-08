@@ -85,6 +85,11 @@
   		<systemPath>${project.basedir}/dist/jmorfeusz.jar</systemPath>
   		<optional>true</optional>
   	</dependency>
+  	<dependency>
+  		<groupId>pircbot</groupId>
+  		<artifactId>pircbot</artifactId>
+  		<version>1.5.0</version>
+  	</dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
