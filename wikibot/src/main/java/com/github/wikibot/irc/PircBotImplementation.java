@@ -13,12 +13,13 @@ import com.github.wikibot.telegram.SimpleMessageForwarderBot;
 
 public class PircBotImplementation extends PircBot {
 	private static final String LOCATION = "./data/sessions/";
-	private static final int PORT = 6666;
+	private static final int PORT_NUMBER = 6666;
 	private static final String SERVER = "irc.freenode.net";
 	private static final String PLWIKT_CHANNEL = "#wiktionary-pl";
 	private static final int RECONNECT_DELAY_MILLIS = 30000;
 	private static final String MAINTAINER_USERNAME = "Peter_Bowman";
 	private static final String TELEGRAM_BOT_USERNAME = "PBtelegram_bot";
+	private static final String IRC_BOT_NAME = "PBbot";
 	
 	private SimpleMessageForwarderBot telegramBot;
 	
@@ -35,7 +36,8 @@ public class PircBotImplementation extends PircBot {
 	}
 	
 	public PircBotImplementation(SimpleMessageForwarderBot telegramBot) {
-		this.setName("PBbot");
+		this.setName(IRC_BOT_NAME);
+		this.setAutoNickChange(true);
 		this.telegramBot = telegramBot;
 	}
 	
@@ -84,6 +86,22 @@ public class PircBotImplementation extends PircBot {
 		}
 	}
 	
+	@Override
+	protected void onServerPing(String response) {
+		super.onServerPing(response);
+		
+		if (!getNick().equals(getName())) {
+			changeNick(getName());
+		}
+	}
+	
+	@Override
+	protected void onNickChange(String oldNick, String login, String hostname, String newNick) {
+		if (newNick.equals(getNick())) {
+			identify(getPassword());
+		}
+	}
+	
 	public static void main(String[] args) throws Exception {
 		File fIrc = new File(LOCATION + "irc.txt");
 		File fTelegramToken = new File(LOCATION + "telegram_token.txt");
@@ -103,7 +121,7 @@ public class PircBotImplementation extends PircBot {
 		PircBotImplementation ircBot = new PircBotImplementation(telegramBot);
 		
 		ircBot.setVerbose(true);
-		ircBot.connect(SERVER, PORT, password);
+		ircBot.connect(SERVER, PORT_NUMBER, password);
 		ircBot.joinChannel(PLWIKT_CHANNEL);
 	}
 
