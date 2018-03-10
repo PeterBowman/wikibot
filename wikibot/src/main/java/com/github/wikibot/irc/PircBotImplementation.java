@@ -123,6 +123,8 @@ public class PircBotImplementation extends PircBot {
 		ircBot.setVerbose(true);
 		ircBot.connect(SERVER, PORT_NUMBER, password);
 		ircBot.joinChannel(PLWIKT_CHANNEL);
+		
+		telegramBot.setReplyCallback(ircBot::sendMessage);
 	}
 
 }
