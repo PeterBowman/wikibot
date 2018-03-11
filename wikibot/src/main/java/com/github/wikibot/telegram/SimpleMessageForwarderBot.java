@@ -72,8 +72,14 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				}
 			}
 		} else if (message.hasText() && message.getText().startsWith("/replylast")) {
+			String reply = replyPrompt;
+			
+			if (Strings.isNullOrEmpty(lastSender)) {
+				reply = "No last recipient found, start a new conversation.";
+			}
+			
 			try {
-				execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+				execute(new SendMessage(chatId, reply).setReplyMarkup(new ForceReplyKeyboard()));
 			} catch (TelegramApiException e) {
 				e.printStackTrace();
 			}
@@ -124,7 +130,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				}
 			}
 		} else if (message.hasText() && message.getText().startsWith("/clearsenders")) {
-			lastSenders.clear();
+			clearSenderHistory();
 			
 			try {
 				execute(new SendMessage(chatId, "Cleared!"));
@@ -181,6 +187,11 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 			
 			lastSenders.add(sender);
 		}
+	}
+	
+	private void clearSenderHistory() {
+		lastSender = "";
+		lastSenders.clear();
 	}
 	
 	public static void main(String[] args) throws Exception {
