@@ -7,15 +7,18 @@ import java.util.regex.Pattern;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.ForceReplyKeyboard;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
+
+import com.google.common.base.Strings;
 
 public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	private String botUsername;
 	private String botToken;
 	private long chatId;
-	
+	private String lastSender;
 	private BiConsumer<String, String> replyCallback;
 	
 	private static final Pattern P_CALLBACK_FMT;
@@ -28,6 +31,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		this.botUsername = botUsername;
 		this.botToken = botToken;
 		this.chatId = chatId;
+		this.lastSender = "";
 		this.replyCallback = (a, b) -> {};
 	}
 
@@ -39,7 +43,20 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		
 		Message message = update.getMessage();
 		
-		if (message.hasText() && message.getText().startsWith("/reply ")) {
+		if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername)) {
+			if (message.hasText() && !Strings.isNullOrEmpty(lastSender)) {
+				replyCallback.accept(lastSender, message.getText());
+				String text = String.format("Keep talking to %s.", lastSender);
+				ForceReplyKeyboard replyKeyboard = new ForceReplyKeyboard();
+				SendMessage reply = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(replyKeyboard);
+				
+				try {
+					execute(reply);
+				} catch (TelegramApiException e) {
+					e.printStackTrace();
+				}
+			}
+		} else if (message.hasText() && message.getText().startsWith("/reply ")) {
 			Matcher m = P_CALLBACK_FMT.matcher(message.getText().trim());
 			
 			if (m.matches()) {
@@ -52,8 +69,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				}
 			}
 		} else {
-			SendMessage reply = new SendMessage();
-			reply.setChatId(message.getChatId());
+			SendMessage reply = new SendMessage().setChatId(message.getChatId());
 			
 			if (message.hasText()) {
 				reply.setText(message.getText());
@@ -85,8 +101,10 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	public void notifyMaintainer(String sender, String messageText) throws TelegramApiException {
 		String text = String.format("Message from %s: \"%s\"", sender, messageText);
-		SendMessage message = new SendMessage().setChatId(chatId).setText(text);
+		ForceReplyKeyboard replyKeyboard = new ForceReplyKeyboard();
+		SendMessage message = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(replyKeyboard);
+		lastSender = sender;
 		execute(message);
 	}
-
+	
 }
