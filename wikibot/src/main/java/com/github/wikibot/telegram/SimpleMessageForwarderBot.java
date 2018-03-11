@@ -39,7 +39,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		
 		Message message = update.getMessage();
 		
-		if (message.hasText() && message.getText().startsWith("/r ")) {
+		if (message.hasText() && message.getText().startsWith("/reply ")) {
 			Matcher m = P_CALLBACK_FMT.matcher(message.getText().trim());
 			
 			if (m.matches()) {
