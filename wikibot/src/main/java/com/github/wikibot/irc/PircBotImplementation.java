@@ -26,7 +26,7 @@ public class PircBotImplementation extends PircBot {
 	private enum Messages {
 		NOTIFY_ON_PING("%s: skontaktuj się ze mną (User:%s) za pośrednictwem bota, wysyłając prywatną wiadomość: /query %s <wiadomość>"),
 		NOTIFY_ON_PM_SUCCESS("wysłano powiadomienie"),
-		NOTIFY_ON_PM_FAILURE("%s: nie udało się wysłać powiadomienia, proszę o kontakt drogą mailową: https://pl.wiktionary.org/wiki/Specjalna:E-mail/%s");
+		NOTIFY_ON_PM_FAILURE("%s: nie udało się wysłać powiadomienia, proszę o ponowienie próby lub kontakt drogą mailową: https://pl.wiktionary.org/wiki/Specjalna:E-mail/%s");
 		
 		public final String str;
 		
