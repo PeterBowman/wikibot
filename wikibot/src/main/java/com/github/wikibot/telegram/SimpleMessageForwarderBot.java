@@ -72,16 +72,18 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				}
 			}
 		} else if (message.hasText() && message.getText().startsWith("/replylast")) {
-			String reply = replyPrompt;
-			
-			if (Strings.isNullOrEmpty(lastSender)) {
-				reply = "No last recipient found, start a new conversation.";
-			}
-			
-			try {
-				execute(new SendMessage(chatId, reply).setReplyMarkup(new ForceReplyKeyboard()));
-			} catch (TelegramApiException e) {
-				e.printStackTrace();
+			if (!Strings.isNullOrEmpty(lastSender)) {
+				try {
+					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+				} catch (TelegramApiException e) {
+					e.printStackTrace();
+				}
+			} else {
+				try {
+					execute(new SendMessage(chatId, "No last recipient found, start a new conversation."));
+				} catch (TelegramApiException e) {
+					e.printStackTrace();
+				}
 			}
 		} else if (message.hasText() && message.getText().startsWith("/replyto")) {
 			Matcher m = P_REPLYTO_FMT.matcher(message.getText().trim());
