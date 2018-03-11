@@ -115,9 +115,9 @@ public class PircBotImplementation extends PircBot {
 		File fTelegramToken = new File(LOCATION + "telegram_token.txt");
 		File fTelegramChatid = new File(LOCATION + "telegram_chatid.txt");
 
-		String password = FileUtils.readFileToString(fIrc, Charset.forName("UTF8"));
-		String telegramToken = FileUtils.readFileToString(fTelegramToken, Charset.forName("UTF8"));
-		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, Charset.forName("UTF8"));
+		String password = FileUtils.readFileToString(fIrc, Charset.forName("UTF8")).trim();
+		String telegramToken = FileUtils.readFileToString(fTelegramToken, Charset.forName("UTF8")).trim();
+		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, Charset.forName("UTF8")).trim();
 		
 		ApiContextInitializer.init();
 		TelegramBotsApi botsApi = new TelegramBotsApi();

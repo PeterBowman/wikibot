@@ -181,8 +181,8 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		File fTelegramToken = new File(location + "telegram_token.txt");
 		File fTelegramChatid = new File(location + "telegram_chatid.txt");
 
-		String telegramToken = FileUtils.readFileToString(fTelegramToken, Charset.forName("UTF8"));
-		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, Charset.forName("UTF8"));
+		String telegramToken = FileUtils.readFileToString(fTelegramToken, Charset.forName("UTF8")).trim();
+		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, Charset.forName("UTF8")).trim();
 		
 		ApiContextInitializer.init();
 		TelegramBotsApi botsApi = new TelegramBotsApi();
