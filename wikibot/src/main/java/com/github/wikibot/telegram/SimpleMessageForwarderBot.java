@@ -64,14 +64,14 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				replyCallback.accept(lastSender, message.getText());
 				
 				try {
-					execute(new SendMessage().setChatId(chatId).setText(replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
 				} catch (TelegramApiException e) {
 					e.printStackTrace();
 				}
 			}
 		} else if (message.hasText() && message.getText().startsWith("/replylast")) {
 			try {
-				execute(new SendMessage().setChatId(chatId).setText(replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+				execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
 			} catch (TelegramApiException e) {
 				e.printStackTrace();
 			}
@@ -88,7 +88,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					
 				} else {
 					try {
-						execute(new SendMessage().setChatId(chatId).setText("No senders in history, try: /replyto <nick> <msg>"));
+						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> <msg>"));
 					} catch (TelegramApiException e) {
 						e.printStackTrace();
 					}
@@ -98,7 +98,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 			lastSenders.clear();
 			
 			try {
-				execute(new SendMessage().setChatId(chatId).setText("Cleared!"));
+				execute(new SendMessage(chatId, "Cleared!"));
 			} catch (TelegramApiException e) {
 				e.printStackTrace();
 			}
@@ -135,9 +135,8 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	public void notifyMaintainer(String sender, String messageText) throws TelegramApiException {
 		String text = String.format("Message from %s: \"%s\"", sender, messageText);
-		SendMessage message = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(new ForceReplyKeyboard());
+		execute(new SendMessage(chatId, text).setReplyMarkup(new ForceReplyKeyboard()));
 		updateSenderHistory(sender);
-		execute(message);
 	}
 	
 	private void updateSenderHistory(String sender) {
