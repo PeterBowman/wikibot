@@ -19,6 +19,8 @@ import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.replykeyboard.ForceReplyKeyboard;
+import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
@@ -85,7 +87,24 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				updateSenderHistory(sender);
 			} else {
 				if (!lastSenders.isEmpty()) {
+					SendMessage prompt = new SendMessage(chatId, "Select IRC nick of message recipient.");
+					ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+					List<KeyboardRow> keyboard = new ArrayList<>();
 					
+					for (String sender : lastSenders) {
+						KeyboardRow row = new KeyboardRow();
+						row.add(sender);
+						keyboard.add(row);
+					}
+					
+					keyboardMarkup.setKeyboard(keyboard).setResizeKeyboard(true).setOneTimeKeyboard(true);
+					prompt.setReplyMarkup(keyboardMarkup);
+					
+					try {
+						execute(prompt);
+					} catch (TelegramApiException e) {
+						e.printStackTrace();
+					}
 				} else {
 					try {
 						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> <msg>"));
