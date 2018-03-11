@@ -42,21 +42,25 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		}
 		
 		Message message = update.getMessage();
+		final String replyPrompt = String.format("Keep talking to %s.", lastSender);
 		
 		if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername)) {
 			if (message.hasText() && !Strings.isNullOrEmpty(lastSender)) {
 				replyCallback.accept(lastSender, message.getText());
-				String text = String.format("Keep talking to %s.", lastSender);
-				ForceReplyKeyboard replyKeyboard = new ForceReplyKeyboard();
-				SendMessage reply = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(replyKeyboard);
 				
 				try {
-					execute(reply);
+					execute(new SendMessage().setChatId(chatId).setText(replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
 				} catch (TelegramApiException e) {
 					e.printStackTrace();
 				}
 			}
-		} else if (message.hasText() && message.getText().startsWith("/reply ")) {
+		} else if (message.hasText() && message.getText().startsWith("/replylast")) {
+			try {
+				execute(new SendMessage().setChatId(chatId).setText(replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+			} catch (TelegramApiException e) {
+				e.printStackTrace();
+			}
+		} else if (message.hasText() && message.getText().startsWith("/replyto")) {
 			Matcher m = P_CALLBACK_FMT.matcher(message.getText().trim());
 			
 			if (m.matches()) {
