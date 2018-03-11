@@ -34,6 +34,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 	private String lastSender;
 	private BiConsumer<String, String> replyCallback;
 	private Set<String> lastSenders;
+	private int lastPromptId;
 	
 	private static final int SENDER_HISTORY_SIZE = 5;
 	
@@ -50,6 +51,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		this.lastSender = "";
 		this.replyCallback = (a, b) -> {};
 		this.lastSenders = new TreeSet<>();
+		this.lastPromptId = 0;
 	}
 
 	@Override
@@ -62,16 +64,20 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		final String replyPrompt = String.format("Keep talking to %s.", lastSender);
 		
 		try {
-			if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername)) {
-				if (message.hasText() && !Strings.isNullOrEmpty(lastSender)) {
+			if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername) && message.hasText()) {
+				if (!Strings.isNullOrEmpty(lastSender) && message.getReplyToMessage().getMessageId() == lastPromptId) {
 					replyCallback.accept(lastSender, message.getText());
-					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+					lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
+				} else {
+					execute(new SendMessage(chatId, "Unhandled reply: missing last sender or not the last prompt."));
+					lastPromptId = 0;
 				}
 			} else if (message.hasText() && message.getText().startsWith("/replylast")) {
 				if (!Strings.isNullOrEmpty(lastSender)) {
-					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+					lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
 				} else {
 					execute(new SendMessage(chatId, "No last recipient found, start a new conversation."));
+					lastPromptId = 0;
 				}
 			} else if (message.hasText() && message.getText().startsWith("/replyto")) {
 				Matcher m = P_REPLYTO_FMT.matcher(message.getText().trim());
@@ -85,7 +91,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					if (!Strings.isNullOrEmpty(text)) {
 						replyCallback.accept(sender, text);
 					} else {
-						execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+						lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
 					}
 				} else {
 					if (!lastSenders.isEmpty()) {
@@ -106,10 +112,13 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					} else {
 						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> [<msg>]"));
 					}
+					
+					lastPromptId = 0;
 				}
 			} else if (message.hasText() && message.getText().startsWith("/clearsenders")) {
 				clearSenderHistory();
 				execute(new SendMessage(chatId, "Cleared!"));
+				lastPromptId = 0;
 			} else {
 				SendMessage reply = new SendMessage().setChatId(message.getChatId());
 				
@@ -120,6 +129,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				}
 				
 				execute(reply);
+				lastPromptId = 0;
 			}
 		} catch (TelegramApiException e) {
 			e.printStackTrace();
@@ -142,7 +152,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	public void notifyMaintainer(String sender, String messageText) throws TelegramApiException {
 		String text = String.format("Message from %s: \"%s\"", sender, messageText);
-		execute(new SendMessage(chatId, text).setReplyMarkup(new ForceReplyKeyboard()));
+		lastPromptId = execute(new SendMessage(chatId, text).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
 		updateSenderHistory(sender);
 	}
 	
