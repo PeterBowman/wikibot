@@ -61,98 +61,68 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		Message message = update.getMessage();
 		final String replyPrompt = String.format("Keep talking to %s.", lastSender);
 		
-		if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername)) {
-			if (message.hasText() && !Strings.isNullOrEmpty(lastSender)) {
-				replyCallback.accept(lastSender, message.getText());
-				
-				try {
+		try {
+			if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername)) {
+				if (message.hasText() && !Strings.isNullOrEmpty(lastSender)) {
+					replyCallback.accept(lastSender, message.getText());
 					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
-				} catch (TelegramApiException e) {
-					e.printStackTrace();
 				}
-			}
-		} else if (message.hasText() && message.getText().startsWith("/replylast")) {
-			if (!Strings.isNullOrEmpty(lastSender)) {
-				try {
+			} else if (message.hasText() && message.getText().startsWith("/replylast")) {
+				if (!Strings.isNullOrEmpty(lastSender)) {
 					execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
-				} catch (TelegramApiException e) {
-					e.printStackTrace();
-				}
-			} else {
-				try {
+				} else {
 					execute(new SendMessage(chatId, "No last recipient found, start a new conversation."));
-				} catch (TelegramApiException e) {
-					e.printStackTrace();
 				}
-			}
-		} else if (message.hasText() && message.getText().startsWith("/replyto")) {
-			Matcher m = P_REPLYTO_FMT.matcher(message.getText().trim());
-			
-			if (m.matches()) {
-				String sender = m.group(1);
-				String text = m.group(2);
+			} else if (message.hasText() && message.getText().startsWith("/replyto")) {
+				Matcher m = P_REPLYTO_FMT.matcher(message.getText().trim());
 				
-				updateSenderHistory(sender);
-				
-				if (!Strings.isNullOrEmpty(text)) {
-					replyCallback.accept(sender, text);
-				} else {
-					try {
+				if (m.matches()) {
+					String sender = m.group(1);
+					String text = m.group(2);
+					
+					updateSenderHistory(sender);
+					
+					if (!Strings.isNullOrEmpty(text)) {
+						replyCallback.accept(sender, text);
+					} else {
 						execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
-					} catch (TelegramApiException e) {
-						e.printStackTrace();
-					}
-				}
-			} else {
-				if (!lastSenders.isEmpty()) {
-					SendMessage prompt = new SendMessage(chatId, "Select IRC nick of message recipient.");
-					ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
-					List<KeyboardRow> keyboard = new ArrayList<>();
-					
-					for (String sender : lastSenders) {
-						KeyboardRow row = new KeyboardRow();
-						row.add(String.format("/replyto %s", sender));
-						keyboard.add(row);
-					}
-					
-					keyboardMarkup.setKeyboard(keyboard).setResizeKeyboard(true).setOneTimeKeyboard(true);
-					prompt.setReplyMarkup(keyboardMarkup);
-					
-					try {
-						execute(prompt);
-					} catch (TelegramApiException e) {
-						e.printStackTrace();
 					}
 				} else {
-					try {
+					if (!lastSenders.isEmpty()) {
+						SendMessage prompt = new SendMessage(chatId, "Select IRC nick of message recipient.");
+						ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+						List<KeyboardRow> keyboard = new ArrayList<>();
+						
+						for (String sender : lastSenders) {
+							KeyboardRow row = new KeyboardRow();
+							row.add(String.format("/replyto %s", sender));
+							keyboard.add(row);
+						}
+						
+						keyboardMarkup.setKeyboard(keyboard).setResizeKeyboard(true).setOneTimeKeyboard(true);
+						prompt.setReplyMarkup(keyboardMarkup);
+						
+						execute(prompt);
+					} else {
 						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> [<msg>]"));
-					} catch (TelegramApiException e) {
-						e.printStackTrace();
 					}
 				}
-			}
-		} else if (message.hasText() && message.getText().startsWith("/clearsenders")) {
-			clearSenderHistory();
-			
-			try {
+			} else if (message.hasText() && message.getText().startsWith("/clearsenders")) {
+				clearSenderHistory();
 				execute(new SendMessage(chatId, "Cleared!"));
-			} catch (TelegramApiException e) {
-				e.printStackTrace();
-			}
-		} else {
-			SendMessage reply = new SendMessage().setChatId(message.getChatId());
-			
-			if (message.hasText()) {
-				reply.setText(message.getText());
 			} else {
-				reply.setText("ping!");
-			}
-			
-			try {
+				SendMessage reply = new SendMessage().setChatId(message.getChatId());
+				
+				if (message.hasText()) {
+					reply.setText(message.getText());
+				} else {
+					reply.setText("ping!");
+				}
+				
 				execute(reply);
-			} catch (TelegramApiException e) {
-				e.printStackTrace();
 			}
+		} catch (TelegramApiException e) {
+			e.printStackTrace();
 		}
 	}
 
