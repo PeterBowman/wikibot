@@ -67,6 +67,14 @@ public class PircBotImplementation extends PircBot {
 	}
 	
 	@Override
+	protected void onAction(String sender, String login, String hostname, String target, String action) {
+		if (action.contains("PBbot")) {
+			String reply = String.format(Messages.NOTIFY_ON_PING.str, sender, MAINTAINER_USERNAME, getNick());
+			sendNotice(sender, reply);
+		}
+	}
+	
+	@Override
 	protected void onMessage(String channel, String sender, String login, String hostname, String message) {
 		if (message.contains("PBbot")) {
 			String reply = String.format(Messages.NOTIFY_ON_PING.str, sender, MAINTAINER_USERNAME, getNick());
