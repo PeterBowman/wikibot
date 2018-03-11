@@ -2,6 +2,12 @@ package com.github.wikibot.telegram;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,6 +31,9 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 	private long chatId;
 	private String lastSender;
 	private BiConsumer<String, String> replyCallback;
+	private Set<String> lastSenders;
+	
+	private static final int SENDER_HISTORY_SIZE = 5;
 	
 	private static final Pattern P_CALLBACK_FMT;
 	
@@ -38,6 +47,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		this.chatId = chatId;
 		this.lastSender = "";
 		this.replyCallback = (a, b) -> {};
+		this.lastSenders = new TreeSet<>();
 	}
 
 	@Override
@@ -69,13 +79,28 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 			Matcher m = P_CALLBACK_FMT.matcher(message.getText().trim());
 			
 			if (m.matches()) {
-				replyCallback.accept(m.group(1), m.group(2));
+				String sender = m.group(1);
+				String text = m.group(2);
+				replyCallback.accept(sender, text);
+				updateSenderHistory(sender);
 			} else {
-				try {
-					execute(new SendMessage().setChatId(chatId).setText("ERROR: unable to parse message"));
-				} catch (TelegramApiException e) {
-					e.printStackTrace();
+				if (!lastSenders.isEmpty()) {
+					
+				} else {
+					try {
+						execute(new SendMessage().setChatId(chatId).setText("No senders in history, try: /replyto <nick> <msg>"));
+					} catch (TelegramApiException e) {
+						e.printStackTrace();
+					}
 				}
+			}
+		} else if (message.hasText() && message.getText().startsWith("/clearsenders")) {
+			lastSenders.clear();
+			
+			try {
+				execute(new SendMessage().setChatId(chatId).setText("Cleared!"));
+			} catch (TelegramApiException e) {
+				e.printStackTrace();
 			}
 		} else {
 			SendMessage reply = new SendMessage().setChatId(message.getChatId());
@@ -110,10 +135,22 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	public void notifyMaintainer(String sender, String messageText) throws TelegramApiException {
 		String text = String.format("Message from %s: \"%s\"", sender, messageText);
-		ForceReplyKeyboard replyKeyboard = new ForceReplyKeyboard();
-		SendMessage message = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(replyKeyboard);
-		lastSender = sender;
+		SendMessage message = new SendMessage().setChatId(chatId).setText(text).setReplyMarkup(new ForceReplyKeyboard());
+		updateSenderHistory(sender);
 		execute(message);
+	}
+	
+	private void updateSenderHistory(String sender) {
+		lastSender = sender;
+		
+		if (lastSenders.size() >= SENDER_HISTORY_SIZE) {
+			List<String> list = new ArrayList<>(lastSenders);
+			Collections.shuffle(list, new Random());
+			list = list.subList(0, SENDER_HISTORY_SIZE - 1);
+			lastSenders.retainAll(list);
+		}
+		
+		lastSenders.add(sender);
 	}
 	
 	public static void main(String[] args) throws Exception {
