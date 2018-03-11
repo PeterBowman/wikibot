@@ -37,10 +37,10 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 	
 	private static final int SENDER_HISTORY_SIZE = 5;
 	
-	private static final Pattern P_CALLBACK_FMT;
+	private static final Pattern P_REPLYTO_FMT;
 	
 	static {
-		P_CALLBACK_FMT = Pattern.compile("^/r +(\\S+) +(.+)$", Pattern.CASE_INSENSITIVE);
+		P_REPLYTO_FMT = Pattern.compile("^/replyto +(\\S+)(?: +(.+))?$", Pattern.CASE_INSENSITIVE);
 	}
 
 	public SimpleMessageForwarderBot(String botUsername, String botToken, long chatId) {
@@ -78,13 +78,23 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 				e.printStackTrace();
 			}
 		} else if (message.hasText() && message.getText().startsWith("/replyto")) {
-			Matcher m = P_CALLBACK_FMT.matcher(message.getText().trim());
+			Matcher m = P_REPLYTO_FMT.matcher(message.getText().trim());
 			
 			if (m.matches()) {
 				String sender = m.group(1);
 				String text = m.group(2);
-				replyCallback.accept(sender, text);
+				
 				updateSenderHistory(sender);
+				
+				if (!Strings.isNullOrEmpty(text)) {
+					replyCallback.accept(sender, text);
+				} else {
+					try {
+						execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard()));
+					} catch (TelegramApiException e) {
+						e.printStackTrace();
+					}
+				}
 			} else {
 				if (!lastSenders.isEmpty()) {
 					SendMessage prompt = new SendMessage(chatId, "Select IRC nick of message recipient.");
@@ -93,7 +103,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					
 					for (String sender : lastSenders) {
 						KeyboardRow row = new KeyboardRow();
-						row.add(sender);
+						row.add(String.format("/replyto %s", sender));
 						keyboard.add(row);
 					}
 					
@@ -107,7 +117,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					}
 				} else {
 					try {
-						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> <msg>"));
+						execute(new SendMessage(chatId, "No senders in history, try: /replyto <nick> [<msg>]"));
 					} catch (TelegramApiException e) {
 						e.printStackTrace();
 					}
@@ -161,14 +171,16 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 	private void updateSenderHistory(String sender) {
 		lastSender = sender;
 		
-		if (lastSenders.size() >= SENDER_HISTORY_SIZE) {
-			List<String> list = new ArrayList<>(lastSenders);
-			Collections.shuffle(list, new Random());
-			list = list.subList(0, SENDER_HISTORY_SIZE - 1);
-			lastSenders.retainAll(list);
+		if (!lastSenders.contains(sender)) {
+			if (lastSenders.size() >= SENDER_HISTORY_SIZE) {
+				List<String> list = new ArrayList<>(lastSenders);
+				Collections.shuffle(list, new Random());
+				list = list.subList(0, SENDER_HISTORY_SIZE - 1);
+				lastSenders.retainAll(list);
+			}
+			
+			lastSenders.add(sender);
 		}
-		
-		lastSenders.add(sender);
 	}
 	
 	public static void main(String[] args) throws Exception {
