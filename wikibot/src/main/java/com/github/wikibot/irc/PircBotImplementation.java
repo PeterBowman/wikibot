@@ -111,6 +111,15 @@ public class PircBotImplementation extends PircBot {
 		}
 	}
 	
+	@Override
+	protected void onConnect() {
+		if (!getNick().equals(getName())) {
+			String line = String.format("MSG NickServ GHOST %s %s", getName(), getPassword());
+			sendRawLine(line);
+			changeNick(getName());
+		}
+	}
+	
 	public static void main(String[] args) throws Exception {
 		File fIrc = new File(LOCATION + "irc.txt");
 		File fTelegramToken = new File(LOCATION + "telegram_token.txt");
