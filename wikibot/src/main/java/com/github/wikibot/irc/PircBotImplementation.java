@@ -8,6 +8,7 @@ import org.jibble.pircbot.PircBot;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
+import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 
 import com.github.wikibot.telegram.SimpleMessageForwarderBot;
 
@@ -124,7 +125,14 @@ public class PircBotImplementation extends PircBot {
 		SimpleMessageForwarderBot telegramBot =
 				new SimpleMessageForwarderBot(TELEGRAM_BOT_USERNAME, telegramToken, Long.parseLong(telegramChatid));
 		
-		botsApi.registerBot(telegramBot);
+		try {
+			botsApi.registerBot(telegramBot);
+		} catch (TelegramApiRequestException e) {
+			e.printStackTrace();
+			System.out.printf("Sleeping %d milliseconds, just in case...%n", RECONNECT_DELAY_MILLIS);
+			Thread.sleep(RECONNECT_DELAY_MILLIS);
+			throw e;
+		}
 		
 		PircBotImplementation ircBot = new PircBotImplementation(telegramBot);
 		
