@@ -46,6 +46,13 @@ public class PircBotImplementation extends PircBot {
 	protected void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname,
 			String recipientNick, String reason) {
 		if (recipientNick.equalsIgnoreCase(getNick())) {
+			try {
+				String message = String.format("kicked by %s! Reason: ", kickerNick, reason);
+				telegramBot.notifyMaintainer(getClass().getSimpleName(), message);
+			} catch (TelegramApiException e) {
+				e.printStackTrace();
+			}
+			
 		    joinChannel(channel);
 		}
 	}
