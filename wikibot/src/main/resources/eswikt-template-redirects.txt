@@ -22,6 +22,7 @@ redireccion suave = redirección suave
 Hipónimos = hipónimo
 Hiperónimos = hiperónimo
 locución preposicional = locución prepositiva
+véase = trad-véase
 
 Ampliable = ampliable
 Definición = definición

@@ -3347,7 +3347,7 @@ public class Editor extends AbstractEditor {
 					getTemplates("trad-arriba", intro).isEmpty() &&
 					getTemplates("trad", intro).isEmpty() &&
 					getTemplates("t+", intro).isEmpty() &&
-					getTemplates("véase", intro).isEmpty() &&
+					getTemplates("trad-véase", intro).isEmpty() &&
 					!intro.matches("(?iu).*?\\b(v[ée]an?se|ver)\\b.*")
 				) {
 					if (intro.matches("(\\[\\[(?iu:category|categoría):.+?\\]\\]\\s*)+")) {
@@ -4776,7 +4776,7 @@ public class Editor extends AbstractEditor {
 		Page page = Page.store(title, text);
 		
 		page.filterSections(s -> s.getStrippedHeader().equals("Traducciones")).stream()
-			.filter(s -> !s.getIntro().contains("{{t+|") && !s.getIntro().contains("véase"))
+			.filter(s -> !s.getIntro().contains("{{t+|") && !s.getIntro().contains("trad-véase"))
 			.filter(s -> !getTemplates("trad-arriba", s.getIntro()).isEmpty())
 			.filter(s -> getTemplates("t+", s.getIntro()).isEmpty())
 			.forEach(s -> s.setIntro(Utils.replaceTemplates(s.getIntro(), "trad-arriba", template ->
