@@ -8,7 +8,6 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -151,7 +150,7 @@ public class PrettyRefServlet extends HttpServlet {
 						backTrace.add(el.toString());
 					}
 					
-					json.put("backtrace", StringUtils.join(backTrace, '\n'));
+					json.put("backtrace", String.join("\n", backTrace));
 					
 					response.setCharacterEncoding("UTF-8");
 					response.setHeader("Content-Type", contentType);
@@ -313,6 +312,7 @@ public class PrettyRefServlet extends HttpServlet {
 			}
 			
 			// figure out the column count
+			@SuppressWarnings("unused")
 			int cols = 1;
 			
 			if (
@@ -335,12 +335,7 @@ public class PrettyRefServlet extends HttpServlet {
 			final Collator coll = Collator.getInstance(new Locale("pl"));
 			coll.setStrength(Collator.SECONDARY);
 			
-			Collections.sort(references, new Comparator<Ref>() {
-				@Override
-				public int compare(Ref r1, Ref r2) {
-					return coll.compare(r1.name, r2.name);
-				}
-			});
+			Collections.sort(references, (r1, r2) -> coll.compare(r1.name, r2.name));
 			
 			// then group them by their group info (that is, by headings they belong to), sort headings
 			final Map<String, String> sectionMapping = new HashMap<>();
@@ -349,14 +344,10 @@ public class PrettyRefServlet extends HttpServlet {
 			
 			final List<String> sectionHeaders = Arrays.asList("Uwagi", "Przypisy");
 					
-			Map<String, List<Ref>> groupedRefs = new TreeMap<>(new Comparator<String>() {
-				@Override
-				public int compare(String s1, String s2) {
-					String temp1 = sectionMapping.get(s1);
-					String temp2 = sectionMapping.get(s2);
-					return Integer.compare(sectionHeaders.indexOf(temp1), sectionHeaders.indexOf(temp2));
-				}
-			});
+			Map<String, List<Ref>> groupedRefs = new TreeMap<>((s1, s2) -> Integer.compare(
+					sectionHeaders.indexOf(sectionMapping.get(s1)),
+					sectionHeaders.indexOf(sectionMapping.get(s2))
+				));
 			
 			for (Ref ref : references) {
 				if (groupedRefs.containsKey(ref.group)) {
@@ -391,7 +382,7 @@ public class PrettyRefServlet extends HttpServlet {
 				
 				lines.add("}}");
 				
-				sections.add(StringUtils.join(lines, '\n'));
+				sections.add(String.join("\n", lines));
 			}
 			
 			// insert new refs section(s) into page code
@@ -402,7 +393,7 @@ public class PrettyRefServlet extends HttpServlet {
 			
 			while (m.find()) {
 				if (!replacedOnce) {
-					String replacement = Matcher.quoteReplacement(StringUtils.join(sections, "\n\n"));
+					String replacement = Matcher.quoteReplacement(String.join("\n\n", sections));
 					m.appendReplacement(sb, replacement);
 					replacedOnce = true;
 				} else {
@@ -542,8 +533,8 @@ public class PrettyRefServlet extends HttpServlet {
 		private final Map<String, Integer> groupRefCounter;
 		
 		static {
-			TLD_RE = Pattern.compile("\\.(" + StringUtils.join(TLD, '|') + ")$");
-			CCTLD_RE = Pattern.compile("\\.(" + StringUtils.join(CCTLD, '|') + ")$");
+			TLD_RE = Pattern.compile("\\.(" + String.join("|", TLD) + ")$");
+			CCTLD_RE = Pattern.compile("\\.(" + String.join("|", CCTLD) + ")$");
 		}
 		
 		private Ref(String str, boolean isShortTag, Map<String, Integer> groupRefCounter) {
@@ -634,12 +625,7 @@ public class PrettyRefServlet extends HttpServlet {
 						break;
 					case "group":
 						group = value;
-						Integer count = groupRefCounter.get(group);
-						
-						if (count == null) {
-							count = 0;
-						}
-						
+						Integer count = groupRefCounter.getOrDefault(group, 0);
 						groupRefCounter.put(group, ++count);
 						name = group + count;
 						break;
@@ -756,7 +742,7 @@ public class PrettyRefServlet extends HttpServlet {
 						}
 						
 						if (ident.isEmpty()) {
-							ident = extractNameFromWords(clearWikitext(StringUtils.join(params.values(), ' ')));
+							ident = extractNameFromWords(clearWikitext(String.join(" ", params.values())));
 						}
 						
 						break;
@@ -772,7 +758,7 @@ public class PrettyRefServlet extends HttpServlet {
 							list.add(m.group());
 						}
 						
-						ident += StringUtils.join(list, '-');
+						ident += String.join("-", list);
 						break;
 					case "Ludzie nauki":
 						String capture = str.replaceFirst(".*?(\\d+).*", "$1");
@@ -880,11 +866,11 @@ public class PrettyRefServlet extends HttpServlet {
 				}
 			}
 			
-			String ident = host.replaceAll(".", "-") + "-" + StringUtils.join(list, '-');
+			String ident = host.replaceAll(".", "-") + "-" + String.join("-", list);
 			
 			while (ident.length() > IDENT_MAX_LEN && !list.isEmpty()) {
 				list.remove(0);
-				ident = host + "-" + StringUtils.join(list, '-');
+				ident = host + "-" + String.join("-", list);
 			}
 			
 			return ident;

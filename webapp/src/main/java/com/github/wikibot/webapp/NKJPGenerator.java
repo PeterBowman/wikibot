@@ -5,7 +5,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,7 +18,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Connection;
@@ -66,14 +64,7 @@ public class NKJPGenerator extends HttpServlet {
 			address = address.replace("&amp;", "&");
 		}
 		
-		Map<String, String> resultMap = new TreeMap<>(new Comparator<String>() {
-			@Override
-			public int compare(String s1, String s2) {
-				int index1 = templateParams.indexOf(s1);
-				int index2 = templateParams.indexOf(s2);
-				return Integer.compare(index1, index2);
-			}
-		});
+		Map<String, String> resultMap = new TreeMap<>((s1, s2) -> Integer.compare(templateParams.indexOf(s1), templateParams.indexOf(s2)));
 		
 		try {
 			generateTemplateData(address, resultMap);
@@ -145,7 +136,7 @@ public class NKJPGenerator extends HttpServlet {
 		remainder.removeAll(params.keySet());
 		
 		if (!remainder.isEmpty()) {
-			throw new RuntimeException("adres musi zawierać parametry: " + StringUtils.join(remainder, ", "));
+			throw new RuntimeException("adres musi zawierać parametry: " + String.join(", ", remainder));
 		}
 		
 		params.put("hash", params.remove("pid"));

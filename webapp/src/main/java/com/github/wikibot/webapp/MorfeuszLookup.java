@@ -5,6 +5,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -120,20 +124,13 @@ public class MorfeuszLookup extends HttpServlet {
 	}
 	
 	private static void handleIllegalAction(PrintWriter writer, JSONObject json, String act) {
-		List<String> list = new ArrayList<>();
-		
-		for (Action action : Action.values()) {
-			list.add(action.toString());
-		}
-		
+		List<String> list = Stream.of(Action.values()).map(Object::toString).collect(Collectors.toList());
 		String err = String.format("unrecognized action: '%s'; available: %s", act, list);
 		writer.append(json.put("error", err).toString());
 	}
 	
 	private static String handleTargetParameter(String target, Action action) {
-		if (target == null) {
-			throw new NullPointerException();
-		}
+		Objects.requireNonNull(target);
 		
 		if (action == Action.generate) {
 			target = target.trim();
@@ -252,52 +249,32 @@ public class MorfeuszLookup extends HttpServlet {
 		
 		public void parse(Map<String, String[]> params) {
 			if (params.containsKey("tokenNumbering") && checkAnalyzerOptions("tokenNumbering")) {
-				parseEnumParam(TokenNumberingValue.class, params.get("tokenNumbering")[0],
-					new Consumer<TokenNumberingValue>() {
-						@Override
-						public void accept(TokenNumberingValue value) {
-							options.tokenNumbering = value.morfeuszType;
-						}
+				parseEnumParam(TokenNumberingValue.class, params.get("tokenNumbering")[0], value -> {
+						options.tokenNumbering = value.morfeuszType;
 					});
 			}
 			
 			if (params.containsKey("caseHandling") && checkAnalyzerOptions("caseHandling")) {
-				parseEnumParam(CaseHandlingValue.class, params.get("caseHandling")[0],
-					new Consumer<CaseHandlingValue>() {
-						@Override
-						public void accept(CaseHandlingValue value) {
-							options.caseHandling = value.morfeuszType;
-						}
+				parseEnumParam(CaseHandlingValue.class, params.get("caseHandling")[0], value -> {
+						options.caseHandling = value.morfeuszType;
 					});
 			}
 			
 			if (params.containsKey("whitespaceHandling") && checkAnalyzerOptions("whitespaceHandling")) {
-				parseEnumParam(WhitespaceHandlingValue.class, params.get("whitespaceHandling")[0],
-					new Consumer<WhitespaceHandlingValue>() {
-						@Override
-						public void accept(WhitespaceHandlingValue value) {
-							options.whitespaceHandling = value.morfeuszType;
-						}
+				parseEnumParam(WhitespaceHandlingValue.class, params.get("whitespaceHandling")[0], value -> {
+						options.whitespaceHandling = value.morfeuszType;
 					});
 			}
 			
 			if (params.containsKey("agglutinationRules")) {
-				parseStringParam(params.get("agglutinationRules")[0], morfeusz.getAvailableAgglOptions(),
-					new Consumer<String>() {
-						@Override
-						public void accept(String value) {
-							options.agglutinationRules = value;
-						}
+				parseStringParam(params.get("agglutinationRules")[0], morfeusz.getAvailableAgglOptions(), value -> {
+						options.agglutinationRules = value;
 					});
 			}
 			
 			if (params.containsKey("pastTenseSegmentation")) {
-				parseStringParam(params.get("pastTenseSegmentation")[0], morfeusz.getAvailablePraetOptions(),
-					new Consumer<String>() {
-						@Override
-						public void accept(String value) {
-							options.pastTenseSegmentation = value;
-						}
+				parseStringParam(params.get("pastTenseSegmentation")[0], morfeusz.getAvailablePraetOptions(), value -> {
+						options.pastTenseSegmentation = value;
 					});
 			}
 		}
@@ -325,12 +302,7 @@ public class MorfeuszLookup extends HttpServlet {
 				E enumValue = Enum.valueOf(enumClass, param);
 				consumer.accept(enumValue);
 			} catch (IllegalArgumentException | NullPointerException e) {
-				List<String> values = new ArrayList<>();
-				
-				for (E enumValue : enumClass.getEnumConstants()) {
-					values.add(enumValue.toString());
-				}
-				
+				List<String> values = Stream.of(enumClass.getEnumConstants()).map(Enum<E>::toString).collect(Collectors.toList());
 				String message = String.format("unsupported option '%s'; available: %s", param, values);
 				warnings.add(message);
 			}
@@ -344,12 +316,5 @@ public class MorfeuszLookup extends HttpServlet {
 				consumer.accept(param);
 			}
 		}
-	}
-	
-	/**
-	 * Java 7 polyfill of java.util.function.Consumer<T>
-	 */
-	private interface Consumer<T> {
-		public void accept(T t);
 	}
 }

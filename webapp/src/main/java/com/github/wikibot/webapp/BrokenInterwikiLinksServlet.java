@@ -408,7 +408,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			targets.add(target);
 		}
 		
-		String values = StringUtils.join(targets, ',');
+		String values = String.join(",", targets);
 		
 		String query = "SELECT"
 			+ " CONVERT(tpage.page_title USING utf8mb4) AS page_title,"
