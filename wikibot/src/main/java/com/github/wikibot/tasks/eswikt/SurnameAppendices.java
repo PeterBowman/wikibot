@@ -3,7 +3,6 @@ package com.github.wikibot.tasks.eswikt;
 import java.io.IOException;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
