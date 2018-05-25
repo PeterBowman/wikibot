@@ -1,0 +1,3 @@
+[submodule "wiki-java"]
+	path = wiki-java
+	url = https://github.com/PeterBowman/wiki-java
