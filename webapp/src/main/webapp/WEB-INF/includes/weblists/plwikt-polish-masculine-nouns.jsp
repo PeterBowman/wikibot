@@ -40,7 +40,13 @@
 		CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;
 </sql:query>
 
-<t:template title="${title}" firstHeading="${title}">
+<t:template title="${title}" firstHeading="${title}" enableJS="true">
+	<jsp:attribute name="head">
+		<link href="${pageContext.request.contextPath}/styles/tipsy.css" type="text/css" rel="stylesheet">
+		<script src="${pageContext.request.contextPath}/scripts/tipsy.js"></script>
+		<script src="${pageContext.request.contextPath}/scripts/definition-popups.js"></script>
+		<script src="${pageContext.request.contextPath}/scripts/plwikt-polish-masculine-nouns.js"></script>
+	</jsp:attribute>
 	<jsp:attribute name="contentSub">
 		<a href="${pageContext.request.contextPath}/weblists">Powrót do indeksu</a>
 	</jsp:attribute>
@@ -49,6 +55,8 @@
 			Hasła polskie opisujące rzeczowniki, zawierające ciąg znaków <code>rodzaj męski</code>
 			w polu <strong>znaczenia</strong>. Należy doprecyzować rodzaj, wstawiając w miejsce drugiego
 			członu wyraz <code>męskorzeczowy</code>, <code>męskozwierzęcy</code> lub <code>męskoosobowy</code>.
+			Najechanie kursorem na dowolny link poskutkuje wyświetleniem okienka z wyciągiem pola znaczeń
+			odpowiedniego hasła w Wikisłowniku.
 			Zobacz też:
 			<a href="https://pl.wiktionary.org/wiki/Kategoria:J%C4%99zyk_polski_-_rzeczowniki_rodzaju_m%C4%99skiego" target="_blank">
 				Kategoria:Język polski - rzeczowniki rodzaju męskiego</a>.
@@ -61,7 +69,7 @@
 		<ol start="${offset + 1}" <c:if test="${result.rowCount gt columnThreshold}">class="column-list"</c:if>>
 			<c:forEach var="row" items="${result.rows}">
 				<li>
-					<t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${row.title}" />
+					<t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${row.title}" sectionName="polski" />
 				</li>
 			</c:forEach>
 		</ol>
