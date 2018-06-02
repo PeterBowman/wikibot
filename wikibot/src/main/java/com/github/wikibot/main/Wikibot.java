@@ -458,11 +458,7 @@ public class Wikibot extends WMFWiki {
     }
 	
 	public String decode(String in) {
-		in = in.replace("&lt;", "<").replace("&gt;", ">"); // html tags
-		in = in.replace("&quot;", "\"");
-		in = in.replace("&#039;", "'");
-		in = in.replace("&amp;", "&");
-		return in;
+		return super.decode(in);
     }
 	
 	protected String[] constructTitleString(String[] titles) throws IOException {
