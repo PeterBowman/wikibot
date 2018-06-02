@@ -169,7 +169,7 @@ public final class InconsistentHeaderTitles {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
+		PageContainer[] pages = wb.getContentOfPages(distinctTitles);
 		Stream.of(pages).parallel().forEach(InconsistentHeaderTitles::findErrors);
 	}
 

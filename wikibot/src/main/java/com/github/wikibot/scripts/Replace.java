@@ -74,7 +74,7 @@ public final class Replace implements Selectorizable {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		
 		Map<String, String> map = Stream.of(pages)
 			.filter(page -> page.getText().contains(target))

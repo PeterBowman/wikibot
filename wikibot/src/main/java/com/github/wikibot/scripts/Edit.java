@@ -213,7 +213,7 @@ public final class Edit implements Selectorizable {
 		String category = "Kategoria:Formy czasownikowe wg języków";
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
 		String[] titles = wb.getCategoryMembers(category, 14);
-		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -250,7 +250,7 @@ public final class Edit implements Selectorizable {
 			return;
 		}
 
-		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		
 		Map<String, String> map = Stream.of(pages)
 			.collect(Collectors.toMap(

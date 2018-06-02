@@ -43,7 +43,7 @@ public class DevanagariIAST implements Selectorizable {
 	
 	public static void getList(boolean edit) throws IOException, LoginException {
 		String[] titles = wb.listPages("", null, PLWikt.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
-		PageContainer[] pages = wb.getContentOfPages(titles, 100);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		List<String> hindi = new ArrayList<>();
 		List<String> nonHindi = new ArrayList<>();
 		

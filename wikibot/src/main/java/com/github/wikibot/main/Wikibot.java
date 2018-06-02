@@ -1,7 +1,6 @@
 package com.github.wikibot.main;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -49,40 +48,25 @@ public class Wikibot extends WMFWiki {
     }
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {
-		return getContentOfPages(pages, slowmax);
-	}
-    
-    public PageContainer[] getContentOfPages(String[] pages, int limit) throws IOException {
-		limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&titles=";
 		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
-		Collection<PageContainer> coll = getListedContent(url, pages, "getContents", biCons, limit);
+		Collection<PageContainer> coll = getListedContent(url, pages, "getContents", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
-		return getContentOfPageIds(pageids, slowmax);
-	}
-    
-    public PageContainer[] getContentOfPageIds(Long[] pageids, int limit) throws IOException {
-		limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&pageids=";
 		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons, limit);
+		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
-		return getContentOfRevIds(revids, slowmax);
-	}
-    
-    public PageContainer[] getContentOfRevIds(Long[] revids, int limit) throws IOException {
-    	limit = Math.min(limit, slowmax);
 		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&revids=";
 		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons, limit);
+		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
     }
 	
@@ -140,40 +124,14 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private <T> Collection<T> getListedContent(String url, String[] titles, String caller,
-			BiConsumer<String, Collection<T>> biCons, int limit)
+			BiConsumer<String, Collection<T>> biCons)
 	throws IOException {
-		int listSize = titles.length;
-		String[] batches = constructTitleString(titles, limit);
-		List<T> list = new ArrayList<>(listSize);
+		String[] batches = constructTitleString(url.length(), titles, true);
+		List<T> list = new ArrayList<>(titles.length);
 		
 		for (int i = 0; i < batches.length; i++) {
-			String line = null;
-			
-			try {
-				line = fetch(url + batches[i], String.format(
-						"%s (%d/%d)",
-						caller, Math.min(limit * (i + 1), listSize), listSize
-					));
-			} catch (IOException e) {
-				if (limit <= 50) {
-					throw e;
-				}
-				
-				System.out.println("Retrying...");
-				StringBuilder sb = new StringBuilder(30000);
-				String decoded = URLDecoder.decode(batches[i], "UTF-8");
-				String[] minibatches = constructTitleString(decoded.split("\\|"), 50);
-				
-				for (int j = 0; j < minibatches.length; j++) {
-					sb.append(fetch(url + minibatches[j], String.format(
-							"%s (%d/%d)",
-							caller, Math.min((i * limit) + (j + 1) * 50, listSize), listSize
-						)));
-				}
-				
-				line = sb.toString();
-			}
-			
+			String localCaller = String.format("%s (%d/%d)", caller, i + 1, batches.length);
+			String line = fetch(url + batches[i], localCaller);
 			biCons.accept(line, list);
 		}
 		
@@ -313,7 +271,7 @@ public class Wikibot extends WMFWiki {
 			}
 		};
 		
-		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", biCons, slowmax);
+		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", biCons);
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
@@ -463,28 +421,6 @@ public class Wikibot extends WMFWiki {
 	
 	public String decode(String in) {
 		return super.decode(in);
-    }
-	
-	protected String[] constructTitleString(String[] titles) throws IOException {
-		return constructTitleString(titles, 50);
-	}
-	
-    protected String[] constructTitleString(String[] titles, int batchSize) throws IOException {
-    	int size = (int) Math.ceil(((double) titles.length) / ((double) batchSize));
-    	String[] ret = new String[size];
-        StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < titles.length; i++)
-        {
-            buffer.append(normalize(titles[i]));
-            if (i == titles.length - 1 || i % batchSize == batchSize - 1)
-            {
-                ret[i / batchSize] = URLEncoder.encode(buffer.toString(), "UTF-8");
-                buffer = new StringBuilder();
-            }
-            else
-                buffer.append("|");
-        }
-        return ret;
     }
     
     public String[] allLinks(String prefix, int namespace) throws IOException {
@@ -809,7 +745,7 @@ public class Wikibot extends WMFWiki {
 		url.append("action=purge");
 		url.append("&forcerecursivelinkupdate=");
 		
-		String[] temp = constructTitleString(titles);
+		String[] temp = constructTitleString(url.length() + "&titles=".length(), titles, true);
 		
 		for (String x : temp) {
 			post(url.toString(), "&titles=" + x, "purgeRecursive");

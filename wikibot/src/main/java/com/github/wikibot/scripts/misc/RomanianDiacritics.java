@@ -74,7 +74,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		int count = 0, testcount = 0;
 		
 		List<String> out = new ArrayList<>();
-		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]), 400);
+		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]));
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();

@@ -74,7 +74,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		String[] inflections = wb.whatTranscludesHere("Szablon:odmiana-czasownik-polski", 0);
 		targets = PLWikt.relativeComplement(targets, inflections);
 		
-		PageContainer[] pages = wb.getContentOfPages(targets, 400);
+		PageContainer[] pages = wb.getContentOfPages(targets);
 		List<PageContainer> serialized = new ArrayList<>();
 		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		

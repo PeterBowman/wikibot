@@ -116,7 +116,7 @@ public class JyddishIpa implements Selectorizable {
 		int errors = 0;
 		StringBuilder sb_list = new StringBuilder(size);
 		
-		PageContainer[] pages = wb.getContentOfPages(int_list, 100);
+		PageContainer[] pages = wb.getContentOfPages(int_list);
 		
 		for (PageContainer page : pages) {
 		//for (Entry<String, String> entry : contenmap.entrySet()) {

@@ -90,8 +90,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		PageContainer[] mascpages = wb.getContentOfPages(
 			nouns.stream()
 				.map(item -> item.alt_gender)
-				.toArray(String[]::new),
-			400
+				.toArray(String[]::new)
 		);
 		
 		int count = 0;

@@ -143,7 +143,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			dictionary = new HashMap<>(form_count);
 		}
 	 	
-		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]), 450);
+		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]));
 		Map<String, Integer> cached = new HashMap<>(dictionary.size());
 		Map<RAE, Integer> live = new HashMap<>();
 		

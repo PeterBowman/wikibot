@@ -121,7 +121,7 @@ public final class CitationTypography {
 		
 		if (!titles.isEmpty()) {
 			String[] combinedTitles = titles.toArray(new String[titles.size()]);
-			PageContainer[] pages = wb.getContentOfPages(combinedTitles, 400);
+			PageContainer[] pages = wb.getContentOfPages(combinedTitles);
 			
 			entries = Stream.of(pages).parallel()
 				.flatMap(CitationTypography::mapOccurrences)
@@ -684,7 +684,7 @@ public final class CitationTypography {
 				String[] arr = titles.toArray(new String[titles.size()]);
 				
 				try {
-					Stream.of(wb.getContentOfPages(arr, 400)).forEach(pc ->
+					Stream.of(wb.getContentOfPages(arr)).forEach(pc ->
 						contentCache.putIfAbsent(pc.getTitle(), pc.getText())
 					);
 				} catch (IOException e) {

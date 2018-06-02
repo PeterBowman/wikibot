@@ -204,7 +204,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!fetchlist.isEmpty()) {
-				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]), 400);
+				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]));
 				
 				for (PageContainer page : temp) {
 					try {
