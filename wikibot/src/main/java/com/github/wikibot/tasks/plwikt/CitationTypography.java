@@ -818,6 +818,11 @@ public final class CitationTypography {
 		try {
 			Calendar basetime = wb.getTopRevision(entry.title).getTimestamp();
 			String pageText = wb.getPageText(entry.title);
+			
+			if (pageText == null) {
+				throw new FileNotFoundException("Page does not exist: " + entry.title);
+			}
+			
 			Page page = Page.store(entry.title, pageText);
 			
 			String summary = String.format(

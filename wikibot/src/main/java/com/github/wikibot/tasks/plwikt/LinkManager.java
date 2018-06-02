@@ -299,7 +299,7 @@ public final class LinkManager implements Selectorizable {
 		wb.edit(mainpage, mainpagetext, summary, false, false, -2, null);
 	}
 	
-	public static void edit(String user, long revid) throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
+	public static void edit(String user, long revid) throws IOException, ClassNotFoundException, LoginException {
 		Map<Integer, LinkDiff> editcodes = Misc.deserialize(f_codes);
 		Map<String, Calendar> timestamps = Misc.deserialize(f_timestamps);
 		
@@ -372,6 +372,11 @@ public final class LinkManager implements Selectorizable {
 			List<LinkDiff> list = entry.getValue();
 			Set<String> difflist = new HashSet<>();
 			String pagetext = wb.getPageText(page);
+			
+			if (pagetext == null) {
+				throw new FileNotFoundException("Page does not exist: " + page);
+			}
+			
 			pagetext = Utils.sanitizeWhitespaces(pagetext);
 			Map<Integer, LineInfo> linemap = new TreeMap<>(Integer::compare);
 			
@@ -808,6 +813,11 @@ public final class LinkManager implements Selectorizable {
 	
 	private static String[] fetchForms(String title) throws IOException {
 		String content = wb.getPageText(title);
+		
+		if (content == null) {
+			throw new FileNotFoundException("Page does not exist: " + title);
+		}
+		
 		final String ERRMSGmissing = "Nie znaleziono szablonu odmiany w kodzie hasła.";
 		final String ERRMSGformat = "Nie udało się uzyskać form fleksyjnych na podstawie szablonu odmiany; wpisz ją ręcznie.";
 		

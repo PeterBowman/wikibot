@@ -180,7 +180,7 @@ public class PolishGerundsList implements Selectorizable {
 		Misc.serialize(substs, locationser + "substs.ser");
 	}
 	
-	public static void writeFormat() throws FileNotFoundException, IOException, LoginException {
+	public static void writeFormat() throws IOException, LoginException {
 		List<String[]> list;
 		
 		try {
@@ -199,6 +199,10 @@ public class PolishGerundsList implements Selectorizable {
 			Calendar cal = rev.getTimestamp();
 			
 			String content = wb.getPageText(page);
+			
+			if (content == null) {
+				throw new FileNotFoundException("Page not found: " + page);
+			}
 			
 			int a = content.indexOf("{{znaczenia}}");
 			a = content.indexOf(") {{rzecz}} ");

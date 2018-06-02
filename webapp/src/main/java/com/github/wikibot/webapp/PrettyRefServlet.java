@@ -98,6 +98,10 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 				}
 				
+				if (text == null) {
+					throw new RuntimeException("Page does not exist: " + title);
+				}
+				
 				String output = cleanRefs(text);
 				String contentType;
 				
