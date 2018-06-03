@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -479,8 +480,8 @@ public final class LinkManager implements Selectorizable {
 				edited++;
 			} catch(CredentialException e) {
 				errormap.put(page, new String[]{"strona zabezpieczona", difflistmod});
-			} catch (UnknownError | UnsupportedOperationException e) {
-				errormap.put(page, new String[]{"prawdopodobnie nastąpił konflikt edycji", difflistmod});
+			} catch (ConcurrentModificationException e) {
+				errormap.put(page, new String[]{"konflikt edycji", difflistmod});
     		}
 		}
 		

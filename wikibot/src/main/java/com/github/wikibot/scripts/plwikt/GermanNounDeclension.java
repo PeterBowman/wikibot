@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -335,7 +336,7 @@ public final class GermanNounDeclension implements Selectorizable {
     		    		
     		try {
     			wb.edit(page, sb.toString(), "stabelkowanie odmiany", false, true, section, cal);
-    		} catch (UnsupportedOperationException e) {
+    		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;
     		}

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -240,7 +241,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		    		
     		try {
     			wb.edit(page, sb.toString(), replaced, false, true, section, cal);
-    		} catch (UnsupportedOperationException e) {
+    		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;
     		}

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -175,7 +176,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
     		try {
 				wb.edit(page, content, summary, true, true, section, cal);
 				edited.add(page);
-			} catch (UnknownError | UnsupportedOperationException e) {
+			} catch (ConcurrentModificationException e) {
     			conflicts.add(page);
     			System.out.println("Error, abortando edición...");
     			continue;

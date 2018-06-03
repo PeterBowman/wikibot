@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -124,8 +125,11 @@ public final class MaintenanceScript {
 				try {
 					wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 					System.out.println(editor.getLogs());
-				} catch (CredentialException e) {
-					logError("Permission denied", pc.getTitle(), e);
+				} catch (CredentialException ce) {
+					logError("Permission denied", pc.getTitle(), ce);
+					continue;
+				} catch (ConcurrentModificationException cme) {
+					logError("Edit conflict", pc.getTitle(), cme);
 					continue;
 				} catch (Throwable t) {
 					logError("Edit error", pc.getTitle(), t);

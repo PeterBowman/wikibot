@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -174,7 +175,7 @@ public final class PolishSurnamesInflection {
 			try {
 				wb.edit(pc.getTitle(), fe.getPageContainer().toString(), EDIT_SUMMARY, pc.getTimestamp());
 				is.insertIntoSet(history);
-			} catch (CredentialException e) {
+			} catch (CredentialException | ConcurrentModificationException e) {
 				e.printStackTrace();
 			} catch (AssertionError | LoginException e) {
 				throw new RuntimeException(e);

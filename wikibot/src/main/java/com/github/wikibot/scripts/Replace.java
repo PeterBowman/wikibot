@@ -112,7 +112,7 @@ public final class Replace implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
 		wb.setThrottle(3000);
-		List<String> conflicts = new ArrayList<>();
+		List<String> errors = new ArrayList<>();
 		
 		String summary = String.format(summaryFormat, target, replacement);
 		//String summary = "usunięcie znaków soft hyphen";
@@ -126,12 +126,12 @@ public final class Replace implements Selectorizable {
 				wb.edit(title, text, summary, true, true, -2, timestamp);
 			} catch (Exception e) {
 				System.out.printf("Error en: %s%n", title);
-				conflicts.add(title);
+				errors.add(title);
 			}
 		}
 		
-		if (!conflicts.isEmpty()) {
-			System.out.printf("%d conflictos en: %s%n", conflicts.size(), conflicts.toString());
+		if (!errors.isEmpty()) {
+			System.out.printf("%d errores en: %s%n", errors.size(), errors.toString());
 		}
 		
 		File f = new File(location + "worklist - done.txt");

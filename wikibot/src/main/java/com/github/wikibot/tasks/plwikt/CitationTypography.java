@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -853,7 +854,7 @@ public final class CitationTypography {
 			conn.rollback();
 			System.exit(0);
 			return false;
-		} catch (IOException | LoginException e) {
+		} catch (IOException | LoginException | ConcurrentModificationException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
 			return false;

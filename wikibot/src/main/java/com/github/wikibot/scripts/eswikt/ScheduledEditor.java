@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -184,8 +185,11 @@ public final class ScheduledEditor {
 		if (editor.isModified()) {
 			try {
 				editEntry(pc, editor);
-			} catch (CredentialException e) {
-				logError("Permission denied", pc.getTitle(), e);
+			} catch (CredentialException ce) {
+				logError("Permission denied", pc.getTitle(), ce);
+				return true;
+			} catch (ConcurrentModificationException cme) {
+				logError("Edit conflict", pc.getTitle(), cme);
 				return true;
 			} catch (Throwable t) {
 				logError("Edit error", pc.getTitle(), t);

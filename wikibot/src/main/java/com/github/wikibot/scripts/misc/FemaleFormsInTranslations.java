@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -364,7 +365,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
     		
     		try {
     			wb.edit(page, newcontent, summary, false, true, section, null);
-    		} catch (UnsupportedOperationException e) {
+    		} catch (ConcurrentModificationException e) {
     			System.out.println("Conflicto - " + page);
     			continue;
     		}
@@ -402,7 +403,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 
     		try {
     			wb.edit(page, newcontent, summary, false, true, section, null);
-    		} catch (UnsupportedOperationException e) {
+    		} catch (ConcurrentModificationException e) {
     			System.out.println("Conflicto - " + page);
     			continue;
     		}
