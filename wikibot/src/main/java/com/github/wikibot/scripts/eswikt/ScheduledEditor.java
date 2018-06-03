@@ -90,7 +90,9 @@ public final class ScheduledEditor {
 			PageContainer[] pages;
 			
 			try {
-				pages = wb.listPagesContent(lastEntry, BATCH, ESWikt.MAIN_NAMESPACE);
+				String[] titles = wb.listPages("", null, ESWikt.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
+				String[] batch = Arrays.copyOfRange(titles, 0, BATCH);
+				pages = wb.getContentOfPages(batch);
 			} catch (IOException | UnknownError e) {
 				e.printStackTrace();
 				sleep();

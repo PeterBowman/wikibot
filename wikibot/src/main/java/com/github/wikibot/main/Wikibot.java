@@ -140,10 +140,6 @@ public class Wikibot extends WMFWiki {
 	}
 
 	private PageContainer[] getGeneratedContent(String url) throws IOException {
-		return getGeneratedContent(url, -1);
-	}
-	
-	private PageContainer[] getGeneratedContent(String url, int limit) throws IOException {
 		ArrayList<PageContainer> list = new ArrayList<>(slowmax * 2);
 		
 		String cont = "continue=";
@@ -154,7 +150,7 @@ public class Wikibot extends WMFWiki {
 	    	cont = parseContinue(line);
 	    	parseContentLine(line, list);
 	    	list.ensureCapacity(list.size() + slowmax);
-	    } while (cont != null && (limit < 0 || list.size() < limit));
+	    } while (cont != null);
 		
 		log(Level.INFO, "getGeneratedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
 		return list.toArray(new PageContainer[list.size()]);
@@ -570,27 +566,6 @@ public class Wikibot extends WMFWiki {
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
-    }
-    
-    public PageContainer[] listPagesContent(String from, int limit, int... ns) throws IOException
-    {
-        // @revised 0.15 to add short/long pages
-        // No varargs namespace here because MW API only supports one namespace
-        // for this module.
-        StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=content%7Ctimestamp&generator=allpages");
-        // max and min
-        if (from != null)
-        {
-            url.append("&gapfrom=");
-            url.append(URLEncoder.encode(from, "UTF-8"));
-        }
-        url.append("&gapfilterredir=nonredirects");
-        limit = Math.min(limit, max);
-        url.append("&gaplimit=" + limit);
-
-        constructNamespaceString(url, "gap", ns);		
-        return getGeneratedContent(url.toString(), limit);
     }
     
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
