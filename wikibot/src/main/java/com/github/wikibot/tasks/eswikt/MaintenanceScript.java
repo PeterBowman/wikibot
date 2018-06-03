@@ -86,7 +86,7 @@ public final class MaintenanceScript {
 		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		
 		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
+		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, endCal, startCal, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		List<String> titles = Stream.of(
 				Stream.of(revs).collect(new RevisionCollector(gapCal)),
