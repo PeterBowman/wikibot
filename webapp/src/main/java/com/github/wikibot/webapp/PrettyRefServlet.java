@@ -1,6 +1,7 @@
 package com.github.wikibot.webapp;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.Collator;
@@ -54,13 +55,13 @@ public class PrettyRefServlet extends HttpServlet {
 	 */
 	public PrettyRefServlet() {
 		super();
-		wiki = new Wiki("pl.wikipedia.org");
+		wiki = Wiki.createInstance("pl.wikipedia.org");
 		
 		// populate the namespace cache, or at least attempt that
 		try {
 			wiki.getNamespaces();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (UncheckedIOException e) {
+			wiki.getNamespaces(); //retry
 		}
 	}
 

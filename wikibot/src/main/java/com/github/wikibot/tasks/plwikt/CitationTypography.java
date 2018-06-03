@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -243,13 +244,7 @@ public final class CitationTypography {
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getPage),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> {
-				try {
-					return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
-				} catch (Exception e) {
-					return false;
-				}
-			})
+			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
 	
@@ -853,7 +848,7 @@ public final class CitationTypography {
 			conn.rollback();
 			System.exit(0);
 			return false;
-		} catch (IOException | LoginException | ConcurrentModificationException e) {
+		} catch (IOException | LoginException | ConcurrentModificationException | UncheckedIOException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
 			return false;

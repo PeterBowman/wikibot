@@ -228,13 +228,7 @@ public final class InconsistentHeaderTitles {
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getPage),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> {
-				try {
-					return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
-				} catch (Exception e) {
-					return false;
-				}
-			})
+			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
 	

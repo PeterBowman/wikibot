@@ -2,17 +2,18 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TimeZone;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,25 +49,25 @@ public class Wikibot extends WMFWiki {
     }
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&titles=";
-		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
-		Collection<PageContainer> coll = getListedContent(url, pages, "getContents", biCons);
+		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
+		List<PageContainer> coll = getListedContent(url, pages, "getContents", "titles", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&pageids=";
-		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
+		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons);
+		List<PageContainer> coll = getListedContent(url, stringified, "getContents", "pageids", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent&revids=";
-		BiConsumer<String, Collection<PageContainer>> biCons = this::parseContentLine;
+		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
-		Collection<PageContainer> coll = getListedContent(url, stringified, "getContents", biCons);
+		List<PageContainer> coll = getListedContent(url, stringified, "getContents", "revids", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
     }
 	
@@ -94,7 +95,7 @@ public class Wikibot extends WMFWiki {
 		
 		constructNamespaceString(sb, "gcm", ns);
 		
-		return getGeneratedContent(sb.toString());
+		return getGeneratedContent(sb, "gcm");
 	}
 	
 	public PageContainer[] getContentOfTransclusions(String page, int... ns) throws IOException {
@@ -107,7 +108,7 @@ public class Wikibot extends WMFWiki {
 		
 		constructNamespaceString(sb, "gei", ns);
 		
-		return getGeneratedContent(sb.toString());
+		return getGeneratedContent(sb, "gei");
 	}
 	
 	public PageContainer[] getContentOfBacklinks(String page, int... ns) throws IOException {
@@ -120,18 +121,20 @@ public class Wikibot extends WMFWiki {
 		
 		constructNamespaceString(sb, "gbl", ns);
 		
-		return getGeneratedContent(sb.toString());
+		return getGeneratedContent(sb, "gbl");
 	}
 	
-	private <T> Collection<T> getListedContent(String url, String[] titles, String caller,
-			BiConsumer<String, Collection<T>> biCons)
+	private <T> List<T> getListedContent(String url, String[] titles, String caller,
+			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
-		String[] batches = constructTitleString(url.length(), titles, true);
+		String[] chunks = constructTitleString(titles);
 		List<T> list = new ArrayList<>(titles.length);
+		Map<String, String> postParams = new HashMap<>();
 		
-		for (int i = 0; i < batches.length; i++) {
-			String localCaller = String.format("%s (%d/%d)", caller, i + 1, batches.length);
-			String line = fetch(url + batches[i], localCaller);
+		for (int i = 0; i < chunks.length; i++) {
+			postParams.put(postParamName, chunks[i]);
+			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.length);
+			String line = fetch(url, postParams, localCaller);
 			biCons.accept(line, list);
 		}
 		
@@ -139,41 +142,12 @@ public class Wikibot extends WMFWiki {
 		return list;
 	}
 
-	private PageContainer[] getGeneratedContent(String url) throws IOException {
-		ArrayList<PageContainer> list = new ArrayList<>(slowmax * 2);
-		
-		String cont = "continue=";
-		String line;
-		
-		do {
-	    	line = fetch(url + "&" + cont, "getGeneratedContent");
-	    	cont = parseContinue(line);
-	    	parseContentLine(line, list);
-	    	list.ensureCapacity(list.size() + slowmax);
-	    } while (cont != null);
-		
-		log(Level.INFO, "getGeneratedContent", "Successfully retrieved page contents (" + list.size() + " revisions)");
+	private PageContainer[] getGeneratedContent(StringBuilder url, String queryPrefix) throws IOException {
+		List<PageContainer> list = queryAPIResult(queryPrefix, url, null, "getGeneratedContent", this::parseContentLine);
 		return list.toArray(new PageContainer[list.size()]);
 	}
 	
-	private String parseContinue(String xml) {
-		int a = xml.indexOf("<continue ");
-		
-		if (a == -1) {
-			return null;
-		}
-		
-		int b = xml.indexOf("/>", a);
-		String[] params = xml.substring(a + "<continue ".length(), b).split(" ");
-		
-		String out = Stream.of(params)
-			.map(param -> param.replace("\"", ""))
-			.collect(Collectors.joining("&"));
-		
-		return out;
-	}
-	
-	private void parseContentLine(String line, Collection<PageContainer> list) {
+	private void parseContentLine(String line, List<PageContainer> list) {
 		Document doc = Jsoup.parse(line, "", Parser.xmlParser());
 		doc.outputSettings().prettyPrint(false);
 		
@@ -188,7 +162,7 @@ public class Wikibot extends WMFWiki {
 			.forEach(list::add);
 	}
 	
-	public Map<String, Calendar> getTimestamps(String[] pages) throws IOException {
+	public Map<String, OffsetDateTime> getTimestamps(String[] pages) throws IOException {
 		return Stream.of(getTopRevision(pages))
 			.collect(Collectors.toMap(
 				Revision::getPage,
@@ -196,8 +170,34 @@ public class Wikibot extends WMFWiki {
 			));
 	}
 	
+	private String convertTimestamp(String timestamp)
+    {
+        StringBuilder ts = new StringBuilder(timestamp.substring(0, 4));
+        ts.append(timestamp.substring(5, 7));
+        ts.append(timestamp.substring(8, 10));
+        ts.append(timestamp.substring(11, 13));
+        ts.append(timestamp.substring(14, 16));
+        ts.append(timestamp.substring(17, 19));
+        return ts.toString();
+    }
+	
+	private final Calendar timestampToCalendar(String timestamp, boolean api)
+    {
+        Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone(timezone));
+        if (api)
+            timestamp = convertTimestamp(timestamp);
+        int year = Integer.parseInt(timestamp.substring(0, 4));
+        int month = Integer.parseInt(timestamp.substring(4, 6)) - 1; // January == 0!
+        int day = Integer.parseInt(timestamp.substring(6, 8));
+        int hour = Integer.parseInt(timestamp.substring(8, 10));
+        int minute = Integer.parseInt(timestamp.substring(10, 12));
+        int second = Integer.parseInt(timestamp.substring(12, 14));
+        calendar.set(year, month, day, hour, minute, second);
+        return calendar;
+    }
+	
 	@Deprecated
-	public Map<String, Calendar> getTimestamps(Collection<? extends String> pages) throws IOException {
+	public Map<String, OffsetDateTime> getTimestamps(Collection<? extends String> pages) throws IOException {
 		return Stream.of(getTopRevision(pages.toArray(new String[pages.size()])))
 			.collect(Collectors.toMap(
 				Revision::getPage,
@@ -225,7 +225,7 @@ public class Wikibot extends WMFWiki {
 			+ (title != null ? "title=" + title + "&" : "")
 			+ "text=" + URLEncoder.encode(text, "UTF-8");
 		
-		String line = fetch(url, "expandTemplates");
+		String line = fetch(url, null, "expandTemplates");
 		
 		int a = line.indexOf("<wikitext ");
 		a = line.indexOf(">", a) + 1;
@@ -239,15 +239,15 @@ public class Wikibot extends WMFWiki {
     }
 	
 	public String parsePage(String page, int section) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append("prop=text&");
-        sb.append("page=" + URLEncoder.encode(page, "UTF-8"));
+		Map<String, String> postParams = new HashMap<>();
+		postParams.put("prop", "text");
+		postParams.put("page", URLEncoder.encode(page, "UTF-8"));
         
         if (section != -1) {
-        	sb.append("&section=" + section);
+        	postParams.put("section", Integer.toString(section));
         }
         
-        String response = post(apiUrl + "action=parse", sb.toString(), "parse");
+        String response = fetch(apiUrl + "action=parse", postParams, "parse");
         int y = response.indexOf('>', response.indexOf("<text ")) + 1;
         int z = response.indexOf("</text>");
         return decode(response.substring(y, z));
@@ -256,9 +256,9 @@ public class Wikibot extends WMFWiki {
 	public Revision[] getTopRevision(String[] titles) throws IOException {
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        url.append("&meta=tokens&type=rollback&titles=");
+        url.append("&meta=tokens&type=rollback");
 		
-		BiConsumer<String, Collection<Revision>> biCons = (line, list) -> {
+		BiConsumer<String, List<Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
 				String title = parseAttribute(line, "title", page);
 				int start = line.indexOf("<rev ", page);
@@ -267,7 +267,7 @@ public class Wikibot extends WMFWiki {
 			}
 		};
 		
-		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", biCons);
+		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", "titles", biCons);
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
@@ -275,27 +275,21 @@ public class Wikibot extends WMFWiki {
 		return getWikiTimestamp(timezone);
 	}
 	
-	public static String getWikiTimestamp(String timezone) {
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		dateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
-		Calendar cal = Calendar.getInstance();
-		return dateFormat.format(cal.getTime()).replace(" ", "T") + "Z";
+	public static String getWikiTimestamp(ZoneId timezone) {
+		OffsetDateTime now = OffsetDateTime.now(timezone);
+		return now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 	}
 	
-	protected String calendarToTimestamp(Calendar c, boolean api) {
-		if (api) {
-			return String.format(
-				"%04d%02d%02dT%02d%02d%02dZ",
-				c.get(Calendar.YEAR),
-				c.get(Calendar.MONTH) + 1,
-				c.get(Calendar.DAY_OF_MONTH),
-				c.get(Calendar.HOUR_OF_DAY),
-				c.get(Calendar.MINUTE),
-				c.get(Calendar.SECOND)
-			);
-		} else {
-			return super.calendarToTimestamp(c);
-		}
+	protected String calendarToTimestamp(Calendar c) {
+		return String.format(
+			"%04d%02d%02dT%02d%02d%02dZ",
+			c.get(Calendar.YEAR),
+			c.get(Calendar.MONTH) + 1,
+			c.get(Calendar.DAY_OF_MONTH),
+			c.get(Calendar.HOUR_OF_DAY),
+			c.get(Calendar.MINUTE),
+			c.get(Calendar.SECOND)
+		);
 	}
 	
 	public Revision[] recentChanges(Calendar starttimestamp, Calendar endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
@@ -304,7 +298,7 @@ public class Wikibot extends WMFWiki {
 		Calendar endCal = (Calendar) endtimestamp.clone();
 		startCal.setTimeZone(TimeZone.getTimeZone("UTC"));
 		endCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-		return recentChanges(calendarToTimestamp(startCal, true), calendarToTimestamp(endCal, true), rcoptions, rctypes, toponly, excludeUser, ns);
+		return recentChanges(calendarToTimestamp(startCal), calendarToTimestamp(endCal), rcoptions, rctypes, toponly, excludeUser, ns);
 	}
 	
 	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
@@ -394,22 +388,13 @@ public class Wikibot extends WMFWiki {
         	sb_url.append("&rcend=" + endtimestamp);
         }
         
-        String url = sb_url.toString();
-        String cont = "continue=";
-
-        List<Revision> revisions = new ArrayList<>(500);
-        
-        do {
-            String line = fetch(url + "&" + cont, "recentChanges");
-            cont = parseContinue(line);
-            
-            // xml form <rc type="edit" ns="0" title="Main Page" ... />
-            for (int i = line.indexOf("<rc "); i != -1; i = line.indexOf("<rc ", ++i)) {
+        List<Revision> revisions = queryAPIResult("rc", sb_url, null, "recentChanges", (line, results) -> {
+        	for (int i = line.indexOf("<rc "); i != -1; i = line.indexOf("<rc ", ++i)) {
                 int j = line.indexOf("/>", i);
-                revisions.add(parseRevision(line.substring(i, j), ""));
+                results.add(parseRevision(line.substring(i, j), ""));
             }
-        } while (cont != null);
-        
+        });
+
         int temp = revisions.size();
         log(Level.INFO, "Successfully retrieved recent changes (" + temp + " revisions)", "recentChanges");
         return revisions.toArray(new Revision[temp]);
@@ -441,30 +426,12 @@ public class Wikibot extends WMFWiki {
 		url.append("&alnamespace=");
 		url.append(namespace);
 		url.append("&alunique=");
-		url.append("&rawcontinue=");
 		
-		List<String> pages = new ArrayList<>(6667);
-		String next = null;
-		
-		do {
-			String s = url.toString();
-			
-			if (next != null) {
-				s += ("&alcontinue=" + URLEncoder.encode(next, "UTF-8"));
-			}
-			
-			String line = fetch(s, "allLinks");
-			
-			if (line.contains("alcontinue=")) {
-				next = parseAttribute(line, "alcontinue", 0);
-			} else {
-				next = null;
-			}
-			
+		List<String> pages = queryAPIResult("al", url, null, "allPages", (line, results) -> {
 			for (int a = line.indexOf("<l "); a > 0; a = line.indexOf("<l ", ++a)) {
-				pages.add(parseAttribute(line, "title", a));
+				results.add(parseAttribute(line, "title", a));
 			}
-		} while (next != null);
+		});
 		
 		// tidy up
 		int size = pages.size();
@@ -536,32 +503,12 @@ public class Wikibot extends WMFWiki {
             url.append("&apfilterredir=nonredirects");
 
         // parse
-        List<String> pages = new ArrayList<>(6667);
-        String next = null;
-        url.append("&rawcontinue=");
-        do
-        {
-            // connect and read
-            String s = url.toString();
-            if (next != null)
-                s += ("&apcontinue=" + URLEncoder.encode(next, "UTF-8"));
-            String line = fetch(s, "listPages");
-
-            // don't set a continuation if no max, min, prefix or protection level
-            if (from != null && to != null && prefix.isEmpty() && protectionstate == null)
-                next = null;
-            // find next value
-            else if (line.contains("apcontinue="))
-                next = parseAttribute(line, "apcontinue", 0);
-            else
-                next = null;
-
-            // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
+        List<String> pages = queryAPIResult("ap", url, null, "listPages", (line, results) -> {
+        	// xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
-                pages.add(parseAttribute(line, "title", a));
-        }
-        while (next != null);
-
+            	results.add(parseAttribute(line, "title", a));
+        });
+        
         // tidy up
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
@@ -570,31 +517,17 @@ public class Wikibot extends WMFWiki {
     
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
     	Map<String, List<String[]>> map = new HashMap<>(max);
-    	String url = query + "list=iwbacklinks&iwbllimit=max&iwblprop=iwprefix%7Ciwtitle";
-    	url += "&rawcontinue=";
+    	StringBuilder url = new StringBuilder(query);
+    	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwprefix%7Ciwtitle");
     	String next = null;
     	
-    	do {
-			String s = url;
-			
-			if (next != null) {
-				s += ("&iwblcontinue=" + URLEncoder.encode(next, "UTF-8"));
-			}
-			
-			String line = fetch(s, "allIwBacklinks");
-			
-			if (line.contains("iwblcontinue=")) {
-				next = parseAttribute(line, "iwblcontinue", 0);
-			} else {
-				next = null;
-			}
-			
-			for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
+    	queryAPIResult("iwbl", url, null, "allIwBacklinks", (line, results) -> {
+    		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
 				String iwTitle = parseAttribute(line, "iwtitle", a);
 				
 				if (iwTitle.isEmpty()) {
-					continue;
+					return;
 				}
 				
 				String iwPrefix = parseAttribute(line, "iwprefix", a);
@@ -608,7 +541,7 @@ public class Wikibot extends WMFWiki {
 					map.put(title, list);
 				}
 			}
-		} while (next != null);
+    	});
     	
     	log(Level.INFO, "allIwBacklinks", "Successfully retrieved interwiki backlinks list (" + map.size() + " pages)");
     	return map;
@@ -618,36 +551,20 @@ public class Wikibot extends WMFWiki {
     	Map<String, List<String>> map = new HashMap<>(max);
     	StringBuilder url = new StringBuilder(query);
     	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
-    	url.append("&rawcontinue=");
     	
     	if (prefix == null || prefix.isEmpty()) {
     		throw new UnsupportedOperationException("Null or empty prefix parameter.");
     	}
     	
     	url.append("&iwblprefix=" + prefix);
-    	String next = null;
     	
-    	do {
-			String s = url.toString();
-			
-			if (next != null) {
-				s += ("&iwblcontinue=" + URLEncoder.encode(next, "UTF-8"));
-			}
-			
-			String line = fetch(s, "allIwBacklinksWithPrefix");
-			
-			if (line.contains("iwblcontinue=")) {
-				next = parseAttribute(line, "iwblcontinue", 0);
-			} else {
-				next = null;
-			}
-			
-			for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
+    	queryAPIResult("iwbl", url, null, "allIwBacklinksWithPrefix", (line, results) -> {
+    		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
 				String iwTitle = parseAttribute(line, "iwtitle", a);
 				
 				if (iwTitle.isEmpty()) {
-					continue;
+					return;
 				}
 				
 				if (map.containsKey(title)) {
@@ -659,15 +576,13 @@ public class Wikibot extends WMFWiki {
 					map.put(title, list);
 				}
 			}
-		} while (next != null);
+    	});
     	
     	log(Level.INFO, "allIwBacklinksWithPrefix", "Successfully retrieved interwiki backlinks list (" + map.size() + " pages)");
     	return map;
     }
     
     public String[] searchIwBacklinks(String prefix, String target) throws IOException {
-    	List<String> list = new ArrayList<>();
-    	
     	StringBuilder url = new StringBuilder(query);
     	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
     	
@@ -681,29 +596,13 @@ public class Wikibot extends WMFWiki {
     	
     	url.append("&iwblprefix=" + prefix);
     	url.append("&iwbltitle=" + target);
-    	url.append("&rawcontinue=");
-    	String next = null;
     	
-    	do {
-			String s = url.toString();
-			
-			if (next != null) {
-				s += ("&iwblcontinue=" + URLEncoder.encode(next, "UTF-8"));
-			}
-			
-			String line = fetch(s, "searchIwBacklinks");
-			
-			if (line.contains("iwblcontinue=")) {
-				next = parseAttribute(line, "iwblcontinue", 0);
-			} else {
-				next = null;
-			}
-			
-			for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
+    	List<String> list = queryAPIResult("iwbl", url, null, "searchIwBacklinks", (line, results) -> {
+    		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
-				list.add(title);
+				results.add(title);
 			}
-		} while (next != null);
+    	});
     	
     	log(Level.INFO, "searchIwBacklinks", "Successfully retrieved interwiki backlinks list (" + list.size() + " pages)");
     	return list.toArray(new String[list.size()]);
@@ -717,44 +616,14 @@ public class Wikibot extends WMFWiki {
 	 */
 	public void purgeRecursive(String... titles) throws IOException {
 		StringBuilder url = new StringBuilder(apiUrl);
-		url.append("action=purge");
-		url.append("&forcerecursivelinkupdate=");
-		
-		String[] temp = constructTitleString(url.length() + "&titles=".length(), titles, true);
-		
-		for (String x : temp) {
-			post(url.toString(), "&titles=" + x, "purgeRecursive");
-		}
-		
-		log(Level.INFO, "purgeRecursive", "Successfully purged " + titles.length + " pages.");
+        url.append("action=purge");
+        url.append("&forcerecursivelinkupdate=1");
+        Map<String, String> postparams = new HashMap<>();
+        for (String x : constructTitleString(titles))
+        {
+            postparams.put("title", x);
+            fetch(url.toString(), postparams, "purge");
+        }
+        log(Level.INFO, "purgeRecursive", "Successfully purged " + titles.length + " pages.");
 	}
-    
-    public void fetchRequest(Map<String, String> params, String tag, Consumer<String> cons) throws IOException {
-    	List<String> temp = new ArrayList<>(params.size());
-    	
-    	for (Entry<String, String> entry : params.entrySet()) {
-    		String key = entry.getKey();
-    		String value = URLEncoder.encode(entry.getValue(), "UTF-8");
-    		temp.add((String.format("%s=%s", key, value)));
-    	}
-    	
-    	String url = query + String.join("&", temp) + "&continue=";
-    	String cont = null;
-    	String splitString = String.format("(?=<%s )", tag);
-    	
-    	do {
-    		String line = fetch(url, "custom request");
-    		String[] splits = line.split(splitString);
-    		
-    		if (splits.length < 2) {
-    			break;
-    		}
-    		
-			cont = parseContinue(splits[0]);
-			
-			for (int i = 1; i < splits.length; i++) {
-				cons.accept(splits[i]);
-			}
-    	} while (cont != null);
-    }
 }

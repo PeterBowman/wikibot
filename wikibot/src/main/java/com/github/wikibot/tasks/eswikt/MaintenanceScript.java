@@ -305,13 +305,7 @@ public final class MaintenanceScript {
 				.filter(log -> log.getTimestamp().before(cal))
 				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
 				.map(log -> (String) log.getDetails())
-				.filter(title -> {
-					try {
-						return wb.namespace(title) == Wiki.MAIN_NAMESPACE;
-					} catch (Exception e) {
-						return false;
-					}
-				})
+				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
 				.collect(Collectors.toList());
 		}
 	

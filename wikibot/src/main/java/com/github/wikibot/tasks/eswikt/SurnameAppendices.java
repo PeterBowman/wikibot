@@ -122,13 +122,7 @@ public final class SurnameAppendices {
 	
 	private static List<String> getLinksOnPage(String page) throws IOException {
 		return Stream.of(wb.getLinksOnPage(page))
-			.filter(link -> {
-				try {
-					return wb.namespace(link) == Wiki.MAIN_NAMESPACE;
-				} catch (IOException e) {
-					return false; // should never happen, assume that namespace cache has been populated
-				}
-			})
+			.filter(link -> wb.namespace(link) == Wiki.MAIN_NAMESPACE)
 			.collect(Collectors.toList());
 	}
 	

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +60,7 @@ public final class MassReview {
 				
 				wb.review(rev, summary);
 				lastReviewed = title;
-			} catch (IOException e1) {
+			} catch (IOException | UncheckedIOException e1) {
 				System.out.println(e1.getMessage());
 				e1.printStackTrace();
 				iterator.previous();

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -86,7 +87,7 @@ public final class LinkManager implements Selectorizable {
 					wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 					patrol();
 					wb.logout();
-				} catch (IOException e) {
+				} catch (IOException | UncheckedIOException e) {
 					e.printStackTrace();
 					Thread.sleep(10 * 60 * 1000);
 					selector(op);

@@ -2,6 +2,7 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
@@ -64,17 +65,17 @@ public class PLWikt extends Wikibot {
             throw new CredentialNotFoundException("Permission denied: cannot review.");
 		}
 		
-		StringBuilder sb = new StringBuilder();
+		Map<String, String> postParams = new HashMap<>();
 		
 		if (comment != null && !comment.isEmpty()) {
-			sb.append("comment=" + comment + "&");
+			postParams.put("comment", comment);
 		}
 		
-		sb.append("flag_accuracy=1&");
-		sb.append("revid=" + rev.getRevid() + "&");
-		sb.append("token=" + URLEncoder.encode(getToken("csrf"), "UTF-8"));
-				
-		String response = post(apiUrl + "action=review", sb.toString(), "review");
+		postParams.put("flag_accuracy", "1");
+		postParams.put("revid", Long.toString(rev.getRevid()));
+		postParams.put("token", URLEncoder.encode(getToken("csrf"), "UTF-8"));
+		
+		String response = fetch(apiUrl + "action=review", postParams, "review");
 		checkErrorsAndUpdateStatus(response, "review");
 		log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());
 	}
