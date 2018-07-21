@@ -5,7 +5,8 @@ import java.util.stream.Stream;
 public enum Domains {
 	PLWIKT ("pl.wiktionary.org"),
 	ESWIKT ("es.wiktionary.org"),
-	PLQUOTE ("pl.wikiquote.org");
+	PLQUOTE ("pl.wikiquote.org"),
+	PLWIKI ("pl.wikipedia.org");
 	
 	private String domain;
 	
