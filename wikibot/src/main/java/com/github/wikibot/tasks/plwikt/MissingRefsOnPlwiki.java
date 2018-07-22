@@ -116,10 +116,12 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", foundArticles);
 		
 		String[] plwikiRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
-		String[] resolvedRedirs = updateRedirs(plwiktToPlwiki, foundPlwikiTitles, plwikiRedirs);
+		Map<String, String> titleToRedir = new HashMap<>(foundPlwikiTitles.length);
+		String[] resolvedRedirs = translateRedirs(foundPlwikiTitles, plwikiRedirs, titleToRedir);
+		
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
 		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
-		removeFoundOccurrences(plwiktToPlwiki, plwikiToPlwikt);
+		removeFoundOccurrences(plwiktToPlwiki, plwikiToPlwikt, titleToRedir);
 		
 		int filteredTitles = plwiktToPlwiki.size();
 		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", filteredTitles);
@@ -144,7 +146,7 @@ public class MissingRefsOnPlwiki {
 				Misc.makePluralPL(filteredTitles)
 			);
 		
-		out += makeOutput(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles);
+		out += makeOutput(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles, titleToRedir);
 		
 		plwikt.edit(TARGET_PAGE, out, "aktualizacja");
 	}
@@ -201,8 +203,7 @@ public class MissingRefsOnPlwiki {
 		return list.toArray(new String[list.size()]);
 	}
 	
-	private static String[] updateRedirs(Map<String, Set<String>> map, String[] titles, String[] redirs) {
-		Map<String, String> titleToRedir = new HashMap<>(titles.length);
+	private static String[] translateRedirs(String[] titles, String[] redirs, Map<String, String> titleToRedir) {
 		String[] updatedTitles = new String[titles.length];
 		
 		for (int i = 0; i < titles.length; i++) {
@@ -211,15 +212,6 @@ public class MissingRefsOnPlwiki {
 				updatedTitles[i] = redirs[i];
 			} else {
 				updatedTitles[i] = titles[i];
-			}
-		}
-		
-		for (Set<String> targets : map.values()) {
-			for (String target : targets) {
-				if (titleToRedir.containsKey(target)) {
-					targets.remove(target);
-					targets.add(titleToRedir.get(target));
-				}
 			}
 		}
 		
@@ -268,13 +260,15 @@ public class MissingRefsOnPlwiki {
 		return set;
 	}
 	
-	private static void removeFoundOccurrences(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt) {
+	private static void removeFoundOccurrences(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
+			Map<String, String> titleToRedir) {
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 			Iterator<String> it = e.getValue().iterator();
 			
 			while (it.hasNext()) {
 				String plwikiTitle = it.next();
+				plwikiTitle = titleToRedir.getOrDefault(plwikiTitle, plwikiTitle);
 				Set<String> backlinks = plwikiToPlwikt.get(plwikiTitle);
 				
 				if (backlinks != null && backlinks.contains(plwiktTitle)) {
@@ -287,15 +281,22 @@ public class MissingRefsOnPlwiki {
 	}
 	
 	private static String makeOutput(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
-			Set<String> missingPlwikiTitles) {
+			Set<String> missingPlwikiTitles, Map<String, String> titleToRedir) {
 		List<String> out = new ArrayList<>(plwiktToPlwiki.size());
 		
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 			
 			for (String articleOnPlwiki : e.getValue()) {
+				String s = String.format("#[[%s]] ↔ [[w:%s]]", plwiktTitle, articleOnPlwiki);
+				
+				if (titleToRedir.containsKey(articleOnPlwiki)) {
+					articleOnPlwiki = titleToRedir.get(articleOnPlwiki);
+					s += String.format(" ↔ [[w:%s]]", articleOnPlwiki);
+				}
+				
 				if (missingPlwikiTitles.contains(articleOnPlwiki)) {
-					String s = String.format("#[[%s]] ↔ [[w:%s]] (artykuł nie istnieje)", plwiktTitle, articleOnPlwiki);
+					s += " (artykuł nie istnieje)";
 					out.add(s);
 				} else {
 					Set<String> entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
@@ -305,10 +306,9 @@ public class MissingRefsOnPlwiki {
 							.map(entry -> String.format("[[%s]]", entry))
 							.collect(Collectors.joining(", "));
 						
-						String s = String.format("#[[%s]] ↔ [[w:%s]] (linkuje do: %s)", plwiktTitle, articleOnPlwiki, links);
+						s += String.format(" (linkuje do: %s)", links);
 						out.add(s);
 					} else {
-						String s = String.format("#[[%s]] ↔ [[w:%s]]", plwiktTitle, articleOnPlwiki);
 						out.add(s);
 					}
 				}
