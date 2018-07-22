@@ -229,9 +229,9 @@ public class MissingRefsOnPlwiki {
 	private static Set<String> getPlwiktBacklinks(String title, String text) {
 		Set<String> set = new HashSet<>();
 		
-		for (Map.Entry<String, List<String>> e : TARGET_TEMPLATES.entrySet()) {
-			String templateName = e.getKey();
-			List<String> params = e.getValue();
+		for (Map.Entry<String, List<String>> templateEntry : TARGET_TEMPLATES.entrySet()) {
+			String templateName = templateEntry.getKey();
+			List<String> params = templateEntry.getValue();
 			List<String> templates = ParseUtils.getTemplatesIgnoreCase(templateName, text);
 			
 			for (String template : templates) {
@@ -246,12 +246,18 @@ public class MissingRefsOnPlwiki {
 						}
 					}
 				} else {
-					String value = paramMap.getOrDefault("ParamWithoutName1", "");
-					
-					if (!value.isEmpty()) {
-						set.add(value);
-					} else {
-						set.add(title);
+					for (Map.Entry<String, String> paramEntry : paramMap.entrySet()) {
+						String paramName = paramEntry.getKey();
+						
+						if (paramName.matches("^ParamWithoutName\\d+$")) {
+							String value = paramEntry.getValue();
+							
+							if (!value.isEmpty()) {
+								set.add(value);
+							} else {
+								set.add(title);
+							}
+						}
 					}
 				}
 			}
