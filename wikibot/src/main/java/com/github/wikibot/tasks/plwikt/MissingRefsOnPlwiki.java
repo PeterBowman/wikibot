@@ -46,10 +46,31 @@ public class MissingRefsOnPlwiki {
 		
 		TARGET_TEMPLATES.put("Wikisłownik", null);
 		TARGET_TEMPLATES.put("Siostrzane projekty", Arrays.asList("słownik"));
+		TARGET_TEMPLATES.put("Artefakt legendarny infobox", Arrays.asList("słownik"));
+		TARGET_TEMPLATES.put("Białko infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Biogram infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Element elektroniczny infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Imię infobox", Arrays.asList("wikisłownik"));
 		//TARGET_TEMPLATES.put("Język infobox", Arrays.asList("wikisłownik")); // links back to categories only
+		TARGET_TEMPLATES.put("Kraina historyczna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Miasto infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Roślina infobox", Arrays.asList("wikisłownik"));		
+		TARGET_TEMPLATES.put("Miejscowość infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Minerał infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Narzędzie infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("POL miasto infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Postać fikcyjna infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Postać religijna infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Preparat leczniczy infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Roślina infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Rzeka infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Takson infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Wielokąt infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wieś infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Wojna infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Złącze infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Związek chemiczny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Zwierzę infobox", Arrays.asList("wikisłownik"));
 		
 		final String templates = TARGET_TEMPLATES.entrySet().stream()
