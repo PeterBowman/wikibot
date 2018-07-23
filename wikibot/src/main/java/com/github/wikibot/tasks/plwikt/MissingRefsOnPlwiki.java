@@ -148,6 +148,7 @@ public class MissingRefsOnPlwiki {
 		
 		out += makeOutput(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles, titleToRedir);
 		
+		plwikt.setMarkBot(false);
 		plwikt.edit(TARGET_PAGE, out, "aktualizacja");
 	}
 	
