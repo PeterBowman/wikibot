@@ -23,6 +23,7 @@ Hipónimos = hipónimo
 Hiperónimos = hiperónimo
 locución preposicional = locución prepositiva
 véase = trad-véase
+utcs = setc
 
 Ampliable = ampliable
 Definición = definición
