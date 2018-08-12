@@ -147,6 +147,7 @@ judaísmo = Judaísmo
 juegos = Juegos
 lagos = Lagos, Topónimos
 lenguas = Lenguas
+lgbt = LGBT
 lingüística = Lingüística
 literatura = Literatura
 lógica = Lógica
