@@ -96,6 +96,7 @@ estomatología = Estomatología
 ética = Ética
 farmacología = Farmacología
 fármacos = Fármacos
+feminismo = Feminismo
 festividades = Festividades
 ficción = Ficción fantástica
 filatelia = Filatelia
