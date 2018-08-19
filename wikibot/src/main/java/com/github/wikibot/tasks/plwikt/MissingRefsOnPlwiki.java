@@ -59,7 +59,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Narzędzie infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("POL miasto infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Polskie miasto infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Postać fikcyjna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Postać religijna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Preparat leczniczy infobox", Arrays.asList("wikisłownik"));
