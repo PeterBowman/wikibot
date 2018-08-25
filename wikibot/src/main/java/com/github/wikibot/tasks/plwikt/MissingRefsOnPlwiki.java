@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,6 +108,9 @@ public class MissingRefsOnPlwiki {
 	public static void main(String[] args) throws Exception {
 		plwikt = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		plwiki = Login.retrieveSession(Domains.PLWIKI, Users.USER2);
+
+		// populate namespace cache
+		plwikt.getNamespaces();
 
 		PageContainer[] plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
 
@@ -308,6 +312,22 @@ public class MissingRefsOnPlwiki {
 		plwiktToPlwiki.entrySet().removeIf(e -> e.getValue().isEmpty());
 	}
 
+	private static String sanitizeBacklinkEntries(String entry) {
+		int ns = 0;
+
+		try {
+			ns = plwikt.namespace(entry);
+		} catch (IOException e) {
+			// namespace cache was already populated, we should not be here
+		}
+
+		if (ns == Wiki.CATEGORY_NAMESPACE) {
+			entry = ":" + entry;
+		}
+
+		return entry;
+	}
+
 	private static String makeOutput(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
 			Set<String> missingPlwikiTitles, Map<String, String> titleToRedir) {
 		List<String> out = new ArrayList<>(plwiktToPlwiki.size());
@@ -331,6 +351,7 @@ public class MissingRefsOnPlwiki {
 
 					if (!entriesOnPlwikt.isEmpty()) {
 						String links = entriesOnPlwikt.stream()
+								.map(MissingRefsOnPlwiki::sanitizeBacklinkEntries)
 								.map(entry -> String.format("[[%s]]", entry))
 								.collect(Collectors.joining(", "));
 
