@@ -24,6 +24,9 @@ Hiperónimos = hiperónimo
 locución preposicional = locución prepositiva
 véase = trad-véase
 utcs = setc
+trans-top = trad-arriba
+trans-mid = trad-centro
+trans-bottom = trad-abajo
 
 Ampliable = ampliable
 Definición = definición
