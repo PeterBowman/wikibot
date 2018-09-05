@@ -234,7 +234,7 @@ public final class CitationTypography {
 		}
 		
 		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, Wiki.MAIN_NAMESPACE);
+		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG,
 			"move", null, "", Wiki.ALL_NAMESPACES);
 		

@@ -81,10 +81,10 @@ public final class MaintenanceScript {
 			return;
 		}
 		
-		int rcoptions = Wikibot.HIDE_REDIRECT | Wiki.HIDE_BOT;
+		int rcoptions = Wikibot.HIDE_REDIRECT;
 		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Wiki.MAIN_NAMESPACE);
+		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
 		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
 		
 		List<String> titles = Stream.of(

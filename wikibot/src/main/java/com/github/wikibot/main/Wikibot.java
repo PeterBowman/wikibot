@@ -344,16 +344,16 @@ public class Wikibot extends WMFWiki {
 		}
 	}
 	
-	public Revision[] recentChanges(Calendar starttimestamp, Calendar endtimestamp, int rcoptions, int rctypes, boolean toponly, int... ns) throws IOException
+	public Revision[] recentChanges(Calendar starttimestamp, Calendar endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
 		Calendar startCal = (Calendar) starttimestamp.clone();
 		Calendar endCal = (Calendar) endtimestamp.clone();
 		startCal.setTimeZone(TimeZone.getTimeZone("UTC"));
 		endCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-		return recentChanges(calendarToTimestamp(startCal, true), calendarToTimestamp(endCal, true), rcoptions, rctypes, toponly, ns);
+		return recentChanges(calendarToTimestamp(startCal, true), calendarToTimestamp(endCal, true), rcoptions, rctypes, toponly, excludeUser, ns);
 	}
 	
-	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, int... ns) throws IOException
+	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
     {
         StringBuilder sb_url = new StringBuilder(query);
         
@@ -366,6 +366,10 @@ public class Wikibot extends WMFWiki {
         
         if (toponly) {
         	sb_url.append("&rctoponly=");
+        }
+
+        if (excludeUser != null) {
+        	sb_url.append("&rcexcludeuser=").append(excludeUser);
         }
         
         if (rctypes > 0) {
