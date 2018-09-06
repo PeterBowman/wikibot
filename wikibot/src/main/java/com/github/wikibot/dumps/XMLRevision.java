@@ -1,25 +1,12 @@
 package com.github.wikibot.dumps;
 
 import java.io.Serializable;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
 
 import com.github.wikibot.utils.PageContainer;
 
 public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	private static final long serialVersionUID = -7617943255499585377L;
-	
-	// FIXME: this is not thread-safe! Replace with Java 8 java.time classes
-	// https://www.palantir.com/2007/07/simpledateformat-is-not-thread-safe/
-	// http://stackoverflow.com/a/24635657
-	// http://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html
-	// http://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatterBuilder.html
-	// http://marxsoftware.blogspot.com.es/2014/09/datetime-formattingparsing-java-8-style.html
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
 	String title;
 	int ns;
@@ -64,10 +51,6 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		return timestamp;
 	}
 	
-	public Calendar getCalendarTimestamp() {
-		return timestampToCalendar(timestamp);
-	}
-	
 	public String getContributor() {
 		return contributor;
 	}
@@ -102,19 +85,6 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	public PageContainer toPageContainer() {
 		return new PageContainer(title, text, OffsetDateTime.parse(timestamp));
-	}
-	
-	private static Calendar timestampToCalendar(String timestamp) {
-		Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-		
-		try {
-			cal.setTime(DATE_FORMAT.parse(timestamp));
-		} catch (ParseException e) {
-			// set time to Unix epoch to allow edit conflict detection
-			cal.setTimeInMillis(0);
-		}
-		 
-		return cal;
 	}
 	
 	@Override
