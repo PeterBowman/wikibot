@@ -87,8 +87,7 @@ public class Wikibot extends WMFWiki {
 		sb.append("rvprop=timestamp%7Ccontent&");
 		sb.append("generator=categorymembers&");
 		sb.append("gcmtitle=Category:" + URLEncoder.encode(category, "UTF-8") + "&");
-		sb.append("gcmtype=page&");
-		sb.append("gcmlimit=max");
+		sb.append("gcmtype=page");
 		
 		constructNamespaceString(sb, "gcm", ns);
 		
@@ -100,8 +99,7 @@ public class Wikibot extends WMFWiki {
 		sb.append("prop=revisions&");
 		sb.append("rvprop=timestamp%7Ccontent&");
 		sb.append("generator=embeddedin&");
-		sb.append("geititle=" + URLEncoder.encode(page, "UTF-8") + "&");
-		sb.append("geilimit=max");
+		sb.append("geititle=" + URLEncoder.encode(page, "UTF-8"));
 		
 		constructNamespaceString(sb, "gei", ns);
 		
@@ -113,8 +111,7 @@ public class Wikibot extends WMFWiki {
 		sb.append("prop=revisions&");
 		sb.append("rvprop=timestamp%7Ccontent&");
 		sb.append("generator=backlinks&");
-		sb.append("gbltitle=" + URLEncoder.encode(page, "UTF-8") + "&");
-		sb.append("gbllimit=max");
+		sb.append("gbltitle=" + URLEncoder.encode(page, "UTF-8"));
 		
 		constructNamespaceString(sb, "gbl", ns);
 		
@@ -264,7 +261,6 @@ public class Wikibot extends WMFWiki {
         
         sb_url.append("list=recentchanges");
         sb_url.append("&rcdir=newer");
-        sb_url.append("&rclimit=max");
         sb_url.append("&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
         
         constructNamespaceString(sb_url, "rc", ns);
@@ -363,7 +359,7 @@ public class Wikibot extends WMFWiki {
     
     public String[] allLinks(String prefix, int namespace) throws IOException {
     	StringBuilder url = new StringBuilder(query);
-    	url.append("list=alllinks&allimit=max");
+    	url.append("list=alllinks");
 
     	if (namespace == ALL_NAMESPACES) {
 			throw new UnsupportedOperationException("ALL_NAMESPACES not supported in MediaWiki API.");
@@ -404,7 +400,7 @@ public class Wikibot extends WMFWiki {
         // No varargs namespace here because MW API only supports one namespace
         // for this module.
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allpages&aplimit=max");
+        url.append("list=allpages");
         if (!prefix.isEmpty()) // prefix
         {
             // cull the namespace prefix
@@ -475,8 +471,7 @@ public class Wikibot extends WMFWiki {
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
     	Map<String, List<String[]>> map = new HashMap<>(max);
     	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwprefix%7Ciwtitle");
-    	String next = null;
+    	url.append("list=iwbacklinks&iwblprop=iwprefix%7Ciwtitle");
     	
     	queryAPIResult("iwbl", url, null, "allIwBacklinks", (line, results) -> {
     		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
@@ -507,7 +502,7 @@ public class Wikibot extends WMFWiki {
     public Map<String, List<String>> allIwBacklinksWithPrefix(String prefix) throws IOException {
     	Map<String, List<String>> map = new HashMap<>(max);
     	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
+    	url.append("list=iwbacklinks&iwblprop=iwtitle");
     	
     	if (prefix == null || prefix.isEmpty()) {
     		throw new UnsupportedOperationException("Null or empty prefix parameter.");
@@ -541,7 +536,7 @@ public class Wikibot extends WMFWiki {
     
     public String[] searchIwBacklinks(String prefix, String target) throws IOException {
     	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwbllimit=max&iwblprop=iwtitle");
+    	url.append("list=iwbacklinks&iwblprop=iwtitle");
     	
     	if (prefix == null || prefix.isEmpty()) {
     		throw new UnsupportedOperationException("Null or empty prefix parameter.");
