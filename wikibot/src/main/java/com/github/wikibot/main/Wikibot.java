@@ -259,7 +259,7 @@ public class Wikibot extends WMFWiki {
 	
 	public Revision[] getTopRevision(String[] titles) throws IOException {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         url.append("&rvtoken=rollback&titles=");
 		
 		BiConsumer<String, Collection<Revision>> biCons = (line, list) -> {
@@ -318,7 +318,7 @@ public class Wikibot extends WMFWiki {
         sb_url.append("list=recentchanges");
         sb_url.append("&rcdir=newer");
         sb_url.append("&rclimit=max");
-        sb_url.append("&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes");
+        sb_url.append("&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
         
         constructNamespaceString(sb_url, "rc", ns);
         
