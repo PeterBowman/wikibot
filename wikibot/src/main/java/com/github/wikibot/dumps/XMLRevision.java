@@ -3,6 +3,7 @@ package com.github.wikibot.dumps;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
@@ -100,7 +101,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	}
 	
 	public PageContainer toPageContainer() {
-		return new PageContainer(title, text, timestampToCalendar(timestamp));
+		return new PageContainer(title, text, OffsetDateTime.parse(timestamp));
 	}
 	
 	private static Calendar timestampToCalendar(String timestamp) {

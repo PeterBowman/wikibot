@@ -2,9 +2,9 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -79,7 +79,7 @@ public class PolishGerundsList implements Selectorizable {
 		String[] all_gerunds = wb.whatTranscludesHere("Szablon:odczasownikowy od", 0);
 		List<String> list_gerunds = new ArrayList<>(Arrays.asList(all_gerunds));
 		
-		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(PLWikt.intersection(
+		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(org.wikipedia.ArrayUtils.intersection(
 			wb.getCategoryMembers("polski (indeks)", 0),
 			all_gerunds
 		)));
@@ -196,7 +196,7 @@ public class PolishGerundsList implements Selectorizable {
 		for (String[] entry : list) {
 			String page = entry[0];
 			Revision rev = wb.getTopRevision(page);
-			Calendar cal = rev.getTimestamp();
+			OffsetDateTime timestamp = rev.getTimestamp();
 			
 			String content = wb.getPageText(page);
 			
@@ -212,12 +212,12 @@ public class PolishGerundsList implements Selectorizable {
 			newcontent += ") {{odczasownikowy od|" + entry[1] + "}}";
 			newcontent += content.substring(b);
 			
-			wb.edit(page, newcontent, "{{odczasownikowy od}}", true, true, -2, cal);
+			wb.edit(page, newcontent, "{{odczasownikowy od}}", true, true, -2, timestamp);
 		}
 	}
 	
 	public static void makeLists() throws IOException, InterruptedException, ExecutionException, ClassNotFoundException {
-		String[] intersection = PLWikt.intersection(
+		String[] intersection = org.wikipedia.ArrayUtils.intersection(
 			wb.getCategoryMembers("Język polski - rzeczowniki rodzaju nijakiego", 0),
 			wb.whatTranscludesHere("Szablon:odczasownikowy od", 0)
 		);

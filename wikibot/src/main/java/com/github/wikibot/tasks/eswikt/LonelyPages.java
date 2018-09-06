@@ -9,8 +9,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -91,7 +91,7 @@ public final class LonelyPages {
 		
 		if (!fData.exists() || list.hashCode() != (int) Misc.deserialize(fData).hashCode()) {
 			Misc.serialize(list, fData);
-			Misc.serialize(Calendar.getInstance(), fCal);
+			Misc.serialize(OffsetDateTime.now(), fCal);
 			fCtrl.delete();
 		}
 	}

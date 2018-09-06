@@ -3,15 +3,15 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
@@ -131,7 +131,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			String[] data = entry.getValue();
 			
 			PageContainer page = Misc.retrievePage(pages, title);
-			Calendar timestamp = page.getTimestamp();
+			OffsetDateTime timestamp = page.getTimestamp();
 			
 			Page p = Page.wrap(page);
 			

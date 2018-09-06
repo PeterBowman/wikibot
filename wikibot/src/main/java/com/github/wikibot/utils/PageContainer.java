@@ -1,17 +1,17 @@
 package com.github.wikibot.utils;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class PageContainer implements Serializable {
-	private static final long serialVersionUID = 2715796362852345824L;
-
+	private static final long serialVersionUID = -2537816315120752316L;
+	
 	protected String title;
 	protected String text;
-	protected Calendar timestamp;
+	protected OffsetDateTime timestamp;
 	
-	public PageContainer(String title, String text, Calendar timestamp) {
+	public PageContainer(String title, String text, OffsetDateTime timestamp) {
 		Objects.requireNonNull(title);
 		Objects.requireNonNull(text);
 		
@@ -28,7 +28,7 @@ public class PageContainer implements Serializable {
 		return text;
 	}
 	
-	public Calendar getTimestamp() {
+	public OffsetDateTime getTimestamp() {
 		return timestamp;
 	}
 	

@@ -4,9 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -166,7 +166,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			editor.check();
 			
 			String summary = editor.getSummary(summaryTemplate);
-    		Calendar timestamp = page.getTimestamp();
+			OffsetDateTime timestamp = page.getTimestamp();
 			
     		try {
 				wb.edit(title, editor.getPageText(), summary, false, true, -2, timestamp);

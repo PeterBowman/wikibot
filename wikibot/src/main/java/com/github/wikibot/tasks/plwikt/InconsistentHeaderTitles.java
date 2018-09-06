@@ -4,15 +4,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.Collator;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
@@ -49,8 +48,6 @@ public final class InconsistentHeaderTitles {
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nagłówki";
 	private static final String PAGE_INTRO;
 	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	
 	private static final int COLUMN_ELEMENT_THRESHOLD = 50;
 	private static final int NUMBER_OF_COLUMNS = 3;
 	
@@ -78,8 +75,6 @@ public final class InconsistentHeaderTitles {
 			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
 			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
 			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
-		
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -199,32 +194,29 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	private static String[] extractRecentChanges() throws IOException {
-		Calendar startCal;
+		OffsetDateTime start;
 		
 		try {
 			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
-			startCal = Calendar.getInstance();
-			startCal.setTime(DATE_FORMAT.parse(timestamp));
+			start = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			start = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		Calendar endCal = wb.makeCalendar();
+		OffsetDateTime end = OffsetDateTime.now(wb.timezone());
 		
-		if (!endCal.after(startCal)) {
+		if (!end.isAfter(start)) {
 			System.out.println("Extracted timestamp is greater than the current time, setting to -24h.");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			start = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
 		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, endCal, startCal, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
+		Wiki.Revision[] revs = wb.recentChanges(start, end, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
-		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
+		IOUtils.writeToFile(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), LOCATION + "timestamp.txt");
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getPage),

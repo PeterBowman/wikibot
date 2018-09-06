@@ -8,7 +8,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,7 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,7 +38,6 @@ import com.github.wikibot.utils.Users;
 public final class MorfeoDatabase {
 	private static final String LOCATION = "./data/tasks.plwikt/MorfeoDatabase/";
 	private static final Properties defaultSQLProperties = new Properties();
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	
 	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
 	private static final String SQL_EOM_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_eom_backlinks";
@@ -57,8 +54,6 @@ public final class MorfeoDatabase {
 	private static PLWikt wb;
 	
 	static {
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
 		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");

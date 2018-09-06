@@ -6,8 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,7 +54,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	
 	public static void getList() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", PLWikt.MAIN_NAMESPACE);
-		Map<String, Calendar> info = wb.getTimestamps(pages);
+		Map<String, OffsetDateTime> info = wb.getTimestamps(pages);
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		
 		for (PageContainer page : pages) {
@@ -113,7 +113,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		Map<String, String> pages = new LinkedHashMap<>();
-		Map<String, Calendar> info = null;
+		Map<String, OffsetDateTime> info = null;
 		File f1 = new File(locationser + "preview.ser");
 		File f2 = new File(locationser + "info.ser");
 		
@@ -171,10 +171,10 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
     		
     		content = content.substring(0, a) + data + content.substring(b);
     		
-    		Calendar cal = info.get(page);
+    		OffsetDateTime timestamp = info.get(page);
     		
     		try {
-				wb.edit(page, content, summary, true, true, section, cal);
+				wb.edit(page, content, summary, true, true, section, timestamp);
 				edited.add(page);
 			} catch (ConcurrentModificationException e) {
     			conflicts.add(page);

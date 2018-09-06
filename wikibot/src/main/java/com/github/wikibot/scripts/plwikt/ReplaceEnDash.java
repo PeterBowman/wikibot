@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.ArrayUtils;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -163,7 +164,7 @@ public final class ReplaceEnDash implements Selectorizable {
 			if (missing.size() == backlinks.length) {
 				continue;
 			} else {
-				String[] targets = PLWikt.relativeComplement(backlinks, missing.toArray(new String[missing.size()]));
+				String[] targets = ArrayUtils.relativeComplement(backlinks, missing.toArray(new String[missing.size()]));
 				targets = Stream.of(targets).map(link -> String.format("[[%s]]", link.replace(" – ", " - "))).toArray(String[]::new);
 				String links = String.join(", ", targets);
 				String summary = String.format(

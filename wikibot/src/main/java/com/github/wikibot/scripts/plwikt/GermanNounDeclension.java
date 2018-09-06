@@ -8,8 +8,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
@@ -325,7 +325,7 @@ public final class GermanNounDeclension implements Selectorizable {
     		}
     		
     		String content = wb.getSectionText(page, section);
-    		Calendar cal = wb.getTopRevision(page).getTimestamp();
+    		OffsetDateTime timestamp = wb.getTopRevision(page).getTimestamp();
     		StringBuilder sb = new StringBuilder(2000);
 			
     		int a = content.indexOf("{{odmiana}}");
@@ -335,7 +335,7 @@ public final class GermanNounDeclension implements Selectorizable {
     		sb.append(content.substring(content.indexOf("{{przykłady}}", a)));
     		    		
     		try {
-    			wb.edit(page, sb.toString(), "stabelkowanie odmiany", false, true, section, cal);
+    			wb.edit(page, sb.toString(), "stabelkowanie odmiany", false, true, section, timestamp);
     		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;

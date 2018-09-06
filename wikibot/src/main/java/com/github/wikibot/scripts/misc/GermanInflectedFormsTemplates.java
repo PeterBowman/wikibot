@@ -6,8 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -216,7 +216,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		}
     		
     		String content = wb.getSectionText(page, section);
-    		Calendar cal = wb.getTopRevision(page).getTimestamp();
+    		OffsetDateTime timestamp = wb.getTopRevision(page).getTimestamp();
     		StringBuilder sb = new StringBuilder(2000);
 			
     		int a = content.indexOf("{{znaczenia}}");
@@ -240,7 +240,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		}
     		    		
     		try {
-    			wb.edit(page, sb.toString(), replaced, false, true, section, cal);
+    			wb.edit(page, sb.toString(), replaced, false, true, section, timestamp);
     		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;

@@ -1,7 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -313,15 +313,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static String sanitizeBacklinkEntries(String entry) {
-		int ns = 0;
-
-		try {
-			ns = plwikt.namespace(entry);
-		} catch (IOException e) {
-			// namespace cache was already populated, we should not be here
-		}
-
-		if (ns == Wiki.CATEGORY_NAMESPACE) {
+		if (plwikt.namespace(entry) == Wiki.CATEGORY_NAMESPACE) {
 			entry = ":" + entry;
 		}
 

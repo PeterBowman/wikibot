@@ -7,10 +7,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.wikipedia.ArrayUtils;
 import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
@@ -64,7 +65,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		Map<String, String> model = models.get("IV");
 		String[] verbs = wb.getCategoryMembers("Język polski - czasowniki", 0);
 		String[] phrases = wb.getCategoryMembers("Język polski - frazy czasownikowe", 0);
-		String[] targets = PLWikt.relativeComplement(verbs, phrases);
+		String[] targets = ArrayUtils.relativeComplement(verbs, phrases);
 		
 		targets = Stream.of(targets)
 			.filter(verb -> !verb.contains(" ") || verb.endsWith(" się"))
@@ -72,7 +73,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 			.toArray(size -> new String[size]);
 		
 		String[] inflections = wb.whatTranscludesHere("Szablon:odmiana-czasownik-polski", 0);
-		targets = PLWikt.relativeComplement(targets, inflections);
+		targets = ArrayUtils.relativeComplement(targets, inflections);
 		
 		PageContainer[] pages = wb.getContentOfPages(targets);
 		List<PageContainer> serialized = new ArrayList<>();

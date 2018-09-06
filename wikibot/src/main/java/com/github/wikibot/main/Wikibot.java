@@ -6,13 +6,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -156,7 +153,7 @@ public class Wikibot extends WMFWiki {
 				.map(rev -> new PageContainer(
 					decode(page.attr("title")),
 					decode(rev.html()),
-					timestampToCalendar(rev.attr("timestamp"), true)
+					OffsetDateTime.parse(rev.attr("timestamp"))
 				))
 			)
 			.forEach(list::add);
@@ -170,32 +167,6 @@ public class Wikibot extends WMFWiki {
 			));
 	}
 	
-	private String convertTimestamp(String timestamp)
-    {
-        StringBuilder ts = new StringBuilder(timestamp.substring(0, 4));
-        ts.append(timestamp.substring(5, 7));
-        ts.append(timestamp.substring(8, 10));
-        ts.append(timestamp.substring(11, 13));
-        ts.append(timestamp.substring(14, 16));
-        ts.append(timestamp.substring(17, 19));
-        return ts.toString();
-    }
-	
-	private final Calendar timestampToCalendar(String timestamp, boolean api)
-    {
-        Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone(timezone));
-        if (api)
-            timestamp = convertTimestamp(timestamp);
-        int year = Integer.parseInt(timestamp.substring(0, 4));
-        int month = Integer.parseInt(timestamp.substring(4, 6)) - 1; // January == 0!
-        int day = Integer.parseInt(timestamp.substring(6, 8));
-        int hour = Integer.parseInt(timestamp.substring(8, 10));
-        int minute = Integer.parseInt(timestamp.substring(10, 12));
-        int second = Integer.parseInt(timestamp.substring(12, 14));
-        calendar.set(year, month, day, hour, minute, second);
-        return calendar;
-    }
-	
 	@Deprecated
 	public Map<String, OffsetDateTime> getTimestamps(Collection<? extends String> pages) throws IOException {
 		return Stream.of(getTopRevision(pages.toArray(new String[pages.size()])))
@@ -205,7 +176,7 @@ public class Wikibot extends WMFWiki {
 			));
 	}
 	
-	public Map<String, Calendar> getTimestamps(PageContainer[] pages) {
+	public Map<String, OffsetDateTime> getTimestamps(PageContainer[] pages) {
 		return Stream.of(pages)
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
@@ -272,7 +243,7 @@ public class Wikibot extends WMFWiki {
     }
 	
 	public String getWikiTimestamp() {
-		return getWikiTimestamp(timezone);
+		return getWikiTimestamp(timezone());
 	}
 	
 	public static String getWikiTimestamp(ZoneId timezone) {
@@ -280,25 +251,11 @@ public class Wikibot extends WMFWiki {
 		return now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 	}
 	
-	protected String calendarToTimestamp(Calendar c) {
-		return String.format(
-			"%04d%02d%02dT%02d%02d%02dZ",
-			c.get(Calendar.YEAR),
-			c.get(Calendar.MONTH) + 1,
-			c.get(Calendar.DAY_OF_MONTH),
-			c.get(Calendar.HOUR_OF_DAY),
-			c.get(Calendar.MINUTE),
-			c.get(Calendar.SECOND)
-		);
-	}
-	
-	public Revision[] recentChanges(Calendar starttimestamp, Calendar endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
+	public Revision[] recentChanges(OffsetDateTime start, OffsetDateTime end, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
-		Calendar startCal = (Calendar) starttimestamp.clone();
-		Calendar endCal = (Calendar) endtimestamp.clone();
-		startCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-		endCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-		return recentChanges(calendarToTimestamp(startCal), calendarToTimestamp(endCal), rcoptions, rctypes, toponly, excludeUser, ns);
+		String startTimestamp = start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+		String endTimestamp = end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+		return recentChanges(startTimestamp, endTimestamp, rcoptions, rctypes, toponly, excludeUser, ns);
 	}
 	
 	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException

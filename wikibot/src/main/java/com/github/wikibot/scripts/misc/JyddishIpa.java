@@ -14,11 +14,11 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.ArrayUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -88,7 +88,7 @@ public class JyddishIpa implements Selectorizable {
 				list.add(page);
 			}
 			
-			int_list = Wikibot.intersection(catmembers_list, list.toArray(new String[list.size()]));
+			int_list = ArrayUtils.intersection(catmembers_list, list.toArray(new String[list.size()]));
 			
 			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
 			out.writeObject(int_list);

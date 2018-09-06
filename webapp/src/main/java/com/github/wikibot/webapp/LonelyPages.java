@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -109,8 +111,8 @@ public class LonelyPages extends HttpServlet {
 			}
 			
 			try {
-				Calendar tempCal = deserialize(fCal);
-				calendar.setTime(tempCal.getTime());
+				OffsetDateTime odt = deserialize(fCal);
+				calendar.setTime(Date.from(odt.toInstant()));
 			} catch (Exception e) {
 				throw new IOException(e);
 			}

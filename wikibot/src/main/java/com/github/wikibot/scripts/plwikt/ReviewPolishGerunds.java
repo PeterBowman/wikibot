@@ -3,8 +3,6 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,11 +124,8 @@ public final class ReviewPolishGerunds implements Selectorizable {
 			}
 			
 			Revision rev = wb.getTopRevision(title);
-			Calendar timestamp = rev.getTimestamp();
-			Date date = timestamp.getTime();
-			Date temp = page.getTimestamp().getTime();
 			
-			if (!date.toString().equals(temp.toString())) {
+			if (!rev.getTimestamp().equals(page.getTimestamp())) {
 				System.out.printf("Conflicto en \"%s\"%n", title);
 				errors.add(title);
 				continue;

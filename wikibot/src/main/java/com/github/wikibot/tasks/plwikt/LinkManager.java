@@ -5,9 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.ArrayUtils;
 import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 import org.wikipedia.Wiki.User;
@@ -119,7 +120,7 @@ public final class LinkManager implements Selectorizable {
 		List<String> summarylist = new ArrayList<>(data.size());
 		
 		Map<Integer, LinkDiff> editcodes = new HashMap<>(data.size()*15);
-		Map<String, Calendar> timestamps = new HashMap<>(data.size()*15);
+		Map<String, OffsetDateTime> timestamps = new HashMap<>(data.size()*15);
 		
 		//ArrayList<Revision> revs = new ArrayList<>();
 		Map<String, String[]> backlinkscache = new HashMap<>(10000);
@@ -181,7 +182,7 @@ public final class LinkManager implements Selectorizable {
 				String[] temp = lists.get(0);
 				
 				for (int i = 1; i < lists.size(); i++) {
-					temp = Wiki.intersection(temp, lists.get(i));
+					temp = ArrayUtils.intersection(temp, lists.get(i));
 				}
 				
 				pages = temp;
@@ -265,7 +266,7 @@ public final class LinkManager implements Selectorizable {
 			output.add(template.replace("$1", sb.toString()));
 			
 			if (!backlinks.isEmpty()) {
-				Map<String, Calendar> tmp = new HashMap<>(timestamps);
+				Map<String, OffsetDateTime> tmp = new HashMap<>(timestamps);
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
@@ -303,7 +304,7 @@ public final class LinkManager implements Selectorizable {
 	
 	public static void edit(String user, long revid) throws IOException, ClassNotFoundException, LoginException {
 		Map<Integer, LinkDiff> editcodes = Misc.deserialize(f_codes);
-		Map<String, Calendar> timestamps = Misc.deserialize(f_timestamps);
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_timestamps);
 		
 		System.out.printf("Modificaciones disponibles: %d%n", editcodes.size());
 		
@@ -461,7 +462,7 @@ public final class LinkManager implements Selectorizable {
 				pagetext = pagetext.substring(0, index) + newline + pagetext.substring(index + lineinfo.line.length());
 			}
 			
-			Calendar cal = timestamps.get(page);
+			OffsetDateTime timestamp = timestamps.get(page);
 			String difflistmod = String.join(", ", difflist);
 			
 			String summary = String.format(
@@ -477,7 +478,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			try {
-				wb.edit(page, pagetext, summary, false, true, -2, cal);
+				wb.edit(page, pagetext, summary, false, true, -2, timestamp);
 				edited++;
 			} catch(CredentialException e) {
 				errormap.put(page, new String[]{"strona zabezpieczona", difflistmod});
@@ -580,8 +581,8 @@ public final class LinkManager implements Selectorizable {
 				getRequest();
 				request.currentRequest = currentRequest;
 			} else if (f_codes.exists()) {
-				Calendar startTimestamp = request.currentTimestamp; // earliest
-				Calendar endTimestamp = currentRevision.getTimestamp(); // latest
+				OffsetDateTime startTimestamp = request.currentTimestamp; // earliest
+				OffsetDateTime endTimestamp = currentRevision.getTimestamp(); // latest
 				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
 				
 				for (Revision rev : revs) {
@@ -1024,12 +1025,12 @@ public final class LinkManager implements Selectorizable {
 	}
 
 	private static class RequestInfo implements Serializable {
-		private static final long serialVersionUID = 7152292260065134851L;
+		private static final long serialVersionUID = 4878770923056540962L;
 		long currentId;
 		String currentRequest;
-		Calendar currentTimestamp;
+		OffsetDateTime currentTimestamp;
 		
-		RequestInfo(long id, String request, Calendar timestamp) {
+		RequestInfo(long id, String request, OffsetDateTime timestamp) {
 			currentId = id;
 			currentRequest = request;
 			currentTimestamp = timestamp;

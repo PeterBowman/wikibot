@@ -3,8 +3,8 @@ package com.github.wikibot.scripts;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -105,7 +105,7 @@ public final class Replace implements Selectorizable {
 		String replacement = Misc.deserialize(f_replacement);
 		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
 		Map<String, String> map = Misc.readList(lines);
-		Map<String, Calendar> timestamps = Misc.deserialize(f_info);
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_info);
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
@@ -120,7 +120,7 @@ public final class Replace implements Selectorizable {
 		for (Entry<String, String> entry : map.entrySet()) {
 			String title = entry.getKey();
 			String text = entry.getValue();
-			Calendar timestamp = timestamps.get(title);
+			OffsetDateTime timestamp = timestamps.get(title);
 			
 			try {
 				wb.edit(title, text, summary, true, true, -2, timestamp);

@@ -7,8 +7,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -267,7 +267,7 @@ public final class Edit implements Selectorizable {
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
 		Map<String, String> map = Misc.readList(lines);
-		Map<String, Calendar> timestamps = Misc.deserialize(info);
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(info);
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
@@ -323,7 +323,7 @@ public final class Edit implements Selectorizable {
 		for (Entry<String, String> entry : map.entrySet()) {
 			String title = entry.getKey();
 			String text = entry.getValue();
-			Calendar timestamp = timestamps.get(title);
+			OffsetDateTime timestamp = timestamps.get(title);
 			
 			if (!checkErrors) {
 				wb.edit(title, text, summary, minor, true, -2, null);

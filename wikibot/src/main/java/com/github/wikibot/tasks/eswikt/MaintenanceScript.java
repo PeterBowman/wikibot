@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -48,8 +47,6 @@ public final class MaintenanceScript {
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	
 	private static final int THREAD_CHECK_SECS = 5;
 	private static volatile RuntimeException threadExecutionException;
 	
@@ -58,39 +55,37 @@ public final class MaintenanceScript {
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();
 		
-		int gap;
+		int gapHours;
 		
 		try {
-			gap = Integer.parseInt(args[0]);
+			gapHours = Integer.parseInt(args[0]);
 		} catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-			gap = 0;
+			gapHours = 0;
 		}
 		
 		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
-		Calendar startCal = Calendar.getInstance();
-		startCal.setTime(DATE_FORMAT.parse(startTimestamp));
+		OffsetDateTime start = OffsetDateTime.parse(startTimestamp);
+		OffsetDateTime end = OffsetDateTime.now(wb.timezone());
+		OffsetDateTime gap = end;
 		
-		Calendar endCal = wb.makeCalendar();
-		Calendar gapCal = (Calendar) endCal.clone();
-		
-		if (gap > 0) {
-			gapCal.add(Calendar.HOUR, -gap);
+		if (gapHours > 0) {
+			gap = gap.minusHours(gapHours);
 		}
 		
-		if (gapCal.before(startCal)) {
+		if (gap.isBefore(start)) {
 			return;
 		}
 		
 		int rcoptions = Wikibot.HIDE_REDIRECT;
 		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
 		
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, endCal, startCal, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
+		Wiki.Revision[] revs = wb.recentChanges(start, end, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
+		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		List<String> titles = Stream.of(
-				Stream.of(revs).collect(new RevisionCollector(gapCal)),
-				Stream.of(logs).collect(new LogCollector(gapCal))
+				Stream.of(revs).collect(new RevisionCollector(gap)),
+				Stream.of(logs).collect(new LogCollector(gap))
 			)
 			.flatMap(Collection::stream)
 			.distinct()
@@ -110,9 +105,8 @@ public final class MaintenanceScript {
 				monitorThread(thread);
 			} catch (TimeoutException e) {
 				logError("Editor.check() timeout", pc.getTitle(), e);
-				Calendar tempCal = pc.getTimestamp();
-				tempCal.add(Calendar.SECOND, 1);
-				storeTimestamp(tempCal);
+				OffsetDateTime tempTimestamp = pc.getTimestamp().plusSeconds(1);
+				storeTimestamp(tempTimestamp);
 				System.exit(0);
 			} catch (UnsupportedOperationException e) {
 				continue;
@@ -138,7 +132,7 @@ public final class MaintenanceScript {
 			}
 		}
 		
-		storeTimestamp(gapCal);
+		storeTimestamp(gap);
 		wb.logout();
 	}
 	
@@ -163,11 +157,9 @@ public final class MaintenanceScript {
 		return startTimestamp;
 	}
 	
-	private static void storeTimestamp(Calendar cal) {
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-		
+	private static void storeTimestamp(OffsetDateTime timestamp) {
 		try {
-			IOUtils.writeToFile(DATE_FORMAT.format(cal.getTime()), LAST_DATE);
+			IOUtils.writeToFile(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), LAST_DATE);
 		} catch (IOException e) {}
 	}
 
@@ -238,10 +230,10 @@ public final class MaintenanceScript {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
-		private Calendar cal;
+		private OffsetDateTime dateTime;
 	
-		public RevisionCollector(Calendar cal) {
-			this.cal = cal;
+		public RevisionCollector(OffsetDateTime dateTime) {
+			this.dateTime = dateTime;
 		}
 		
 		@Override
@@ -262,7 +254,7 @@ public final class MaintenanceScript {
 		@Override
 		public Function<Map<String, Wiki.Revision>, List<String>> finisher() {
 			return accum -> accum.values().stream()
-				.filter(rev -> rev.getTimestamp().before(cal))
+				.filter(rev -> rev.getTimestamp().isBefore(dateTime))
 				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
 				.map(Wiki.Revision::getPage)
 				.collect(Collectors.toList());
@@ -278,10 +270,10 @@ public final class MaintenanceScript {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
-		private Calendar cal;
+		private OffsetDateTime dateTime;
 	
-		public LogCollector(Calendar cal) {
-			this.cal = cal;
+		public LogCollector(OffsetDateTime dateTime) {
+			this.dateTime = dateTime;
 		}
 		
 		@Override
@@ -302,7 +294,7 @@ public final class MaintenanceScript {
 		@Override
 		public Function<Map<String, Wiki.LogEntry>, List<String>> finisher() {
 			return accum -> accum.values().stream()
-				.filter(log -> log.getTimestamp().before(cal))
+				.filter(log -> log.getTimestamp().isBefore(dateTime))
 				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
 				.map(log -> (String) log.getDetails())
 				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)

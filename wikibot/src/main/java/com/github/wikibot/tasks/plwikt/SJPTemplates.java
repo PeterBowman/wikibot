@@ -3,9 +3,9 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -114,7 +114,7 @@ public final class SJPTemplates {
 		revs.stream()
 			.map(item -> String.format(
 				"| [[%s]] || %s || [[Specjalna:Diff/%d|%s]] || %s",
-				item.getPage(), item.getUser(), item.getRevid(), calendarToTimestamp(item.getTimestamp()),
+				item.getPage(), item.getUser(), item.getRevid(), item.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
 				Optional.ofNullable(item.getSummary()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
 			))
 			.forEach(s -> sb.append("|-\n").append(s).append("\n"));
@@ -122,13 +122,5 @@ public final class SJPTemplates {
 		sb.append("|}");
 		
 		return sb.toString();
-	}
-	
-	private static String calendarToTimestamp(Calendar c) {
-		return String.format(
-			"%04d-%02d-%02dT%02d:%02d:%02dZ",
-			c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH),
-			c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND)
-		);
 	}
 }
