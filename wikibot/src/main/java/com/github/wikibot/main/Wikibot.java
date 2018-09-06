@@ -201,25 +201,6 @@ public class Wikibot extends WMFWiki {
 		return decode(line.substring(a, b));
 	}
 	
-	public String parsePage(String page) throws IOException {
-        return parsePage(page, -1);
-    }
-	
-	public String parsePage(String page, int section) throws IOException {
-		Map<String, String> postParams = new HashMap<>();
-		postParams.put("prop", "text");
-		postParams.put("page", URLEncoder.encode(page, "UTF-8"));
-        
-        if (section != -1) {
-        	postParams.put("section", Integer.toString(section));
-        }
-        
-        String response = fetch(apiUrl + "action=parse", postParams, "parse");
-        int y = response.indexOf('>', response.indexOf("<text ")) + 1;
-        int z = response.indexOf("</text>");
-        return decode(response.substring(y, z));
-    }
-	
 	public Revision[] getTopRevision(String[] titles) throws IOException {
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
