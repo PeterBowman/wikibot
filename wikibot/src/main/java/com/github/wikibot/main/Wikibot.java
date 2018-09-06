@@ -3,7 +3,6 @@ package com.github.wikibot.main;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -239,15 +238,6 @@ public class Wikibot extends WMFWiki {
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
-	public String getWikiTimestamp() {
-		return getWikiTimestamp(timezone());
-	}
-	
-	public static String getWikiTimestamp(ZoneId timezone) {
-		OffsetDateTime now = OffsetDateTime.now(timezone);
-		return now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-	}
-	
 	public Revision[] recentChanges(OffsetDateTime start, OffsetDateTime end, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
 		String startTimestamp = start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -336,7 +326,7 @@ public class Wikibot extends WMFWiki {
         }
         
         if (endtimestamp == null) {
-        	sb_url.append("&rcend=" + getWikiTimestamp());
+        	sb_url.append("&rcend=" + OffsetDateTime.now(timezone()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         } else {
         	sb_url.append("&rcend=" + endtimestamp);
         }
