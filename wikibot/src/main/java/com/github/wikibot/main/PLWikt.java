@@ -56,7 +56,6 @@ public class PLWikt extends Wikibot {
 	
 	public synchronized void review(Revision rev, String comment) throws LoginException, IOException {
 		// TODO: move to new FlaggedRevsWiki with support for clone contructors
-		// TODO: fix token caching
 		throttle();
 		
 		User user = getCurrentUser();
@@ -64,10 +63,6 @@ public class PLWikt extends Wikibot {
 		if (user == null || !user.isAllowedTo("review")) {
             throw new CredentialNotFoundException("Permission denied: cannot review.");
 		}
-		
-		@SuppressWarnings("rawtypes")
-		Map info = getPageInfo(rev.getPage());
-		String token = URLEncoder.encode((String)info.get("token"), "UTF-8");
 		
 		StringBuilder sb = new StringBuilder();
 		
@@ -77,7 +72,7 @@ public class PLWikt extends Wikibot {
 		
 		sb.append("flag_accuracy=1&");
 		sb.append("revid=" + rev.getRevid() + "&");
-		sb.append("token=" + token);
+		sb.append("token=" + URLEncoder.encode(getToken("csrf"), "UTF-8"));
 				
 		String response = post(apiUrl + "action=review", sb.toString(), "review");
 		checkErrorsAndUpdateStatus(response, "review");

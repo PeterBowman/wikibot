@@ -256,7 +256,7 @@ public class Wikibot extends WMFWiki {
 	public Revision[] getTopRevision(String[] titles) throws IOException {
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        url.append("&rvtoken=rollback&titles=");
+        url.append("&meta=tokens&type=rollback&titles=");
 		
 		BiConsumer<String, Collection<Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
