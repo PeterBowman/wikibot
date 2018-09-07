@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -8,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import javax.security.auth.login.FailedLoginException;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -19,11 +16,10 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class FrenchIpa {
-	public static void main (String[] args) throws IOException, FailedLoginException {
-		Wikibot wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+	public static void main (String[] args) throws Exception {
+		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
 			.filter(title -> (
@@ -77,7 +73,5 @@ public class FrenchIpa {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Files.write(Paths.get("./data/scripts.misc/FrenchIpa/list.txt"), Arrays.asList(Misc.makeList(map)));
-		
-		Login.saveSession(wb);
 	}
 }

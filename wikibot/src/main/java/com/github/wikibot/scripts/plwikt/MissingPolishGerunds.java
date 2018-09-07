@@ -28,7 +28,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class MissingPolishGerunds implements Selectorizable {
 	private static Wikibot wb;
@@ -45,27 +44,23 @@ public final class MissingPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				checkGerunds();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getMissing();
-				Login.saveSession(wb);
 				break;
 			case '3':
 				makeArrayLists();
 				break;
 			case '8':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				writeAff();
-				Login.saveSession(wb);
 				break;
 			case '9':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				writeNeg();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

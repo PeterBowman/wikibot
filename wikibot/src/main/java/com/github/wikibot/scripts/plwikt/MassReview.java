@@ -16,14 +16,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import javax.security.auth.login.FailedLoginException;
-
 import org.wikipedia.Wiki.Revision;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
+import com.github.wikibot.utils.Misc;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
@@ -33,8 +31,9 @@ public final class MassReview {
 	private static final String F_LAST = LOCATION + "last.txt";
 	private static final String F_ERRORS = LOCATION + "errors.txt";
 	
-	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+	public static void main(String[] args) throws Exception {
+		System.out.print("Username: ");
+		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain(), Misc.readLine());
 		wb.setThrottle(5000);
 		
 		List<String[]> list = extractList();

@@ -42,7 +42,6 @@ import com.github.wikibot.utils.Inflector;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class PolishSurnamesInflection {
 	private static final String LOCATION = "./data/tasks.plwikt/PolishSurnamesInflection/";
@@ -102,7 +101,7 @@ public final class PolishSurnamesInflection {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		File fStorage = new File(LOCATION + "storage.ser");
 		File fHistory = new File(LOCATION + "history.ser");

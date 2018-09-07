@@ -22,7 +22,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class DevanagariIAST implements Selectorizable {
 	private static Wikibot wb;
@@ -34,9 +33,8 @@ public class DevanagariIAST implements Selectorizable {
 		switch (op) {
 			case '1':
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getList(op == '2');
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

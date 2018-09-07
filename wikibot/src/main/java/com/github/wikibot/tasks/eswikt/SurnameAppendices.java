@@ -21,7 +21,6 @@ import org.wikipedia.Wiki;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
 
 public final class SurnameAppendices {
 	private static final String PREFIX = "Apéndice:Personas/Apellidos/";
@@ -51,7 +50,7 @@ public final class SurnameAppendices {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession(Domains.ESWIKT.getDomain());
 		
 		String[] subPages = getSubPages();
 		String[] surnames = getSurnames();

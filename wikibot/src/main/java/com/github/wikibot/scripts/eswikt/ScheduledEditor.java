@@ -28,7 +28,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class ScheduledEditor {
 	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
@@ -44,7 +43,7 @@ public final class ScheduledEditor {
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession(Domains.ESWIKT.getDomain());
 		wb.setThrottle(5000);
 		
 		if (args.length == 0) {

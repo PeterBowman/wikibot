@@ -26,7 +26,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 class RussianAdjectivesInflection implements Selectorizable {
 	private static final String location = "./data/scripts.misc/RussianAdjectivesInflection/";
@@ -37,17 +36,15 @@ class RussianAdjectivesInflection implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				extract_adj();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				analyze_adj(false);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				analyze_adj(true);
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

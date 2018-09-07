@@ -2,17 +2,14 @@ package com.github.wikibot.scripts;
 
 import java.io.IOException;
 
-import javax.security.auth.login.FailedLoginException;
-
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.Users;
 
 public final class PurgeCategory {
-	public static void main(String[] args) throws IOException, FailedLoginException {
-		Wikibot wiki = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+	public static void main(String[] args) throws Exception {
+		Wikibot wiki = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		//String category = "Język nowogrecki - przymiotniki";
 		String category = "Język rosyjski – gwara pomorska";
@@ -34,7 +31,5 @@ public final class PurgeCategory {
 				e.printStackTrace();
 			}
 		});
-		
-		Login.saveSession(wiki);
 	}
 }

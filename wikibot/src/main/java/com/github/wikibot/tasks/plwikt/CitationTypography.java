@@ -55,7 +55,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class CitationTypography {
 	private static final String LOCATION = "./data/tasks.plwikt/CitationTypography/";
@@ -94,7 +93,7 @@ public final class CitationTypography {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();

@@ -26,7 +26,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class JyddishIpa implements Selectorizable {
 	private static final String location = "./data/scripts.misc/JyddishIpa/";
@@ -35,19 +34,16 @@ public class JyddishIpa implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getList(false, false);
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getList(true, false);
-				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getList(true, true);
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

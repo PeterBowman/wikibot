@@ -28,7 +28,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
@@ -43,16 +42,13 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
-				quote = Login.retrieveSession(Domains.PLQUOTE, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				quote = Login.createSession(Domains.PLQUOTE.getDomain());
 				getList();
-				Login.saveSession(wb);
-				Login.saveSession(quote);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

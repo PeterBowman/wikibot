@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
@@ -38,7 +36,6 @@ import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class MaintenanceScript {
 	private static final String LOCATION = "./data/tasks.eswikt/MaintenanceScript/";
@@ -51,7 +48,7 @@ public final class MaintenanceScript {
 	
 	private static Wikibot wb;
 	
-	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
+	public static void main(String[] args) throws Exception {
 		String startTimestamp = extractTimestamp();
 		
 		int gapHours;
@@ -62,7 +59,7 @@ public final class MaintenanceScript {
 			gapHours = 0;
 		}
 		
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession(Domains.ESWIKT.getDomain());
 		
 		OffsetDateTime start = OffsetDateTime.parse(startTimestamp);
 		OffsetDateTime end = OffsetDateTime.now(wb.timezone());
@@ -81,7 +78,7 @@ public final class MaintenanceScript {
 		
 		List<String> rctypes = Arrays.asList(new String[] {"new", "edit"});
 		
-		Wiki.Revision[] revs = wb.recentChanges(start, end, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
+		Wiki.Revision[] revs = wb.recentChanges(start, end, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		List<String> titles = Stream.of(

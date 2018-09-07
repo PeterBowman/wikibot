@@ -41,7 +41,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class InconsistentHeaderTitles {
 	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
@@ -78,7 +77,7 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		Collator collator = Misc.getCollator("pl");
 		map = new ConcurrentSkipListMap<>(collator::compare);

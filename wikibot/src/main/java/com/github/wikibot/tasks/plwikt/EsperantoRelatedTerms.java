@@ -33,7 +33,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class EsperantoRelatedTerms {
 	private static final String LOCATION = "./data/tasks.plwikt/EsperantoRelatedTerms/";
@@ -44,7 +43,7 @@ public final class EsperantoRelatedTerms {
 	private static Wikibot wb;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		Map<String, List<String>> morphemToTitle = new HashMap<>(10000);
 		Map<String, List<String>> titleToMorphem = new HashMap<>(15000);

@@ -28,7 +28,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class SpanishCanonicalInflectedForms {
 	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
@@ -49,7 +48,7 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		CommandLine line = readOptions(args);
 		List<String> list = retrieveList();

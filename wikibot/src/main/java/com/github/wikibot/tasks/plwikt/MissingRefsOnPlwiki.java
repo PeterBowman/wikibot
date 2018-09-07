@@ -28,7 +28,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
@@ -104,8 +103,8 @@ public class MissingRefsOnPlwiki {
 	}
 
 	public static void main(String[] args) throws Exception {
-		plwikt = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
-		plwiki = Login.retrieveSession(Domains.PLWIKI, Users.USER2);
+		plwikt = Login.createSession(Domains.PLWIKT.getDomain());
+		plwiki = Login.createSession(Domains.PLWIKI.getDomain());
 
 		// populate namespace cache
 		plwikt.getNamespaces();

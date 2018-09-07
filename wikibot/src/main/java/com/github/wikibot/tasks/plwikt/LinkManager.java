@@ -40,7 +40,6 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Misc.MyRandom;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class LinkManager implements Selectorizable {
 	private static Wikibot wb;
@@ -68,7 +67,7 @@ public final class LinkManager implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getRequest();
 				wb.logout();
 				break;
@@ -80,13 +79,13 @@ public final class LinkManager implements Selectorizable {
 				Misc.serialize(375, f_stats);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				edit(null, 0);
 				wb.logout();
 				break;
 			case 'p':
 				try {
-					wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+					wb = Login.createSession(Domains.PLWIKT.getDomain());
 					patrol();
 					wb.logout();
 				} catch (IOException | UncheckedIOException e) {
@@ -587,7 +586,7 @@ public final class LinkManager implements Selectorizable {
 				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
 				
 				for (Revision rev : revs) {
-					if (rev.getUser().equals(Users.USER2.getUsername())) {
+					if (rev.getUser().equals(wb.getCurrentUser().getUsername())) {
 						break;
 					}
 					

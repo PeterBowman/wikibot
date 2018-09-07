@@ -27,7 +27,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class Edit implements Selectorizable {
 	private static Wikibot wb;
@@ -44,32 +43,27 @@ public final class Edit implements Selectorizable {
 				getList();
 				break;
 			case '2':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain.getDomain());
 				makeList();
-				Login.saveSession(wb);
 				break;
 			case '3':
 				makeList2();
 				break;
 			case '4':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain.getDomain());
 				makeList3();
-				Login.saveSession(wb);
 				break;
 			case 'd':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain.getDomain());
 				getDiffs();
-				Login.saveSession(wb);
 				break;
 			case 'g':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain.getDomain());
 				getContents();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(domain, Users.USER2);
+				wb = Login.createSession(domain.getDomain());
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

@@ -23,7 +23,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class KurdishTranslations implements Selectorizable {
 	private static Wikibot wb;
@@ -32,14 +31,12 @@ public final class KurdishTranslations implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				getList();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

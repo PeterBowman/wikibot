@@ -38,7 +38,6 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.RAE;
-import com.github.wikibot.utils.Users;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
 	private static Wikibot wb;
@@ -52,9 +51,8 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			case '1':
 			case '2':
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, op != '3' ? Users.USER1 : Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				process(op == '1', op != '3');
-				Login.saveSession(wb);
 				break;
 			case '4':
 				String source = locationser + "hashmap.ser";

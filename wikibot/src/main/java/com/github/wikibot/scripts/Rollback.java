@@ -12,7 +12,7 @@ import org.wikipedia.Wiki.Revision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
+import com.github.wikibot.utils.Misc;
 
 public final class Rollback {
 	private static Wikibot wb;
@@ -21,7 +21,8 @@ public final class Rollback {
 	private static final String worklist = location + "worklist.txt";
 	
 	public static void main(String[] args) throws IOException, LoginException {
-		wb = Login.retrieveSession(domain, Users.USER1);
+		System.out.print("Username: ");
+		wb = Login.createSession(domain.getDomain(), Misc.readLine());
 		wb.setThrottle(2000);
 		
 		String reason = "omijanie blokady";
@@ -35,7 +36,5 @@ public final class Rollback {
 		f.delete();
 		(new File (worklist)).renameTo(f);
 		(new File(worklist)).createNewFile();
-		
-		Login.saveSession(wb);
 	}
 }

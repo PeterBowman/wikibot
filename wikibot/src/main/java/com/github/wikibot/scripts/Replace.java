@@ -24,7 +24,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class Replace implements Selectorizable {
 	private static Wikibot wb;
@@ -48,14 +47,12 @@ public final class Replace implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain.getDomain());
 				getDiffs();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(domain, Users.USER2);
+				wb = Login.createSession(domain.getDomain());
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

@@ -15,16 +15,15 @@ import org.wikipedia.Wiki;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
 
 public class OrphanTalkPages {
 	public static void main(String[] args) throws IOException, LoginException {
-		Wikibot wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain());
 		Map<String, Integer> namespaceIdentifiers = wb.getNamespaces();
 		
 		Integer[] namespaces = new Integer[]{
 			Wiki.TALK_NAMESPACE,
-			//Wikibot.USER_TALK_NAMESPACE,
+			//Wiki.USER_TALK_NAMESPACE,
 			Wiki.PROJECT_TALK_NAMESPACE,
 			Wiki.FILE_TALK_NAMESPACE,
 			Wiki.MEDIAWIKI_TALK_NAMESPACE,
@@ -69,7 +68,5 @@ public class OrphanTalkPages {
 		
 		System.out.printf("Tamaño de la lista: %d%n", missing.size());
 		Files.write(Paths.get("./test2.txt"), missing);
-		
-		Login.saveSession(wb);
 	}
 }

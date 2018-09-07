@@ -33,7 +33,6 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class MorfeoDatabase {
 	private static final String LOCATION = "./data/tasks.plwikt/MorfeoDatabase/";
@@ -60,7 +59,7 @@ public final class MorfeoDatabase {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", 0);
 		Map<String, List<String>> items = retrieveItems(pages);

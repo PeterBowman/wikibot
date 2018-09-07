@@ -4,141 +4,116 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.CredentialException;
 
 import org.wikipedia.Wiki;
-import org.wikipedia.Wiki.User;
 import org.wikiutils.LoginUtils;
 
 import com.github.wikibot.main.Wikibot;
 
 public class Login {
-	private static Map<String, char[]> credentials;
 	private static final String LOCATION = "./data/sessions/";
 	private static final String FILE_FORMAT = LOCATION + "%s@%s.ser";
+	private static final String USER_AGENT_FILENAME = "useragent.txt";
+	private static final String BOT_PASSWORD_SUFFIX = "wikibot";
+	private static final String ENV_USERNAME_VAR = "WIKIBOT_MAIN_ACCOUNT";
+	
+	private static final int DEFAULT_THROTTLE_MS = 5000;
+	private static final int DEFAULT_MAXLAG_S = 5;
 	
 	private Login() {}
 	
-	public static void login(Wiki wiki, Users user) throws FailedLoginException, IOException {
+	public static void login(Wiki wiki, String username, char[] password) {
+		Objects.requireNonNull(username);
+		Objects.requireNonNull(password);
+		
+		String userAgent;
+		
+		try {
+			userAgent = Files.readAllLines(Paths.get(LOCATION + USER_AGENT_FILENAME)).get(0);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Setting basic user agent, please edit " + USER_AGENT_FILENAME);
+			userAgent = "bot operator: User:" + username;
+		}
+		
+		LoginUtils.loginAndSetPrefs(wiki, username, password);
+		
+		wiki.setThrottle(DEFAULT_THROTTLE_MS);
+		wiki.setMaxLag(DEFAULT_MAXLAG_S);
+		wiki.setUserAgent(String.format("%s, %s", wiki.getUserAgent(), userAgent));
+		wiki.setMarkBot(true);
+		setAssertionFlag(wiki);
+		
+		System.out.printf("Logged in as %s (%s)%n", wiki.getCurrentUser().getUsername(), wiki.version());
+	}
+	
+	private static void setAssertionFlag(Wiki wiki) {
+		Wiki.User user = wiki.getCurrentUser();
 		Objects.requireNonNull(user);
 		
-		if (credentials == null) {
-			retrieveCredentials();
+		List<String> groups = new ArrayList<>();
+		
+		int assertion = Wiki.ASSERT_USER;
+		groups.add("user");
+		
+		if (user.isA("bot")) {
+			assertion |= Wiki.ASSERT_BOT;
+			groups.add("bot");
 		}
 		
-		if (!credentials.containsKey(user.getUsername())) {
-			throw new FailedLoginException("No credentials found for this user");
+		if (user.isA("sysop")) {
+			assertion |= Wiki.ASSERT_SYSOP;
+			groups.add("sysop");
 		}
 		
-		String userAgent = Files.readAllLines(Paths.get(LOCATION + "useragent.txt")).get(0);
-		LoginUtils.loginAndSetPrefs(wiki, user.getUsername(), credentials.get(user.getUsername()));
-		
-		wiki.setThrottle(5000);
-		wiki.setMaxLag(5);
-		wiki.setUserAgent(wiki.getUserAgent() + ", " + userAgent);
-		
-		boolean isBot = Arrays.asList(user.hasBot()).contains(Domains.findDomain(wiki.getDomain()));
-		wiki.setAssertionMode(isBot ? Wiki.ASSERT_BOT : Wiki.ASSERT_USER);
-		wiki.setMarkBot(isBot);
-		
-		wiki.usesCapitalLinks();
-		
-		System.out.println("Logged in as: " + wiki.getCurrentUser().getUsername());
+		wiki.setAssertionMode(assertion);
+		System.out.printf("Groups for user %s: %s%n", user.getUsername(), groups);
 	}
 	
-	private static void retrieveCredentials() throws FileNotFoundException, IOException {
-		try {
-			credentials = Misc.deserialize(LOCATION + "credentials.ser");
-		} catch (ClassNotFoundException | IOException e) {
-			System.out.println(e.getMessage());
-			credentials = new HashMap<>();
-		}
+	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
+		return Misc.deserialize(LOCATION + String.format(FILE_FORMAT, username, BOT_PASSWORD_SUFFIX));
 	}
 	
-	private static void storeCredentials(Users user) throws FileNotFoundException, IOException {
-		System.out.printf("Username: %s%n", user.getUsername());
+	private static void promptAndStoreCredentials() throws FileNotFoundException, IOException {
+		System.out.print("Username: ");
+		String username = Misc.readLine();
+		
 		System.out.print("Password: ");
 		char[] password = Misc.readPassword();
-		credentials.put(user.getUsername(), password);
+		
+		String filename = LOCATION + String.format(FILE_FORMAT, username, BOT_PASSWORD_SUFFIX);
+		Misc.serialize(password, filename);
 	}
 	
-	public static Wikibot generateSession(Domains domain, Users user) throws FailedLoginException, IOException {
-		Wikibot wb = Wikibot.createInstance(domain.getDomain());
-		login(wb, user);
-		return wb;
+	public static Wikibot createSession(String domain) throws CredentialException {
+		String username = System.getenv(ENV_USERNAME_VAR);
+		return createSession(domain, username);
 	}
 	
-	public static Wikibot retrieveSession(Domains domain, Users user) throws FailedLoginException, IOException {
-		Wikibot wb;
+	public static Wikibot createSession(String domain, String username) throws CredentialException {
+		Objects.requireNonNull(domain);
+		Objects.requireNonNull(username);
+		
+		final char[] password;
 		
 		try {
-			wb = Misc.deserialize(String.format(FILE_FORMAT, user.getAlias(), domain.getDomain()));
-			
-			try {
-				wb.usesCapitalLinks();
-			} catch (AssertionError e1) {
-				System.out.println(e1.getMessage());
-				wb.logout();
-				login(wb, user);
-			}
-		} catch (ClassCastException | ClassNotFoundException | IOException e2) {
-			System.out.println(e2.getMessage());
-			wb = generateSession(domain, user);
+			password = retrieveCredentials(username);
+		} catch (ClassNotFoundException | IOException e) {
+			throw new CredentialException("Unable to retrieve credentials: " + e.getMessage());
 		}
+		
+		Wikibot wb = Wikibot.createInstance(domain);
+		login(wb, username, password);
 		
 		return wb;
 	}
 	
-	public static void saveSession(Wiki wiki) throws FileNotFoundException, IOException {
-		User currentUser = wiki.getCurrentUser();
-		
-		if (currentUser == null) {
-			throw new UnsupportedOperationException("Cannot save session with no account logged in");
-		}
-		
-		Users user = Users.findUser(currentUser.getUsername());
-		
-		if (user == null) {
-			throw new UnsupportedOperationException("Unrecognized user: " + currentUser.getUsername());
-		}
-		
-		Misc.serialize(wiki, String.format(FILE_FORMAT, user.getAlias(), wiki.getDomain()));
-		wiki.logout();
-	}
-	
-	public static void main(String[] args) throws FileNotFoundException, IOException, FailedLoginException {
-		retrieveCredentials();
-		
-		List<String> storedUsernames = Stream.of(Users.values())
-			.map(Users::getUsername)
-			.collect(Collectors.toList());
-		
-		if (
-			credentials.isEmpty() ||
-			credentials.size() != Users.values().length ||
-			!credentials.keySet().containsAll(storedUsernames)
-		) {
-			System.out.printf("Credentials available: %s%n", credentials.keySet().toString());
-			
-			for (Users user : Users.values()) {
-				storeCredentials(user);
-			}
-		}
-		
-		for (Users user : Users.values()) {
-			for (Domains domain : Domains.values()) {
-				saveSession(generateSession(domain, user));
-			}
-		}
-		
-		//Misc.serialize(credentials, LOCATION + "credentials.ser");
+	public static void main(String[] args) throws Exception {
+		promptAndStoreCredentials();
 	}
 }

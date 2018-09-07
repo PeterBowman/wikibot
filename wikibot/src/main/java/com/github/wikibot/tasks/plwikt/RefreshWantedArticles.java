@@ -25,7 +25,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class RefreshWantedArticles {
 	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
@@ -49,7 +48,7 @@ public final class RefreshWantedArticles {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		String content = wb.getPageText(TARGET_PAGE);
 		

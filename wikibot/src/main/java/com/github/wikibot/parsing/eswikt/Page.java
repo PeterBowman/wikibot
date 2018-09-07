@@ -13,8 +13,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.security.auth.login.FailedLoginException;
-
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractPage;
@@ -24,7 +22,6 @@ import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class Page extends AbstractPage<Section> {
 	private List<LangSection> langSections;
@@ -276,8 +273,8 @@ public final class Page extends AbstractPage<Section> {
 	}
 	
 	@SuppressWarnings("unused")
-	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wiki = Login.retrieveSession(Domains.ESWIKT, Users.USER1);
+	public static void main(String[] args) throws Exception {
+		Wikibot wiki = Login.createSession(Domains.ESWIKT.getDomain());
 		String text = wiki.getPageText("tamén");
 		Page page = Page.store("tamén", text);
 		System.out.println("");

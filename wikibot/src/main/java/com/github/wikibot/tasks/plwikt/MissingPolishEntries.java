@@ -22,7 +22,6 @@ import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
-import com.github.wikibot.utils.Users;
 
 public class MissingPolishEntries {
 	private static final String DUMPS_PATH = "./data/dumps/";
@@ -53,7 +52,7 @@ public class MissingPolishEntries {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession(Domains.PLWIKT.getDomain());
 		
 		List<String> titles = retrieveNonPolishEntries();
 		retainSgjpEntries(titles);

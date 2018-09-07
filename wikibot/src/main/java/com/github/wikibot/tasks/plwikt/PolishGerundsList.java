@@ -33,7 +33,6 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class PolishGerundsList implements Selectorizable {
 	private static Wikibot wb;
@@ -45,32 +44,27 @@ public class PolishGerundsList implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				foreignGerunds();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				//incorrectFormat();
-				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				makeLists();
-				Login.saveSession(wb);
 				break;
 			case 'm':
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				//writeFormat();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession(Domains.PLWIKT.getDomain());
 				writeLists();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");

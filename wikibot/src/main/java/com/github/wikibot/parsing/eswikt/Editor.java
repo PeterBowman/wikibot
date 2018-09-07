@@ -13,8 +13,6 @@ import static org.wikiutils.ParseUtils.getTemplates;
 import static org.wikiutils.ParseUtils.removeCommentsAndNoWikiText;
 import static org.wikiutils.ParseUtils.templateFromMap;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,8 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.security.auth.login.LoginException;
-
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -56,7 +52,6 @@ import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class Editor extends AbstractEditor {
 	private static final Pattern P_TMPL_DEPTH = Pattern.compile("\\{\\{(?!.*?\\{\\{).+?\\}\\}", Pattern.DOTALL);
@@ -4966,8 +4961,8 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "weakWhitespaces", null);
 	}
 
-	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
-		Wikibot wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+	public static void main(String[] args) throws Exception {
+		Wikibot wb = Login.createSession(Domains.ESWIKT.getDomain());
 		
 		String text;
 		String title = "Paronym";
