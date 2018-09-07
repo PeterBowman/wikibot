@@ -375,7 +375,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
-    	Map<String, List<String[]>> map = new HashMap<>(max);
+    	Map<String, List<String[]>> map = new HashMap<>(500);
     	Map<String, String> getparams = new HashMap<>();
     	getparams.put("list", "iwbacklinks");
     	getparams.put("iwblprop", "iwprefix|iwtitle");
@@ -407,7 +407,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public Map<String, List<String>> allIwBacklinksWithPrefix(String prefix) throws IOException {
-    	Map<String, List<String>> map = new HashMap<>(max);;
+    	Map<String, List<String>> map = new HashMap<>(500);
     	Map<String, String> getparams = new HashMap<>();
     	getparams.put("list", "iwbacklinks");
     	getparams.put("iwblprop", "iwtitle");
