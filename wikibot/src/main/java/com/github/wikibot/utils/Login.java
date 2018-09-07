@@ -17,7 +17,7 @@ import com.github.wikibot.main.Wikibot;
 
 public class Login {
 	private static final String LOCATION = "./data/sessions/";
-	private static final String FILE_FORMAT = LOCATION + "%s@%s.ser";
+	private static final String LOGIN_FORMAT = "%s@%s";
 	private static final String USER_AGENT_FILENAME = "useragent.txt";
 	private static final String BOT_PASSWORD_SUFFIX = "wikibot";
 	private static final String ENV_USERNAME_VAR = "WIKIBOT_MAIN_ACCOUNT";
@@ -41,7 +41,8 @@ public class Login {
 			userAgent = "bot operator: User:" + username;
 		}
 		
-		LoginUtils.loginAndSetPrefs(wiki, username, password);
+		String fullUsername = String.format("%s@%s", username, BOT_PASSWORD_SUFFIX);
+		LoginUtils.loginAndSetPrefs(wiki, fullUsername, password);
 		
 		wiki.setThrottle(DEFAULT_THROTTLE_MS);
 		wiki.setMaxLag(DEFAULT_MAXLAG_S);
@@ -76,7 +77,8 @@ public class Login {
 	}
 	
 	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
-		return Misc.deserialize(LOCATION + String.format(FILE_FORMAT, username, BOT_PASSWORD_SUFFIX));
+		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".ser";
+		return Misc.deserialize(filename);
 	}
 	
 	private static void promptAndStoreCredentials() throws FileNotFoundException, IOException {
@@ -86,7 +88,7 @@ public class Login {
 		System.out.print("Password: ");
 		char[] password = Misc.readPassword();
 		
-		String filename = LOCATION + String.format(FILE_FORMAT, username, BOT_PASSWORD_SUFFIX);
+		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".ser";
 		Misc.serialize(password, filename);
 	}
 	
