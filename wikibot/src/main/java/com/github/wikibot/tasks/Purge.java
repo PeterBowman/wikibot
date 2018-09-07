@@ -34,7 +34,9 @@ public final class Purge {
 			wb.purge(true, titles);
 			break;
 		case 3:
-			wb.purgeRecursive(titles);
+			for (String title : titles) {
+				wb.purge(true, wb.whatTranscludesHere(title));
+			}
 			break;
 		case 4:
 			for (String title : titles) {
