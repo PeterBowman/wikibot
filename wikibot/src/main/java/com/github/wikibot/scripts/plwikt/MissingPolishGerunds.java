@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikipedia.ParserUtils;
 import org.wikipedia.Wiki;
+import org.wikipedia.WikitextUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Selectorizable;
@@ -100,7 +100,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 				} else if (gerund.isEmpty()) {
 					errors.add(title + " - niewypełniony parametr");
 				} else if (!gerund.endsWith("ie")) {
-					errors.add(title + " - " + ParserUtils.recode(gerund));
+					errors.add(title + " - " + WikitextUtils.recode(gerund));
 				} else if (title.endsWith(" się") || title.endsWith(" sobie")) {
 					refl.add(title + " - " + gerund);
 				} else if (!temp.contains(gerund)) {

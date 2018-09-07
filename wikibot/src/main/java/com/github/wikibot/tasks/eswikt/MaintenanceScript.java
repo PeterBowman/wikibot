@@ -60,15 +60,15 @@ public final class MaintenanceScript {
 		
 		wb = Login.createSession("es.wiktionary.org");
 		
-		OffsetDateTime start = OffsetDateTime.parse(startTimestamp);
-		OffsetDateTime end = OffsetDateTime.now(wb.timezone());
-		OffsetDateTime gap = end;
+		OffsetDateTime earliest = OffsetDateTime.parse(startTimestamp);
+		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
+		OffsetDateTime gap = latest;
 		
 		if (gapHours > 0) {
 			gap = gap.minusHours(gapHours);
 		}
 		
-		if (gap.isBefore(start)) {
+		if (gap.isBefore(earliest)) {
 			return;
 		}
 		
@@ -76,13 +76,14 @@ public final class MaintenanceScript {
 		rcoptions.put("redirect", false);
 		
 		List<String> rctypes = Arrays.asList(new String[] {"new", "edit"});
+		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 		
-		Wiki.Revision[] revs = wb.recentChanges(start, end, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
+		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		List<String> titles = Stream.of(
 				Stream.of(revs).collect(new RevisionCollector(gap)),
-				Stream.of(logs).collect(new LogCollector(gap))
+				logs.stream().collect(new LogCollector(gap))
 			)
 			.flatMap(Collection::stream)
 			.distinct()

@@ -35,6 +35,7 @@ public class Wikibot extends WMFWiki {
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {
     	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
@@ -44,6 +45,7 @@ public class Wikibot extends WMFWiki {
     
     public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
     	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
@@ -54,6 +56,7 @@ public class Wikibot extends WMFWiki {
     
     public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
     	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
@@ -117,7 +120,7 @@ public class Wikibot extends WMFWiki {
 		for (int i = 0; i < chunks.size(); i++) {
 			postparams.put(postParamName, chunks.get(i));
 			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.size());
-			String line = makeHTTPRequest(query, getparams, postparams, localCaller);
+			String line = makeApiCall(getparams, postparams, localCaller);
 			biCons.accept(line, list);
 		}
 		
@@ -126,7 +129,7 @@ public class Wikibot extends WMFWiki {
 	}
 
 	private PageContainer[] getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
-		List<PageContainer> list = makeListQuery(queryPrefix, query, getparams, null, "getGeneratedContent", this::parseContentLine);
+		List<PageContainer> list = makeListQuery(queryPrefix, getparams, null, "getGeneratedContent", -1, this::parseContentLine);
 		return list.toArray(new PageContainer[list.size()]);
 	}
 	
@@ -166,7 +169,7 @@ public class Wikibot extends WMFWiki {
 		Map<String, Object> postparams = new HashMap<>();
 		postparams.put("text", text);
 		
-		String line = makeHTTPRequest(apiUrl, getparams, postparams, "expandTemplates");
+		String line = makeApiCall(getparams, postparams, "expandTemplates");
 		
 		int a = line.indexOf("<wikitext ");
 		a = line.indexOf(">", a) + 1;
@@ -177,6 +180,7 @@ public class Wikibot extends WMFWiki {
 	
 	public Revision[] getTopRevision(String[] titles) throws IOException {
 		Map<String, String> getparams = new HashMap<>();
+		getparams.put("action", "query");
 		getparams.put("prop", "revisions");
 		getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|sha1");
 		getparams.put("meta", "tokens");
@@ -241,7 +245,7 @@ public class Wikibot extends WMFWiki {
         	getparams.put("rcend", endtimestamp);
         }
         
-        List<Revision> revisions = makeListQuery("rc", query, getparams, null, "recentChanges", (line, results) -> {
+        List<Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", -1, (line, results) -> {
         	for (int i = line.indexOf("<rc "); i != -1; i = line.indexOf("<rc ", ++i)) {
                 int j = line.indexOf("/>", i);
                 results.add(parseRevision(line.substring(i, j), ""));
@@ -274,7 +278,7 @@ public class Wikibot extends WMFWiki {
     	getparams.put("alnamespace", Integer.toString(namespace));
 		getparams.put("alunique", "1");
 		
-		List<String> pages = makeListQuery("al", query, getparams, null, "allPages", (line, results) -> {
+		List<String> pages = makeListQuery("al", getparams, null, "allPages", -1, (line, results) -> {
 			for (int a = line.indexOf("<l "); a > 0; a = line.indexOf("<l ", ++a)) {
 				results.add(parseAttribute(line, "title", a));
 			}
@@ -341,7 +345,7 @@ public class Wikibot extends WMFWiki {
         	getparams.put("apfilterredir", "nonredirects");
 
         // parse
-        List<String> pages = makeListQuery("ap", query, getparams, null, "listPages", (line, results) -> {
+        List<String> pages = makeListQuery("ap", getparams, null, "listPages", -1, (line, results) -> {
         	// xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
             	results.add(parseAttribute(line, "title", a));
@@ -376,7 +380,7 @@ public class Wikibot extends WMFWiki {
 		postparams.put("revid", Long.toString(rev.getID()));
 		postparams.put("token", getToken("csrf"));
 		
-		String response = makeHTTPRequest(apiUrl, getparams, postparams, "review");
+		String response = makeApiCall(getparams, postparams, "review");
 		checkErrorsAndUpdateStatus(response, "review");
 		log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
 	}

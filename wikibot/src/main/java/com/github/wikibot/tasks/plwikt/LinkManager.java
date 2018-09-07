@@ -582,7 +582,9 @@ public final class LinkManager implements Selectorizable {
 			} else if (f_codes.exists()) {
 				OffsetDateTime startTimestamp = request.currentTimestamp; // earliest
 				OffsetDateTime endTimestamp = currentRevision.getTimestamp(); // latest
-				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
+				
+				Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(startTimestamp, endTimestamp);
+				List<Revision> revs = wb.getPageHistory(mainpage, helper);
 				
 				for (Revision rev : revs) {
 					if (rev.getUser().equals(wb.getCurrentUser().getUsername())) {

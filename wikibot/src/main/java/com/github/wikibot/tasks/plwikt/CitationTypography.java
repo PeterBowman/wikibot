@@ -208,33 +208,35 @@ public final class CitationTypography {
 	}
 	
 	private static String[] extractRecentChanges() throws IOException {
-		OffsetDateTime start;
+		OffsetDateTime earliest;
 		
 		try {
 			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
-			start = OffsetDateTime.parse(timestamp);
+			earliest = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
-			start = OffsetDateTime.now(wb.timezone()).minusDays(1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		OffsetDateTime end = OffsetDateTime.now(wb.timezone());
+		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
 		
-		if (!end.isAfter(start)) {
+		if (!latest.isAfter(earliest)) {
 			System.out.println("Extracted timestamp is greater than the current time, setting to -24h.");
-			start = OffsetDateTime.now(wb.timezone()).minusDays(1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
 		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
-		Wiki.Revision[] revs = wb.recentChanges(start, end, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
+		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		
+		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getTitle),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
+			logs.stream().map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
 	
@@ -827,7 +829,11 @@ public final class CitationTypography {
 			field.editContent(newContent);
 			wb.edit(entry.title, page.toString(), summary, basetime);
 			
-			optRevision = Stream.of(wb.contribs("PBbot", now, null, 0))
+			Wiki.RequestHelper helper = wb.new RequestHelper()
+				.inNamespaces(Wiki.MAIN_NAMESPACE)
+				.withinDateRange(now, null);
+			
+			optRevision = wb.contribs("PBbot", helper).stream()
 				 .filter(c -> c.getTitle().equals(entry.title) && c.getComment().startsWith(EDIT_SUMMARY))
 				 .findFirst();
 		} catch (AssertionError | AccountLockedException e) {

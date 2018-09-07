@@ -273,7 +273,6 @@ public final class GermanNounDeclension implements Selectorizable {
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, LoginException, ClassNotFoundException {
-		
 		int newcount = 0;
 		int conflicts = 0;
 		
@@ -465,7 +464,8 @@ public final class GermanNounDeclension implements Selectorizable {
 	}
 	
 	public static void checkErrors() throws IOException {
-		Revision[] revs = wb.contribs("PBbot", 0);
+		Wiki.RequestHelper helper = wb.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
+		List<Revision> revs = wb.contribs("PBbot", helper);
 		//Calendar end = wb.getRevision(4116714).getTimestamp();
 		//Calendar start = wb.getRevision(4111867).getTimestamp();
 		//Revision[] revs = wb.contribs("PBbot", "", end, start, 0);

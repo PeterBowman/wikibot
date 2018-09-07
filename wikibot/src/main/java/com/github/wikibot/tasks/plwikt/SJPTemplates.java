@@ -51,8 +51,8 @@ public final class SJPTemplates {
 		List<String> errors = new ArrayList<>();
 		
 		for (String title : titles) {
-			Wiki.Revision[] revs = wb.getPageHistory(title);
-			Long[] revids = Stream.of(revs).map(Wiki.Revision::getID).toArray(Long[]::new);
+			List<Wiki.Revision> revs = wb.getPageHistory(title, null);
+			Long[] revids = revs.stream().map(Wiki.Revision::getID).toArray(Long[]::new);
 			PageContainer[] pcs = wb.getContentOfRevIds(revids);
 			
 			PageContainer page = Stream.of(pcs)
@@ -69,7 +69,7 @@ public final class SJPTemplates {
 			List<PageContainer> temp = Arrays.asList(pcs);
 			Collections.reverse(temp);
 			int index = temp.indexOf(page);
-			Wiki.Revision targetRev = revs[index];
+			Wiki.Revision targetRev = revs.get(index);
 			
 			targetRevs.add(targetRev);
 			Thread.sleep(SLEEP_MS);
