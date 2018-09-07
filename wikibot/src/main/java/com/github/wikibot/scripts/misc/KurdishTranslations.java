@@ -3,7 +3,6 @@ package com.github.wikibot.scripts.misc;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -79,7 +78,7 @@ public final class KurdishTranslations implements Selectorizable {
 	
 	public static void edit() throws IOException, LoginException {
 		final String page = "Wikipedysta:PBbot/tłumaczenia na kurdyjski";
-		List<String> lines = Files.readAllLines(Paths.get(location + "worklist.txt"), StandardCharsets.UTF_8);
+		List<String> lines = Files.readAllLines(Paths.get(location + "worklist.txt"));
 		String text = String.join("\n", lines);
 		
 		wb.edit(page, text, "tworzenie listy", false, false, -2, null);

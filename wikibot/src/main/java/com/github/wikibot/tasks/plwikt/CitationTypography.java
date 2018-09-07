@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -42,7 +43,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -213,7 +213,7 @@ public final class CitationTypography {
 		OffsetDateTime start;
 		
 		try {
-			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
+			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
 			start = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
@@ -232,10 +232,10 @@ public final class CitationTypography {
 		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
-		IOUtils.writeToFile(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), LOCATION + "timestamp.txt");
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getPage),
+			Stream.of(revs).map(Wiki.Revision::getTitle),
 			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
@@ -376,7 +376,6 @@ public final class CitationTypography {
 			}
 		}
 		
-		@SuppressWarnings("unchecked")
 		Map<String, Object>[] infos = wb.getPageInfo(titles);
 		
 		for (int i = 0; i < infos.length; i++) {
@@ -405,7 +404,7 @@ public final class CitationTypography {
 				TreeMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeList(map), LOCATION + "diffs.txt");
+		Files.write(Paths.get(LOCATION + "diffs.txt"), Arrays.asList(Misc.makeList(map)));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
@@ -831,7 +830,7 @@ public final class CitationTypography {
 			wb.edit(entry.title, page.toString(), summary, basetime);
 			
 			optRevision = Stream.of(wb.contribs("PBbot", now, null, 0))
-				 .filter(c -> c.getPage().equals(entry.title) && c.getSummary().startsWith(EDIT_SUMMARY))
+				 .filter(c -> c.getTitle().equals(entry.title) && c.getComment().startsWith(EDIT_SUMMARY))
 				 .findFirst();
 		} catch (AssertionError | AccountLockedException e) {
 			System.out.println(e.getMessage());
@@ -850,7 +849,7 @@ public final class CitationTypography {
 		
 		if (optRevision.isPresent()) {
 			Wiki.Revision revision = optRevision.get();
-			long revId = revision.getRevid();
+			long revId = revision.getID();
 			Timestamp revTimestamp = Timestamp.from(revision.getTimestamp().toInstant());
 			
 			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.

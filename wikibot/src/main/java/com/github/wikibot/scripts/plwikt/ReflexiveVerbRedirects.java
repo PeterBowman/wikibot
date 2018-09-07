@@ -2,6 +2,8 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,8 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -80,8 +80,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 
 		System.out.printf("Tamaño de la lista de pronominales: %d%n", pron.size());
 		
-		@SuppressWarnings("rawtypes")
-		Map[] infos = wb.getPageInfo(pron.toArray(new String[pron.size()]));
+		Map<String, Object>[] infos = wb.getPageInfo(pron.toArray(new String[pron.size()]));
 		
 		List<String> missing = Stream.of(infos)
 			.filter(Objects::nonNull)
@@ -91,7 +90,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista de faltantes: %d%n", missing.size());
 		
-		IOUtils.writeToFile(String.join("\n", missing), location + "worklist.txt");
+		Files.write(Paths.get(location + "worklist.txt"), missing);
 		Misc.serialize(missing, location + "missing.ser");
 	}
 	
@@ -105,7 +104,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 			.collect(Collectors.toList());
 		
 		System.out.printf("Tamaño de la lista de duplicados: %d%n", duplicates.size());
-		IOUtils.writeToFile(String.join("\n", duplicates), location + "duplicates.txt");
+		Files.write(Paths.get(location + "duplicates.txt"), duplicates);
 	}
 	
 	public static void edit() throws LoginException, IOException, ClassNotFoundException {

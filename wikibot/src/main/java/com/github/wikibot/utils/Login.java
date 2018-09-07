@@ -1,8 +1,9 @@
 package com.github.wikibot.utils;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +16,6 @@ import javax.security.auth.login.FailedLoginException;
 
 import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.User;
-import org.wikiutils.IOUtils;
 import org.wikiutils.LoginUtils;
 
 import com.github.wikibot.main.ESWikt;
@@ -40,7 +40,7 @@ public class Login {
 			throw new FailedLoginException("No credentials found for this user");
 		}
 		
-		String userAgent = IOUtils.fileToString(new File(LOCATION + "useragent.txt"), "UTF8");
+		String userAgent = Files.readAllLines(Paths.get(LOCATION + "useragent.txt")).get(0);
 		LoginUtils.loginAndSetPrefs(wiki, user.getUsername(), credentials.get(user.getUsername()));
 		
 		wiki.setThrottle(5000);
@@ -51,7 +51,7 @@ public class Login {
 		wiki.setAssertionMode(isBot ? Wiki.ASSERT_BOT : Wiki.ASSERT_USER);
 		wiki.setMarkBot(isBot);
 		
-		wiki.getSiteInfo();
+		wiki.usesCapitalLinks();
 		
 		System.out.println("Logged in as: " + wiki.getCurrentUser().getUsername());
 	}
@@ -101,7 +101,7 @@ public class Login {
 			wiki = (T) Misc.deserialize(String.format(FILE_FORMAT, user.getAlias(), domain.getDomain()));
 			
 			try {
-				wiki.getSiteInfo();
+				wiki.usesCapitalLinks();
 			} catch (AssertionError e1) {
 				System.out.println(e1.getMessage());
 				wiki.logout();

@@ -148,7 +148,7 @@ public class Wikibot extends WMFWiki {
 	public Map<String, OffsetDateTime> getTimestamps(String[] pages) throws IOException {
 		return Stream.of(getTopRevision(pages))
 			.collect(Collectors.toMap(
-				Revision::getPage,
+				Revision::getTitle,
 				Revision::getTimestamp
 			));
 	}
@@ -157,7 +157,7 @@ public class Wikibot extends WMFWiki {
 	public Map<String, OffsetDateTime> getTimestamps(Collection<? extends String> pages) throws IOException {
 		return Stream.of(getTopRevision(pages.toArray(new String[pages.size()])))
 			.collect(Collectors.toMap(
-				Revision::getPage,
+				Revision::getTitle,
 				Revision::getTimestamp
 			));
 	}

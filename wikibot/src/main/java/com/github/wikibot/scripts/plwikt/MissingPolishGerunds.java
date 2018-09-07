@@ -2,8 +2,9 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.ParserUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -125,9 +125,9 @@ public final class MissingPolishGerunds implements Selectorizable {
 			}
 		}
 		
-		IOUtils.writeToFile(String.join("\n", errors), f_errors);
-		IOUtils.writeToFile(String.join("\n", refl), f_refl);
-		IOUtils.writeToFile(String.join("\n", gerunds), f_list);
+		Files.write(Paths.get(f_errors), errors);
+		Files.write(Paths.get(f_refl), refl);
+		Files.write(Paths.get(f_list), gerunds);
 		
 		Misc.serialize(list, f_list_ser);
 		
@@ -137,7 +137,6 @@ public final class MissingPolishGerunds implements Selectorizable {
 		System.out.printf("Errores: %d\n", errors.size());
 	}
 	
-	@SuppressWarnings("rawtypes")
 	public static void getMissing() throws IOException, LoginException, ClassNotFoundException {
 		List<String> aff = new ArrayList<>(500);
 		List<String> neg = new ArrayList<>(500);
@@ -149,10 +148,10 @@ public final class MissingPolishGerunds implements Selectorizable {
 			.map(gerund -> "nie" + gerund)
 			.collect(Collectors.toSet());
 		
-		Map[] infos_aff = wb.getPageInfo(set_aff.toArray(new String[set_aff.size()]));
-		Map[] infos_neg = wb.getPageInfo(set_neg.toArray(new String[set_neg.size()]));
+		Map<String, Object>[] infos_aff = wb.getPageInfo(set_aff.toArray(new String[set_aff.size()]));
+		Map<String, Object>[] infos_neg = wb.getPageInfo(set_neg.toArray(new String[set_neg.size()]));
 		
-		for (Map info : infos_aff) {
+		for (Map<String, Object> info : infos_aff) {
 			if (info != null && !(boolean)info.get("exists")) {
 				String gerund = (String)info.get("displaytitle");
 				String verb = list.get(gerund);
@@ -160,7 +159,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 			}
 		}
 		
-		for (Map info : infos_neg) {
+		for (Map<String, Object> info : infos_neg) {
 			if (info != null && !(boolean)info.get("exists")) {
 				String gerund = (String)info.get("displaytitle");
 				String verb = list.get(gerund.substring(3));
@@ -170,23 +169,20 @@ public final class MissingPolishGerunds implements Selectorizable {
 		
 		Misc.sortList(aff, "pl");
 		Misc.sortList(neg, "pl");
-		
-		IOUtils.writeToFile(String.join("\n", aff), f_miss_aff);
-		IOUtils.writeToFile(String.join("\n", neg), f_miss_neg);
+
+		Files.write(Paths.get(f_miss_aff), aff);
+		Files.write(Paths.get(f_miss_neg), neg);
 		
 		System.out.printf("Sustantivos faltantes: afirmativos - %d, negativos - %d%n", aff.size(), neg.size());
 	}
 	
 	public static void makeArrayLists() throws IOException {
-		String[] aff = IOUtils.loadFromFile(f_miss_aff, "", "UTF8");
-		String[] neg = IOUtils.loadFromFile(f_miss_neg, "", "UTF8");
-		
-		List<String[]> list_aff = Arrays.asList(aff).stream().map(line -> new String[]{
+		List<String[]> list_aff = Files.lines(Paths.get(f_miss_aff)).map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());
 		
-		List<String[]> list_neg = Arrays.asList(neg).stream().map(line -> new String[]{
+		List<String[]> list_neg = Files.lines(Paths.get(f_miss_neg)).map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());

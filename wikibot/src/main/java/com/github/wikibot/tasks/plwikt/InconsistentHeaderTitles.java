@@ -3,6 +3,8 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,7 +29,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
@@ -121,7 +122,7 @@ public final class InconsistentHeaderTitles {
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage();
-		IOUtils.writeToFile(page.toString(), LOCATION + "page.txt");
+		Files.write(Paths.get(LOCATION + "page.txt"), Arrays.asList(page.toString()));
 		
 		wb.setMarkBot(false);
 		wb.edit(page.getTitle(), page.toString(), "aktualizacja");
@@ -196,7 +197,7 @@ public final class InconsistentHeaderTitles {
 		OffsetDateTime start;
 		
 		try {
-			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
+			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
 			start = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
@@ -215,10 +216,10 @@ public final class InconsistentHeaderTitles {
 		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
-		IOUtils.writeToFile(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), LOCATION + "timestamp.txt");
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getPage),
+			Stream.of(revs).map(Wiki.Revision::getTitle),
 			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}

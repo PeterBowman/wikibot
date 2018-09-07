@@ -7,8 +7,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
@@ -236,9 +237,7 @@ public final class Edit implements Selectorizable {
 	}
 	
 	public static void getDiffs() throws IOException {
-		String[] lines = IOUtils.loadFromFile(difflist, "", "UTF8");
-		
-		String[] titles = Stream.of(lines)
+		String[] titles = Files.lines(Paths.get(difflist))
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
@@ -260,13 +259,12 @@ public final class Edit implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeList(map), worklist);
+		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeList(map)));
 		Misc.serialize(wb.getTimestamps(pages), info);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
-		Map<String, String> map = Misc.readList(lines);
+		Map<String, String> map = Misc.readList(Files.lines(Paths.get(worklist)).toArray(String[]::new));
 		Map<String, OffsetDateTime> timestamps = Misc.deserialize(info);
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());

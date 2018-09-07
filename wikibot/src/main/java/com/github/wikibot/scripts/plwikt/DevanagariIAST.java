@@ -1,13 +1,14 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -66,7 +67,7 @@ public class DevanagariIAST implements Selectorizable {
 		System.out.printf("Total: %d, hindi: %d, non-hindi: %d%n", pages.length, hindi.size(), nonHindi.size());
 		
 		String out = makePage(hindi, nonHindi);
-		IOUtils.writeToFile(out, fList);
+		Files.write(Paths.get(fList), Arrays.asList(out));
 		
 		if (edit) {
 			wb.edit(wikipage, out, "aktualizacja", false, false, -2, null);

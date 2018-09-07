@@ -1,6 +1,8 @@
 package com.github.wikibot.scripts;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,15 +10,12 @@ import java.util.Map;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
-
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Users;
 
 public class OrphanTalkPages {
-	@SuppressWarnings({ "rawtypes" })
 	public static void main(String[] args) throws IOException, LoginException {
 		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		Integer[] namespaces = new Integer[]{
@@ -40,7 +39,7 @@ public class OrphanTalkPages {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
-		IOUtils.writeToFile(String.join("\n", list), "./test.txt");
+		Files.write(Paths.get("./test.txt"), list);
 		
 		List<String> targets = new ArrayList<>(list.size());
 		
@@ -55,7 +54,7 @@ public class OrphanTalkPages {
 			targets.add(title);
 		}
 		
-		Map[] infos = wb.getPageInfo(targets.toArray(new String[targets.size()]));
+		Map<String, Object>[] infos = wb.getPageInfo(targets.toArray(new String[targets.size()]));
 		List<String> missing = new ArrayList<>(targets.size());
 		
 		for (int i = 0; i < targets.size(); i++) {
@@ -65,7 +64,7 @@ public class OrphanTalkPages {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", missing.size());
-		IOUtils.writeToFile(String.join("\n", missing), "./test2.txt");
+		Files.write(Paths.get("./test2.txt"), missing);
 		
 		Login.saveSession(wb);
 	}

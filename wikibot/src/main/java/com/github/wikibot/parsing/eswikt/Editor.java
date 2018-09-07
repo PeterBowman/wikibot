@@ -198,10 +198,10 @@ public class Editor extends AbstractEditor {
 		
 		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
 		
-		final List<String> specialLinksList = new ArrayList<>(Page.INTERWIKI_PREFIXES.length + fileNsAliases.size());
+		final List<String> specialLinksList = new ArrayList<>(Page.INTERWIKI_PREFIXES.size() + fileNsAliases.size());
 		specialLinksList.addAll(fileNsAliases);
 		specialLinksList.addAll(categoryNsAliases);
-		specialLinksList.addAll(Arrays.asList(Page.INTERWIKI_PREFIXES));
+		specialLinksList.addAll(Page.INTERWIKI_PREFIXES);
 		
 		String specialLinksGroup = String.join("|", specialLinksList);
 		

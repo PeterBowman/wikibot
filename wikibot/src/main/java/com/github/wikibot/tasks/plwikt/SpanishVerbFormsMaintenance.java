@@ -2,13 +2,16 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,7 +24,6 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -83,7 +85,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			.collect(Collectors.toList());
 		
 		String[] verbs = Stream.of(pages).map(PageContainer::getTitle).toArray(String[]::new);
-		IOUtils.writeToFile(String.join("\n", verbs), location + "verbos.txt");
+		Files.write(Paths.get(location + "verbos.txt"), Arrays.asList(verbs));
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
 	    
 	    List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
@@ -124,7 +126,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 	    int form_count = verb_forms.size();
 	    System.out.printf("Se han extraído %d formas verbales\n", form_count);
 	    
-	    IOUtils.writeToFile(String.join("\n", verb_forms), location + "formas.txt");
+	    Files.write(Paths.get(location + "formas.txt"), verb_forms);
 	    System.out.println("Archivo \"formas.txt\" actualizado");
 	    
 	    // exit program
@@ -308,10 +310,10 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		Misc.sortList(output_list, "es");
 		String output = String.join("\n", output_list);
 		
-		IOUtils.writeToFile(String.format(
-			"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
-			form_count, verb_count, output
-		), location + "resumen.txt");
+		Files.write(Paths.get(location + "resumen.txt"), Arrays.asList(String.format(
+				"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
+				form_count, verb_count, output
+			)));
 			
 		System.out.printf("%d verbos analizados, %d formas extraídas\n", verb_count, form_count);
 		System.out.printf("Tamaño de la lista obtenida: %d\n", summ_count);

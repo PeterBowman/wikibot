@@ -183,7 +183,6 @@ public final class MorfeoDatabase {
 	}
 	
 	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
-		@SuppressWarnings("unchecked")
 		Map<String, Object>[] info = wb.getPageInfo(morphems);
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		

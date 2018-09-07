@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
-import java.io.UncheckedIOException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,8 +129,7 @@ public class MissingRefsOnPlwiki {
 		int targetedArticles = plwikiTitles.length;
 		System.out.printf("Targeted articles on plwikipedia: %d%n", targetedArticles);
 
-		@SuppressWarnings("rawtypes")
-		Map[] pageInfos = plwiki.getPageInfo(plwikiTitles);
+		Map<String, Object>[] pageInfos = plwiki.getPageInfo(plwikiTitles);
 
 		String[] foundPlwikiTitles = getFoundArticles(plwikiTitles, pageInfos);
 		Set<String> missingPlwikiTitles = new HashSet<>(Arrays.asList(plwikiTitles));

@@ -3,6 +3,8 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +22,6 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -67,7 +68,7 @@ public final class EsperantoRelatedTerms {
 			return;
 		}
 		
-		IOUtils.writeToFile(sb.toString(), LOCATION + "output.txt");
+		Files.write(Paths.get(LOCATION + "output.txt"), Arrays.asList(sb.toString()));
 		editPage(sb.toString());
 	}
 	

@@ -3,8 +3,11 @@ package com.github.wikibot.scripts;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,8 +17,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
@@ -64,7 +65,7 @@ public final class Replace implements Selectorizable {
 	public void getDiffs() throws FileNotFoundException, IOException, ClassNotFoundException {
 		String target = "prettytable";
 		String replacement = "wikitable";
-		String[] titles = IOUtils.loadFromFile(f_titles, "", "UTF8");
+		String[] titles = Files.lines(Paths.get(f_titles)).toArray(String[]::new);
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
@@ -83,7 +84,7 @@ public final class Replace implements Selectorizable {
 				page -> replace(page.getText(), target, replacement)
 			));
 		
-		IOUtils.writeToFile(Misc.makeList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(map)));
 		
 		System.out.printf("Tamaño final: %d%n", map.size());
 		
@@ -103,8 +104,7 @@ public final class Replace implements Selectorizable {
 	public void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		String target = Misc.deserialize(f_target);
 		String replacement = Misc.deserialize(f_replacement);
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
-		Map<String, String> map = Misc.readList(lines);
+		Map<String, String> map = Misc.readList(Files.lines(Paths.get(f_worklist)).toArray(String[]::new));
 		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_info);
 		
 		System.out.printf("Título: %s%n", target);

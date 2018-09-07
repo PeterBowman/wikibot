@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +19,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -98,11 +98,11 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		System.out.printf("Acrónimos: %d%n", acronyms.size());
 		System.out.printf("Tamaño final de la lista: %d%n", masc.size());
 		
-		IOUtils.writeToFile(String.join("\n", masc), f_allpages);
+		Files.write(Paths.get(f_allpages), masc);
 	}
 	
 	public static void getContents() throws UnsupportedEncodingException, IOException {
-		String[] lines = IOUtils.loadFromFile(f_allpages, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_allpages)).toArray(String[]::new);
 		String[] selection = Arrays.copyOfRange(lines, 0, Math.min(LIMIT, lines.length - 1));
 		
 		System.out.printf("Tamaño de la lista: %d%n", selection.length);
@@ -128,12 +128,12 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 		Misc.serialize(pages, f_serialized);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(f_serialized);
 		
@@ -192,11 +192,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			return;
 		}
 		
-		String[] allpages = IOUtils.loadFromFile(f_allpages, "", "UTF8");
-		List<String> temp = new ArrayList<>(Arrays.asList(allpages));
+		List<String> temp = new ArrayList<>(Files.readAllLines(Paths.get(f_allpages)));
 		temp.removeAll(edited);
 		temp.removeAll(omitted);
-		IOUtils.writeToFile(String.join("\n", temp), f_allpages);
+		Files.write(Paths.get(f_allpages), temp);
 		
 		System.out.println("Lista actualizada");
 		

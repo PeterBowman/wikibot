@@ -6,14 +6,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -80,7 +80,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d\n", list.size());
-		IOUtils.writeToFile(String.join("\n", list), location + "adjetivos.txt");
+		Files.write(Paths.get(location + "adjetivos.txt"), list);
 	}
 	
 	public static void analyze_adj(boolean edit) throws IOException, LoginException {

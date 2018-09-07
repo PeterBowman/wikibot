@@ -1,11 +1,13 @@
 package com.github.wikibot.scripts;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Wikibot;
 
@@ -21,18 +23,18 @@ public final class UpdateInterwikiPrefixes {
 			return;
 		}
 		
-		String[] lines = IOUtils.loadFromFile(DATA, "", "UTF8");
+		List<String> lines = Files.readAllLines(Paths.get(DATA));
 		
 		if (String.join("\n", lines).trim().equals(text)) {
 			return;
 		}
 		
-		Collection<String> coll = CollectionUtils.disjunction(Arrays.asList(text.split("\n")), Arrays.asList(lines));
+		Collection<String> coll = CollectionUtils.disjunction(Arrays.asList(text.split("\n")), lines);
 		
 		if (!coll.isEmpty()) {
 			System.out.printf("Differences: %s%n", coll);
 		}
 		
-		IOUtils.writeToFile(text, DATA);
+		Files.write(Paths.get(DATA), Arrays.asList(text));
 	}
 }

@@ -1,7 +1,10 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +13,6 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -75,12 +77,12 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		
 		System.out.printf("Encontrados: %d%n", targets.size());
 		Misc.serialize(targets, f_serialized);
-		IOUtils.writeToFile(Misc.makeList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException, LoginException {
 		List<PageContainer> pages = Misc.deserialize(f_serialized);
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String> map = Misc.readList(lines);
 		List<String> errors = new ArrayList<>();
 		

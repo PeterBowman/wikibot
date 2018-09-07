@@ -2,11 +2,12 @@ package com.github.wikibot.scripts;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki.Revision;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
@@ -23,10 +24,9 @@ public final class Rollback {
 		wb = Login.retrieveSession(domain, Users.USER1);
 		wb.setThrottle(2000);
 		
-		String[] titles = IOUtils.loadFromFile(worklist, "", "UTF8");
 		String reason = "omijanie blokady";
 		
-		for (String title : titles) {
+		for (String title : Files.readAllLines(Paths.get(worklist))) {
 			Revision rev = wb.getTopRevision(title);
 			rev.rollback(true, reason);
 		}

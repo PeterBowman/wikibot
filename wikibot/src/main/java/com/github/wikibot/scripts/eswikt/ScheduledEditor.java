@@ -2,9 +2,10 @@ package com.github.wikibot.scripts.eswikt;
 
 import static org.wikiutils.ParseUtils.getTemplates;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
@@ -16,7 +17,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -263,8 +263,8 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
-		} catch (FileNotFoundException e) {
+			lines = Files.lines(Paths.get(ERROR_LOG)).toArray(String[]::new);
+		} catch (IOException e) {
 			lines = new String[]{};
 		}
 		
@@ -272,7 +272,7 @@ public final class ScheduledEditor {
 		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			Files.write(Paths.get(ERROR_LOG), list);
 		} catch (IOException e) {}
 	}
 	

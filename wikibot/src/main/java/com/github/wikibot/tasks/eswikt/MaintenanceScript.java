@@ -1,8 +1,9 @@
 package com.github.wikibot.tasks.eswikt;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,7 +31,6 @@ import javax.security.auth.login.FailedLoginException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.parsing.AbstractEditor;
@@ -137,16 +137,16 @@ public final class MaintenanceScript {
 		wb.logout();
 	}
 	
-	private static String extractTimestamp() throws FileNotFoundException {
+	private static String extractTimestamp() throws IOException {
 		File f_last_date = new File(LAST_DATE);
 		File f_pick_date = new File(PICK_DATE);
 		
 		String startTimestamp;
 		
 		if (f_last_date.exists()) {
-			startTimestamp = IOUtils.loadFromFile(LAST_DATE, "", "UTF8")[0];
+			startTimestamp = Files.readAllLines(Paths.get(LAST_DATE)).get(0);
 		} else if (f_pick_date.exists()) {
-			startTimestamp = IOUtils.loadFromFile(PICK_DATE, "", "UTF8")[0];
+			startTimestamp = Files.readAllLines(Paths.get(PICK_DATE)).get(0);
 		} else {
 			throw new UnsupportedOperationException("No timestamp file found.");
 		}
@@ -160,7 +160,7 @@ public final class MaintenanceScript {
 	
 	private static void storeTimestamp(OffsetDateTime timestamp) {
 		try {
-			IOUtils.writeToFile(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), LAST_DATE);
+			Files.write(Paths.get(LAST_DATE), Arrays.asList(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		} catch (IOException e) {}
 	}
 
@@ -175,19 +175,18 @@ public final class MaintenanceScript {
 		System.out.println(log);
 		t.printStackTrace();
 		
-		String[] lines;
+		List<String> list;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
-		} catch (FileNotFoundException e) {
-			lines = new String[]{};
+			list = new ArrayList<>(Files.readAllLines(Paths.get(ERROR_LOG)));
+		} catch (IOException e) {
+			list = new ArrayList<>();
 		}
 		
-		List<String> list = new ArrayList<>(Arrays.asList(lines));
 		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			Files.write(Paths.get(ERROR_LOG), list);
 		} catch (IOException e) {}
 	}
 	
@@ -244,7 +243,7 @@ public final class MaintenanceScript {
 	
 		@Override
 		public BiConsumer<Map<String, Wiki.Revision>, Wiki.Revision> accumulator() {
-			return (accum, rev) -> accum.put(rev.getPage(), rev);
+			return (accum, rev) -> accum.put(rev.getTitle(), rev);
 		}
 	
 		@Override
@@ -257,7 +256,7 @@ public final class MaintenanceScript {
 			return accum -> accum.values().stream()
 				.filter(rev -> rev.getTimestamp().isBefore(dateTime))
 				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
-				.map(Wiki.Revision::getPage)
+				.map(Wiki.Revision::getTitle)
 				.collect(Collectors.toList());
 		}
 	

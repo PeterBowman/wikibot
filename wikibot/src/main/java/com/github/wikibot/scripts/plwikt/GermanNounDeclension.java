@@ -476,7 +476,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		List<String> list = new ArrayList<>(100);
 		
 		for (Revision rev : revs) {
-			if (rev.getPage().equals("Actinium")) break;
+			if (rev.getTitle().equals("Actinium")) break;
 			String diff = rev.diff(PLWikt.PREVIOUS_REVISION);
 			//int lm = diff.indexOf(" lm = ");
 			
@@ -491,8 +491,8 @@ public final class GermanNounDeclension implements Selectorizable {
 				int nline = diff.indexOf("\n", lm);
 				if (nline != -1) {
 					if (diff.substring(lm, nline).contains("|")) {
-						System.out.println(rev.getPage());
-						list.add(rev.getPage());
+						System.out.println(rev.getTitle());
+						list.add(rev.getTitle());
 					}
 				}
 			}

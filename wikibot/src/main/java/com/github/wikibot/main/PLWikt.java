@@ -72,11 +72,11 @@ public class PLWikt extends Wikibot {
 		}
 		
 		postparams.put("flag_accuracy", "1");
-		postparams.put("revid", Long.toString(rev.getRevid()));
+		postparams.put("revid", Long.toString(rev.getID()));
 		postparams.put("token", getToken("csrf"));
 		
 		String response = makeHTTPRequest(apiUrl, getparams, postparams, "review");
 		checkErrorsAndUpdateStatus(response, "review");
-		log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());
+		log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getTitle());
 	}
 }

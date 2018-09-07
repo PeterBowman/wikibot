@@ -54,7 +54,7 @@ public final class SJPTemplates {
 		
 		for (String title : titles) {
 			Wiki.Revision[] revs = wb.getPageHistory(title);
-			Long[] revids = Stream.of(revs).map(Wiki.Revision::getRevid).toArray(Long[]::new);
+			Long[] revids = Stream.of(revs).map(Wiki.Revision::getID).toArray(Long[]::new);
 			PageContainer[] pcs = wb.getContentOfRevIds(revids);
 			
 			PageContainer page = Stream.of(pcs)
@@ -114,8 +114,8 @@ public final class SJPTemplates {
 		revs.stream()
 			.map(item -> String.format(
 				"| [[%s]] || %s || [[Specjalna:Diff/%d|%s]] || %s",
-				item.getPage(), item.getUser(), item.getRevid(), item.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-				Optional.ofNullable(item.getSummary()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
+				item.getTitle(), item.getUser(), item.getID(), item.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+				Optional.ofNullable(item.getComment()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
 			))
 			.forEach(s -> sb.append("|-\n").append(s).append("\n"));
 		

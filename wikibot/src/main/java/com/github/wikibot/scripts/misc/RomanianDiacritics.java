@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -107,7 +108,7 @@ public final class RomanianDiacritics implements Selectorizable {
 			}
 		}
 		
-		IOUtils.writeToFile(String.join("\n", out), location + "work_list.txt");
+		Files.write(Paths.get(location + "work_list.txt"), out);
 		
 		System.out.println("Analizados: " + testcount);
 	}

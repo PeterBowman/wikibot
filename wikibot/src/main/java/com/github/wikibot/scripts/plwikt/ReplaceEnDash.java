@@ -2,6 +2,8 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,7 +16,6 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.ArrayUtils;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -70,7 +71,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		String[] targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Páginas existentes detectadas: %d%n", targets.length);
-		IOUtils.writeToFile(String.join("\n", targets), renameList);
+		Files.write(Paths.get(renameList), Arrays.asList(targets));
 		
 		titles = new ArrayList<>();
 		
@@ -82,11 +83,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Enlaces encontrados: %d%n", targets.length);
-		IOUtils.writeToFile(String.join("\n", targets), editList);
+		Files.write(Paths.get(editList), Arrays.asList(targets));
 	}
 	
 	public static void getEditTargets() throws IOException {
-		String[] titles = IOUtils.loadFromFile(editList, "", "UTF8");
+		String[] titles = Files.lines(Paths.get(editList)).toArray(String[]::new);
 		Map<String, Collection<String>> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
@@ -110,11 +111,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
-		IOUtils.writeToFile(Misc.makeMultiList(map, "\n"), reviewedList);
+		Files.write(Paths.get(reviewedList), Arrays.asList(Misc.makeMultiList(map, "\n")));
 	}
 	
 	public static void rename() throws LoginException, IOException {
-		String[] titles = IOUtils.loadFromFile(renameList, "", "UTF8");
+		String[] titles = Files.lines(Paths.get(renameList)).toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -134,7 +135,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void edit() throws IOException, LoginException {
-		String[] lines = IOUtils.loadFromFile(reviewedList, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(reviewedList)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
 		List<String> errors = new ArrayList<>();
 		

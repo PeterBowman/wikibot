@@ -2,9 +2,12 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -13,12 +16,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.wikipedia.Wiki.Revision;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -302,10 +304,10 @@ public class PolishGerundsList implements Selectorizable {
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
 			.collect(Collectors.toList()));
 		
-		IOUtils.writeToFile(String.join("\n", listOnlyDefinitions2), location + "sin plantilla.txt");
-		IOUtils.writeToFile(String.join("\n", listOnlyTemplates), location + "sin definición.txt");
-		IOUtils.writeToFile(String.join("\n", listErrors), location + "errores.txt");
-		IOUtils.writeToFile(String.join("\n", listNoDictEntry), location + "sin entrada.txt");
+		Files.write(Paths.get(location + "sin plantilla.txt"), listOnlyDefinitions2);
+		Files.write(Paths.get(location + "sin definición.txt"), listOnlyTemplates);
+		Files.write(Paths.get(location + "errores.txt"), listErrors);
+		Files.write(Paths.get(location + "sin entrada.txt"), listNoDictEntry);
 		
 		Misc.serialize(String.format(
 			"Analizowano %s z tabelką odmiany oraz %s.",
@@ -365,12 +367,14 @@ public class PolishGerundsList implements Selectorizable {
 		// Possible errors
 		
 		com.github.wikibot.parsing.Section possibleErrors = com.github.wikibot.parsing.Section.create("możliwe błędy", 3);
-		String[] in = IOUtils.loadFromFile(location_old + "errores.txt", "", "UTF8");
-		String[] in2 = IOUtils.loadFromFile(location + "errores.txt", "", "UTF8");
 		
-		tempList = new ArrayList<>(Arrays.asList(ArrayUtils.addAll(in, in2)).stream()
-			.map(line -> String.format("# [[%s]] – %s", (Object[]) line.split(" - ")))
-			.collect(Collectors.toList()));
+		tempList = Stream.of(
+				Files.readAllLines(Paths.get(location_old + "errores.txt")),
+				Files.readAllLines(Paths.get(location + "errores.txt"))
+			)
+			.flatMap(Collection::stream)
+			.map(line -> String.format("# [[%s]] – %s", (Object[])line.split(" - ")))
+			.collect(Collectors.toList());
 		
 		Misc.sortList(tempList, "pl");
 		possibleErrors.setIntro(String.join("\n", tempList));
@@ -378,11 +382,10 @@ public class PolishGerundsList implements Selectorizable {
 		// Reflexive verbs
 		
 		com.github.wikibot.parsing.Section reflexiveVerbs = com.github.wikibot.parsing.Section.create("czasowniki zwrotne", 3);
-		in = IOUtils.loadFromFile(location_old + "reflexivos.txt", "", "UTF8");
 		
-		tempList = new ArrayList<>(Arrays.asList(in).stream()
+		tempList = Files.lines(Paths.get(location_old + "reflexivos.txt"))
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
-			.collect(Collectors.toList()));
+			.collect(Collectors.toList());
 		
 		Misc.sortList(tempList, "pl");
 		reflexiveVerbs.setIntro(String.join(", ", tempList));

@@ -3,6 +3,8 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,9 +18,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -52,11 +53,10 @@ public final class ShortCommas implements Selectorizable {
 		File f = new File(ShortCommas.shorts);
 		
 		try {
-			String[] lines = IOUtils.loadFromFile(f.getPath(), "", "UTF8");
 			Set<String> tempSet = new HashSet<>(Arrays.asList(shorts));
-			tempSet.addAll(Arrays.asList(lines));
+			tempSet.addAll(Files.readAllLines(Paths.get(f.getPath())));
 			shorts = tempSet.toArray(new String[tempSet.size()]);
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			System.out.printf("No se ha encontrado el archivo shorts.txt");
 		}
 		
@@ -91,11 +91,11 @@ public final class ShortCommas implements Selectorizable {
 	}
 	
 	public static void getShorts() throws IOException {
-		String[] templates = Stream.of(wb.getCategoryMembers("Szablony skrótów", 10))
+		List<String> templates = Stream.of(wb.getCategoryMembers("Szablony skrótów", 10))
 			.map(template -> template.replace("Szablon:", ""))
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		IOUtils.writeToFile(String.join("\n", templates), shorts);
+		Files.write(Paths.get(shorts), templates);
 	}
 	
 	public static void getList() throws IOException {
@@ -177,13 +177,13 @@ public final class ShortCommas implements Selectorizable {
 			System.out.printf("%d errores: %s%n", errors.length, errors.toString());
 		}
 		
-		IOUtils.writeToFile(Misc.makeMultiList(map, "\n\n"), worklist);
+		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeMultiList(map, "\n\n")));
 		Misc.serialize(pages, info);
 	}
 	
 	public static void edit() throws FileNotFoundException, ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(info);
-		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n\n");
 		List<String> errors = new ArrayList<>();
 		

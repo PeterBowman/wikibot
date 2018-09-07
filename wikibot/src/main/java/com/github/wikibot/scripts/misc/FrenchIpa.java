@@ -1,14 +1,15 @@
 package com.github.wikibot.scripts.misc;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -43,7 +44,7 @@ public class FrenchIpa {
 			.toArray(size -> new String[size]);
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
-		IOUtils.writeToFile(String.join("\n", pages), "./test2.txt");
+		Files.write(Paths.get("./test2.txt"), Arrays.asList(pages));
 		
 		PageContainer[] contents = wb.getContentOfPages(pages);
 		Map<String, String> map = new HashMap<>();
@@ -75,7 +76,7 @@ public class FrenchIpa {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		IOUtils.writeToFile(Misc.makeList(map), "./data/scripts.misc/FrenchIpa/list.txt");
+		Files.write(Paths.get("./data/scripts.misc/FrenchIpa/list.txt"), Arrays.asList(Misc.makeList(map)));
 		
 		Login.saveSession(wb);
 	}

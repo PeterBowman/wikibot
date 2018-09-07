@@ -1,6 +1,8 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +14,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.wikipedia.ArrayUtils;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.PLWikt;
@@ -111,7 +112,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
@@ -167,7 +168,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void getModelVc() throws IOException {
@@ -206,12 +207,12 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		IOUtils.writeToFile(Misc.makeList(map), location + "Vc.txt");
+		Files.write(Paths.get(location + "Vc.txt"), Arrays.asList(Misc.makeList(map)));
 	}
 
 	public static void edit() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(f_serialized);
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		List<String> errors = new ArrayList<>();
 		

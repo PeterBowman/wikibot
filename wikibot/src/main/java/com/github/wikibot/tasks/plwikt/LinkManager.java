@@ -558,7 +558,7 @@ public final class LinkManager implements Selectorizable {
 		outer:
 		while (true) {
 			Revision currentRevision = wb.getTopRevision(mainpage);
-			long pickedId = currentRevision.getRevid();
+			long pickedId = currentRevision.getID();
 			
 			if (pickedId == request.currentId) {
 				System.out.printf("Durmiendo... (%d minutos)%n", minutes);
@@ -598,10 +598,8 @@ public final class LinkManager implements Selectorizable {
 					if (diff.matches(".*?<td class=\"diff-addedline\"><div>\\* *?Zatwierdzone: *?tak *?</div></td>.*")) {
 						String username = rev.getUser();
 						User user = wb.getUser(username);
-						Map<String, Object> userinfo = user.getUserInfo();
-						List<String> groups = new ArrayList<>(Arrays.asList((String[]) userinfo.get("groups")));
 						
-						if (groups.contains("editor")) {
+						if (user.getGroups().contains("editor")) {
 							try {
 								edit(username, pickedId);
 							} catch (Exception e) {

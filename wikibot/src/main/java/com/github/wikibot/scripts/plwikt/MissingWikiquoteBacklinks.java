@@ -3,6 +3,8 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,8 +17,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
@@ -117,11 +117,11 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		}
 		
 		Misc.serialize(wiktpages, ser_pages);
-		IOUtils.writeToFile(Misc.makeMultiList(map), worklist);
+		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(ser_pages);
 		List<String> errors = new ArrayList<>();
