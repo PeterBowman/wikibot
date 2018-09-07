@@ -29,6 +29,7 @@ import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.collections4.map.ListOrderedMap;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -110,7 +111,7 @@ public final class PolishSurnamesInflection {
 		
 		List<LogEntry> logs = new ArrayList<>();
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, 0);
+		PageContainer[] pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, Wiki.MAIN_NAMESPACE);
 		
 		wb.setThrottle(5000);
 		wb.setMarkMinor(false);

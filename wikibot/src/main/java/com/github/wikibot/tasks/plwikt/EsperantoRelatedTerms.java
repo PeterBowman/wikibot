@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -83,7 +84,7 @@ public final class EsperantoRelatedTerms {
 		excluded.addAll(Arrays.asList(cat2));
 		excluded.addAll(Arrays.asList(cat3));
 		
-		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", 0);
+		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 				
 		for (PageContainer page : morfeoTransclusions) {
 			for (String template : ParseUtils.getTemplates("morfeo", page.getText())) {

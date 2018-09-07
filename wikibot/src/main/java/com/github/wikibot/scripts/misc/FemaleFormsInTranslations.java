@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Selectorizable;
@@ -68,7 +69,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", 0);
+		PageContainer[] fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", Wiki.MAIN_NAMESPACE);
 		
 		List<Translations> nouns = Stream.of(fempages)
 			.map(Page::wrap)

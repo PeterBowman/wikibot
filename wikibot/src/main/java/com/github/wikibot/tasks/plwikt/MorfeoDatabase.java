@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -60,7 +61,7 @@ public final class MorfeoDatabase {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", 0);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 		Map<String, List<String>> items = retrieveItems(pages);
 		
 		String[] morphems = items.values().stream()

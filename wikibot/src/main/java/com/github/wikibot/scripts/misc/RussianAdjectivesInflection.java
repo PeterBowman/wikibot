@@ -15,6 +15,8 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.DefinitionsField;
@@ -51,7 +53,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 	}
 	
 	public static void extract_adj() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(RU_CATEGORY, 0);
+		PageContainer[] pages = wb.getContentOfCategorymembers(RU_CATEGORY, Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
