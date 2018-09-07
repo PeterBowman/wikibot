@@ -29,8 +29,14 @@ public class Wikibot extends WMFWiki {
 	public static final int GADGET_DEFINITION_TALK_NAMESPACE = 2303;
 	public static final int TOPIC_NAMESPACE = 2600;
     
-    public Wikibot(String site) {
-    	super(site);
+    protected Wikibot(String domain) {
+    	super(domain);
+    }
+    
+    public static Wikibot createInstance(String domain) {
+    	Wikibot wb = new Wikibot(domain);
+    	wb.initVars();
+    	return wb;
     }
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {

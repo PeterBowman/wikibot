@@ -78,13 +78,13 @@ public class Login {
 		
 		switch (domain) {
 			case PLWIKT:
-				wiki = (T) new PLWikt();
+				wiki = (T) PLWikt.createInstance();
 				break;
 			case ESWIKT:
-				wiki = (T) new ESWikt();
+				wiki = (T) ESWikt.createInstance();
 				break;
 			default:
-				wiki = (T) new Wikibot(domain.getDomain());
+				wiki = (T) Wikibot.createInstance(domain.getDomain());
 				break;
 		}
 		

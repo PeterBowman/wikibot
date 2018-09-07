@@ -57,7 +57,7 @@ public final class GermanNounDeclension implements Selectorizable {
 				makeLists();
 				break;
 			case '3':
-				wb = new PLWikt();
+				wb = PLWikt.createInstance();
 				checkErrors();
 				break;
 			case 'e':

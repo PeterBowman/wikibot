@@ -72,7 +72,7 @@ public class Page extends AbstractPage<Section> implements Serializable {
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws IOException {
-		PLWikt wb = new PLWikt();
+		PLWikt wb = PLWikt.createInstance();
 		String text = wb.getPageText("Wikisłownik:Zasady tworzenia haseł");
 		Page page = Page.store("Wikisłownik:Zasady tworzenia haseł", text);
 		System.out.println("");

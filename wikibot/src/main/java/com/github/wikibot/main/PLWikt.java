@@ -17,9 +17,15 @@ public class PLWikt extends Wikibot {
 	public static final int PORTAL_NAMESPACE = 104;
 	public static final int PORTAL_TALK_NAMESPACE = 105;
 	
-	public PLWikt() {
+	protected PLWikt() {
     	super("pl.wiktionary.org");
     }
+	
+	public static PLWikt createInstance() {
+		PLWikt wb = new PLWikt();
+		wb.initVars();
+		return wb;
+	}
 	
 	/**
 	 * Gets the id of a particular section based on its name. In case it's

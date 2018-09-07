@@ -42,7 +42,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 				makePreview();
 				break;
 			case 'e':
-				wb = new PLWikt();
+				wb = PLWikt.createInstance();
 				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit();
 				Login.saveSession(wb);
