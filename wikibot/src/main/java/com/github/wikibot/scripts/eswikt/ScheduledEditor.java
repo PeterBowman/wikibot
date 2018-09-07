@@ -17,10 +17,11 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.wikipedia.Wiki;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.ESWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
@@ -38,7 +39,7 @@ public final class ScheduledEditor {
 	private static final int SLEEP_MINS = 5;
 	private static final int THREAD_CHECK_SECS = 5;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	private static volatile RuntimeException threadExecutionException;
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
@@ -77,7 +78,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(category, ESWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers(category, Wiki.MAIN_NAMESPACE);
 		
 		Stream.of(pages)
 			.filter(ScheduledEditor::filterPages)
@@ -91,7 +92,7 @@ public final class ScheduledEditor {
 			PageContainer[] pages;
 			
 			try {
-				String[] titles = wb.listPages("", null, ESWikt.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
+				String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
 				String[] batch = Arrays.copyOfRange(titles, 0, BATCH);
 				pages = wb.getContentOfPages(batch);
 			} catch (IOException | UnknownError e) {

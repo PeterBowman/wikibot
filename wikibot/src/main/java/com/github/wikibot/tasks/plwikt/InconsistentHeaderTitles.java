@@ -33,7 +33,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -63,7 +63,7 @@ public final class InconsistentHeaderTitles {
 	
 	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	private static Map<String, Collection<Item>> map;
 	

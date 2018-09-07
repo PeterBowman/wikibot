@@ -49,7 +49,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.github.wikibot.main.ESWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
@@ -4967,7 +4967,7 @@ public class Editor extends AbstractEditor {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, LoginException {
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		Wikibot wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
 		
 		String text;
 		String title = "Paronym";

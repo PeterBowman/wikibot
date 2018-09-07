@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.ESWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Users;
@@ -35,7 +35,7 @@ public final class SurnameAppendices {
 	private static final Collator collator;
 	private static final Map<Character, Character> stressedVowels;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		collator = Collator.getInstance(new Locale("es"));

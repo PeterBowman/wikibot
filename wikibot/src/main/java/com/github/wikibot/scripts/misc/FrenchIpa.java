@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -23,7 +23,7 @@ import com.github.wikibot.utils.Users;
 
 public class FrenchIpa {
 	public static void main (String[] args) throws IOException, FailedLoginException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+		Wikibot wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
 		
 		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
 			.filter(title -> (

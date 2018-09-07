@@ -13,10 +13,11 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -27,7 +28,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class PolishVerbsConjugation implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/PolishVerbsConjugation/";
 	private static final String f_serialized = location + "/targets.ser";
 	private static final String f_worklist = location + "/worklist.txt";
@@ -50,7 +51,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		List<PageContainer> targets = new ArrayList<>();
 		Map<String, String> map = new HashMap<>(1000);
 		

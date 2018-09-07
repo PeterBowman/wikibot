@@ -22,8 +22,8 @@ import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki.Revision;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -36,7 +36,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public class PolishGerundsList implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/tasks.plwikt/PolishGerundsList/";
 	private static final String locationser = location + "ser/";
 	private static final String location_old = MissingPolishGerunds.location;

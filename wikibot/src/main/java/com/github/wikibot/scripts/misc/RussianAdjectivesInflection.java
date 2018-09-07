@@ -15,8 +15,8 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.DefinitionsField;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -32,7 +32,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 	private static final String location = "./data/scripts.misc/RussianAdjectivesInflection/";
 	private static final String RU_CATEGORY = "Język rosyjski - przymiotniki";
 	private static final String RU_LANG = "język rosyjski";
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	public void selector(char op) throws Exception {
 		switch (op) {

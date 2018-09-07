@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -51,7 +51,7 @@ public final class MorfeoDatabase {
 	private static final byte MORPHEM_GRAMMATICAL = 16;
 	private static final byte MORPHEM_UNKNOWN = 32;
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		defaultSQLProperties.setProperty("autoReconnect", "true");

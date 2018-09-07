@@ -17,8 +17,8 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.ArrayUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -30,7 +30,7 @@ import com.github.wikibot.utils.Users;
 
 public class JyddishIpa implements Selectorizable {
 	private static final String location = "./data/scripts.misc/JyddishIpa/";
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	public void selector(char op) throws Exception {
 		switch (op) {

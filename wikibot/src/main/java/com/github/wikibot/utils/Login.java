@@ -18,8 +18,6 @@ import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.User;
 import org.wikiutils.LoginUtils;
 
-import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 
 public class Login {
@@ -72,47 +70,31 @@ public class Login {
 		credentials.put(user.getUsername(), password);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static <T extends Wikibot> T generateSession(Domains domain, Users user) throws FailedLoginException, IOException {
-		T wiki;
-		
-		switch (domain) {
-			case PLWIKT:
-				wiki = (T) PLWikt.createInstance();
-				break;
-			case ESWIKT:
-				wiki = (T) ESWikt.createInstance();
-				break;
-			default:
-				wiki = (T) Wikibot.createInstance(domain.getDomain());
-				break;
-		}
-		
-		login(wiki, user);
-		
-		return wiki;
+	public static Wikibot generateSession(Domains domain, Users user) throws FailedLoginException, IOException {
+		Wikibot wb = Wikibot.createInstance(domain.getDomain());
+		login(wb, user);
+		return wb;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static <T extends Wikibot> T retrieveSession(Domains domain, Users user) throws FailedLoginException, IOException {
-		T wiki;
+	public static Wikibot retrieveSession(Domains domain, Users user) throws FailedLoginException, IOException {
+		Wikibot wb;
 		
 		try {
-			wiki = (T) Misc.deserialize(String.format(FILE_FORMAT, user.getAlias(), domain.getDomain()));
+			wb = Misc.deserialize(String.format(FILE_FORMAT, user.getAlias(), domain.getDomain()));
 			
 			try {
-				wiki.usesCapitalLinks();
+				wb.usesCapitalLinks();
 			} catch (AssertionError e1) {
 				System.out.println(e1.getMessage());
-				wiki.logout();
-				login(wiki, user);
+				wb.logout();
+				login(wb, user);
 			}
 		} catch (ClassCastException | ClassNotFoundException | IOException e2) {
 			System.out.println(e2.getMessage());
-			wiki = generateSession(domain, user);
+			wb = generateSession(domain, user);
 		}
 		
-		return wiki;
+		return wb;
 	}
 	
 	public static void saveSession(Wiki wiki) throws FileNotFoundException, IOException {

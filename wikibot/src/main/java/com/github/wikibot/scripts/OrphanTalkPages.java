@@ -10,25 +10,27 @@ import java.util.Map;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Users;
 
 public class OrphanTalkPages {
 	public static void main(String[] args) throws IOException, LoginException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		Wikibot wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 		Map<String, Integer> namespaceIdentifiers = wb.getNamespaces();
 		
 		Integer[] namespaces = new Integer[]{
-			PLWikt.TALK_NAMESPACE,
-			//PLWikt.USER_TALK_NAMESPACE,
-			PLWikt.PROJECT_TALK_NAMESPACE,
-			PLWikt.FILE_TALK_NAMESPACE,
-			PLWikt.MEDIAWIKI_TALK_NAMESPACE,
-			PLWikt.TEMPLATE_TALK_NAMESPACE,
-			PLWikt.HELP_TALK_NAMESPACE,
-			PLWikt.CATEGORY_TALK_NAMESPACE,
+			Wiki.TALK_NAMESPACE,
+			//Wikibot.USER_TALK_NAMESPACE,
+			Wiki.PROJECT_TALK_NAMESPACE,
+			Wiki.FILE_TALK_NAMESPACE,
+			Wiki.MEDIAWIKI_TALK_NAMESPACE,
+			Wiki.TEMPLATE_TALK_NAMESPACE,
+			Wiki.HELP_TALK_NAMESPACE,
+			Wiki.CATEGORY_TALK_NAMESPACE,
 			namespaceIdentifiers.get("Aneks"),
 			namespaceIdentifiers.get("Indeks"),
 			namespaceIdentifiers.get("Portal")

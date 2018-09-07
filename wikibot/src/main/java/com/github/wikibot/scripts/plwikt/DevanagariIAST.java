@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -43,7 +44,7 @@ public class DevanagariIAST implements Selectorizable {
 	}
 	
 	public static void getList(boolean edit) throws IOException, LoginException {
-		String[] titles = wb.listPages("", null, PLWikt.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
+		String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
 		PageContainer[] pages = wb.getContentOfPages(titles);
 		List<String> hindi = new ArrayList<>();
 		List<String> nonHindi = new ArrayList<>();

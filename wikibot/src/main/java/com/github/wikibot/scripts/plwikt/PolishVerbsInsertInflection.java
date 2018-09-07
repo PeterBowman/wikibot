@@ -14,10 +14,11 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.wikipedia.ArrayUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -29,7 +30,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class PolishVerbsInsertInflection implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static Map<String, Map<String, String>> models = new HashMap<>();
 	private static final String location = "./data/scripts.plwikt/PolishVerbsInsertInflection/";
 	private static final String f_serialized = location + "/targets.ser";
@@ -116,7 +117,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", Wiki.MAIN_NAMESPACE);
 		List<PageContainer> serialized = new ArrayList<>();
 		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		
@@ -172,7 +173,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 	
 	public static void getModelVc() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		Map<String, String> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);

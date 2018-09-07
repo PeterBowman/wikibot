@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -35,7 +35,7 @@ public class MissingPolishEntries {
 	
 	private static Stats stats = new Stats();
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		PAGE_INTRO =

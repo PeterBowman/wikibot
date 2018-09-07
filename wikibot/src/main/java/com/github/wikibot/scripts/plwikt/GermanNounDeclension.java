@@ -18,10 +18,11 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -33,7 +34,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class GermanNounDeclension implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/GermanNounDeclension/";
 	
 	private static final Map<String, String[]> det;
@@ -57,7 +58,7 @@ public final class GermanNounDeclension implements Selectorizable {
 				makeLists();
 				break;
 			case '3':
-				wb = PLWikt.createInstance();
+				wb = Wikibot.createInstance("pl.wiktionary.org");
 				checkErrors();
 				break;
 			case 'e':
@@ -477,7 +478,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		
 		for (Revision rev : revs) {
 			if (rev.getTitle().equals("Actinium")) break;
-			String diff = rev.diff(PLWikt.PREVIOUS_REVISION);
+			String diff = rev.diff(Wiki.PREVIOUS_REVISION);
 			//int lm = diff.indexOf(" lm = ");
 			
 			/*if (lm != -1 && diff.substring(lm).contains("&lt;br&gt;"))

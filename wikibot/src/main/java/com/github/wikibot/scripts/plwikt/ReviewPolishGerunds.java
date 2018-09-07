@@ -17,8 +17,8 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki.Revision;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -30,7 +30,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class ReviewPolishGerunds implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/ReviewPolishGerunds/";
 	private static final String f_pages = location + "pages.txt";
 	private static final String f_info = location + "info.ser";

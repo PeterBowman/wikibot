@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -38,7 +37,7 @@ public class MissingRefsOnPlwiki {
 
 	private static final Map<String, List<String>> TARGET_TEMPLATES;
 
-	private static PLWikt plwikt;
+	private static Wikibot plwikt;
 	private static Wikibot plwiki;
 
 	static {

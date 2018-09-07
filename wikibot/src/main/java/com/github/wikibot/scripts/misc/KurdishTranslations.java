@@ -12,8 +12,10 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -24,7 +26,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class KurdishTranslations implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/KurdishTranslations/";
 
 	public void selector(char op) throws Exception {
@@ -45,7 +47,7 @@ public final class KurdishTranslations implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Pattern patt = Pattern.compile("\\* ?kurdyjski:? ?[^\\n]*");
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		int found = 0;

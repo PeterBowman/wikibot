@@ -1,28 +1,5 @@
 package com.github.wikibot.scripts;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import javax.security.auth.login.FailedLoginException;
-
-import org.wikipedia.Wiki.Revision;
-
-import com.github.wikibot.main.PLWikt;
-import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
-
 public final class PurgeRecentChanges {
 	/*public static final boolean ENABLE_BOTS = true;
 	public static final boolean FORCE_MASSPURGE = false;

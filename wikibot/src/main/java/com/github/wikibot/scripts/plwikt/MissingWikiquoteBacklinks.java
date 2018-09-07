@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -34,7 +33,7 @@ import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public final class MissingWikiquoteBacklinks implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static Wikibot quote;
 	private static final String location = "./data/scripts.plwikt/MissingWikiquoteBacklinks/";
 	private static final String data = location + "data.tsv";

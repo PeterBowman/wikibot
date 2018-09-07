@@ -15,8 +15,10 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -27,7 +29,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class ReflexiveVerbRedirects implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/ReflexiveVerbRedirects/";
 
 	public void selector(char op) throws Exception {
@@ -53,7 +55,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język polski - czasowniki", PLWikt.MAIN_NAMESPACE, 400);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Język polski - czasowniki", Wiki.MAIN_NAMESPACE, 400);
 		List<String> pron = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista total de verbos: %d%n", pages.length);
@@ -95,7 +97,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	}
 	
 	public static void getDuplicates() throws IOException {
-		String[] titles = wb.getCategoryMembers("Język polski - czasowniki", PLWikt.MAIN_NAMESPACE);
+		String[] titles = wb.getCategoryMembers("Język polski - czasowniki", Wiki.MAIN_NAMESPACE);
 		List<String> verbs = Arrays.asList(titles);
 		
 		List<String> duplicates = Stream.of(titles)

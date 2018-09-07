@@ -26,7 +26,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -65,7 +65,7 @@ public final class MisusedRegTemplates {
 		"szwajcwł", "tosk"
 	);
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		String templateList = TEMPLATES.stream()

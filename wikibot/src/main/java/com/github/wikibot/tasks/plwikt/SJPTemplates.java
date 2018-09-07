@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -22,7 +22,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class SJPTemplates {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	private static final int SLEEP_MS = 2500;
 	private static final String LOCATION = "./data/tasks.plwikt/SJPTemplates/";

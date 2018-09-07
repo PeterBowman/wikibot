@@ -12,14 +12,16 @@ import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Domains;
@@ -29,7 +31,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class BeXoldMissingIntroTemplates implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/BeXoldMissingIntroTemplates/";
 	private static final String locationser = location + "ser/";
 	
@@ -44,7 +46,6 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 				makePreview();
 				break;
 			case 'e':
-				wb = PLWikt.createInstance();
 				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
 				edit();
 				Login.saveSession(wb);
@@ -55,7 +56,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", Wiki.MAIN_NAMESPACE);
 		Map<String, OffsetDateTime> info = Stream.of(pages)
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,

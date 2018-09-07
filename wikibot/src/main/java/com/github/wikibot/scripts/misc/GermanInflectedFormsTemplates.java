@@ -19,8 +19,10 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -31,7 +33,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class GermanInflectedFormsTemplates implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/GermanInflectedFormsTemplates/";
 
 	public void selector(char op) throws Exception {
@@ -71,7 +73,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		
 		int count = 0;
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
@@ -150,7 +152,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	}
 	
 	public static void findWrongHeaders() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {

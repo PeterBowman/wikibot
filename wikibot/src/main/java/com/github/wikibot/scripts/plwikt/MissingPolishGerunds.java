@@ -15,10 +15,11 @@ import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.ParserUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -30,7 +31,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class MissingPolishGerunds implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	public static final String location = "./data/scripts.plwikt/MissingPolishGerunds/";
 	private static final String f_list = location + "lista.txt";
 	private static final String f_errors = location + "errores.txt";
@@ -72,7 +73,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 	}
 	
 	public static void checkGerunds() throws IOException, LoginException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		
 		List<String> errors = new ArrayList<>(100);
 		List<String> refl = new ArrayList<>(100);

@@ -13,8 +13,10 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -25,7 +27,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class CyryllicAccentsInTranslations implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/CyryllicAccentsInTranslations/";
 	private static final String locationser = location + "ser/";
 	private static final String contentlist = locationser + "contents.ser";
@@ -57,7 +59,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	}
 	
 	public static void getContents() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Misc.serialize(pages, contentlist);
 	}
 	

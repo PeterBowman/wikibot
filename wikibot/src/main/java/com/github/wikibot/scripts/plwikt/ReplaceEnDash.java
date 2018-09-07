@@ -16,16 +16,17 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.ArrayUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Users;
 
 public final class ReplaceEnDash implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/ReplaceEnDash/";
 	private static final String renameList = location + "rename.txt";
 	private static final String editList = location + "edit.txt";
@@ -60,7 +61,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	
 	public static void getLists() throws IOException {
 		Map<String, Integer> namespaceIds = wb.getNamespaces();
-		Integer[] namespaces = new Integer[]{namespaceIds.get("Aneks"), namespaceIds.get("Indeks"), PLWikt.CATEGORY_NAMESPACE};
+		Integer[] namespaces = new Integer[]{namespaceIds.get("Aneks"), namespaceIds.get("Indeks"), Wiki.CATEGORY_NAMESPACE};
 		List<String> titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {

@@ -32,7 +32,7 @@ import javax.security.auth.login.FailedLoginException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.ESWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
@@ -49,7 +49,7 @@ public final class MaintenanceScript {
 	private static final int THREAD_CHECK_SECS = 5;
 	private static volatile RuntimeException threadExecutionException;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	
 	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
 		String startTimestamp = extractTimestamp();

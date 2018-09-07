@@ -24,10 +24,11 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -40,7 +41,7 @@ import com.github.wikibot.utils.RAE;
 import com.github.wikibot.utils.Users;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/tasks.plwikt/SpanishVerbFormsMaintenance/";
 	private static final String locationser = location + "ser/";
 	private static final String RAEurl = "http://lema.rae.es/drae/srv/search?val=";
@@ -67,7 +68,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 	}
 	
 	public static void process(boolean onlyGetData, boolean noWrite) throws IOException, LoginException, InterruptedException, ExecutionException, ClassNotFoundException {
-		PageContainer[] pages = wb.getContentOfTransclusions("odmiana-czasownik-hiszpański", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("odmiana-czasownik-hiszpański", Wiki.MAIN_NAMESPACE);
 		int verb_count = pages.length;
 		
 		List<String> verb_templates = Stream.of(pages).map(Page::wrap)

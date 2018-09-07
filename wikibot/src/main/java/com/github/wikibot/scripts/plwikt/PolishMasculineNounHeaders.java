@@ -20,8 +20,10 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.plwikt.Editor;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -34,7 +36,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.Users;
 
 public final class PolishMasculineNounHeaders implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/PolishMasculineNounHeaders/";
 	private static final String f_allpages = location + "allpages.txt";
 	private static final String f_worklist = location + "worklist.txt";
@@ -72,10 +74,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		List<String> masc = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", PLWikt.MAIN_NAMESPACE));
-		List<String> mrz = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", PLWikt.MAIN_NAMESPACE));
-		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", PLWikt.MAIN_NAMESPACE));
-		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", PLWikt.MAIN_NAMESPACE));
+		List<String> masc = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", Wiki.MAIN_NAMESPACE));
+		List<String> mrz = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", Wiki.MAIN_NAMESPACE));
+		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", Wiki.MAIN_NAMESPACE));
+		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", Wiki.MAIN_NAMESPACE));
 		
 		masc = new ArrayList<>(masc);
 		masc.removeAll(mrz);
@@ -91,7 +93,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		System.out.printf("Sustantivos con declinación: %d%n", decl.size());
 		System.out.printf("Sustantivos masculinos con declinación: %d%n", masc.size());
 		
-		List<String> acronyms = Arrays.asList(wb.getCategoryMembers("Język polski - skrótowce", PLWikt.MAIN_NAMESPACE));
+		List<String> acronyms = Arrays.asList(wb.getCategoryMembers("Język polski - skrótowce", Wiki.MAIN_NAMESPACE));
 		
 		masc.removeAll(acronyms);
 		
