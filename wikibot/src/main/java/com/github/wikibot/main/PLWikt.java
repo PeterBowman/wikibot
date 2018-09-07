@@ -1,7 +1,6 @@
 package com.github.wikibot.main;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -11,8 +10,6 @@ import javax.security.auth.login.CredentialNotFoundException;
 import javax.security.auth.login.LoginException;
 
 public class PLWikt extends Wikibot {
-	private static final long serialVersionUID = -4033360410848180018L;
-	
 	public static final int ANNEX_NAMESPACE = 100;
 	public static final int ANNEX_TALK_NAMESPACE = 101;
 	public static final int INDEX_NAMESPACE = 102;
@@ -65,17 +62,20 @@ public class PLWikt extends Wikibot {
             throw new CredentialNotFoundException("Permission denied: cannot review.");
 		}
 		
-		Map<String, String> postParams = new HashMap<>();
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("action", "review");
+		
+		Map<String, Object> postparams = new HashMap<>();
 		
 		if (comment != null && !comment.isEmpty()) {
-			postParams.put("comment", comment);
+			postparams.put("comment", comment);
 		}
 		
-		postParams.put("flag_accuracy", "1");
-		postParams.put("revid", Long.toString(rev.getRevid()));
-		postParams.put("token", URLEncoder.encode(getToken("csrf"), "UTF-8"));
+		postparams.put("flag_accuracy", "1");
+		postparams.put("revid", Long.toString(rev.getRevid()));
+		postparams.put("token", getToken("csrf"));
 		
-		String response = fetch(apiUrl + "action=review", postParams, "review");
+		String response = makeHTTPRequest(apiUrl, getparams, postparams, "review");
 		checkErrorsAndUpdateStatus(response, "review");
 		log(Level.INFO, "review", "Successfully reviewed revision of page " + rev.getPage());
 	}

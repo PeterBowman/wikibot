@@ -1,7 +1,6 @@
 package com.github.wikibot.main;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -36,34 +35,37 @@ public class Wikibot extends WMFWiki {
 	public static final int RC_LOG = 4;
 	public static final int RC_EXTERNAL = 8;
 	public static final int RC_CATEGORIZE = 16;
-	
-	// serial version
-    private static final long serialVersionUID = -8745212681497644126L;
     
     public Wikibot(String site) {
     	super(site);
     }
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("prop", "revisions");
+    	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
-		List<PageContainer> coll = getListedContent(url, pages, "getContents", "titles", biCons);
+		List<PageContainer> coll = getListedContent(getparams, pages, "getContents", "titles", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("prop", "revisions");
+    	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
-		List<PageContainer> coll = getListedContent(url, stringified, "getContents", "pageids", biCons);
+		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "pageids", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
-		String url = query + "prop=revisions&rvprop=timestamp%7Ccontent";
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("prop", "revisions");
+    	getparams.put("rvprop", "timestamp|content");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
-		List<PageContainer> coll = getListedContent(url, stringified, "getContents", "revids", biCons);
+		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "revids", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
     }
 	
@@ -79,55 +81,50 @@ public class Wikibot extends WMFWiki {
 	 * @throws IOException
 	 */
 	public PageContainer[] getContentOfCategorymembers(String category, int... ns) throws IOException {
-		category = category.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("prop", "revisions");
+		getparams.put("rvprop", "timestamp|content");
+		getparams.put("generator", "categorymembers");
+		getparams.put("gcmtitle", "Category:" + normalize(removeNamespace(category)));
+		getparams.put("gcmtype", "page");
+		getparams.put("gcmnamespace", constructNamespaceString(ns));
 		
-		StringBuilder sb = new StringBuilder(query);
-		sb.append("prop=revisions&");
-		sb.append("rvprop=timestamp%7Ccontent&");
-		sb.append("generator=categorymembers&");
-		sb.append("gcmtitle=Category:" + URLEncoder.encode(category, "UTF-8") + "&");
-		sb.append("gcmtype=page");
-		
-		constructNamespaceString(sb, "gcm", ns);
-		
-		return getGeneratedContent(sb, "gcm");
+		return getGeneratedContent(getparams, "gcm");
 	}
 	
 	public PageContainer[] getContentOfTransclusions(String page, int... ns) throws IOException {
-		StringBuilder sb = new StringBuilder(query);
-		sb.append("prop=revisions&");
-		sb.append("rvprop=timestamp%7Ccontent&");
-		sb.append("generator=embeddedin&");
-		sb.append("geititle=" + URLEncoder.encode(page, "UTF-8"));
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("prop", "revisions");
+		getparams.put("rvprop", "timestamp|content");
+		getparams.put("generator", "embeddedin");
+		getparams.put("geititle", normalize(page));
+		getparams.put("geinamespace", constructNamespaceString(ns));
 		
-		constructNamespaceString(sb, "gei", ns);
-		
-		return getGeneratedContent(sb, "gei");
+		return getGeneratedContent(getparams, "gei");
 	}
 	
 	public PageContainer[] getContentOfBacklinks(String page, int... ns) throws IOException {
-		StringBuilder sb = new StringBuilder(query);
-		sb.append("prop=revisions&");
-		sb.append("rvprop=timestamp%7Ccontent&");
-		sb.append("generator=backlinks&");
-		sb.append("gbltitle=" + URLEncoder.encode(page, "UTF-8"));
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("prop", "revisions");
+		getparams.put("rvprop", "timestamp|content");
+		getparams.put("generator", "backlinks");
+		getparams.put("gbltitle", normalize(page));
+		getparams.put("gblnamespace", constructNamespaceString(ns));
 		
-		constructNamespaceString(sb, "gbl", ns);
-		
-		return getGeneratedContent(sb, "gbl");
+		return getGeneratedContent(getparams, "gbl");
 	}
 	
-	private <T> List<T> getListedContent(String url, String[] titles, String caller,
+	private <T> List<T> getListedContent(Map<String, String> getparams, String[] titles, String caller,
 			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
-		String[] chunks = constructTitleString(titles);
+		List<String> chunks = constructTitleString(titles);
 		List<T> list = new ArrayList<>(titles.length);
-		Map<String, String> postParams = new HashMap<>();
+		Map<String, Object> postparams = new HashMap<>();
 		
-		for (int i = 0; i < chunks.length; i++) {
-			postParams.put(postParamName, chunks[i]);
-			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.length);
-			String line = fetch(url, postParams, localCaller);
+		for (int i = 0; i < chunks.size(); i++) {
+			postparams.put(postParamName, chunks.get(i));
+			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.size());
+			String line = makeHTTPRequest(query, getparams, postparams, localCaller);
 			biCons.accept(line, list);
 		}
 		
@@ -135,8 +132,8 @@ public class Wikibot extends WMFWiki {
 		return list;
 	}
 
-	private PageContainer[] getGeneratedContent(StringBuilder url, String queryPrefix) throws IOException {
-		List<PageContainer> list = queryAPIResult(queryPrefix, url, null, "getGeneratedContent", this::parseContentLine);
+	private PageContainer[] getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
+		List<PageContainer> list = makeListQuery(queryPrefix, query, getparams, null, "getGeneratedContent", this::parseContentLine);
 		return list.toArray(new PageContainer[list.size()]);
 	}
 	
@@ -185,14 +182,15 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public String expandTemplates(String text, String title) throws IOException {
-		String url = apiUrl
-			+ "action=expandtemplates&"
-			+ "format=xml&"
-			+ "prop=wikitext&"
-			+ (title != null ? "title=" + title + "&" : "")
-			+ "text=" + URLEncoder.encode(text, "UTF-8");
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("action", "expandtemplates");
+		getparams.put("prop", "wikitext");
+		if (title != null)
+			getparams.put("title", normalize(title));
+		Map<String, Object> postparams = new HashMap<>();
+		postparams.put("text", text);
 		
-		String line = fetch(url, null, "expandTemplates");
+		String line = makeHTTPRequest(apiUrl, getparams, postparams, "expandTemplates");
 		
 		int a = line.indexOf("<wikitext ");
 		a = line.indexOf(">", a) + 1;
@@ -202,10 +200,12 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public Revision[] getTopRevision(String[] titles) throws IOException {
-        StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        url.append("&meta=tokens&type=rollback");
-		
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("prop", "revisions");
+		getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|sha1");
+		getparams.put("meta", "tokens");
+		getparams.put("type", "rollback");
+        
 		BiConsumer<String, List<Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
 				String title = parseAttribute(line, "title", page);
@@ -215,7 +215,7 @@ public class Wikibot extends WMFWiki {
 			}
 		};
 		
-		Collection<Revision> coll = getListedContent(url.toString(), titles, "getTopRevision", "titles", biCons);
+		Collection<Revision> coll = getListedContent(getparams, titles, "getTopRevision", "titles", biCons);
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
@@ -228,91 +228,87 @@ public class Wikibot extends WMFWiki {
 	
 	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
     {
-        StringBuilder sb_url = new StringBuilder(query);
-        
-        sb_url.append("list=recentchanges");
-        sb_url.append("&rcdir=newer");
-        sb_url.append("&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
-        
-        constructNamespaceString(sb_url, "rc", ns);
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("list", "recentchanges");
+		getparams.put("rcdir", "newer");
+		getparams.put("rcprop", "title|ids|user|timestamp|flags|comment|sizes|sha1");
+		getparams.put("rcnamespace", constructNamespaceString(ns));
         
         if (toponly) {
-        	sb_url.append("&rctoponly=");
+        	getparams.put("rctoponly", "1");
         }
 
         if (excludeUser != null) {
-        	sb_url.append("&rcexcludeuser=").append(excludeUser);
+        	getparams.put("rcexcludeuser", excludeUser);
         }
         
         if (rctypes > 0) {
-        	sb_url.append("&rctype=");
+        	List<String> rctypeslist = new ArrayList<>();
         	
         	if ((rctypes & RC_EDIT) == RC_EDIT) {
-            	sb_url.append("edit%7C");
+            	rctypeslist.add("edit");
         	}
         	
         	if ((rctypes & RC_NEW) == RC_NEW) {
-            	sb_url.append("new%7C");
+        		rctypeslist.add("new");
         	}
         	
         	if ((rctypes & RC_LOG) == RC_LOG) {
-            	sb_url.append("log%7C");
+        		rctypeslist.add("log");
         	}
         	
         	if ((rctypes & RC_EXTERNAL) == RC_EXTERNAL) {
-            	sb_url.append("external%7C");
+        		rctypeslist.add("external");
         	}
         	
         	if ((rctypes & RC_CATEGORIZE) == RC_CATEGORIZE) {
-            	sb_url.append("categorize%7C");
+        		rctypeslist.add("categorize");
         	}
         	
-        	// chop off last |
-            sb_url.delete(sb_url.length() - 3, sb_url.length());
+        	getparams.put("rctype", String.join("|", rctypeslist));
         }
         
         if (rcoptions > 0) {
-        	sb_url.append("&rcshow=");
+        	List<String> rcshowlist = new ArrayList<>();
         	
             if ((rcoptions & HIDE_ANON) == HIDE_ANON) {
-            	sb_url.append("!anon%7C");
+            	rcshowlist.add("!anon");
             }
             
             if ((rcoptions & HIDE_BOT) == HIDE_BOT) {
-            	sb_url.append("!bot%7C");
+            	rcshowlist.add("!bot");
             }
             
             if ((rcoptions & HIDE_SELF) == HIDE_SELF) {
-            	sb_url.append("!self%7C");
+            	rcshowlist.add("!self");
             }
             
             if ((rcoptions & HIDE_MINOR) == HIDE_MINOR) {
-            	sb_url.append("!minor%7C");
+            	rcshowlist.add("!minor");
             }
             
             if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED) {
-            	sb_url.append("!patrolled%7C");
+            	rcshowlist.add("!patrolled");
             }
             
             if ((rcoptions & HIDE_REDIRECT) == HIDE_REDIRECT) {
-            	sb_url.append("!redirect%7C");
+            	rcshowlist.add("!redirect");
             }
             
-            // chop off last |
-            sb_url.delete(sb_url.length() - 3, sb_url.length());
+            getparams.put("rcshow", String.join("|", rcshowlist));
         }
 
         if (starttimestamp != null) {
-        	sb_url.append("&rcstart=" + starttimestamp);
+        	getparams.put("rcstart", starttimestamp);
         }
         
         if (endtimestamp == null) {
-        	sb_url.append("&rcend=" + OffsetDateTime.now(timezone()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        	getparams.put("rcend", OffsetDateTime.now(timezone()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         } else {
-        	sb_url.append("&rcend=" + endtimestamp);
+        	getparams.put("rcend", endtimestamp);
         }
         
-        List<Revision> revisions = queryAPIResult("rc", sb_url, null, "recentChanges", (line, results) -> {
+        List<Revision> revisions = makeListQuery("rc", query, getparams, null, "recentChanges", (line, results) -> {
         	for (int i = line.indexOf("<rc "); i != -1; i = line.indexOf("<rc ", ++i)) {
                 int j = line.indexOf("/>", i);
                 results.add(parseRevision(line.substring(i, j), ""));
@@ -329,8 +325,8 @@ public class Wikibot extends WMFWiki {
     }
     
     public String[] allLinks(String prefix, int namespace) throws IOException {
-    	StringBuilder url = new StringBuilder(query);
-    	url.append("list=alllinks");
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("list", "alllinks");
 
     	if (namespace == ALL_NAMESPACES) {
 			throw new UnsupportedOperationException("ALL_NAMESPACES not supported in MediaWiki API.");
@@ -343,15 +339,13 @@ public class Wikibot extends WMFWiki {
 				prefix = prefix.substring(prefix.indexOf(':') + 1);
 			}  
 			
-			url.append("&alprefix=");
-			url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
+			getparams.put("alprefix", normalize(prefix));
 		}
 		
-		url.append("&alnamespace=");
-		url.append(namespace);
-		url.append("&alunique=");
+    	getparams.put("alnamespace", Integer.toString(namespace));
+		getparams.put("alunique", "1");
 		
-		List<String> pages = queryAPIResult("al", url, null, "allPages", (line, results) -> {
+		List<String> pages = makeListQuery("al", query, getparams, null, "allPages", (line, results) -> {
 			for (int a = line.indexOf("<l "); a > 0; a = line.indexOf("<l ", ++a)) {
 				results.add(parseAttribute(line, "title", a));
 			}
@@ -370,64 +364,55 @@ public class Wikibot extends WMFWiki {
         // @revised 0.15 to add short/long pages
         // No varargs namespace here because MW API only supports one namespace
         // for this module.
-        StringBuilder url = new StringBuilder(query);
-        url.append("list=allpages");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("list", "allpages");
         if (!prefix.isEmpty()) // prefix
         {
             // cull the namespace prefix
             namespace = namespace(prefix);
             if (prefix.contains(":") && namespace != MAIN_NAMESPACE)
                 prefix = prefix.substring(prefix.indexOf(':') + 1);
-            url.append("&apprefix=");
-            url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
+            getparams.put("apprefix", normalize(prefix));
         }
         else if (namespace == ALL_NAMESPACES) // check for namespace
             throw new UnsupportedOperationException("ALL_NAMESPACES not supported in MediaWiki API.");
-        url.append("&apnamespace=");
-        url.append(namespace);
+        getparams.put("apnamespace", Integer.toString(namespace));
         if (protectionstate != null)
         {
-            StringBuilder apprtype = new StringBuilder("&apprtype=");
-            StringBuilder apprlevel = new StringBuilder("&apprlevel=");
+        	List<String> apprtype = new ArrayList<>();
+        	List<String> apprlevel = new ArrayList<>();
             for (Map.Entry<String, Object> entry : protectionstate.entrySet())
             {
                 String key = entry.getKey();
                 if (key.equals("cascade"))
                 {
-                    url.append("&apprfiltercascade=");
-                    url.append((Boolean)entry.getValue() ? "cascading" : "noncascading");
+                	getparams.put("apprfiltercascade", (Boolean)entry.getValue() ? "cascading" : "noncascading");
                 }
                 else if (!key.contains("expiry"))
                 {
-                    apprtype.append(key);
-                    apprtype.append("%7C");
-                    apprlevel.append((String)entry.getValue());
-                    apprlevel.append("%7C");
+                    apprtype.add(key);
+                    apprlevel.add((String)entry.getValue());
                 }      
             }
-            apprtype.delete(apprtype.length() - 3, apprtype.length());
-            apprlevel.delete(apprlevel.length() - 3, apprlevel.length());
-            url.append(apprtype);
-            url.append(apprlevel);
+            getparams.put("apprtype", String.join("|", apprtype));
+            getparams.put("apprlevel", String.join("|", apprlevel));
         }
         // max and min
         if (from != null)
         {
-            url.append("&apfrom=");
-            url.append(URLEncoder.encode(from, "UTF-8"));
+        	getparams.put("apfrom", from);
         }
         if (to != null)
         {
-            url.append("&apto=");
-            url.append(URLEncoder.encode(to, "UTF-8"));
+        	getparams.put("apto", to);
         }
         if (redirects == Boolean.TRUE)
-            url.append("&apfilterredir=redirects");
+        	getparams.put("apfilterredir", "redirects");
         else if (redirects == Boolean.FALSE)
-            url.append("&apfilterredir=nonredirects");
+        	getparams.put("apfilterredir", "nonredirects");
 
         // parse
-        List<String> pages = queryAPIResult("ap", url, null, "listPages", (line, results) -> {
+        List<String> pages = makeListQuery("ap", query, getparams, null, "listPages", (line, results) -> {
         	// xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
             	results.add(parseAttribute(line, "title", a));
@@ -441,10 +426,11 @@ public class Wikibot extends WMFWiki {
     
     public Map<String, List<String[]>> allIwBacklinks() throws IOException {
     	Map<String, List<String[]>> map = new HashMap<>(max);
-    	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwblprop=iwprefix%7Ciwtitle");
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("list", "iwbacklinks");
+    	getparams.put("iwblprop", "iwprefix|iwtitle");
     	
-    	queryAPIResult("iwbl", url, null, "allIwBacklinks", (line, results) -> {
+    	makeListQuery("iwbl", query, getparams, null, "allIwBacklinks", (line, results) -> {
     		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
 				String iwTitle = parseAttribute(line, "iwtitle", a);
@@ -471,17 +457,18 @@ public class Wikibot extends WMFWiki {
     }
     
     public Map<String, List<String>> allIwBacklinksWithPrefix(String prefix) throws IOException {
-    	Map<String, List<String>> map = new HashMap<>(max);
-    	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwblprop=iwtitle");
+    	Map<String, List<String>> map = new HashMap<>(max);;
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("list", "iwbacklinks");
+    	getparams.put("iwblprop", "iwtitle");
     	
     	if (prefix == null || prefix.isEmpty()) {
     		throw new UnsupportedOperationException("Null or empty prefix parameter.");
     	}
     	
-    	url.append("&iwblprefix=" + prefix);
+    	getparams.put("iwblprefix", normalize(prefix));
     	
-    	queryAPIResult("iwbl", url, null, "allIwBacklinksWithPrefix", (line, results) -> {
+    	makeListQuery("iwbl", query, getparams, null, "allIwBacklinksWithPrefix", (line, results) -> {
     		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
 				String iwTitle = parseAttribute(line, "iwtitle", a);
@@ -506,8 +493,9 @@ public class Wikibot extends WMFWiki {
     }
     
     public String[] searchIwBacklinks(String prefix, String target) throws IOException {
-    	StringBuilder url = new StringBuilder(query);
-    	url.append("list=iwbacklinks&iwblprop=iwtitle");
+    	Map<String, String> getparams = new HashMap<>();
+    	getparams.put("list", "iwbacklinks");
+    	getparams.put("iwblprop", "iwtitle");
     	
     	if (prefix == null || prefix.isEmpty()) {
     		throw new UnsupportedOperationException("Null or empty prefix parameter.");
@@ -517,10 +505,10 @@ public class Wikibot extends WMFWiki {
     		throw new UnsupportedOperationException("Null or empty target parameter.");
     	}
     	
-    	url.append("&iwblprefix=" + prefix);
-    	url.append("&iwbltitle=" + target);
+    	getparams.put("iwblprefix", normalize(prefix));
+    	getparams.put("iwbltitle", normalize(target));
     	
-    	List<String> list = queryAPIResult("iwbl", url, null, "searchIwBacklinks", (line, results) -> {
+    	List<String> list = makeListQuery("iwbl", query, getparams, null, "searchIwBacklinks", (line, results) -> {
     		for (int a = line.indexOf("<iw "); a > 0; a = line.indexOf("<iw ", ++a)) {
 				String title = parseAttribute(line, "title", a);
 				results.add(title);
@@ -538,14 +526,14 @@ public class Wikibot extends WMFWiki {
 	 *  @throws IOException if a network error occurs
 	 */
 	public void purgeRecursive(String... titles) throws IOException {
-		StringBuilder url = new StringBuilder(apiUrl);
-        url.append("action=purge");
-        url.append("&forcerecursivelinkupdate=1");
-        Map<String, String> postparams = new HashMap<>();
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("action", "purge");
+		getparams.put("forcerecursivelinkupdate", "1");
+        Map<String, Object> postparams = new HashMap<>();
         for (String x : constructTitleString(titles))
         {
             postparams.put("title", x);
-            fetch(url.toString(), postparams, "purge");
+            makeHTTPRequest(apiUrl, getparams, postparams, "purge");
         }
         log(Level.INFO, "purgeRecursive", "Successfully purged " + titles.length + " pages.");
 	}
