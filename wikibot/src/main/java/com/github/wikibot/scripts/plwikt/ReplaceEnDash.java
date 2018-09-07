@@ -59,7 +59,8 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		Integer[] namespaces = new Integer[]{PLWikt.ANNEX_NAMESPACE, PLWikt.INDEX_NAMESPACE, PLWikt.CATEGORY_NAMESPACE};
+		Map<String, Integer> namespaceIds = wb.getNamespaces();
+		Integer[] namespaces = new Integer[]{namespaceIds.get("Aneks"), namespaceIds.get("Indeks"), PLWikt.CATEGORY_NAMESPACE};
 		List<String> titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {

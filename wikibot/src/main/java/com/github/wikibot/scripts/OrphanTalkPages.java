@@ -18,6 +18,8 @@ import com.github.wikibot.utils.Users;
 public class OrphanTalkPages {
 	public static void main(String[] args) throws IOException, LoginException {
 		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		Map<String, Integer> namespaceIdentifiers = wb.getNamespaces();
+		
 		Integer[] namespaces = new Integer[]{
 			PLWikt.TALK_NAMESPACE,
 			//PLWikt.USER_TALK_NAMESPACE,
@@ -27,9 +29,9 @@ public class OrphanTalkPages {
 			PLWikt.TEMPLATE_TALK_NAMESPACE,
 			PLWikt.HELP_TALK_NAMESPACE,
 			PLWikt.CATEGORY_TALK_NAMESPACE,
-			PLWikt.ANNEX_TALK_NAMESPACE,
-			PLWikt.INDEX_TALK_NAMESPACE,
-			PLWikt.PORTAL_TALK_NAMESPACE
+			namespaceIdentifiers.get("Aneks"),
+			namespaceIdentifiers.get("Indeks"),
+			namespaceIdentifiers.get("Portal")
 		};
 		
 		List<String> list = new ArrayList<>(3000);

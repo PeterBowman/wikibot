@@ -10,13 +10,6 @@ import javax.security.auth.login.CredentialNotFoundException;
 import javax.security.auth.login.LoginException;
 
 public class PLWikt extends Wikibot {
-	public static final int ANNEX_NAMESPACE = 100;
-	public static final int ANNEX_TALK_NAMESPACE = 101;
-	public static final int INDEX_NAMESPACE = 102;
-	public static final int INDEX_TALK_NAMESPACE = 103;
-	public static final int PORTAL_NAMESPACE = 104;
-	public static final int PORTAL_TALK_NAMESPACE = 105;
-	
 	protected PLWikt() {
     	super("pl.wiktionary.org");
     }
