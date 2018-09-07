@@ -159,23 +159,6 @@ public class Wikibot extends WMFWiki {
 			));
 	}
 	
-	@Deprecated
-	public Map<String, OffsetDateTime> getTimestamps(Collection<? extends String> pages) throws IOException {
-		return Stream.of(getTopRevision(pages.toArray(new String[pages.size()])))
-			.collect(Collectors.toMap(
-				Revision::getTitle,
-				Revision::getTimestamp
-			));
-	}
-	
-	public Map<String, OffsetDateTime> getTimestamps(PageContainer[] pages) {
-		return Stream.of(pages)
-			.collect(Collectors.toMap(
-				PageContainer::getTitle,
-				PageContainer::getTimestamp
-			));
-	}
-	
 	public String expandTemplates(String text) throws IOException {
 		return expandTemplates(text, null);
 	}
@@ -274,10 +257,6 @@ public class Wikibot extends WMFWiki {
         int temp = revisions.size();
         log(Level.INFO, "Successfully retrieved recent changes (" + temp + " revisions)", "recentChanges");
         return revisions.toArray(new Revision[temp]);
-    }
-	
-	public String decode(String in) {
-		return super.decode(in);
     }
     
     public String[] allLinks(String prefix, int namespace) throws IOException {

@@ -260,7 +260,14 @@ public final class Edit implements Selectorizable {
 			));
 		
 		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeList(map)));
-		Misc.serialize(wb.getTimestamps(pages), info);
+		
+		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
+			));
+		
+		Misc.serialize(timestamps, info);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {

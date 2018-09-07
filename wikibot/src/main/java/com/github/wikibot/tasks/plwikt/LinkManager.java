@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.wikipedia.ArrayUtils;
 import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
@@ -591,7 +592,7 @@ public final class LinkManager implements Selectorizable {
 					}
 					
 					String diff = rev.diff(Wiki.PREVIOUS_REVISION);
-					diff = wb.decode(diff);
+					diff = StringEscapeUtils.unescapeXml(diff);
 					diff = diff.replaceAll("</?ins.*?>", "");
 					diff = diff.replace("\n", "");
 					

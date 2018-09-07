@@ -12,6 +12,8 @@ import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
@@ -54,7 +56,11 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	
 	public static void getList() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", PLWikt.MAIN_NAMESPACE);
-		Map<String, OffsetDateTime> info = wb.getTimestamps(pages);
+		Map<String, OffsetDateTime> info = Stream.of(pages)
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
+			));
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		
 		for (PageContainer page : pages) {

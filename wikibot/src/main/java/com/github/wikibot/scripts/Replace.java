@@ -98,7 +98,14 @@ public final class Replace implements Selectorizable {
 		
 		Misc.serialize(target, f_target);
 		Misc.serialize(replacement, f_replacement);
-		Misc.serialize(wb.getTimestamps(pages), f_info);
+		
+		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
+			));
+		
+		Misc.serialize(timestamps, f_info);
 	}
 	
 	public void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
