@@ -13,6 +13,8 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.security.auth.login.LoginException;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
@@ -350,4 +352,32 @@ public class Wikibot extends WMFWiki {
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
     }
+    
+    public synchronized void review(Revision rev, String comment) throws LoginException, IOException {
+		requiresExtension("Flagged Revisions");
+		throttle();
+		
+		User user = getCurrentUser();
+		
+		if (user == null || !user.isAllowedTo("review")) {
+            throw new SecurityException("Permission denied: cannot review.");
+		}
+		
+		Map<String, String> getparams = new HashMap<>();
+		getparams.put("action", "review");
+		
+		Map<String, Object> postparams = new HashMap<>();
+		
+		if (comment != null && !comment.isEmpty()) {
+			postparams.put("comment", comment);
+		}
+		
+		postparams.put("flag_accuracy", "1");
+		postparams.put("revid", Long.toString(rev.getID()));
+		postparams.put("token", getToken("csrf"));
+		
+		String response = makeHTTPRequest(apiUrl, getparams, postparams, "review");
+		checkErrorsAndUpdateStatus(response, "review");
+		log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
+	}
 }

@@ -343,30 +343,19 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		wb.setThrottle(5000);
 		
 		for (Entry<String, String> entry : list.entrySet()) {
-			String page = entry.getKey();
+			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(page);
-			
-    		int section = 0;
+			String content = wb.getPageText(title);
+			Page p = Page.store(title, content);
     		
-    		try {
-    			section = wb.getSectionId(content, "język polski");
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println(e.getMessage());
-    			continue;
-    		}
-    		
-    		String newcontent =
-				content.substring(0, content.indexOf("{{tłumaczenia}}\n") + 16) +
-				translations +
-				content.substring(content.indexOf("{{źródła}}"), content.length());
+			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);
     		
     		String summary = "usunięcie odnośników {{f}}; przeniesienie tlumaczeń do formy żeńskiej";
     		
     		try {
-    			wb.edit(page, newcontent, summary, false, true, section, null);
+    			wb.edit(title, p.toString(), summary);
     		} catch (ConcurrentModificationException e) {
-    			System.out.println("Conflicto - " + page);
+    			System.out.println("Conflicto - " + title);
     			continue;
     		}
 		}
@@ -378,33 +367,24 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		File f = new File(location_ser + "fem_output");
 		Map<String, String> list = Misc.deserialize(f);
 		
+		wb.setMarkMinor(false);
+		wb.setMarkBot(true);
 		wb.setThrottle(5000);
 		
 		for (Entry<String, String> entry : list.entrySet()) {
-			String page = entry.getKey();
+			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(page);
+			String content = wb.getPageText(title);
+			Page p = Page.store(title, content);
     		
-    		int section = 0;
-    		
-    		try {
-    			section = wb.getSectionId(content, "język polski");
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println(e.getMessage());
-    			continue;
-    		}
-    		
-    		String newcontent =
-				content.substring(0, content.indexOf("{{tłumaczenia}}\n") + 16) +
-				translations +
-				content.substring(content.indexOf("{{źródła}}"), content.length());
+			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);
     		
     		String summary = "przeniesienie tlumaczeń z formy męskiej";
 
     		try {
-    			wb.edit(page, newcontent, summary, false, true, section, null);
+    			wb.edit(title, p.toString(), summary);
     		} catch (ConcurrentModificationException e) {
-    			System.out.println("Conflicto - " + page);
+    			System.out.println("Conflicto - " + title);
     			continue;
     		}
 		}
