@@ -33,7 +33,6 @@ import org.wikipedia.Wiki;
 import org.wikiutils.IOUtils;
 
 import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Domains;
@@ -77,8 +76,10 @@ public final class MaintenanceScript {
 			return;
 		}
 		
-		int rcoptions = Wikibot.HIDE_REDIRECT;
-		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
+		Map<String, Boolean> rcoptions = new HashMap<>();
+		rcoptions.put("redirect", false);
+		
+		List<String> rctypes = Arrays.asList(new String[] {"new", "edit"});
 		
 		Wiki.Revision[] revs = wb.recentChanges(start, end, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
 		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);

@@ -28,13 +28,6 @@ public class Wikibot extends WMFWiki {
 	public static final int GADGET_DEFINITION_NAMESPACE = 2302;
 	public static final int GADGET_DEFINITION_TALK_NAMESPACE = 2303;
 	public static final int TOPIC_NAMESPACE = 2600;
-	
-	public static final int HIDE_REDIRECT = 32;
-	public static final int RC_EDIT = 1;
-	public static final int RC_NEW = 2;
-	public static final int RC_LOG = 4;
-	public static final int RC_EXTERNAL = 8;
-	public static final int RC_CATEGORIZE = 16;
     
     public Wikibot(String site) {
     	super(site);
@@ -219,14 +212,16 @@ public class Wikibot extends WMFWiki {
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
-	public Revision[] recentChanges(OffsetDateTime start, OffsetDateTime end, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
+	public Revision[] recentChanges(OffsetDateTime start, OffsetDateTime end, Map<String, Boolean> rcoptions,
+			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
 		String startTimestamp = start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 		String endTimestamp = end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 		return recentChanges(startTimestamp, endTimestamp, rcoptions, rctypes, toponly, excludeUser, ns);
 	}
 	
-	public Revision[] recentChanges(String starttimestamp, String endtimestamp, int rcoptions, int rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
+	public Revision[] recentChanges(String starttimestamp, String endtimestamp, Map<String, Boolean> rcoptions,
+			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
     {
 		Map<String, String> getparams = new HashMap<>();
 		getparams.put("list", "recentchanges");
@@ -242,60 +237,15 @@ public class Wikibot extends WMFWiki {
         	getparams.put("rcexcludeuser", excludeUser);
         }
         
-        if (rctypes > 0) {
-        	List<String> rctypeslist = new ArrayList<>();
-        	
-        	if ((rctypes & RC_EDIT) == RC_EDIT) {
-            	rctypeslist.add("edit");
-        	}
-        	
-        	if ((rctypes & RC_NEW) == RC_NEW) {
-        		rctypeslist.add("new");
-        	}
-        	
-        	if ((rctypes & RC_LOG) == RC_LOG) {
-        		rctypeslist.add("log");
-        	}
-        	
-        	if ((rctypes & RC_EXTERNAL) == RC_EXTERNAL) {
-        		rctypeslist.add("external");
-        	}
-        	
-        	if ((rctypes & RC_CATEGORIZE) == RC_CATEGORIZE) {
-        		rctypeslist.add("categorize");
-        	}
-        	
-        	getparams.put("rctype", String.join("|", rctypeslist));
+        if (rctypes != null && !rctypes.isEmpty()) {
+            getparams.put("rctype", String.join("|", rctypes));
         }
         
-        if (rcoptions > 0) {
-        	List<String> rcshowlist = new ArrayList<>();
-        	
-            if ((rcoptions & HIDE_ANON) == HIDE_ANON) {
-            	rcshowlist.add("!anon");
-            }
-            
-            if ((rcoptions & HIDE_BOT) == HIDE_BOT) {
-            	rcshowlist.add("!bot");
-            }
-            
-            if ((rcoptions & HIDE_SELF) == HIDE_SELF) {
-            	rcshowlist.add("!self");
-            }
-            
-            if ((rcoptions & HIDE_MINOR) == HIDE_MINOR) {
-            	rcshowlist.add("!minor");
-            }
-            
-            if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED) {
-            	rcshowlist.add("!patrolled");
-            }
-            
-            if ((rcoptions & HIDE_REDIRECT) == HIDE_REDIRECT) {
-            	rcshowlist.add("!redirect");
-            }
-            
-            getparams.put("rcshow", String.join("|", rcshowlist));
+        if (rcoptions != null && !rcoptions.isEmpty())
+        {
+            List<String> temp = new ArrayList<>();
+            rcoptions.forEach((key, value) -> temp.add((Boolean.FALSE.equals(value) ? "!" : "") + key));
+            getparams.put("rcshow", String.join("|", temp));
         }
 
         if (starttimestamp != null) {

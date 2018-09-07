@@ -47,7 +47,6 @@ import org.wikiutils.IOUtils;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.PLWikt;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -228,8 +227,8 @@ public final class CitationTypography {
 			start = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
-		Wiki.Revision[] revs = wb.recentChanges(start, end, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
+		Wiki.Revision[] revs = wb.recentChanges(start, end, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		Wiki.LogEntry[] logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", null, null, end, start, Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
 		
 		// store current timestamp for the next iteration
