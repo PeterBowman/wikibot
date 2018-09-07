@@ -22,7 +22,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -34,15 +33,15 @@ public class JyddishIpa implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(false, false);
 				break;
 			case '2':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(true, false);
 				break;
 			case '3':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(true, true);
 				break;
 			default:

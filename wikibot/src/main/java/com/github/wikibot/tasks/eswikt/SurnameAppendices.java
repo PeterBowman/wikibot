@@ -19,7 +19,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 
 public final class SurnameAppendices {
@@ -50,7 +49,7 @@ public final class SurnameAppendices {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.ESWIKT.getDomain());
+		wb = Login.createSession("es.wiktionary.org");
 		
 		String[] subPages = getSubPages();
 		String[] surnames = getSurnames();

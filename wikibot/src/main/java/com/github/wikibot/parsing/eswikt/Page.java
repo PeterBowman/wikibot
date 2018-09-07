@@ -19,7 +19,6 @@ import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
@@ -274,7 +273,7 @@ public final class Page extends AbstractPage<Section> {
 	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
-		Wikibot wiki = Login.createSession(Domains.ESWIKT.getDomain());
+		Wikibot wiki = Login.createSession("es.wiktionary.org");
 		String text = wiki.getPageText("tamén");
 		Page page = Page.store("tamén", text);
 		System.out.println("");

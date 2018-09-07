@@ -24,7 +24,6 @@ import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -37,14 +36,14 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getList();
 				break;
 			case '2':
 				makePreview();
 				break;
 			case 'e':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
 				break;
 			default:

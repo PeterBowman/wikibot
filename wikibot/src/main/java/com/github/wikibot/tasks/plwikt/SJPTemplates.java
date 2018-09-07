@@ -15,7 +15,6 @@ import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -28,7 +27,7 @@ public final class SJPTemplates {
 	private static final String WIKI_PAGE = "Wikipedysta:PBbot/sjp.pl";
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		String[] titles = wb.whatTranscludesHere("Szablon:sjp.pl", Wiki.MAIN_NAMESPACE);
 		List<Wiki.Revision> targetRevs = new ArrayList<>(titles.length);

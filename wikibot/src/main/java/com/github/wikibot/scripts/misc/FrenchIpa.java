@@ -12,14 +12,13 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public class FrenchIpa {
 	public static void main (String[] args) throws Exception {
-		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain());
+		Wikibot wb = Login.createSession("pl.wiktionary.org");
 		
 		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
 			.filter(title -> (

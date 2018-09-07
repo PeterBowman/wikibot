@@ -24,7 +24,6 @@ import org.wikiutils.ParseUtils;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -103,8 +102,8 @@ public class MissingRefsOnPlwiki {
 	}
 
 	public static void main(String[] args) throws Exception {
-		plwikt = Login.createSession(Domains.PLWIKT.getDomain());
-		plwiki = Login.createSession(Domains.PLWIKI.getDomain());
+		plwikt = Login.createSession("pl.wiktionary.org");
+		plwiki = Login.createSession("pl.wikipedia.org");
 
 		// populate namespace cache
 		plwikt.getNamespaces();

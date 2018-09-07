@@ -19,7 +19,6 @@ import java.util.ListIterator;
 import org.wikipedia.Wiki.Revision;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.univocity.parsers.tsv.TsvParser;
@@ -33,7 +32,7 @@ public final class MassReview {
 	
 	public static void main(String[] args) throws Exception {
 		System.out.print("Username: ");
-		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain(), Misc.readLine());
+		Wikibot wb = Login.createSession("pl.wiktionary.org", Misc.readLine());
 		wb.setThrottle(5000);
 		
 		List<String[]> list = extractList();

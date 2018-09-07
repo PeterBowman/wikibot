@@ -35,7 +35,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Misc.MyRandom;
@@ -67,7 +66,7 @@ public final class LinkManager implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getRequest();
 				wb.logout();
 				break;
@@ -79,13 +78,13 @@ public final class LinkManager implements Selectorizable {
 				Misc.serialize(375, f_stats);
 				break;
 			case 'e':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				edit(null, 0);
 				wb.logout();
 				break;
 			case 'p':
 				try {
-					wb = Login.createSession(Domains.PLWIKT.getDomain());
+					wb = Login.createSession("pl.wiktionary.org");
 					patrol();
 					wb.logout();
 				} catch (IOException | UncheckedIOException e) {

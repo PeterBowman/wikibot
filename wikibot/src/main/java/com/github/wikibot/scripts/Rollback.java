@@ -10,19 +10,18 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki.Revision;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
 public final class Rollback {
 	private static Wikibot wb;
-	private static final Domains domain = Domains.PLWIKT;
+	private static final String domain = "pl.wiktionary.org";
 	private static final String location = "./data/scripts/Rollback/";
 	private static final String worklist = location + "worklist.txt";
 	
 	public static void main(String[] args) throws IOException, LoginException {
 		System.out.print("Username: ");
-		wb = Login.createSession(domain.getDomain(), Misc.readLine());
+		wb = Login.createSession(domain, Misc.readLine());
 		wb.setThrottle(2000);
 		
 		String reason = "omijanie blokady";

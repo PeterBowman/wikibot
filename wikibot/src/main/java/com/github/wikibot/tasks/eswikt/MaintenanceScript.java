@@ -33,7 +33,6 @@ import org.wikipedia.Wiki;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
@@ -59,7 +58,7 @@ public final class MaintenanceScript {
 			gapHours = 0;
 		}
 		
-		wb = Login.createSession(Domains.ESWIKT.getDomain());
+		wb = Login.createSession("es.wiktionary.org");
 		
 		OffsetDateTime start = OffsetDateTime.parse(startTimestamp);
 		OffsetDateTime end = OffsetDateTime.now(wb.timezone());

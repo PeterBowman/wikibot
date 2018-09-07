@@ -37,7 +37,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Inflector;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -101,7 +100,7 @@ public final class PolishSurnamesInflection {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		File fStorage = new File(LOCATION + "storage.ser");
 		File fHistory = new File(LOCATION + "history.ser");

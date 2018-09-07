@@ -28,7 +28,6 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.scripts.plwikt.MissingPolishGerunds;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
@@ -44,26 +43,26 @@ public class PolishGerundsList implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				foreignGerunds();
 				break;
 			case '2':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				//incorrectFormat();
 				break;
 			case '3':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				makeLists();
 				break;
 			case 'm':
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				//writeFormat();
 				break;
 			case 'e':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				writeLists();
 				break;
 			default:

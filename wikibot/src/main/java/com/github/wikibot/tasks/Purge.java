@@ -2,10 +2,8 @@ package com.github.wikibot.tasks;
 
 import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 
 public final class Purge {
@@ -14,10 +12,9 @@ public final class Purge {
 		if (args.length < 3) {
 			throw new IllegalArgumentException();
 		}
-
-		Domains domain = Domains.findDomain(args[0]);
-		Objects.requireNonNull(domain);
-		Wikibot wb = Login.createSession(domain.getDomain());
+		
+		String domain = args[0];
+		Wikibot wb = Login.createSession(domain);
 
 		int opts = Integer.parseInt(args[1]);
 		String[] titles = Arrays.copyOfRange(args, 2, args.length);

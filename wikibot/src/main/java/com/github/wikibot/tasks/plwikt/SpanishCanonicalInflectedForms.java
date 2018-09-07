@@ -24,7 +24,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -48,7 +47,7 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		CommandLine line = readOptions(args);
 		List<String> list = retrieveList();

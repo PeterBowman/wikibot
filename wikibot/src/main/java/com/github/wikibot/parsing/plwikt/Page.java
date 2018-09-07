@@ -9,7 +9,6 @@ import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
@@ -132,7 +131,7 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
-		Wikibot wiki = Login.createSession(Domains.PLWIKT.getDomain());
+		Wikibot wiki = Login.createSession("pl.wiktionary.org");
 		String text = wiki.getPageText("rescate");
 		Page page = Page.store("rescate", text);
 		Section esp = page.getSection("język hiszpański").get();

@@ -31,7 +31,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
@@ -83,7 +82,7 @@ public final class MisusedRegTemplates {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		XMLDumpReader reader = getXMLReader(args);
 		List<Item> list = analyzeDump(reader);
@@ -116,7 +115,7 @@ public final class MisusedRegTemplates {
 				throw new IllegalArgumentException();
 			}
 		} else {
-			return new XMLDumpReader(Domains.PLWIKT);
+			return new XMLDumpReader("pl.wiktionary.org");
 		}
 	}
 	

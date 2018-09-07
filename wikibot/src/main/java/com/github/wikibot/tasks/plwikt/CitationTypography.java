@@ -51,7 +51,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -93,7 +92,7 @@ public final class CitationTypography {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
@@ -243,7 +242,7 @@ public final class CitationTypography {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
-			reader = new XMLDumpReader(Domains.PLWIKT);
+			reader = new XMLDumpReader("pl.wiktionary.org");
 		} else {
 			reader = new XMLDumpReader(path);
 		}

@@ -23,7 +23,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -39,11 +38,11 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
 				break;
 			case 'r':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				review();
 				break;
 			default:

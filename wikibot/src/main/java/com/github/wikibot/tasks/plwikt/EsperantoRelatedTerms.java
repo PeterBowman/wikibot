@@ -29,7 +29,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -43,7 +42,7 @@ public final class EsperantoRelatedTerms {
 	private static Wikibot wb;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		Map<String, List<String>> morphemToTitle = new HashMap<>(10000);
 		Map<String, List<String>> titleToMorphem = new HashMap<>(15000);

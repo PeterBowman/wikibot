@@ -32,7 +32,6 @@ import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 import com.univocity.parsers.tsv.TsvParser;
@@ -49,7 +48,7 @@ public final class UpdateLanguageCodes {
 
 	public static void main(String[] args) throws IOException, LoginException {
 		Map<String, String> storedLangs = extractStoredLangs();
-		Wikibot wb = Login.createSession(Domains.ESWIKT.getDomain());
+		Wikibot wb = Login.createSession("es.wiktionary.org");
 		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
 		Map<String, String> fetchedLangs = extractFetchedLangs(pages);
 		

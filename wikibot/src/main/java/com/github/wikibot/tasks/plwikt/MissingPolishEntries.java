@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
@@ -52,7 +51,7 @@ public class MissingPolishEntries {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession(Domains.PLWIKT.getDomain());
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		List<String> titles = retrieveNonPolishEntries();
 		retainSgjpEntries(titles);

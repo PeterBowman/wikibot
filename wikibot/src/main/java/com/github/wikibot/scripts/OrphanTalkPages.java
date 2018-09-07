@@ -13,12 +13,11 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 
 public class OrphanTalkPages {
 	public static void main(String[] args) throws IOException, LoginException {
-		Wikibot wb = Login.createSession(Domains.PLWIKT.getDomain());
+		Wikibot wb = Login.createSession("pl.wiktionary.org");
 		Map<String, Integer> namespaceIdentifiers = wb.getNamespaces();
 		
 		Integer[] namespaces = new Integer[]{

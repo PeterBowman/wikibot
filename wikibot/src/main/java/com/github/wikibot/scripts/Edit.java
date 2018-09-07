@@ -23,14 +23,13 @@ import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class Edit implements Selectorizable {
 	private static Wikibot wb;
-	private static final Domains domain = Domains.PLWIKT;
+	private static final String domain = "pl.wiktionary.org";
 	private static final String location = "./data/scripts/Edit/";
 	private static final String locationser = location + "ser/";
 	private static final String difflist = location + "difflist.txt";
@@ -43,26 +42,26 @@ public final class Edit implements Selectorizable {
 				getList();
 				break;
 			case '2':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				makeList();
 				break;
 			case '3':
 				makeList2();
 				break;
 			case '4':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				makeList3();
 				break;
 			case 'd':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				getDiffs();
 				break;
 			case 'g':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				getContents();
 				break;
 			case 'e':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				edit();
 				break;
 			default:

@@ -49,7 +49,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
@@ -4962,7 +4961,7 @@ public class Editor extends AbstractEditor {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Wikibot wb = Login.createSession(Domains.ESWIKT.getDomain());
+		Wikibot wb = Login.createSession("es.wiktionary.org");
 		
 		String text;
 		String title = "Paronym";

@@ -16,7 +16,6 @@ import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
@@ -37,7 +36,7 @@ public final class OlafbotTilde implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				//getList();
 				break;
 			case '2':
@@ -62,7 +61,7 @@ public final class OlafbotTilde implements Selectorizable {
 				Misc.serialize(471, locationser + "stats.ser");
 				break;
 			case 'e':
-				wb = Login.createSession(Domains.PLWIKT.getDomain());
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
 				break;
 			default:

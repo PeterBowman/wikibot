@@ -20,14 +20,13 @@ import javax.security.auth.login.LoginException;
 
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class Replace implements Selectorizable {
 	private static Wikibot wb;
-	private static final Domains domain = Domains.PLWIKT;
+	private static final String domain = "pl.wiktionary.org";
 	private static final String location = "./data/scripts/replace/";
 	private static final String f_titles = location + "titles.txt";
 	private static final String f_worklist = location + "worklist.txt";
@@ -37,7 +36,7 @@ public final class Replace implements Selectorizable {
 	private static final String summaryFormat;
 	
 	static {
-		if (domain.getDomain().startsWith("pl.")) {
+		if (domain.startsWith("pl.")) {
 			summaryFormat = "„%s” → „%s”"; 
 		} else {
 			summaryFormat = "«%s» → «%s»";
@@ -47,11 +46,11 @@ public final class Replace implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				getDiffs();
 				break;
 			case 'e':
-				wb = Login.createSession(domain.getDomain());
+				wb = Login.createSession(domain);
 				edit();
 				break;
 			default:
