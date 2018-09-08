@@ -195,7 +195,7 @@ public class MissingRefsOnPlwiki {
 
 			for (String template : ParseUtils.getTemplates("wikipedia", s.toString())) {
 				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
-				String param = params.getOrDefault("ParamWithoutName", "");
+				String param = params.getOrDefault("ParamWithoutName1", "");
 
 				if (!param.isEmpty()) {
 					targets.add(param);
