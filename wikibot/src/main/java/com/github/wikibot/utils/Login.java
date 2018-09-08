@@ -50,7 +50,7 @@ public class Login {
 		wiki.setMarkBot(true);
 		setAssertionFlag(wiki);
 		
-		System.out.printf("Logged in as %s (%s)%n", wiki.getCurrentUser().getUsername(), wiki.version());
+		System.out.printf("Logged in as %s at %s (%s)%n", wiki.getCurrentUser().getUsername(), wiki.getDomain(), wiki.version());
 	}
 	
 	private static void setAssertionFlag(Wiki wiki) {
