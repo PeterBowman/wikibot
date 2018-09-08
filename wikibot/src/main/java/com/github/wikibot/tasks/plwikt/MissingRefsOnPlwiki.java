@@ -177,7 +177,7 @@ public class MissingRefsOnPlwiki {
 		plwikt.edit(TARGET_PAGE, out, "aktualizacja");
 	}
 
-	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) {
+	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) throws IOException {
 		Collator coll = Misc.getCollator("pl");
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
@@ -198,7 +198,12 @@ public class MissingRefsOnPlwiki {
 				String param = params.getOrDefault("ParamWithoutName1", "");
 
 				if (!param.isEmpty()) {
-					targets.add(param);
+					try {
+						targets.add(plwikt.normalize(param));
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+						continue;
+					}
 				} else {
 					targets.add(page.getTitle());
 				}
