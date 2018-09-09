@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,13 +126,13 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Total {{wikipedia}} transclusions on plwiktionary: %d%n", totalTemplateTransclusions);
 
 		List<String> errors = new ArrayList<>();
-		Map<String, List<String>> plwiktToPlwiki = buildTargetMap(plwiktTransclusions, errors);
+		Map<String, Set<String>> plwiktToPlwiki = buildTargetMap(plwiktTransclusions, errors);
 
 		int targetedTemplateTransclusions = plwiktToPlwiki.size();
 		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", targetedTemplateTransclusions);
 
 		String[] plwikiTitles = plwiktToPlwiki.values().stream()
-				.flatMap(List::stream)
+				.flatMap(Set::stream)
 				.distinct()
 				.toArray(String[]::new);
 
@@ -197,9 +198,9 @@ public class MissingRefsOnPlwiki {
 		}
 	}
 
-	private static Map<String, List<String>> buildTargetMap(PageContainer[] pages, List<String> errors) throws IOException {
+	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages, List<String> errors) throws IOException {
 		Collator coll = Misc.getCollator("pl");
-		Map<String, List<String>> map = new TreeMap<String, List<String>>(coll);
+		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
 		for (PageContainer page : pages) {
 			Page p = Page.wrap(page);
@@ -211,7 +212,7 @@ public class MissingRefsOnPlwiki {
 				continue;
 			}
 
-			List<String> targets = new ArrayList<>();
+			List<String> list = new ArrayList<>();
 
 			for (String template : ParseUtils.getTemplates("wikipedia", s.toString())) {
 				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
@@ -219,21 +220,20 @@ public class MissingRefsOnPlwiki {
 
 				if (!param.isEmpty()) {
 					try {
-						targets.add(normalizeTitle(param));
+						list.add(normalizeTitle(param));
 					} catch (IllegalArgumentException e) {
 						errors.add(String.format("#[[%s]]: <nowiki>%s</nowiki>", page.getTitle(), template));
 						continue;
 					}
 				} else {
-					targets.add(page.getTitle());
+					list.add(page.getTitle());
 				}
 			}
 
-			if (!targets.isEmpty()) {
-				targets = targets.stream()
-						.map(StringUtils::capitalize)
-						.distinct()
-						.collect(Collectors.toList());
+			if (!list.isEmpty()) {
+				Set<String> targets = list.stream()
+					.map(StringUtils::capitalize)
+					.collect(Collectors.toCollection(TreeSet::new));
 
 				map.put(page.getTitle(), targets);
 			}
@@ -332,9 +332,9 @@ public class MissingRefsOnPlwiki {
 		return set;
 	}
 
-	private static void removeFoundOccurrences(Map<String, List<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
+	private static void removeFoundOccurrences(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
 			Map<String, String> titleToRedir) {
-		for (Map.Entry<String, List<String>> e : plwiktToPlwiki.entrySet()) {
+		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 			Iterator<String> it = e.getValue().iterator();
 
@@ -368,11 +368,11 @@ public class MissingRefsOnPlwiki {
 		return entry;
 	}
 
-	private static String makeOutput(Map<String, List<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
+	private static String makeOutput(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
 			Set<String> missingPlwikiTitles, Map<String, String> titleToRedir) {
 		List<String> out = new ArrayList<>(plwiktToPlwiki.size());
 
-		for (Map.Entry<String, List<String>> e : plwiktToPlwiki.entrySet()) {
+		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 
 			for (String articleOnPlwiki : e.getValue()) {
