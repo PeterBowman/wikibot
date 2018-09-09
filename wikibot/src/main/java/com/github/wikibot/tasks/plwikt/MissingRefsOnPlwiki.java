@@ -224,9 +224,8 @@ public class MissingRefsOnPlwiki {
 		for (int i = 0; i < pageInfos.length; i++) {
 			@SuppressWarnings("rawtypes")
 			Map pageInfo = pageInfos[i];
-			Boolean exists = (Boolean)pageInfo.get("exists");
 
-			if (exists) {
+			if (pageInfo != null && Boolean.TRUE.equals(pageInfo.get("exists"))) {
 				list.add(titles[i]);
 			}
 		}
