@@ -199,9 +199,8 @@ public class MissingRefsOnPlwiki {
 
 				if (!param.isEmpty()) {
 					try {
-						targets.add(plwikt.normalize(param));
+						targets.add(normalizeTitle(param));
 					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
 						continue;
 					}
 				} else {
@@ -216,6 +215,18 @@ public class MissingRefsOnPlwiki {
 		}
 
 		return map;
+	}
+
+	private static String normalizeTitle(String title) throws IOException {
+		title = plwikt.normalize(title.trim()); // throws IllegalArgumentException
+
+		try {
+			// TODO: Wiki.normalize should take care of this.
+			// Also, I'd like to see fragments in wikilinks in the final output list.
+			return title.substring(0, title.indexOf("#"));
+		} catch (StringIndexOutOfBoundsException e) {
+			return title;
+		}
 	}
 
 	private static String[] getFoundArticles(String[] titles, @SuppressWarnings("rawtypes") Map[] pageInfos) {
