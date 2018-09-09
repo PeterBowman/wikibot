@@ -176,7 +176,7 @@ public final class RefreshWantedArticles {
 		for (int i = 0; i < pages.length; i++) {
 			String redirect = redirects[i];
 			
-			if (redirect != null) {
+			if (!redirect.equals(nonMissingTitles[i])) {
 				PageContainer old = pages[i];
 				
 				try {

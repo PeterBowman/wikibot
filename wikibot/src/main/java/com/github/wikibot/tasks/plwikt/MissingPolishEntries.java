@@ -83,7 +83,7 @@ public class MissingPolishEntries {
 		String[] allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
 		String[] polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
 		String[] polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
-		String[] polishRedirs = resolveRedirects(polishTitles);
+		String[] polishRedirs = findRedirects(polishTitles);
 		
 		Set<String> set = new HashSet<>();
 		set.addAll(Arrays.asList(allTitles));
@@ -101,7 +101,7 @@ public class MissingPolishEntries {
 		return titles;
 	}
 	
-	private static String[] resolveRedirects(String[] polishTitles) throws IOException {
+	private static String[] findRedirects(String[] polishTitles) throws IOException {
 		String[] allRedirs = wb.listPages("", null, 0, null, null, Boolean.TRUE);
 		String[] resolvedRedirs = wb.resolveRedirects(allRedirs);
 		
@@ -112,7 +112,7 @@ public class MissingPolishEntries {
 			String redir = allRedirs[i];
 			String resolvedRedir = resolvedRedirs[i];
 			
-			if (resolvedRedir != null && set.contains(resolvedRedir)) {
+			if (set.contains(resolvedRedir)) {
 				polishRedirs.add(redir);
 			}
 		}

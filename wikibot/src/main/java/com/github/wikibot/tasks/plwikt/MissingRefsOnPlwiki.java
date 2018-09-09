@@ -93,12 +93,12 @@ public class MissingRefsOnPlwiki {
 				"* transkluzji {{s|wikipedia}} (w sumie): %1$s\n" +
 				"* transkluzji {{s|wikipedia}} (tylko hasła polskie): %2$s\n" +
 				"* jednakowych artykułów docelowych w Wikipedii: %3$s\n" +
-				"* istniejących artykułów w Wikipedii (uwzględniając przekierowania): %4$s\n" +
-				"* rozmiar listy: %5$s\n" +
+				"* istniejących artykułów w Wikipedii: %4$s (w tym przekierowań: %5$s)\n" +
+				"* rozmiar listy: %6$s\n" +
 				"Zobacz też:\n" +
 				"* [[Wikisłownikarz:Azureus/brak Wikisłownika na Wikipedii]] (do 2010)\n" +
 				"* [[w:Wikipedysta:Nostrix/Wikisłownik]]\n" +
-				"* [[%6$s|podstrona z błędami]]\n" +
+				"* [[%7$s|podstrona z błędami]]\n" +
 				"Zmiany wykonane ręcznie na tej stronie zostaną nadpisane przez bota. " +
 				"Wygenerowano ~~~~~.\n" +
 				"----\n";
@@ -143,9 +143,11 @@ public class MissingRefsOnPlwiki {
 		int foundArticles = foundPlwikiTitles.length;
 		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", foundArticles);
 
-		String[] plwikiRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
-		Map<String, String> titleToRedir = new HashMap<>(foundPlwikiTitles.length);
-		String[] resolvedRedirs = translateRedirs(foundPlwikiTitles, plwikiRedirs, titleToRedir);
+		String[] resolvedRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
+		Map<String, String> titleToRedir = translateRedirs(foundPlwikiTitles, resolvedRedirs);
+
+		int foundRedirects = titleToRedir.size();
+		System.out.printf("Targeted redirects on plwikipedia: %d%n", foundRedirects);
 
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
 		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
@@ -171,6 +173,7 @@ public class MissingRefsOnPlwiki {
 					Misc.makePluralPL(targetedTemplateTransclusions),
 					Misc.makePluralPL(targetedArticles),
 					Misc.makePluralPL(foundArticles),
+					Misc.makePluralPL(foundRedirects),
 					Misc.makePluralPL(filteredTitles),
 					ERRORS_SUBPAGE
 					);
@@ -263,19 +266,16 @@ public class MissingRefsOnPlwiki {
 		return list.toArray(new String[list.size()]);
 	}
 
-	private static String[] translateRedirs(String[] titles, String[] redirs, Map<String, String> titleToRedir) {
-		String[] updatedTitles = new String[titles.length];
+	private static Map<String, String> translateRedirs(String[] titles, String[] redirs) {
+		Map<String, String> titleToRedir = new HashMap<>();
 
 		for (int i = 0; i < titles.length; i++) {
-			if (redirs[i] != null) {
+			if (!redirs[i].equals(titles[i])) {
 				titleToRedir.put(titles[i], redirs[i]);
-				updatedTitles[i] = redirs[i];
-			} else {
-				updatedTitles[i] = titles[i];
 			}
 		}
 
-		return Stream.of(updatedTitles).distinct().toArray(String[]::new);
+		return titleToRedir;
 	}
 
 	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
