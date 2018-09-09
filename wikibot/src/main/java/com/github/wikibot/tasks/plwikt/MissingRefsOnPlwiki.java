@@ -191,7 +191,7 @@ public class MissingRefsOnPlwiki {
 		if (!fHashErrors.exists() || (int)Misc.deserialize(fHashErrors) != errors.hashCode()) {
 			Misc.serialize(errors.hashCode(), fHashErrors);
 			String out = ERRORS_SUBPAGE_INTRO + String.join("\n", errors);
-			plwikt.edit(ERRORS_SUBPAGE, out, "aktualizacja");
+			plwikt.edit(TARGET_PAGE + ERRORS_SUBPAGE, out, "aktualizacja");
 		} else {
 			System.out.println("No changes detected in error list.");
 		}
