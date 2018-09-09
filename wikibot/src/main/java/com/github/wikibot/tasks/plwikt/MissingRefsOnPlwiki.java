@@ -34,7 +34,7 @@ import com.github.wikibot.utils.Users;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
-	private static final String TARGET_PAGE = "Wikipedysta:PBbot/brak Wikisłownika na Wikipedii";
+	private static final String TARGET_PAGE = "Wikisłownikarz:PBbot/brak Wikisłownika na Wikipedii";
 	private static final String PAGE_INTRO;
 
 	private static final Map<String, List<String>> TARGET_TEMPLATES;
@@ -98,7 +98,7 @@ public class MissingRefsOnPlwiki {
 				"* istniejących artykułów w Wikipedii (uwzględniając przekierowania): %4$s\n" +
 				"* rozmiar listy: %5$s\n" +
 				"Zobacz też:\n" +
-				"* [[Wikipedysta:Azureus/brak Wikisłownika na Wikipedii]] (do 2010)\n" +
+				"* [[Wikisłownikarz:Azureus/brak Wikisłownika na Wikipedii]] (do 2010)\n" +
 				"* [[w:Wikipedysta:Nostrix/Wikisłownik]]\n" +
 				"Zmiany wykonane ręcznie na tej stronie zostaną nadpisane przez bota. " +
 				"Wygenerowano ~~~~~.\n" +
