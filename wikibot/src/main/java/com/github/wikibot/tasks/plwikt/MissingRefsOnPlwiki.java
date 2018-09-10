@@ -116,9 +116,6 @@ public class MissingRefsOnPlwiki {
 		plwikt = Login.createSession("pl.wiktionary.org");
 		plwiki = Login.createSession("pl.wikipedia.org");
 
-		// populate namespace cache
-		plwikt.getNamespaces();
-
 		PageContainer[] plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
 
 		int totalTemplateTransclusions = plwiktTransclusions.length;
@@ -221,7 +218,7 @@ public class MissingRefsOnPlwiki {
 
 				if (!param.isEmpty()) {
 					try {
-						list.add(normalizeTitle(param));
+						list.add(plwikt.normalize(param));
 					} catch (IllegalArgumentException e) {
 						errors.add(String.format("#[[%s]]: <nowiki>%s</nowiki>", page.getTitle(), template));
 						continue;
@@ -241,18 +238,6 @@ public class MissingRefsOnPlwiki {
 		}
 
 		return map;
-	}
-
-	private static String normalizeTitle(String title) {
-		title = plwikt.normalize(title.trim()); // throws IllegalArgumentException
-
-		try {
-			// TODO: Wiki.normalize should take care of this.
-			// Also, I'd like to see fragments in wikilinks in the final output list.
-			return title.substring(0, title.indexOf("#"));
-		} catch (StringIndexOutOfBoundsException e) {
-			return title;
-		}
 	}
 
 	private static String[] getFoundArticles(String[] titles, Map<String, Object>[] pageInfos) {
