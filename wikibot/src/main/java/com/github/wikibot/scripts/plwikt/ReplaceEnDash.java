@@ -2,6 +2,8 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,17 +15,16 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.ArrayUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
-import com.github.wikibot.utils.Domains;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.Users;
 
 public final class ReplaceEnDash implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/ReplaceEnDash/";
 	private static final String renameList = location + "rename.txt";
 	private static final String editList = location + "edit.txt";
@@ -32,24 +33,20 @@ public final class ReplaceEnDash implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getEditTargets();
-				Login.saveSession(wb);
 				break;
 			case 'm':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				rename();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -57,7 +54,8 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		Integer[] namespaces = new Integer[]{PLWikt.ANNEX_NAMESPACE, PLWikt.INDEX_NAMESPACE, PLWikt.CATEGORY_NAMESPACE};
+		Map<String, Integer> namespaceIds = wb.getNamespaces();
+		Integer[] namespaces = new Integer[]{namespaceIds.get("Aneks"), namespaceIds.get("Indeks"), Wiki.CATEGORY_NAMESPACE};
 		List<String> titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {
@@ -69,7 +67,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		String[] targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Páginas existentes detectadas: %d%n", targets.length);
-		IOUtils.writeToFile(String.join("\n", targets), renameList);
+		Files.write(Paths.get(renameList), Arrays.asList(targets));
 		
 		titles = new ArrayList<>();
 		
@@ -81,11 +79,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Enlaces encontrados: %d%n", targets.length);
-		IOUtils.writeToFile(String.join("\n", targets), editList);
+		Files.write(Paths.get(editList), Arrays.asList(targets));
 	}
 	
 	public static void getEditTargets() throws IOException {
-		String[] titles = IOUtils.loadFromFile(editList, "", "UTF8");
+		String[] titles = Files.lines(Paths.get(editList)).toArray(String[]::new);
 		Map<String, Collection<String>> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
@@ -109,11 +107,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
-		IOUtils.writeToFile(Misc.makeMultiList(map, "\n"), reviewedList);
+		Files.write(Paths.get(reviewedList), Arrays.asList(Misc.makeMultiList(map, "\n")));
 	}
 	
 	public static void rename() throws LoginException, IOException {
-		String[] titles = IOUtils.loadFromFile(renameList, "", "UTF8");
+		String[] titles = Files.lines(Paths.get(renameList)).toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -133,7 +131,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void edit() throws IOException, LoginException {
-		String[] lines = IOUtils.loadFromFile(reviewedList, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(reviewedList)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
 		List<String> errors = new ArrayList<>();
 		
@@ -163,7 +161,7 @@ public final class ReplaceEnDash implements Selectorizable {
 			if (missing.size() == backlinks.length) {
 				continue;
 			} else {
-				String[] targets = PLWikt.relativeComplement(backlinks, missing.toArray(new String[missing.size()]));
+				String[] targets = ArrayUtils.relativeComplement(backlinks, missing.toArray(new String[missing.size()]));
 				targets = Stream.of(targets).map(link -> String.format("[[%s]]", link.replace(" – ", " - "))).toArray(String[]::new);
 				String links = String.join(", ", targets);
 				String summary = String.format(

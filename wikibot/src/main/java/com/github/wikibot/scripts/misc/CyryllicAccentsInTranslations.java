@@ -13,19 +13,19 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class CyryllicAccentsInTranslations implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/CyryllicAccentsInTranslations/";
 	private static final String locationser = location + "ser/";
 	private static final String contentlist = locationser + "contents.ser";
@@ -36,9 +36,8 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getContents();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				getList();
@@ -47,9 +46,8 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 				analyzeLists();
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -57,7 +55,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	}
 	
 	public static void getContents() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Misc.serialize(pages, contentlist);
 	}
 	

@@ -1,28 +1,24 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
-
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class FrenchIpa {
-	public static void main (String[] args) throws IOException, FailedLoginException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+	public static void main (String[] args) throws Exception {
+		Wikibot wb = Login.createSession("pl.wiktionary.org");
 		
 		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
 			.filter(title -> (
@@ -43,7 +39,7 @@ public class FrenchIpa {
 			.toArray(size -> new String[size]);
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
-		IOUtils.writeToFile(String.join("\n", pages), "./test2.txt");
+		Files.write(Paths.get("./test2.txt"), Arrays.asList(pages));
 		
 		PageContainer[] contents = wb.getContentOfPages(pages);
 		Map<String, String> map = new HashMap<>();
@@ -75,8 +71,6 @@ public class FrenchIpa {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		IOUtils.writeToFile(Misc.makeList(map), "./data/scripts.misc/FrenchIpa/list.txt");
-		
-		Login.saveSession(wb);
+		Files.write(Paths.get("./data/scripts.misc/FrenchIpa/list.txt"), Arrays.asList(Misc.makeList(map)));
 	}
 }

@@ -8,43 +8,42 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class FemaleFormsInTranslations implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/FemaleFormsInTranslations/";
 	private static final String location_ser = location + "ser/";
 
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				mascWorklist();
@@ -53,19 +52,16 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 				femWorklist();
 				break;
 			case '4':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getChanges();
-				Login.saveSession(wb);
 				break;
 			case 'm':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				editMasc();
-				Login.saveSession(wb);
 				break;
 			case 'f':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				editFem();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -73,7 +69,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", 0);
+		PageContainer[] fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", Wiki.MAIN_NAMESPACE);
 		
 		List<Translations> nouns = Stream.of(fempages)
 			.map(Page::wrap)
@@ -90,8 +86,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		PageContainer[] mascpages = wb.getContentOfPages(
 			nouns.stream()
 				.map(item -> item.alt_gender)
-				.toArray(String[]::new),
-			400
+				.toArray(String[]::new)
 		);
 		
 		int count = 0;
@@ -343,30 +338,19 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		wb.setThrottle(5000);
 		
 		for (Entry<String, String> entry : list.entrySet()) {
-			String page = entry.getKey();
+			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(page);
-			
-    		int section = 0;
+			String content = wb.getPageText(title);
+			Page p = Page.store(title, content);
     		
-    		try {
-    			section = wb.getSectionId(content, "język polski");
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println(e.getMessage());
-    			continue;
-    		}
-    		
-    		String newcontent =
-				content.substring(0, content.indexOf("{{tłumaczenia}}\n") + 16) +
-				translations +
-				content.substring(content.indexOf("{{źródła}}"), content.length());
+			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);
     		
     		String summary = "usunięcie odnośników {{f}}; przeniesienie tlumaczeń do formy żeńskiej";
     		
     		try {
-    			wb.edit(page, newcontent, summary, false, true, section, null);
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println("Conflicto - " + page);
+    			wb.edit(title, p.toString(), summary);
+    		} catch (ConcurrentModificationException e) {
+    			System.out.println("Conflicto - " + title);
     			continue;
     		}
 		}
@@ -378,33 +362,24 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		File f = new File(location_ser + "fem_output");
 		Map<String, String> list = Misc.deserialize(f);
 		
+		wb.setMarkMinor(false);
+		wb.setMarkBot(true);
 		wb.setThrottle(5000);
 		
 		for (Entry<String, String> entry : list.entrySet()) {
-			String page = entry.getKey();
+			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(page);
+			String content = wb.getPageText(title);
+			Page p = Page.store(title, content);
     		
-    		int section = 0;
-    		
-    		try {
-    			section = wb.getSectionId(content, "język polski");
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println(e.getMessage());
-    			continue;
-    		}
-    		
-    		String newcontent =
-				content.substring(0, content.indexOf("{{tłumaczenia}}\n") + 16) +
-				translations +
-				content.substring(content.indexOf("{{źródła}}"), content.length());
+			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);
     		
     		String summary = "przeniesienie tlumaczeń z formy męskiej";
 
     		try {
-    			wb.edit(page, newcontent, summary, false, true, section, null);
-    		} catch (UnsupportedOperationException e) {
-    			System.out.println("Conflicto - " + page);
+    			wb.edit(title, p.toString(), summary);
+    		} catch (ConcurrentModificationException e) {
+    			System.out.println("Conflicto - " + title);
     			continue;
     		}
 		}

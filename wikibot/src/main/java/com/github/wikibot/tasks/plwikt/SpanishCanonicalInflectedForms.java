@@ -18,16 +18,15 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class SpanishCanonicalInflectedForms {
 	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
@@ -35,7 +34,7 @@ public final class SpanishCanonicalInflectedForms {
 	private static final String CATEGORY_NAME = "Formy czasowników hiszpańskich";
 	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP;
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		STRIPPED_ACCENTS_MAP = new HashMap<>(5, 1);
@@ -48,7 +47,7 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		CommandLine line = readOptions(args);
 		List<String> list = retrieveList();
@@ -85,7 +84,7 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	private static List<String> retrieveList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY_NAME, PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY_NAME, Wiki.MAIN_NAMESPACE);
 		
 		List<String> titles = Stream.of(pages)
 			.map(Page::wrap)

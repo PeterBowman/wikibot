@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,41 +15,37 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.DefinitionsField;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 class RussianAdjectivesInflection implements Selectorizable {
 	private static final String location = "./data/scripts.misc/RussianAdjectivesInflection/";
 	private static final String RU_CATEGORY = "Język rosyjski - przymiotniki";
 	private static final String RU_LANG = "język rosyjski";
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				extract_adj();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				analyze_adj(false);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				analyze_adj(true);
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -55,7 +53,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 	}
 	
 	public static void extract_adj() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(RU_CATEGORY, 0);
+		PageContainer[] pages = wb.getContentOfCategorymembers(RU_CATEGORY, Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
@@ -80,7 +78,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d\n", list.size());
-		IOUtils.writeToFile(String.join("\n", list), location + "adjetivos.txt");
+		Files.write(Paths.get(location + "adjetivos.txt"), list);
 	}
 	
 	public static void analyze_adj(boolean edit) throws IOException, LoginException {

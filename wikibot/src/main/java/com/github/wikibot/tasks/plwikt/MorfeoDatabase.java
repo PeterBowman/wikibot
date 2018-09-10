@@ -8,7 +8,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,28 +18,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class MorfeoDatabase {
 	private static final String LOCATION = "./data/tasks.plwikt/MorfeoDatabase/";
 	private static final Properties defaultSQLProperties = new Properties();
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	
 	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
 	private static final String SQL_EOM_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_eom_backlinks";
@@ -54,20 +50,18 @@ public final class MorfeoDatabase {
 	private static final byte MORPHEM_GRAMMATICAL = 16;
 	private static final byte MORPHEM_UNKNOWN = 32;
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
 		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", 0);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 		Map<String, List<String>> items = retrieveItems(pages);
 		
 		String[] morphems = items.values().stream()
@@ -188,7 +182,6 @@ public final class MorfeoDatabase {
 	}
 	
 	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
-		@SuppressWarnings("unchecked")
 		Map<String, Object>[] info = wb.getPageInfo(morphems);
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		

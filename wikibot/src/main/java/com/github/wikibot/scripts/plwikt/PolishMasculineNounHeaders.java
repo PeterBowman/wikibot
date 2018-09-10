@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,23 +20,21 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.plwikt.Editor;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class PolishMasculineNounHeaders implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/PolishMasculineNounHeaders/";
 	private static final String f_allpages = location + "allpages.txt";
 	private static final String f_worklist = location + "worklist.txt";
@@ -45,14 +45,12 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				//getList();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getContents();
-				Login.saveSession(wb);
 				break;
 			case 's':
 				int stats = Misc.deserialize(f_stats);
@@ -62,9 +60,8 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				//Misc.serialize(1508, f_stats);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -72,10 +69,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		List<String> masc = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", PLWikt.MAIN_NAMESPACE));
-		List<String> mrz = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", PLWikt.MAIN_NAMESPACE));
-		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", PLWikt.MAIN_NAMESPACE));
-		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", PLWikt.MAIN_NAMESPACE));
+		List<String> masc = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", Wiki.MAIN_NAMESPACE));
+		List<String> mrz = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", Wiki.MAIN_NAMESPACE));
+		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", Wiki.MAIN_NAMESPACE));
+		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", Wiki.MAIN_NAMESPACE));
 		
 		masc = new ArrayList<>(masc);
 		masc.removeAll(mrz);
@@ -91,18 +88,18 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		System.out.printf("Sustantivos con declinación: %d%n", decl.size());
 		System.out.printf("Sustantivos masculinos con declinación: %d%n", masc.size());
 		
-		List<String> acronyms = Arrays.asList(wb.getCategoryMembers("Język polski - skrótowce", PLWikt.MAIN_NAMESPACE));
+		List<String> acronyms = Arrays.asList(wb.getCategoryMembers("Język polski - skrótowce", Wiki.MAIN_NAMESPACE));
 		
 		masc.removeAll(acronyms);
 		
 		System.out.printf("Acrónimos: %d%n", acronyms.size());
 		System.out.printf("Tamaño final de la lista: %d%n", masc.size());
 		
-		IOUtils.writeToFile(String.join("\n", masc), f_allpages);
+		Files.write(Paths.get(f_allpages), masc);
 	}
 	
 	public static void getContents() throws UnsupportedEncodingException, IOException {
-		String[] lines = IOUtils.loadFromFile(f_allpages, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_allpages)).toArray(String[]::new);
 		String[] selection = Arrays.copyOfRange(lines, 0, Math.min(LIMIT, lines.length - 1));
 		
 		System.out.printf("Tamaño de la lista: %d%n", selection.length);
@@ -128,12 +125,12 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 		Misc.serialize(pages, f_serialized);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(f_serialized);
 		
@@ -166,7 +163,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			editor.check();
 			
 			String summary = editor.getSummary(summaryTemplate);
-    		Calendar timestamp = page.getTimestamp();
+			OffsetDateTime timestamp = page.getTimestamp();
 			
     		try {
 				wb.edit(title, editor.getPageText(), summary, false, true, -2, timestamp);
@@ -192,11 +189,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			return;
 		}
 		
-		String[] allpages = IOUtils.loadFromFile(f_allpages, "", "UTF8");
-		List<String> temp = new ArrayList<>(Arrays.asList(allpages));
+		List<String> temp = new ArrayList<>(Files.readAllLines(Paths.get(f_allpages)));
 		temp.removeAll(edited);
 		temp.removeAll(omitted);
-		IOUtils.writeToFile(String.join("\n", temp), f_allpages);
+		Files.write(Paths.get(f_allpages), temp);
 		
 		System.out.println("Lista actualizada");
 		

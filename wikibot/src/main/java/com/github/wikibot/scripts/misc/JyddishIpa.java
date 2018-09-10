@@ -14,40 +14,35 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.ArrayUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class JyddishIpa implements Selectorizable {
 	private static final String location = "./data/scripts.misc/JyddishIpa/";
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(false, false);
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(true, false);
-				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(true, true);
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -88,7 +83,7 @@ public class JyddishIpa implements Selectorizable {
 				list.add(page);
 			}
 			
-			int_list = Wikibot.intersection(catmembers_list, list.toArray(new String[list.size()]));
+			int_list = ArrayUtils.intersection(catmembers_list, list.toArray(new String[list.size()]));
 			
 			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
 			out.writeObject(int_list);
@@ -116,7 +111,7 @@ public class JyddishIpa implements Selectorizable {
 		int errors = 0;
 		StringBuilder sb_list = new StringBuilder(size);
 		
-		PageContainer[] pages = wb.getContentOfPages(int_list, 100);
+		PageContainer[] pages = wb.getContentOfPages(int_list);
 		
 		for (PageContainer page : pages) {
 		//for (Entry<String, String> entry : contenmap.entrySet()) {

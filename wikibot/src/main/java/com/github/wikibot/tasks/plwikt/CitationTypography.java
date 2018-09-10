@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,11 +14,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,21 +43,17 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class CitationTypography {
 	private static final String LOCATION = "./data/tasks.plwikt/CitationTypography/";
@@ -68,7 +66,6 @@ public final class CitationTypography {
 		FieldTypes.EXAMPLES, FieldTypes.ETYMOLOGY, FieldTypes.NOTES
 	);
 	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 	private static final int HOURS_GAP = 8;
 	
 	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
@@ -79,14 +76,12 @@ public final class CitationTypography {
 	private static final String EDIT_SUMMARY = "[[WS:Głosowania/Pozycja odsyłacza przypisu względem kropki]]";
 	private static final int EDIT_THROTTLE_MS = 5000;
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		P_REFERENCE = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", Pattern.CASE_INSENSITIVE);
 		P_OCCURENCE = Pattern.compile("\\. *('{2})?((?i: *" + P_REFERENCE.pattern() + ")+)");
 		P_LINE = Pattern.compile("^(.*)" + P_OCCURENCE.pattern() + "(.*)$", Pattern.MULTILINE);
-		
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
@@ -97,7 +92,7 @@ public final class CitationTypography {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
@@ -121,7 +116,7 @@ public final class CitationTypography {
 		
 		if (!titles.isEmpty()) {
 			String[] combinedTitles = titles.toArray(new String[titles.size()]);
-			PageContainer[] pages = wb.getContentOfPages(combinedTitles, 400);
+			PageContainer[] pages = wb.getContentOfPages(combinedTitles);
 			
 			entries = Stream.of(pages).parallel()
 				.flatMap(CitationTypography::mapOccurrences)
@@ -213,43 +208,35 @@ public final class CitationTypography {
 	}
 	
 	private static String[] extractRecentChanges() throws IOException {
-		Calendar startCal;
+		OffsetDateTime earliest;
 		
 		try {
-			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
-			startCal = Calendar.getInstance();
-			startCal.setTime(DATE_FORMAT.parse(timestamp));
+			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
+			earliest = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		Calendar endCal = wb.makeCalendar();
+		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
 		
-		if (!endCal.after(startCal)) {
+		if (!latest.isAfter(earliest)) {
 			System.out.println("Extracted timestamp is greater than the current time, setting to -24h.");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG,
-			"move", null, "", Wiki.ALL_NAMESPACES);
+		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
+		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		
+		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getPage),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> {
-				try {
-					return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
-				} catch (Exception e) {
-					return false;
-				}
-			})
+			Stream.of(revs).map(Wiki.Revision::getTitle),
+			logs.stream().map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
 	
@@ -257,7 +244,7 @@ public final class CitationTypography {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
-			reader = new XMLDumpReader(Domains.PLWIKT);
+			reader = new XMLDumpReader("pl.wiktionary.org");
 		} else {
 			reader = new XMLDumpReader(path);
 		}
@@ -389,7 +376,6 @@ public final class CitationTypography {
 			}
 		}
 		
-		@SuppressWarnings("unchecked")
 		Map<String, Object>[] infos = wb.getPageInfo(titles);
 		
 		for (int i = 0; i < infos.length; i++) {
@@ -418,7 +404,7 @@ public final class CitationTypography {
 				TreeMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeList(map), LOCATION + "diffs.txt");
+		Files.write(Paths.get(LOCATION + "diffs.txt"), Arrays.asList(Misc.makeList(map)));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
@@ -684,7 +670,7 @@ public final class CitationTypography {
 				String[] arr = titles.toArray(new String[titles.size()]);
 				
 				try {
-					Stream.of(wb.getContentOfPages(arr, 400)).forEach(pc ->
+					Stream.of(wb.getContentOfPages(arr)).forEach(pc ->
 						contentCache.putIfAbsent(pc.getTitle(), pc.getText())
 					);
 				} catch (IOException e) {
@@ -745,9 +731,7 @@ public final class CitationTypography {
 	}
 	
 	private static String getGapTimestamp() {
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.HOUR, -HOURS_GAP);
-		return DATE_FORMAT.format(cal.getTime());
+		return OffsetDateTime.now(wb.timezone()).minusHours(HOURS_GAP).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 	}
 	
 	private static Map<Integer, Entry> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
@@ -812,12 +796,17 @@ public final class CitationTypography {
 		Statement deletePending = conn.createStatement(); 
 		deletePending.executeUpdate("DELETE FROM pending WHERE pending.entry_id = " + entryId + ";");
 		
-		Calendar now = Calendar.getInstance();
+		OffsetDateTime now = OffsetDateTime.now(wb.timezone());
 		Optional<Wiki.Revision> optRevision;
 		
 		try {
-			Calendar basetime = wb.getTopRevision(entry.title).getTimestamp();
+			OffsetDateTime basetime = wb.getTopRevision(entry.title).getTimestamp();
 			String pageText = wb.getPageText(entry.title);
+			
+			if (pageText == null) {
+				throw new FileNotFoundException("Page does not exist: " + entry.title);
+			}
+			
 			Page page = Page.store(entry.title, pageText);
 			
 			String summary = String.format(
@@ -840,15 +829,19 @@ public final class CitationTypography {
 			field.editContent(newContent);
 			wb.edit(entry.title, page.toString(), summary, basetime);
 			
-			optRevision = Stream.of(wb.contribs("PBbot", "", now, null, 0))
-				 .filter(c -> c.getPage().equals(entry.title) && c.getSummary().startsWith(EDIT_SUMMARY))
+			Wiki.RequestHelper helper = wb.new RequestHelper()
+				.inNamespaces(Wiki.MAIN_NAMESPACE)
+				.withinDateRange(now, null);
+			
+			optRevision = wb.contribs("PBbot", helper).stream()
+				 .filter(c -> c.getTitle().equals(entry.title) && c.getComment().startsWith(EDIT_SUMMARY))
 				 .findFirst();
 		} catch (AssertionError | AccountLockedException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
 			System.exit(0);
 			return false;
-		} catch (IOException | LoginException e) {
+		} catch (IOException | LoginException | ConcurrentModificationException | UncheckedIOException e) {
 			System.out.println(e.getMessage());
 			conn.rollback();
 			return false;
@@ -860,8 +853,8 @@ public final class CitationTypography {
 		
 		if (optRevision.isPresent()) {
 			Wiki.Revision revision = optRevision.get();
-			long revId = revision.getRevid();
-			Timestamp revTimestamp = new Timestamp(revision.getTimestamp().getTime().getTime());
+			long revId = revision.getID();
+			Timestamp revTimestamp = Timestamp.from(revision.getTimestamp().toInstant());
 			
 			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
 			PreparedStatement st = conn.prepareStatement("INSERT INTO edit_log"

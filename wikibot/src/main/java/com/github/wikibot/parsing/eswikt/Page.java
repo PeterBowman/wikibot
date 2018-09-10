@@ -1,9 +1,9 @@
 package com.github.wikibot.parsing.eswikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,11 +12,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.security.auth.login.FailedLoginException;
-
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -24,33 +19,31 @@ import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class Page extends AbstractPage<Section> {
 	private List<LangSection> langSections;
 	private Section references;
 	private String trailingContent;
-	public static final String[] INTERWIKI_PREFIXES;
+	public static final List<String> INTERWIKI_PREFIXES;
 	private static final Pattern P_INTERWIKI;
 	public static final Map<String, String> CODE_TO_LANG;
 	
 	static {
 		try {
-			INTERWIKI_PREFIXES = IOUtils.loadFromFile("./data/interwiki.txt", "", "UTF8");
-			List<String> excluded = new ArrayList<>(Arrays.asList(INTERWIKI_PREFIXES));
+			INTERWIKI_PREFIXES = Files.readAllLines(Paths.get("./data/interwiki.txt"));
+			List<String> excluded = new ArrayList<>(INTERWIKI_PREFIXES);
 			// TODO: review per [[Especial:Diff/2709872]]
 			//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
 			String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
 			P_INTERWIKI = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 		
 		try {
-			CODE_TO_LANG = Stream.of(IOUtils.loadFromFile("./data/eswikt.langs.txt", "", "UTF8"))
+			CODE_TO_LANG = Files.lines(Paths.get("./data/eswikt.langs.txt"))
 				.map(line -> line.split("\t"))
 				.collect(Collectors.toMap(
 					arr -> arr[0], // lower case!
@@ -58,7 +51,7 @@ public final class Page extends AbstractPage<Section> {
 					(arr1, arr2) -> arr1,
 					LinkedHashMap::new
 				));
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -279,8 +272,8 @@ public final class Page extends AbstractPage<Section> {
 	}
 	
 	@SuppressWarnings("unused")
-	public static void main(String[] args) throws FailedLoginException, IOException {
-		Wikibot wiki = Login.retrieveSession(Domains.ESWIKT, Users.USER1);
+	public static void main(String[] args) throws Exception {
+		Wikibot wiki = Login.createSession("es.wiktionary.org");
 		String text = wiki.getPageText("tamén");
 		Page page = Page.store("tamén", text);
 		System.out.println("");

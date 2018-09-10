@@ -2,11 +2,13 @@ package com.github.wikibot.scripts.eswikt;
 
 import static org.wikiutils.ParseUtils.getTemplates;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -15,18 +17,16 @@ import java.util.stream.Stream;
 import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.ESWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class ScheduledEditor {
 	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
@@ -37,12 +37,12 @@ public final class ScheduledEditor {
 	private static final int SLEEP_MINS = 5;
 	private static final int THREAD_CHECK_SECS = 5;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	private static volatile RuntimeException threadExecutionException;
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession("es.wiktionary.org");
 		wb.setThrottle(5000);
 		
 		if (args.length == 0) {
@@ -76,7 +76,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(category, ESWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers(category, Wiki.MAIN_NAMESPACE);
 		
 		Stream.of(pages)
 			.filter(ScheduledEditor::filterPages)
@@ -90,7 +90,9 @@ public final class ScheduledEditor {
 			PageContainer[] pages;
 			
 			try {
-				pages = wb.listPagesContent(lastEntry, BATCH, ESWikt.MAIN_NAMESPACE);
+				String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
+				String[] batch = Arrays.copyOfRange(titles, 0, BATCH);
+				pages = wb.getContentOfPages(batch);
 			} catch (IOException | UnknownError e) {
 				e.printStackTrace();
 				sleep();
@@ -182,8 +184,11 @@ public final class ScheduledEditor {
 		if (editor.isModified()) {
 			try {
 				editEntry(pc, editor);
-			} catch (CredentialException e) {
-				logError("Permission denied", pc.getTitle(), e);
+			} catch (CredentialException ce) {
+				logError("Permission denied", pc.getTitle(), ce);
+				return true;
+			} catch (ConcurrentModificationException cme) {
+				logError("Edit conflict", pc.getTitle(), cme);
 				return true;
 			} catch (Throwable t) {
 				logError("Edit error", pc.getTitle(), t);
@@ -257,8 +262,8 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
-		} catch (FileNotFoundException e) {
+			lines = Files.lines(Paths.get(ERROR_LOG)).toArray(String[]::new);
+		} catch (IOException e) {
 			lines = new String[]{};
 		}
 		
@@ -266,7 +271,7 @@ public final class ScheduledEditor {
 		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			Files.write(Paths.get(ERROR_LOG), list);
 		} catch (IOException e) {}
 	}
 	

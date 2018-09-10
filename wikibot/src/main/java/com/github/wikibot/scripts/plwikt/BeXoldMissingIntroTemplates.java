@@ -6,45 +6,45 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class BeXoldMissingIntroTemplates implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/BeXoldMissingIntroTemplates/";
 	private static final String locationser = location + "ser/";
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				makePreview();
 				break;
 			case 'e':
-				wb = new PLWikt();
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -52,8 +52,12 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", PLWikt.MAIN_NAMESPACE);
-		Map<String, Calendar> info = wb.getTimestamps(pages);
+		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", Wiki.MAIN_NAMESPACE);
+		Map<String, OffsetDateTime> info = Stream.of(pages)
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
+			));
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		
 		for (PageContainer page : pages) {
@@ -112,7 +116,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		Map<String, String> pages = new LinkedHashMap<>();
-		Map<String, Calendar> info = null;
+		Map<String, OffsetDateTime> info = null;
 		File f1 = new File(locationser + "preview.ser");
 		File f2 = new File(locationser + "info.ser");
 		
@@ -170,12 +174,12 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
     		
     		content = content.substring(0, a) + data + content.substring(b);
     		
-    		Calendar cal = info.get(page);
+    		OffsetDateTime timestamp = info.get(page);
     		
     		try {
-				wb.edit(page, content, summary, true, true, section, cal);
+				wb.edit(page, content, summary, true, true, section, timestamp);
 				edited.add(page);
-			} catch (UnknownError | UnsupportedOperationException e) {
+			} catch (ConcurrentModificationException e) {
     			conflicts.add(page);
     			System.out.println("Error, abortando edición...");
     			continue;

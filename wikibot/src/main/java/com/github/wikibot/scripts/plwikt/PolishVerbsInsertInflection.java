@@ -1,33 +1,34 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.ArrayUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class PolishVerbsInsertInflection implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static Map<String, Map<String, String>> models = new HashMap<>();
 	private static final String location = "./data/scripts.plwikt/PolishVerbsInsertInflection/";
 	private static final String f_serialized = location + "/targets.ser";
@@ -36,24 +37,20 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				analyzeConjugationTemplate();
-				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getModelVc();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -64,7 +61,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		Map<String, String> model = models.get("IV");
 		String[] verbs = wb.getCategoryMembers("Język polski - czasowniki", 0);
 		String[] phrases = wb.getCategoryMembers("Język polski - frazy czasownikowe", 0);
-		String[] targets = PLWikt.relativeComplement(verbs, phrases);
+		String[] targets = ArrayUtils.relativeComplement(verbs, phrases);
 		
 		targets = Stream.of(targets)
 			.filter(verb -> !verb.contains(" ") || verb.endsWith(" się"))
@@ -72,9 +69,9 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 			.toArray(size -> new String[size]);
 		
 		String[] inflections = wb.whatTranscludesHere("Szablon:odmiana-czasownik-polski", 0);
-		targets = PLWikt.relativeComplement(targets, inflections);
+		targets = ArrayUtils.relativeComplement(targets, inflections);
 		
-		PageContainer[] pages = wb.getContentOfPages(targets, 400);
+		PageContainer[] pages = wb.getContentOfPages(targets);
 		List<PageContainer> serialized = new ArrayList<>();
 		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		
@@ -110,11 +107,11 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", Wiki.MAIN_NAMESPACE);
 		List<PageContainer> serialized = new ArrayList<>();
 		Map<String, Collection<String>> map = new HashMap<>(pages.length);
 		
@@ -166,11 +163,11 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		IOUtils.writeToFile(Misc.makeMultiList(map), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void getModelVc() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		Map<String, String> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
@@ -205,12 +202,12 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		IOUtils.writeToFile(Misc.makeList(map), location + "Vc.txt");
+		Files.write(Paths.get(location + "Vc.txt"), Arrays.asList(Misc.makeList(map)));
 	}
 
 	public static void edit() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(f_serialized);
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		List<String> errors = new ArrayList<>();
 		

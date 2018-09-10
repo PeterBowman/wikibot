@@ -1,27 +1,20 @@
 package com.github.wikibot.tasks;
 
-import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.Objects;
-
-import javax.security.auth.login.FailedLoginException;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
 
 public final class Purge {
 
-	public static void main(String[] args) throws IOException, FailedLoginException {
+	public static void main(String[] args) throws Exception {
 		if (args.length < 3) {
 			throw new IllegalArgumentException();
 		}
-
-		Domains domain = Domains.findDomain(args[0]);
-		Objects.requireNonNull(domain);
-		Wikibot wb = Login.retrieveSession(domain, Users.USER1);
+		
+		String domain = args[0];
+		Wikibot wb = Login.createSession(domain);
 
 		int opts = Integer.parseInt(args[1]);
 		String[] titles = Arrays.copyOfRange(args, 2, args.length);
@@ -34,7 +27,9 @@ public final class Purge {
 			wb.purge(true, titles);
 			break;
 		case 3:
-			wb.purgeRecursive(titles);
+			for (String title : titles) {
+				wb.purge(true, wb.whatTranscludesHere(title));
+			}
 			break;
 		case 4:
 			for (String title : titles) {

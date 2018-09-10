@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,24 +24,24 @@ import java.util.regex.Pattern;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.wikipedia.ArrayUtils;
 import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 import org.wikipedia.Wiki.User;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Misc.MyRandom;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class LinkManager implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/tasks.plwikt/LinkManager/";
 	private static final String mainpage = "Wikipedysta:PBbot/linkowanie";
 	private static final int requestsectionnumber = 2;
@@ -64,7 +66,7 @@ public final class LinkManager implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				getRequest();
 				wb.logout();
 				break;
@@ -76,16 +78,16 @@ public final class LinkManager implements Selectorizable {
 				Misc.serialize(375, f_stats);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit(null, 0);
 				wb.logout();
 				break;
 			case 'p':
 				try {
-					wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+					wb = Login.createSession("pl.wiktionary.org");
 					patrol();
 					wb.logout();
-				} catch (IOException e) {
+				} catch (IOException | UncheckedIOException e) {
 					e.printStackTrace();
 					Thread.sleep(10 * 60 * 1000);
 					selector(op);
@@ -117,7 +119,7 @@ public final class LinkManager implements Selectorizable {
 		List<String> summarylist = new ArrayList<>(data.size());
 		
 		Map<Integer, LinkDiff> editcodes = new HashMap<>(data.size()*15);
-		Map<String, Calendar> timestamps = new HashMap<>(data.size()*15);
+		Map<String, OffsetDateTime> timestamps = new HashMap<>(data.size()*15);
 		
 		//ArrayList<Revision> revs = new ArrayList<>();
 		Map<String, String[]> backlinkscache = new HashMap<>(10000);
@@ -179,7 +181,7 @@ public final class LinkManager implements Selectorizable {
 				String[] temp = lists.get(0);
 				
 				for (int i = 1; i < lists.size(); i++) {
-					temp = Wiki.intersection(temp, lists.get(i));
+					temp = ArrayUtils.intersection(temp, lists.get(i));
 				}
 				
 				pages = temp;
@@ -204,7 +206,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!fetchlist.isEmpty()) {
-				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]), 400);
+				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]));
 				
 				for (PageContainer page : temp) {
 					try {
@@ -263,7 +265,7 @@ public final class LinkManager implements Selectorizable {
 			output.add(template.replace("$1", sb.toString()));
 			
 			if (!backlinks.isEmpty()) {
-				Map<String, Calendar> tmp = new HashMap<>(timestamps);
+				Map<String, OffsetDateTime> tmp = new HashMap<>(timestamps);
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
@@ -299,9 +301,9 @@ public final class LinkManager implements Selectorizable {
 		wb.edit(mainpage, mainpagetext, summary, false, false, -2, null);
 	}
 	
-	public static void edit(String user, long revid) throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
+	public static void edit(String user, long revid) throws IOException, ClassNotFoundException, LoginException {
 		Map<Integer, LinkDiff> editcodes = Misc.deserialize(f_codes);
-		Map<String, Calendar> timestamps = Misc.deserialize(f_timestamps);
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_timestamps);
 		
 		System.out.printf("Modificaciones disponibles: %d%n", editcodes.size());
 		
@@ -372,6 +374,11 @@ public final class LinkManager implements Selectorizable {
 			List<LinkDiff> list = entry.getValue();
 			Set<String> difflist = new HashSet<>();
 			String pagetext = wb.getPageText(page);
+			
+			if (pagetext == null) {
+				throw new FileNotFoundException("Page does not exist: " + page);
+			}
+			
 			pagetext = Utils.sanitizeWhitespaces(pagetext);
 			Map<Integer, LineInfo> linemap = new TreeMap<>(Integer::compare);
 			
@@ -454,7 +461,7 @@ public final class LinkManager implements Selectorizable {
 				pagetext = pagetext.substring(0, index) + newline + pagetext.substring(index + lineinfo.line.length());
 			}
 			
-			Calendar cal = timestamps.get(page);
+			OffsetDateTime timestamp = timestamps.get(page);
 			String difflistmod = String.join(", ", difflist);
 			
 			String summary = String.format(
@@ -470,12 +477,12 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			try {
-				wb.edit(page, pagetext, summary, false, true, -2, cal);
+				wb.edit(page, pagetext, summary, false, true, -2, timestamp);
 				edited++;
 			} catch(CredentialException e) {
 				errormap.put(page, new String[]{"strona zabezpieczona", difflistmod});
-			} catch (UnknownError | UnsupportedOperationException e) {
-				errormap.put(page, new String[]{"prawdopodobnie nastąpił konflikt edycji", difflistmod});
+			} catch (ConcurrentModificationException e) {
+				errormap.put(page, new String[]{"konflikt edycji", difflistmod});
     		}
 		}
 		
@@ -550,7 +557,7 @@ public final class LinkManager implements Selectorizable {
 		outer:
 		while (true) {
 			Revision currentRevision = wb.getTopRevision(mainpage);
-			long pickedId = currentRevision.getRevid();
+			long pickedId = currentRevision.getID();
 			
 			if (pickedId == request.currentId) {
 				System.out.printf("Durmiendo... (%d minutos)%n", minutes);
@@ -573,27 +580,27 @@ public final class LinkManager implements Selectorizable {
 				getRequest();
 				request.currentRequest = currentRequest;
 			} else if (f_codes.exists()) {
-				Calendar startTimestamp = request.currentTimestamp; // earliest
-				Calendar endTimestamp = currentRevision.getTimestamp(); // latest
-				Revision[] revs = wb.getPageHistory(mainpage, startTimestamp, endTimestamp, false);
+				OffsetDateTime startTimestamp = request.currentTimestamp; // earliest
+				OffsetDateTime endTimestamp = currentRevision.getTimestamp(); // latest
+				
+				Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(startTimestamp, endTimestamp);
+				List<Revision> revs = wb.getPageHistory(mainpage, helper);
 				
 				for (Revision rev : revs) {
-					if (rev.getUser().equals(Users.USER2.getUsername())) {
+					if (rev.getUser().equals(wb.getCurrentUser().getUsername())) {
 						break;
 					}
 					
 					String diff = rev.diff(Wiki.PREVIOUS_REVISION);
-					diff = wb.decode(diff);
+					diff = StringEscapeUtils.unescapeXml(diff);
 					diff = diff.replaceAll("</?ins.*?>", "");
 					diff = diff.replace("\n", "");
 					
 					if (diff.matches(".*?<td class=\"diff-addedline\"><div>\\* *?Zatwierdzone: *?tak *?</div></td>.*")) {
 						String username = rev.getUser();
 						User user = wb.getUser(username);
-						Map<String, Object> userinfo = user.getUserInfo();
-						List<String> groups = new ArrayList<>(Arrays.asList((String[]) userinfo.get("groups")));
 						
-						if (groups.contains("editor")) {
+						if (user.getGroups().contains("editor")) {
 							try {
 								edit(username, pickedId);
 							} catch (Exception e) {
@@ -808,6 +815,11 @@ public final class LinkManager implements Selectorizable {
 	
 	private static String[] fetchForms(String title) throws IOException {
 		String content = wb.getPageText(title);
+		
+		if (content == null) {
+			throw new FileNotFoundException("Page does not exist: " + title);
+		}
+		
 		final String ERRMSGmissing = "Nie znaleziono szablonu odmiany w kodzie hasła.";
 		final String ERRMSGformat = "Nie udało się uzyskać form fleksyjnych na podstawie szablonu odmiany; wpisz ją ręcznie.";
 		
@@ -1012,12 +1024,12 @@ public final class LinkManager implements Selectorizable {
 	}
 
 	private static class RequestInfo implements Serializable {
-		private static final long serialVersionUID = 7152292260065134851L;
+		private static final long serialVersionUID = 4878770923056540962L;
 		long currentId;
 		String currentRequest;
-		Calendar currentTimestamp;
+		OffsetDateTime currentTimestamp;
 		
-		RequestInfo(long id, String request, Calendar timestamp) {
+		RequestInfo(long id, String request, OffsetDateTime timestamp) {
 			currentId = id;
 			currentRequest = request;
 			currentTimestamp = timestamp;

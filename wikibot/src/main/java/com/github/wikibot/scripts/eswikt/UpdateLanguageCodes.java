@@ -11,6 +11,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,14 +29,11 @@ import java.util.stream.Stream;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.utils.Domains;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 import com.univocity.parsers.tsv.TsvWriter;
@@ -49,7 +48,7 @@ public final class UpdateLanguageCodes {
 
 	public static void main(String[] args) throws IOException, LoginException {
 		Map<String, String> storedLangs = extractStoredLangs();
-		ESWikt wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		Wikibot wb = Login.createSession("es.wiktionary.org");
 		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
 		Map<String, String> fetchedLangs = extractFetchedLangs(pages);
 		
@@ -176,11 +175,11 @@ public final class UpdateLanguageCodes {
 		return sb.toString();
 	}
 	
-	private static String makePage(String text, String table, int size) throws FileNotFoundException {
+	private static String makePage(String text, String table, int size) throws IOException {
 		int index = text.indexOf("<!--");
 		
 		if (index == -1) {
-			text = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
+			text = Files.lines(Paths.get(F_INTRO)).collect(Collectors.joining("\n"));
 			return text + "\n" + table;
 		}
 		
@@ -191,7 +190,7 @@ public final class UpdateLanguageCodes {
 		Matcher m = Pattern.compile("<span class=\"update-timestamp\">(.+?)</span>").matcher(intro);
 		
 		if (!m.find()) {
-			text = String.join("\n", IOUtils.loadFromFile(F_INTRO, "", "UTF8"));
+			text = Files.lines(Paths.get(F_INTRO)).collect(Collectors.joining("\n"));
 			return text + "\n" + table;
 		}
 		

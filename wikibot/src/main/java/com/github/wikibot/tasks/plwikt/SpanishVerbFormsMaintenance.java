@@ -2,13 +2,16 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,24 +24,22 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.RAE;
-import com.github.wikibot.utils.Users;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/tasks.plwikt/SpanishVerbFormsMaintenance/";
 	private static final String locationser = location + "ser/";
 	private static final String RAEurl = "http://lema.rae.es/drae/srv/search?val=";
@@ -49,9 +50,8 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			case '1':
 			case '2':
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, op != '3' ? Users.USER1 : Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				process(op == '1', op != '3');
-				Login.saveSession(wb);
 				break;
 			case '4':
 				String source = locationser + "hashmap.ser";
@@ -65,7 +65,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 	}
 	
 	public static void process(boolean onlyGetData, boolean noWrite) throws IOException, LoginException, InterruptedException, ExecutionException, ClassNotFoundException {
-		PageContainer[] pages = wb.getContentOfTransclusions("odmiana-czasownik-hiszpański", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfTransclusions("odmiana-czasownik-hiszpański", Wiki.MAIN_NAMESPACE);
 		int verb_count = pages.length;
 		
 		List<String> verb_templates = Stream.of(pages).map(Page::wrap)
@@ -83,7 +83,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			.collect(Collectors.toList());
 		
 		String[] verbs = Stream.of(pages).map(PageContainer::getTitle).toArray(String[]::new);
-		IOUtils.writeToFile(String.join("\n", verbs), location + "verbos.txt");
+		Files.write(Paths.get(location + "verbos.txt"), Arrays.asList(verbs));
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
 	    
 	    List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
@@ -124,7 +124,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 	    int form_count = verb_forms.size();
 	    System.out.printf("Se han extraído %d formas verbales\n", form_count);
 	    
-	    IOUtils.writeToFile(String.join("\n", verb_forms), location + "formas.txt");
+	    Files.write(Paths.get(location + "formas.txt"), verb_forms);
 	    System.out.println("Archivo \"formas.txt\" actualizado");
 	    
 	    // exit program
@@ -143,7 +143,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			dictionary = new HashMap<>(form_count);
 		}
 	 	
-		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]), 450);
+		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]));
 		Map<String, Integer> cached = new HashMap<>(dictionary.size());
 		Map<RAE, Integer> live = new HashMap<>();
 		
@@ -308,10 +308,10 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		Misc.sortList(output_list, "es");
 		String output = String.join("\n", output_list);
 		
-		IOUtils.writeToFile(String.format(
-			"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
-			form_count, verb_count, output
-		), location + "resumen.txt");
+		Files.write(Paths.get(location + "resumen.txt"), Arrays.asList(String.format(
+				"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
+				form_count, verb_count, output
+			)));
 			
 		System.out.printf("%d verbos analizados, %d formas extraídas\n", verb_count, form_count);
 		System.out.printf("Tamaño de la lista obtenida: %d\n", summ_count);

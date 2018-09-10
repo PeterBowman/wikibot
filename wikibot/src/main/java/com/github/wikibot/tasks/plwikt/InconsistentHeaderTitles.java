@@ -3,16 +3,17 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
@@ -28,28 +29,22 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class InconsistentHeaderTitles {
 	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nagłówki";
 	private static final String PAGE_INTRO;
-	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	
 	private static final int COLUMN_ELEMENT_THRESHOLD = 50;
 	private static final int NUMBER_OF_COLUMNS = 3;
@@ -66,7 +61,7 @@ public final class InconsistentHeaderTitles {
 	
 	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	private static Map<String, Collection<Item>> map;
 	
@@ -78,12 +73,10 @@ public final class InconsistentHeaderTitles {
 			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
 			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
 			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
-		
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		Collator collator = Misc.getCollator("pl");
 		map = new ConcurrentSkipListMap<>(collator::compare);
@@ -127,7 +120,7 @@ public final class InconsistentHeaderTitles {
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage();
-		IOUtils.writeToFile(page.toString(), LOCATION + "page.txt");
+		Files.write(Paths.get(LOCATION + "page.txt"), Arrays.asList(page.toString()));
 		
 		wb.setMarkBot(false);
 		wb.edit(page.getTitle(), page.toString(), "aktualizacja");
@@ -169,7 +162,7 @@ public final class InconsistentHeaderTitles {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(distinctTitles, 100);
+		PageContainer[] pages = wb.getContentOfPages(distinctTitles);
 		Stream.of(pages).parallel().forEach(InconsistentHeaderTitles::findErrors);
 	}
 
@@ -177,7 +170,7 @@ public final class InconsistentHeaderTitles {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
-			reader = new XMLDumpReader(Domains.PLWIKT);
+			reader = new XMLDumpReader("pl.wiktionary.org");
 		} else {
 			reader = new XMLDumpReader(path);
 		}
@@ -199,43 +192,35 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	private static String[] extractRecentChanges() throws IOException {
-		Calendar startCal;
+		OffsetDateTime earliest;
 		
 		try {
-			String timestamp = IOUtils.loadFromFile(LOCATION + "timestamp.txt", "", "UTF8")[0];
-			startCal = Calendar.getInstance();
-			startCal.setTime(DATE_FORMAT.parse(timestamp));
+			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
+			earliest = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		Calendar endCal = wb.makeCalendar();
+		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
 		
-		if (!endCal.after(startCal)) {
+		if (!latest.isAfter(earliest)) {
 			System.out.println("Extracted timestamp is greater than the current time, setting to -24h.");
-			startCal = wb.makeCalendar();
-			startCal.add(Calendar.DATE, -1);
+			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		final int rcTypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, -1, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG,
-			"move", null, "", Wiki.ALL_NAMESPACES);
+		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
+		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		
+		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		IOUtils.writeToFile(DATE_FORMAT.format(endCal.getTime()), LOCATION + "timestamp.txt");
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getPage),
-			Stream.of(logs).map(Wiki.LogEntry::getDetails).filter(targetTitle -> {
-				try {
-					return wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE;
-				} catch (Exception e) {
-					return false;
-				}
-			})
+			Stream.of(revs).map(Wiki.Revision::getTitle),
+			logs.stream().map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
 	

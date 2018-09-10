@@ -4,37 +4,34 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
-import com.github.wikibot.utils.Domains;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class RomanianDiacritics implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/RomanianDiacritics/";
 
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				//edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -74,7 +71,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		int count = 0, testcount = 0;
 		
 		List<String> out = new ArrayList<>();
-		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]), 400);
+		PageContainer[] pages = wb.getContentOfPages(list.toArray(new String[list.size()]));
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -107,7 +104,7 @@ public final class RomanianDiacritics implements Selectorizable {
 			}
 		}
 		
-		IOUtils.writeToFile(String.join("\n", out), location + "work_list.txt");
+		Files.write(Paths.get(location + "work_list.txt"), out);
 		
 		System.out.println("Analizados: " + testcount);
 	}

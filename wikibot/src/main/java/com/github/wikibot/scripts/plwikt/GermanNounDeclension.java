@@ -8,8 +8,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,22 +18,21 @@ import java.util.Map.Entry;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class GermanNounDeclension implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/GermanNounDeclension/";
 	
 	private static final Map<String, String[]> det;
@@ -48,21 +48,19 @@ public final class GermanNounDeclension implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				makeLists();
 				break;
 			case '3':
-				wb = new PLWikt();
+				wb = Wikibot.createInstance("pl.wiktionary.org");
 				checkErrors();
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -92,7 +90,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		int excludesize = 0;
 		int count = 0;
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - rzeczowniki", 0);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - rzeczowniki", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(pages.length);
 		
 		for (PageContainer page : pages) {
@@ -275,7 +273,6 @@ public final class GermanNounDeclension implements Selectorizable {
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, LoginException, ClassNotFoundException {
-		
 		int newcount = 0;
 		int conflicts = 0;
 		
@@ -324,7 +321,7 @@ public final class GermanNounDeclension implements Selectorizable {
     		}
     		
     		String content = wb.getSectionText(page, section);
-    		Calendar cal = wb.getTopRevision(page).getTimestamp();
+    		OffsetDateTime timestamp = wb.getTopRevision(page).getTimestamp();
     		StringBuilder sb = new StringBuilder(2000);
 			
     		int a = content.indexOf("{{odmiana}}");
@@ -334,8 +331,8 @@ public final class GermanNounDeclension implements Selectorizable {
     		sb.append(content.substring(content.indexOf("{{przykłady}}", a)));
     		    		
     		try {
-    			wb.edit(page, sb.toString(), "stabelkowanie odmiany", false, true, section, cal);
-    		} catch (UnsupportedOperationException e) {
+    			wb.edit(page, sb.toString(), "stabelkowanie odmiany", false, true, section, timestamp);
+    		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;
     		}
@@ -467,7 +464,8 @@ public final class GermanNounDeclension implements Selectorizable {
 	}
 	
 	public static void checkErrors() throws IOException {
-		Revision[] revs = wb.contribs("PBbot", 0);
+		Wiki.RequestHelper helper = wb.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
+		List<Revision> revs = wb.contribs("PBbot", helper);
 		//Calendar end = wb.getRevision(4116714).getTimestamp();
 		//Calendar start = wb.getRevision(4111867).getTimestamp();
 		//Revision[] revs = wb.contribs("PBbot", "", end, start, 0);
@@ -475,8 +473,8 @@ public final class GermanNounDeclension implements Selectorizable {
 		List<String> list = new ArrayList<>(100);
 		
 		for (Revision rev : revs) {
-			if (rev.getPage().equals("Actinium")) break;
-			String diff = rev.diff(PLWikt.PREVIOUS_REVISION);
+			if (rev.getTitle().equals("Actinium")) break;
+			String diff = rev.diff(Wiki.PREVIOUS_REVISION);
 			//int lm = diff.indexOf(" lm = ");
 			
 			/*if (lm != -1 && diff.substring(lm).contains("&lt;br&gt;"))
@@ -490,8 +488,8 @@ public final class GermanNounDeclension implements Selectorizable {
 				int nline = diff.indexOf("\n", lm);
 				if (nline != -1) {
 					if (diff.substring(lm, nline).contains("|")) {
-						System.out.println(rev.getPage());
-						list.add(rev.getPage());
+						System.out.println(rev.getTitle());
+						list.add(rev.getTitle());
 					}
 				}
 			}

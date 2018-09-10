@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.collections4.map.ListOrderedMap;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -36,12 +38,10 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Inflector;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class PolishSurnamesInflection {
 	private static final String LOCATION = "./data/tasks.plwikt/PolishSurnamesInflection/";
@@ -101,7 +101,7 @@ public final class PolishSurnamesInflection {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		File fStorage = new File(LOCATION + "storage.ser");
 		File fHistory = new File(LOCATION + "history.ser");
@@ -111,7 +111,7 @@ public final class PolishSurnamesInflection {
 		
 		List<LogEntry> logs = new ArrayList<>();
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, 0);
+		PageContainer[] pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, Wiki.MAIN_NAMESPACE);
 		
 		wb.setThrottle(5000);
 		wb.setMarkMinor(false);
@@ -174,7 +174,7 @@ public final class PolishSurnamesInflection {
 			try {
 				wb.edit(pc.getTitle(), fe.getPageContainer().toString(), EDIT_SUMMARY, pc.getTimestamp());
 				is.insertIntoSet(history);
-			} catch (CredentialException e) {
+			} catch (CredentialException | ConcurrentModificationException e) {
 				e.printStackTrace();
 			} catch (AssertionError | LoginException e) {
 				throw new RuntimeException(e);

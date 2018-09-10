@@ -3,6 +3,8 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,19 +22,17 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class EsperantoRelatedTerms {
 	private static final String LOCATION = "./data/tasks.plwikt/EsperantoRelatedTerms/";
@@ -40,10 +40,10 @@ public final class EsperantoRelatedTerms {
 	private static final String TARGET_PAGE_EXCLUDED = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto/wykluczenia";
 	
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)"); // from Linker::formatLinksInComment in Linker.php
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		Map<String, List<String>> morphemToTitle = new HashMap<>(10000);
 		Map<String, List<String>> titleToMorphem = new HashMap<>(15000);
@@ -67,7 +67,7 @@ public final class EsperantoRelatedTerms {
 			return;
 		}
 		
-		IOUtils.writeToFile(sb.toString(), LOCATION + "output.txt");
+		Files.write(Paths.get(LOCATION + "output.txt"), Arrays.asList(sb.toString()));
 		editPage(sb.toString());
 	}
 	
@@ -84,7 +84,7 @@ public final class EsperantoRelatedTerms {
 		excluded.addAll(Arrays.asList(cat2));
 		excluded.addAll(Arrays.asList(cat3));
 		
-		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", 0);
+		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 				
 		for (PageContainer page : morfeoTransclusions) {
 			for (String template : ParseUtils.getTemplates("morfeo", page.getText())) {

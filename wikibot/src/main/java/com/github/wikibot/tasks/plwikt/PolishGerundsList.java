@@ -2,9 +2,12 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -13,28 +16,25 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.wikipedia.Wiki.Revision;
-import org.wikiutils.IOUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.scripts.plwikt.MissingPolishGerunds;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class PolishGerundsList implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/tasks.plwikt/PolishGerundsList/";
 	private static final String locationser = location + "ser/";
 	private static final String location_old = MissingPolishGerunds.location;
@@ -43,32 +43,27 @@ public class PolishGerundsList implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				foreignGerunds();
-				Login.saveSession(wb);
 				break;
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				//incorrectFormat();
-				Login.saveSession(wb);
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				makeLists();
-				Login.saveSession(wb);
 				break;
 			case 'm':
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				//writeFormat();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				writeLists();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -79,7 +74,7 @@ public class PolishGerundsList implements Selectorizable {
 		String[] all_gerunds = wb.whatTranscludesHere("Szablon:odczasownikowy od", 0);
 		List<String> list_gerunds = new ArrayList<>(Arrays.asList(all_gerunds));
 		
-		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(PLWikt.intersection(
+		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(org.wikipedia.ArrayUtils.intersection(
 			wb.getCategoryMembers("polski (indeks)", 0),
 			all_gerunds
 		)));
@@ -180,7 +175,7 @@ public class PolishGerundsList implements Selectorizable {
 		Misc.serialize(substs, locationser + "substs.ser");
 	}
 	
-	public static void writeFormat() throws FileNotFoundException, IOException, LoginException {
+	public static void writeFormat() throws IOException, LoginException {
 		List<String[]> list;
 		
 		try {
@@ -196,9 +191,13 @@ public class PolishGerundsList implements Selectorizable {
 		for (String[] entry : list) {
 			String page = entry[0];
 			Revision rev = wb.getTopRevision(page);
-			Calendar cal = rev.getTimestamp();
+			OffsetDateTime timestamp = rev.getTimestamp();
 			
 			String content = wb.getPageText(page);
+			
+			if (content == null) {
+				throw new FileNotFoundException("Page not found: " + page);
+			}
 			
 			int a = content.indexOf("{{znaczenia}}");
 			a = content.indexOf(") {{rzecz}} ");
@@ -208,12 +207,12 @@ public class PolishGerundsList implements Selectorizable {
 			newcontent += ") {{odczasownikowy od|" + entry[1] + "}}";
 			newcontent += content.substring(b);
 			
-			wb.edit(page, newcontent, "{{odczasownikowy od}}", true, true, -2, cal);
+			wb.edit(page, newcontent, "{{odczasownikowy od}}", true, true, -2, timestamp);
 		}
 	}
 	
 	public static void makeLists() throws IOException, InterruptedException, ExecutionException, ClassNotFoundException {
-		String[] intersection = PLWikt.intersection(
+		String[] intersection = org.wikipedia.ArrayUtils.intersection(
 			wb.getCategoryMembers("Język polski - rzeczowniki rodzaju nijakiego", 0),
 			wb.whatTranscludesHere("Szablon:odczasownikowy od", 0)
 		);
@@ -236,7 +235,7 @@ public class PolishGerundsList implements Selectorizable {
 		List<String> listErrors = new ArrayList<>(200);
 		List<String> listNoDictEntry = new ArrayList<>(500);
 		
-		PageContainer[] pages = wb.getContentOfPages(gerunds.toArray(new String[gerunds.size()]), 400);
+		PageContainer[] pages = wb.getContentOfPages(gerunds.toArray(new String[gerunds.size()]));
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -298,10 +297,10 @@ public class PolishGerundsList implements Selectorizable {
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
 			.collect(Collectors.toList()));
 		
-		IOUtils.writeToFile(String.join("\n", listOnlyDefinitions2), location + "sin plantilla.txt");
-		IOUtils.writeToFile(String.join("\n", listOnlyTemplates), location + "sin definición.txt");
-		IOUtils.writeToFile(String.join("\n", listErrors), location + "errores.txt");
-		IOUtils.writeToFile(String.join("\n", listNoDictEntry), location + "sin entrada.txt");
+		Files.write(Paths.get(location + "sin plantilla.txt"), listOnlyDefinitions2);
+		Files.write(Paths.get(location + "sin definición.txt"), listOnlyTemplates);
+		Files.write(Paths.get(location + "errores.txt"), listErrors);
+		Files.write(Paths.get(location + "sin entrada.txt"), listNoDictEntry);
 		
 		Misc.serialize(String.format(
 			"Analizowano %s z tabelką odmiany oraz %s.",
@@ -361,12 +360,14 @@ public class PolishGerundsList implements Selectorizable {
 		// Possible errors
 		
 		com.github.wikibot.parsing.Section possibleErrors = com.github.wikibot.parsing.Section.create("możliwe błędy", 3);
-		String[] in = IOUtils.loadFromFile(location_old + "errores.txt", "", "UTF8");
-		String[] in2 = IOUtils.loadFromFile(location + "errores.txt", "", "UTF8");
 		
-		tempList = new ArrayList<>(Arrays.asList(ArrayUtils.addAll(in, in2)).stream()
-			.map(line -> String.format("# [[%s]] – %s", (Object[]) line.split(" - ")))
-			.collect(Collectors.toList()));
+		tempList = Stream.of(
+				Files.readAllLines(Paths.get(location_old + "errores.txt")),
+				Files.readAllLines(Paths.get(location + "errores.txt"))
+			)
+			.flatMap(Collection::stream)
+			.map(line -> String.format("# [[%s]] – %s", (Object[])line.split(" - ")))
+			.collect(Collectors.toList());
 		
 		Misc.sortList(tempList, "pl");
 		possibleErrors.setIntro(String.join("\n", tempList));
@@ -374,11 +375,10 @@ public class PolishGerundsList implements Selectorizable {
 		// Reflexive verbs
 		
 		com.github.wikibot.parsing.Section reflexiveVerbs = com.github.wikibot.parsing.Section.create("czasowniki zwrotne", 3);
-		in = IOUtils.loadFromFile(location_old + "reflexivos.txt", "", "UTF8");
 		
-		tempList = new ArrayList<>(Arrays.asList(in).stream()
+		tempList = Files.lines(Paths.get(location_old + "reflexivos.txt"))
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
-			.collect(Collectors.toList()));
+			.collect(Collectors.toList());
 		
 		Misc.sortList(tempList, "pl");
 		reflexiveVerbs.setIntro(String.join(", ", tempList));

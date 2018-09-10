@@ -7,8 +7,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,19 +21,15 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
-
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class Edit implements Selectorizable {
 	private static Wikibot wb;
-	private static final Domains domain = Domains.PLWIKT;
+	private static final String domain = "pl.wiktionary.org";
 	private static final String location = "./data/scripts/Edit/";
 	private static final String locationser = location + "ser/";
 	private static final String difflist = location + "difflist.txt";
@@ -43,32 +42,27 @@ public final class Edit implements Selectorizable {
 				getList();
 				break;
 			case '2':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain);
 				makeList();
-				Login.saveSession(wb);
 				break;
 			case '3':
 				makeList2();
 				break;
 			case '4':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain);
 				makeList3();
-				Login.saveSession(wb);
 				break;
 			case 'd':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain);
 				getDiffs();
-				Login.saveSession(wb);
 				break;
 			case 'g':
-				wb = Login.retrieveSession(domain, Users.USER1);
+				wb = Login.createSession(domain);
 				getContents();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(domain, Users.USER2);
+				wb = Login.createSession(domain);
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -213,7 +207,7 @@ public final class Edit implements Selectorizable {
 		String category = "Kategoria:Formy czasownikowe wg języków";
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
 		String[] titles = wb.getCategoryMembers(category, 14);
-		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -236,9 +230,7 @@ public final class Edit implements Selectorizable {
 	}
 	
 	public static void getDiffs() throws IOException {
-		String[] lines = IOUtils.loadFromFile(difflist, "", "UTF8");
-		
-		String[] titles = Stream.of(lines)
+		String[] titles = Files.lines(Paths.get(difflist))
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
@@ -250,7 +242,7 @@ public final class Edit implements Selectorizable {
 			return;
 		}
 
-		PageContainer[] pages = wb.getContentOfPages(titles, 400);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		
 		Map<String, String> map = Stream.of(pages)
 			.collect(Collectors.toMap(
@@ -260,14 +252,20 @@ public final class Edit implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		IOUtils.writeToFile(Misc.makeList(map), worklist);
-		Misc.serialize(wb.getTimestamps(pages), info);
+		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeList(map)));
+		
+		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				PageContainer::getTimestamp
+			));
+		
+		Misc.serialize(timestamps, info);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
-		Map<String, String> map = Misc.readList(lines);
-		Map<String, Calendar> timestamps = Misc.deserialize(info);
+		Map<String, String> map = Misc.readList(Files.lines(Paths.get(worklist)).toArray(String[]::new));
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(info);
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
@@ -323,7 +321,7 @@ public final class Edit implements Selectorizable {
 		for (Entry<String, String> entry : map.entrySet()) {
 			String title = entry.getKey();
 			String text = entry.getValue();
-			Calendar timestamp = timestamps.get(title);
+			OffsetDateTime timestamp = timestamps.get(title);
 			
 			if (!checkErrors) {
 				wb.edit(title, text, summary, minor, true, -2, null);

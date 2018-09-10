@@ -2,9 +2,10 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,23 +15,20 @@ import java.util.regex.Pattern;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki.Revision;
-import org.wikiutils.IOUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class ReviewPolishGerunds implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.plwikt/ReviewPolishGerunds/";
 	private static final String f_pages = location + "pages.txt";
 	private static final String f_info = location + "info.ser";
@@ -40,14 +38,12 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case 'r':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				review();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -55,8 +51,8 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		String[] titles = IOUtils.loadFromFile(f_pages, "", "UTF8");
-		PageContainer[] pages = wb.getContentOfPages(titles, 450);
+		String[] titles = Files.lines(Paths.get(f_pages)).toArray(String[]::new);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		Map<String, String> worklist = new LinkedHashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
@@ -107,12 +103,12 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", worklist.size());
 		
 		Misc.serialize(pages, f_info);
-		IOUtils.writeToFile(Misc.makeList(worklist), f_worklist);
+		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(worklist)));
 	}
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {
 		PageContainer[] pages = Misc.deserialize(f_info);
-		String[] lines = IOUtils.loadFromFile(f_worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
 		Map<String, String> worklist = Misc.readList(lines);
 		Set<String> titles = worklist.keySet();
 		List<String> errors = new ArrayList<>();
@@ -126,11 +122,8 @@ public final class ReviewPolishGerunds implements Selectorizable {
 			}
 			
 			Revision rev = wb.getTopRevision(title);
-			Calendar timestamp = rev.getTimestamp();
-			Date date = timestamp.getTime();
-			Date temp = page.getTimestamp().getTime();
 			
-			if (!date.toString().equals(temp.toString())) {
+			if (!rev.getTimestamp().equals(page.getTimestamp())) {
 				System.out.printf("Conflicto en \"%s\"%n", title);
 				errors.add(title);
 				continue;

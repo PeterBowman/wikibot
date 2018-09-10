@@ -3,7 +3,6 @@ package com.github.wikibot.scripts.misc;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -13,32 +12,30 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.PLWikt;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class KurdishTranslations implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/KurdishTranslations/";
 
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -46,7 +43,7 @@ public final class KurdishTranslations implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Pattern patt = Pattern.compile("\\* ?kurdyjski:? ?[^\\n]*");
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		int found = 0;
@@ -79,7 +76,7 @@ public final class KurdishTranslations implements Selectorizable {
 	
 	public static void edit() throws IOException, LoginException {
 		final String page = "Wikipedysta:PBbot/tłumaczenia na kurdyjski";
-		List<String> lines = Files.readAllLines(Paths.get(location + "worklist.txt"), StandardCharsets.UTF_8);
+		List<String> lines = Files.readAllLines(Paths.get(location + "worklist.txt"));
 		String text = String.join("\n", lines);
 		
 		wb.edit(page, text, "tworzenie listy", false, false, -2, null);

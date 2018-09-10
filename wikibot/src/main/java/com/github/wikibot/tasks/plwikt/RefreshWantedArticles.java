@@ -21,11 +21,9 @@ import org.jsoup.select.Elements;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class RefreshWantedArticles {
 	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
@@ -49,7 +47,7 @@ public final class RefreshWantedArticles {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		String content = wb.getPageText(TARGET_PAGE);
 		
@@ -178,13 +176,13 @@ public final class RefreshWantedArticles {
 		for (int i = 0; i < pages.length; i++) {
 			String redirect = redirects[i];
 			
-			if (redirect != null) {
+			if (!redirect.equals(nonMissingTitles[i])) {
 				PageContainer old = pages[i];
 				
 				try {
 					String redirectText = wb.getPageText(redirect);
 					pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
-				} catch (FileNotFoundException e) {
+				} catch (FileNotFoundException | NullPointerException e) {
 					System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
 					pages[i] = null;
 					continue;

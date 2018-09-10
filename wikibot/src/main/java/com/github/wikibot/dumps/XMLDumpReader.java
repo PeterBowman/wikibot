@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +34,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
-import com.github.wikibot.utils.Domains;
-
 public final class XMLDumpReader {
 
 	public static final File LOCAL_DUMPS_PATH = new File("./data/dumps");
@@ -54,16 +53,16 @@ public final class XMLDumpReader {
 		checkExtension();
 	}
 	
-	public XMLDumpReader(Domains domain) throws FileNotFoundException {
+	public XMLDumpReader(String domain) throws FileNotFoundException {
 		Objects.requireNonNull(domain);
 		file = getLocalFile(domain);
 		System.out.printf("Reading from file: %s%n", file);
 		checkExtension();
 	}
 	
-	public XMLDumpReader(String pathToFile) throws FileNotFoundException {
+	public XMLDumpReader(Path pathToFile) throws FileNotFoundException {
 		Objects.requireNonNull(pathToFile);
-		file = new File(pathToFile);
+		file = pathToFile.toFile();
 		
 		if (!file.exists()) {
 			throw new FileNotFoundException();
@@ -77,7 +76,7 @@ public final class XMLDumpReader {
 		return file;
 	}
 
-	private static File getLocalFile(Domains domain) throws FileNotFoundException {
+	private static File getLocalFile(String domain) throws FileNotFoundException {
 		String domainPrefix = resolveDomainName(domain);
 		File[] matching = LOCAL_DUMPS_PATH.listFiles((dir, name) -> name.startsWith(domainPrefix));
 		
@@ -135,11 +134,11 @@ public final class XMLDumpReader {
 		XML // uncompressed
 	}
 	
-	private static String resolveDomainName(Domains domain) {
+	private static String resolveDomainName(String domain) {
 		switch (domain) {
-			case PLWIKT:
+			case "pl.wiktionary.org":
 				return "plwiktionary";
-			case ESWIKT:
+			case "es.wiktionary.org":
 				return "eswiktionary";
 			default:
 				throw new UnsupportedOperationException();
@@ -208,7 +207,7 @@ public final class XMLDumpReader {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		XMLDumpReader reader = new XMLDumpReader(Domains.ESWIKT);
+		XMLDumpReader reader = new XMLDumpReader("es.wiktionary.org");
 		List<String> list = Collections.synchronizedList(new ArrayList<>(5000));
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(900000).stream()) {

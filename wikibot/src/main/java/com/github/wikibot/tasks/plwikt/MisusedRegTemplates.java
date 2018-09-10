@@ -26,15 +26,13 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.PLWikt;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.Users;
 
 public final class MisusedRegTemplates {
 	private static final String LOCATION = "./data/tasks.plwikt/MisusedRegTemplates/";
@@ -65,7 +63,7 @@ public final class MisusedRegTemplates {
 		"szwajcwł", "tosk"
 	);
 	
-	private static PLWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		String templateList = TEMPLATES.stream()
@@ -84,7 +82,7 @@ public final class MisusedRegTemplates {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+		wb = Login.createSession("pl.wiktionary.org");
 		
 		XMLDumpReader reader = getXMLReader(args);
 		List<Item> list = analyzeDump(reader);
@@ -117,7 +115,7 @@ public final class MisusedRegTemplates {
 				throw new IllegalArgumentException();
 			}
 		} else {
-			return new XMLDumpReader(Domains.PLWIKT);
+			return new XMLDumpReader("pl.wiktionary.org");
 		}
 	}
 	

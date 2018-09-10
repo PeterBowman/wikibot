@@ -2,6 +2,7 @@ package com.github.wikibot.webapp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -220,7 +221,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			printResults(writer, sourceProject, targetProject, request, requestInfo);
 			session.setAttribute("lastRequest", requestInfo);
-		} catch (SQLException | IOException e) {
+		} catch (SQLException | IOException | UncheckedIOException e) {
 			writer.append("<p>")
 				.append("Komunikacja z bazą danych się nie powiodła. Komunikat błędu: ")
 				.append("</p>").append("\n")
@@ -238,9 +239,9 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		doGet(request, response);
 	}
 	
-	private static void fetchNamespaces(Project project) throws IOException {
+	private static void fetchNamespaces(Project project) {
 		String url = project.url.replaceFirst("^https?://", "");
-		Wiki wiki = new Wiki(url);
+		Wiki wiki = Wiki.createInstance(url);
 		Map<String, Integer> info = wiki.getNamespaces();
 		Map<String, Integer> copy = new LinkedHashMap<>(info.size(), 1);
 		

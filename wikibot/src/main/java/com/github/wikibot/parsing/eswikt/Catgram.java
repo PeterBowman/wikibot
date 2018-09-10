@@ -1,6 +1,8 @@
 package com.github.wikibot.parsing.eswikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.wikiutils.IOUtils;
 
 import com.github.wikibot.parsing.Utils;
 
@@ -568,7 +569,7 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		IOUtils.writeToFile(sb.toString(), "./data/eswikt-catgram.txt");
+		Files.write(Paths.get("./data/eswikt-catgram.txt"), Arrays.asList(sb.toString()));
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -591,6 +592,6 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		IOUtils.writeToFile(sb.toString(), "./data/eswikt-catgram-output.txt");
+		Files.write(Paths.get("./data/eswikt-catgram-output.txt"), Arrays.asList(sb.toString()));
 	}
 }

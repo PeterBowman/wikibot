@@ -1,26 +1,26 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class DevanagariIAST implements Selectorizable {
 	private static Wikibot wb;
@@ -32,9 +32,8 @@ public class DevanagariIAST implements Selectorizable {
 		switch (op) {
 			case '1':
 			case '2':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				getList(op == '2');
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -42,8 +41,8 @@ public class DevanagariIAST implements Selectorizable {
 	}
 	
 	public static void getList(boolean edit) throws IOException, LoginException {
-		String[] titles = wb.listPages("", null, PLWikt.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
-		PageContainer[] pages = wb.getContentOfPages(titles, 100);
+		String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
+		PageContainer[] pages = wb.getContentOfPages(titles);
 		List<String> hindi = new ArrayList<>();
 		List<String> nonHindi = new ArrayList<>();
 		
@@ -66,7 +65,7 @@ public class DevanagariIAST implements Selectorizable {
 		System.out.printf("Total: %d, hindi: %d, non-hindi: %d%n", pages.length, hindi.size(), nonHindi.size());
 		
 		String out = makePage(hindi, nonHindi);
-		IOUtils.writeToFile(out, fList);
+		Files.write(Paths.get(fList), Arrays.asList(out));
 		
 		if (edit) {
 			wb.edit(wikipage, out, "aktualizacja", false, false, -2, null);

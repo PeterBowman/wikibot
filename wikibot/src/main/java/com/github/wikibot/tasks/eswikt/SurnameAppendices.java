@@ -18,10 +18,8 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.ESWikt;
-import com.github.wikibot.utils.Domains;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
 
 public final class SurnameAppendices {
 	private static final String PREFIX = "Apéndice:Personas/Apellidos/";
@@ -35,7 +33,7 @@ public final class SurnameAppendices {
 	private static final Collator collator;
 	private static final Map<Character, Character> stressedVowels;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	
 	static {
 		collator = Collator.getInstance(new Locale("es"));
@@ -51,7 +49,7 @@ public final class SurnameAppendices {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession("es.wiktionary.org");
 		
 		String[] subPages = getSubPages();
 		String[] surnames = getSurnames();
@@ -122,13 +120,7 @@ public final class SurnameAppendices {
 	
 	private static List<String> getLinksOnPage(String page) throws IOException {
 		return Stream.of(wb.getLinksOnPage(page))
-			.filter(link -> {
-				try {
-					return wb.namespace(link) == Wiki.MAIN_NAMESPACE;
-				} catch (IOException e) {
-					return false; // should never happen, assume that namespace cache has been populated
-				}
-			})
+			.filter(link -> wb.namespace(link) == Wiki.MAIN_NAMESPACE)
 			.collect(Collectors.toList());
 	}
 	

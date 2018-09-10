@@ -7,20 +7,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import javax.security.auth.login.FailedLoginException;
-
 import org.wikipedia.Wiki.Revision;
-import org.wikiutils.IOUtils;
 
-import com.github.wikibot.main.PLWikt;
-import com.github.wikibot.utils.Domains;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Users;
+import com.github.wikibot.utils.Misc;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
@@ -30,8 +30,9 @@ public final class MassReview {
 	private static final String F_LAST = LOCATION + "last.txt";
 	private static final String F_ERRORS = LOCATION + "errors.txt";
 	
-	public static void main(String[] args) throws FailedLoginException, IOException {
-		PLWikt wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+	public static void main(String[] args) throws Exception {
+		System.out.print("Username: ");
+		Wikibot wb = Login.createSession("pl.wiktionary.org", Misc.readLine());
 		wb.setThrottle(5000);
 		
 		List<String[]> list = extractList();
@@ -52,14 +53,14 @@ public final class MassReview {
 			try {
 				Revision rev = wb.getTopRevision(title);
 				
-				if (rev == null || rev.getRevid() != revid) {
+				if (rev == null || rev.getID() != revid) {
 					errors.add(title);
 					continue;
 				}
 				
 				wb.review(rev, summary);
 				lastReviewed = title;
-			} catch (IOException e1) {
+			} catch (IOException | UncheckedIOException e1) {
 				System.out.println(e1.getMessage());
 				e1.printStackTrace();
 				iterator.previous();
@@ -77,8 +78,8 @@ public final class MassReview {
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
 		System.out.printf("Last reviewed: %s%n", lastReviewed);
 		
-		IOUtils.writeToFile(String.join("\n", errors), F_ERRORS);
-		IOUtils.writeToFile(lastReviewed, F_LAST);
+		Files.write(Paths.get(F_ERRORS), errors);
+		Files.write(Paths.get(F_LAST), Arrays.asList(lastReviewed));
 		
 		wb.logout();
 	}
@@ -98,15 +99,15 @@ public final class MassReview {
 		return list;
 	}
 
-	private static String findLastModifiedEntry(List<String[]> list) throws FileNotFoundException {
+	private static String findLastModifiedEntry(List<String[]> list) throws IOException {
 		File f = new File(F_LAST);
 		String lastReviewed = "";
 		
 		if (f.exists()) {
-			String[] lines = IOUtils.loadFromFile(F_LAST, "", "UTF8");
+			List<String> lines = Files.readAllLines(Paths.get(F_LAST));
 			
-			if (lines.length > 0) {
-				String lastEntry = lines[0];
+			if (!lines.isEmpty()) {
+				String lastEntry = lines.get(0);
 				int index = list.stream()
 					.filter(arr -> arr[0].equals(lastEntry))
 					.findFirst()

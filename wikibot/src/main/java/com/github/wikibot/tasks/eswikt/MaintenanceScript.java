@@ -1,21 +1,21 @@
 package com.github.wikibot.tasks.eswikt;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -26,20 +26,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
-import org.wikiutils.IOUtils;
 
-import com.github.wikibot.main.ESWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class MaintenanceScript {
 	private static final String LOCATION = "./data/tasks.eswikt/MaintenanceScript/";
@@ -47,49 +42,48 @@ public final class MaintenanceScript {
 	private static final String PICK_DATE = LOCATION + "pick_date.txt";
 	private static final String ERROR_LOG = LOCATION + "errors.txt";
 	
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	
 	private static final int THREAD_CHECK_SECS = 5;
 	private static volatile RuntimeException threadExecutionException;
 	
-	private static ESWikt wb;
+	private static Wikibot wb;
 	
-	public static void main(String[] args) throws FailedLoginException, IOException, ParseException {
+	public static void main(String[] args) throws Exception {
 		String startTimestamp = extractTimestamp();
 		
-		int gap;
+		int gapHours;
 		
 		try {
-			gap = Integer.parseInt(args[0]);
+			gapHours = Integer.parseInt(args[0]);
 		} catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-			gap = 0;
+			gapHours = 0;
 		}
 		
-		wb = Login.retrieveSession(Domains.ESWIKT, Users.USER2);
+		wb = Login.createSession("es.wiktionary.org");
 		
-		Calendar startCal = Calendar.getInstance();
-		startCal.setTime(DATE_FORMAT.parse(startTimestamp));
+		OffsetDateTime earliest = OffsetDateTime.parse(startTimestamp);
+		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
+		OffsetDateTime gap = latest;
 		
-		Calendar endCal = wb.makeCalendar();
-		Calendar gapCal = (Calendar) endCal.clone();
-		
-		if (gap > 0) {
-			gapCal.add(Calendar.HOUR, -gap);
+		if (gapHours > 0) {
+			gap = gap.minusHours(gapHours);
 		}
 		
-		if (gapCal.before(startCal)) {
+		if (gap.isBefore(earliest)) {
 			return;
 		}
 		
-		int rcoptions = Wikibot.HIDE_REDIRECT;
-		int rctypes = Wikibot.RC_NEW | Wikibot.RC_EDIT;
+		Map<String, Boolean> rcoptions = new HashMap<>();
+		rcoptions.put("redirect", false);
 		
-		Wiki.Revision[] revs = wb.recentChanges(startCal, endCal, rcoptions, rctypes, false, Users.USER2.getUsername(), Wiki.MAIN_NAMESPACE);
-		Wiki.LogEntry[] logs = wb.getLogEntries(endCal, startCal, Integer.MAX_VALUE, Wiki.MOVE_LOG, "move", null, "", Wiki.ALL_NAMESPACES);
+		List<String> rctypes = Arrays.asList(new String[] {"new", "edit"});
+		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
+		
+		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		List<String> titles = Stream.of(
-				Stream.of(revs).collect(new RevisionCollector(gapCal)),
-				Stream.of(logs).collect(new LogCollector(gapCal))
+				Stream.of(revs).collect(new RevisionCollector(gap)),
+				logs.stream().collect(new LogCollector(gap))
 			)
 			.flatMap(Collection::stream)
 			.distinct()
@@ -109,9 +103,8 @@ public final class MaintenanceScript {
 				monitorThread(thread);
 			} catch (TimeoutException e) {
 				logError("Editor.check() timeout", pc.getTitle(), e);
-				Calendar tempCal = pc.getTimestamp();
-				tempCal.add(Calendar.SECOND, 1);
-				storeTimestamp(tempCal);
+				OffsetDateTime tempTimestamp = pc.getTimestamp().plusSeconds(1);
+				storeTimestamp(tempTimestamp);
 				System.exit(0);
 			} catch (UnsupportedOperationException e) {
 				continue;
@@ -124,8 +117,11 @@ public final class MaintenanceScript {
 				try {
 					wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
 					System.out.println(editor.getLogs());
-				} catch (CredentialException e) {
-					logError("Permission denied", pc.getTitle(), e);
+				} catch (CredentialException ce) {
+					logError("Permission denied", pc.getTitle(), ce);
+					continue;
+				} catch (ConcurrentModificationException cme) {
+					logError("Edit conflict", pc.getTitle(), cme);
 					continue;
 				} catch (Throwable t) {
 					logError("Edit error", pc.getTitle(), t);
@@ -134,20 +130,20 @@ public final class MaintenanceScript {
 			}
 		}
 		
-		storeTimestamp(gapCal);
+		storeTimestamp(gap);
 		wb.logout();
 	}
 	
-	private static String extractTimestamp() throws FileNotFoundException {
+	private static String extractTimestamp() throws IOException {
 		File f_last_date = new File(LAST_DATE);
 		File f_pick_date = new File(PICK_DATE);
 		
 		String startTimestamp;
 		
 		if (f_last_date.exists()) {
-			startTimestamp = IOUtils.loadFromFile(LAST_DATE, "", "UTF8")[0];
+			startTimestamp = Files.readAllLines(Paths.get(LAST_DATE)).get(0);
 		} else if (f_pick_date.exists()) {
-			startTimestamp = IOUtils.loadFromFile(PICK_DATE, "", "UTF8")[0];
+			startTimestamp = Files.readAllLines(Paths.get(PICK_DATE)).get(0);
 		} else {
 			throw new UnsupportedOperationException("No timestamp file found.");
 		}
@@ -159,11 +155,9 @@ public final class MaintenanceScript {
 		return startTimestamp;
 	}
 	
-	private static void storeTimestamp(Calendar cal) {
-		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-		
+	private static void storeTimestamp(OffsetDateTime timestamp) {
 		try {
-			IOUtils.writeToFile(DATE_FORMAT.format(cal.getTime()), LAST_DATE);
+			Files.write(Paths.get(LAST_DATE), Arrays.asList(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		} catch (IOException e) {}
 	}
 
@@ -178,19 +172,18 @@ public final class MaintenanceScript {
 		System.out.println(log);
 		t.printStackTrace();
 		
-		String[] lines;
+		List<String> list;
 		
 		try {
-			lines = IOUtils.loadFromFile(ERROR_LOG, "", "UTF8");
-		} catch (FileNotFoundException e) {
-			lines = new String[]{};
+			list = new ArrayList<>(Files.readAllLines(Paths.get(ERROR_LOG)));
+		} catch (IOException e) {
+			list = new ArrayList<>();
 		}
 		
-		List<String> list = new ArrayList<>(Arrays.asList(lines));
 		list.add(log);
 		
 		try {
-			IOUtils.writeToFile(String.join("\n", list), ERROR_LOG);
+			Files.write(Paths.get(ERROR_LOG), list);
 		} catch (IOException e) {}
 	}
 	
@@ -234,10 +227,10 @@ public final class MaintenanceScript {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
-		private Calendar cal;
+		private OffsetDateTime dateTime;
 	
-		public RevisionCollector(Calendar cal) {
-			this.cal = cal;
+		public RevisionCollector(OffsetDateTime dateTime) {
+			this.dateTime = dateTime;
 		}
 		
 		@Override
@@ -247,7 +240,7 @@ public final class MaintenanceScript {
 	
 		@Override
 		public BiConsumer<Map<String, Wiki.Revision>, Wiki.Revision> accumulator() {
-			return (accum, rev) -> accum.put(rev.getPage(), rev);
+			return (accum, rev) -> accum.put(rev.getTitle(), rev);
 		}
 	
 		@Override
@@ -258,9 +251,9 @@ public final class MaintenanceScript {
 		@Override
 		public Function<Map<String, Wiki.Revision>, List<String>> finisher() {
 			return accum -> accum.values().stream()
-				.filter(rev -> rev.getTimestamp().before(cal))
+				.filter(rev -> rev.getTimestamp().isBefore(dateTime))
 				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
-				.map(Wiki.Revision::getPage)
+				.map(Wiki.Revision::getTitle)
 				.collect(Collectors.toList());
 		}
 	
@@ -274,10 +267,10 @@ public final class MaintenanceScript {
 		// https://weblogs.java.net/blog/kocko/archive/2014/12/19/java8-how-implement-custom-collector
 		// http://www.nurkiewicz.com/2014/07/introduction-to-writing-custom.html
 		
-		private Calendar cal;
+		private OffsetDateTime dateTime;
 	
-		public LogCollector(Calendar cal) {
-			this.cal = cal;
+		public LogCollector(OffsetDateTime dateTime) {
+			this.dateTime = dateTime;
 		}
 		
 		@Override
@@ -298,16 +291,10 @@ public final class MaintenanceScript {
 		@Override
 		public Function<Map<String, Wiki.LogEntry>, List<String>> finisher() {
 			return accum -> accum.values().stream()
-				.filter(log -> log.getTimestamp().before(cal))
+				.filter(log -> log.getTimestamp().isBefore(dateTime))
 				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
 				.map(log -> (String) log.getDetails())
-				.filter(title -> {
-					try {
-						return wb.namespace(title) == Wiki.MAIN_NAMESPACE;
-					} catch (Exception e) {
-						return false;
-					}
-				})
+				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
 				.collect(Collectors.toList());
 		}
 	

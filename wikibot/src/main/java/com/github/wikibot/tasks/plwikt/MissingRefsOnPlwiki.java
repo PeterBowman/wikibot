@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,15 +21,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
@@ -42,7 +38,7 @@ public class MissingRefsOnPlwiki {
 
 	private static final Map<String, List<String>> TARGET_TEMPLATES;
 
-	private static PLWikt plwikt;
+	private static Wikibot plwikt;
 	private static Wikibot plwiki;
 
 	static {
@@ -101,12 +97,12 @@ public class MissingRefsOnPlwiki {
 				"* transkluzji {{s|wikipedia}} (w sumie): %1$s\n" +
 				"* transkluzji {{s|wikipedia}} (tylko hasła polskie): %2$s\n" +
 				"* jednakowych artykułów docelowych w Wikipedii: %3$s\n" +
-				"* istniejących artykułów w Wikipedii (uwzględniając przekierowania): %4$s\n" +
-				"* rozmiar listy: %5$s\n" +
+				"* istniejących artykułów w Wikipedii: %4$s (w tym przekierowań: %5$s)\n" +
+				"* rozmiar listy: %6$s\n" +
 				"Zobacz też:\n" +
 				"* [[Wikisłownikarz:Azureus/brak Wikisłownika na Wikipedii]] (do 2010)\n" +
 				"* [[w:Wikipedysta:Nostrix/Wikisłownik]]\n" +
-				"* [[%6$s|podstrona z błędami]]\n" +
+				"* [[%7$s|podstrona z błędami]]\n" +
 				"Zmiany wykonane ręcznie na tej stronie zostaną nadpisane przez bota. " +
 				"Wygenerowano ~~~~~.\n" +
 				"----\n";
@@ -117,8 +113,8 @@ public class MissingRefsOnPlwiki {
 	}
 
 	public static void main(String[] args) throws Exception {
-		plwikt = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
-		plwiki = Login.retrieveSession(Domains.PLWIKI, Users.USER2);
+		plwikt = Login.createSession("pl.wiktionary.org");
+		plwiki = Login.createSession("pl.wikipedia.org");
 
 		// populate namespace cache
 		plwikt.getNamespaces();
@@ -142,8 +138,7 @@ public class MissingRefsOnPlwiki {
 		int targetedArticles = plwikiTitles.length;
 		System.out.printf("Targeted articles on plwikipedia: %d%n", targetedArticles);
 
-		@SuppressWarnings("rawtypes")
-		Map[] pageInfos = plwiki.getPageInfo(plwikiTitles);
+		Map<String, Object>[] pageInfos = plwiki.getPageInfo(plwikiTitles);
 
 		String[] foundPlwikiTitles = getFoundArticles(plwikiTitles, pageInfos);
 		Set<String> missingPlwikiTitles = new HashSet<>(Arrays.asList(plwikiTitles));
@@ -152,9 +147,11 @@ public class MissingRefsOnPlwiki {
 		int foundArticles = foundPlwikiTitles.length;
 		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", foundArticles);
 
-		String[] plwikiRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
-		Map<String, String> titleToRedir = new HashMap<>(foundPlwikiTitles.length);
-		String[] resolvedRedirs = translateRedirs(foundPlwikiTitles, plwikiRedirs, titleToRedir);
+		String[] resolvedRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
+		Map<String, String> titleToRedir = translateRedirs(foundPlwikiTitles, resolvedRedirs);
+
+		int foundRedirects = titleToRedir.size();
+		System.out.printf("Targeted redirects on plwikipedia: %d%n", foundRedirects);
 
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
 		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
@@ -180,6 +177,7 @@ public class MissingRefsOnPlwiki {
 					Misc.makePluralPL(targetedTemplateTransclusions),
 					Misc.makePluralPL(targetedArticles),
 					Misc.makePluralPL(foundArticles),
+					Misc.makePluralPL(foundRedirects),
 					Misc.makePluralPL(filteredTitles),
 					ERRORS_SUBPAGE
 					);
@@ -201,7 +199,7 @@ public class MissingRefsOnPlwiki {
 		}
 	}
 
-	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages, List<String> errors) throws IOException {
+	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages, List<String> errors) {
 		Collator coll = Misc.getCollator("pl");
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
@@ -245,7 +243,7 @@ public class MissingRefsOnPlwiki {
 		return map;
 	}
 
-	private static String normalizeTitle(String title) throws IOException {
+	private static String normalizeTitle(String title) {
 		title = plwikt.normalize(title.trim()); // throws IllegalArgumentException
 
 		try {
@@ -257,12 +255,11 @@ public class MissingRefsOnPlwiki {
 		}
 	}
 
-	private static String[] getFoundArticles(String[] titles, @SuppressWarnings("rawtypes") Map[] pageInfos) {
+	private static String[] getFoundArticles(String[] titles, Map<String, Object>[] pageInfos) {
 		List<String> list = new ArrayList<>();
 
 		for (int i = 0; i < pageInfos.length; i++) {
-			@SuppressWarnings("rawtypes")
-			Map pageInfo = pageInfos[i];
+			Map<String, Object> pageInfo = pageInfos[i];
 
 			if (pageInfo != null && Boolean.TRUE.equals(pageInfo.get("exists"))) {
 				list.add(titles[i]);
@@ -272,19 +269,16 @@ public class MissingRefsOnPlwiki {
 		return list.toArray(new String[list.size()]);
 	}
 
-	private static String[] translateRedirs(String[] titles, String[] redirs, Map<String, String> titleToRedir) {
-		String[] updatedTitles = new String[titles.length];
+	private static Map<String, String> translateRedirs(String[] titles, String[] redirs) {
+		Map<String, String> titleToRedir = new HashMap<>();
 
 		for (int i = 0; i < titles.length; i++) {
-			if (redirs[i] != null) {
+			if (!redirs[i].equals(titles[i])) {
 				titleToRedir.put(titles[i], redirs[i]);
-				updatedTitles[i] = redirs[i];
-			} else {
-				updatedTitles[i] = titles[i];
 			}
 		}
 
-		return Stream.of(updatedTitles).distinct().toArray(String[]::new);
+		return titleToRedir;
 	}
 
 	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
@@ -356,15 +350,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static String sanitizeBacklinkEntries(String entry) {
-		int ns = 0;
-
-		try {
-			ns = plwikt.namespace(entry);
-		} catch (IOException e) {
-			// namespace cache was already populated, we should not be here
-		}
-
-		if (ns == Wiki.CATEGORY_NAMESPACE) {
+		if (plwikt.namespace(entry) == Wiki.CATEGORY_NAMESPACE) {
 			entry = ":" + entry;
 		}
 

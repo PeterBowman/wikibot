@@ -3,38 +3,35 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.login.FailedLoginException;
 
-import org.wikiutils.IOUtils;
-
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public final class MissingWikiquoteBacklinks implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static Wikibot quote;
 	private static final String location = "./data/scripts.plwikt/MissingWikiquoteBacklinks/";
 	private static final String data = location + "data.tsv";
@@ -44,16 +41,13 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
-				quote = Login.retrieveSession(Domains.PLQUOTE, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
+				quote = Login.createSession("pl.wikiquote.org");
 				getList();
-				Login.saveSession(wb);
-				Login.saveSession(quote);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -117,11 +111,11 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		}
 		
 		Misc.serialize(wiktpages, ser_pages);
-		IOUtils.writeToFile(Misc.makeMultiList(map), worklist);
+		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeMultiList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		String[] lines = IOUtils.loadFromFile(worklist, "", "UTF8");
+		String[] lines = Files.lines(Paths.get(worklist)).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(ser_pages);
 		List<String> errors = new ArrayList<>();
@@ -131,7 +125,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			String[] data = entry.getValue();
 			
 			PageContainer page = Misc.retrievePage(pages, title);
-			Calendar timestamp = page.getTimestamp();
+			OffsetDateTime timestamp = page.getTimestamp();
 			
 			Page p = Page.wrap(page);
 			

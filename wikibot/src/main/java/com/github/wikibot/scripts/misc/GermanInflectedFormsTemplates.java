@@ -6,8 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -15,42 +19,37 @@ import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
-import org.wikiutils.IOUtils;
+import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.PLWikt;
 import com.github.wikibot.main.Selectorizable;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.utils.Domains;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
-import com.github.wikibot.utils.Users;
 
 public final class GermanInflectedFormsTemplates implements Selectorizable {
-	private static PLWikt wb;
+	private static Wikibot wb;
 	private static final String location = "./data/scripts.misc/GermanInflectedFormsTemplates/";
 
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				getLists();
-				Login.saveSession(wb);
 				break;
 			case '2':
 				makeLists();
 				break;
 			case '3':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER1);
+				wb = Login.createSession("pl.wiktionary.org");
 				findWrongHeaders();
-				Login.saveSession(wb);
 				break;
 			case 'e':
-				wb = Login.retrieveSession(Domains.PLWIKT, Users.USER2);
+				wb = Login.createSession("pl.wiktionary.org");
 				//edit();
-				Login.saveSession(wb);
 				break;
 			default:
 				System.out.print("Número de operación incorrecto.");
@@ -69,7 +68,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		
 		int count = 0;
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
@@ -148,7 +147,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	}
 	
 	public static void findWrongHeaders() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", PLWikt.MAIN_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
@@ -168,7 +167,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 			}
 		}
 		
-		IOUtils.writeToFile(String.join("\n\n", list), location + "work_list_headers.txt");
+		Files.write(Paths.get(location + "work_list_headers.txt"), Arrays.asList(String.join("\n\n", list)));
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	
@@ -215,7 +214,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		}
     		
     		String content = wb.getSectionText(page, section);
-    		Calendar cal = wb.getTopRevision(page).getTimestamp();
+    		OffsetDateTime timestamp = wb.getTopRevision(page).getTimestamp();
     		StringBuilder sb = new StringBuilder(2000);
 			
     		int a = content.indexOf("{{znaczenia}}");
@@ -239,8 +238,8 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		}
     		    		
     		try {
-    			wb.edit(page, sb.toString(), replaced, false, true, section, cal);
-    		} catch (UnsupportedOperationException e) {
+    			wb.edit(page, sb.toString(), replaced, false, true, section, timestamp);
+    		} catch (ConcurrentModificationException e) {
     			conflicts++;
     			continue;
     		}
