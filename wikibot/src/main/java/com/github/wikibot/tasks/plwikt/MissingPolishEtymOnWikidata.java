@@ -4,7 +4,9 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,22 +48,28 @@ public final class MissingPolishEtymOnWikidata {
 		Map<String, Integer> namespaceIds = wd.getNamespaces();
 		PageContainer[] wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
 
-		String[] targets = Stream.of(wdPages)
+		Map<String, Set<String>> wiktToLexemes = Stream.of(wdPages)
 			.map(PageContainer::getText)
 			.map(JSONObject::new)
 			.filter(json -> {
 				JSONObject obj = json.getJSONObject("claims");
 				return !TARGET_PROPERTIES.stream().anyMatch(obj::has);
 			})
-			.map(json -> (String)json.getJSONObject("lemmas")
-				.getJSONObject("pl")
-				.get("value"))
-			.toArray(String[]::new);
+			.collect(Collectors.groupingBy(
+				json -> (String)json.getJSONObject("lemmas")
+					.getJSONObject("pl")
+					.get("value"),
+				Collectors.mapping(
+					json -> (String)json.get("id"),
+					Collectors.toCollection(TreeSet::new)
+				)
+			));
 
 		Wikibot plwikt = Login.createSession("pl.wiktionary.org");
-		PageContainer[] wiktPages = plwikt.getContentOfPages(targets);
+		String[] wiktTitles = wiktToLexemes.keySet().toArray(new String[wiktToLexemes.size()]);
+		PageContainer[] wiktContent = plwikt.getContentOfPages(wiktTitles);
 
-		Map<String, String> map = Stream.of(wiktPages)
+		Map<String, String> map = Stream.of(wiktContent)
 			.map(Page::wrap)
 			.flatMap(p -> Utils.streamOpt(p.getPolishSection()))
 			.flatMap(s -> Utils.streamOpt(s.getField(FieldTypes.ETYMOLOGY)))
@@ -83,8 +91,11 @@ public final class MissingPolishEtymOnWikidata {
 		}
 
 		String out = map.entrySet().stream()
-			.map(e -> String.format("#[[%s]]\n%s",
+			.map(e -> String.format("#[[%s]] (%s)\n%s",
 				e.getKey(),
+				wiktToLexemes.get(e.getKey()).stream()
+					.map(lexeme -> String.format("[[d:Lexeme:%s]]", lexeme))
+					.collect(Collectors.joining(", ")),
 				Pattern.compile("\n").splitAsStream(e.getValue())
 					.map(line -> "#" + (line.startsWith(":") ? "" : ":") + line)
 					.collect(Collectors.joining("\n"))))
