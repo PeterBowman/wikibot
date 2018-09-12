@@ -52,8 +52,8 @@ public final class MissingPolishEtymOnWikidata {
 			.map(PageContainer::getText)
 			.map(JSONObject::new)
 			.filter(json -> {
-				JSONObject obj = json.getJSONObject("claims");
-				return !TARGET_PROPERTIES.stream().anyMatch(obj::has);
+				JSONObject obj = json.optJSONObject("claims");
+				return obj != null && !TARGET_PROPERTIES.stream().anyMatch(obj::has);
 			})
 			.collect(Collectors.groupingBy(
 				json -> (String)json.getJSONObject("lemmas")
