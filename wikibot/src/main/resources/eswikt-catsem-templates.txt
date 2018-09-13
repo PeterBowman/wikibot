@@ -190,6 +190,7 @@ oficios = Oficios
 oftalmología = Oftalmología
 óptica = Óptica
 ornitología = Ornitología
+orografía = Orografía
 países = Países, Topónimos
 paleontología = Paleontología
 parentesco = Parentesco
