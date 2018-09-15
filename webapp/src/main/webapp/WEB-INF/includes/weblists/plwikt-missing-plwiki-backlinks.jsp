@@ -68,7 +68,10 @@
                                 <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item.plwikiTitle}"
                                     display="w:${item.plwikiTitle}" testMissingPage="${item.missingPlwikiArticle}" />
                                 <c:if test="${not empty item.plwiktBacklinks}">
-                                    (linkuje do: )
+                                    • <i>linkuje do:</i> 
+                                    <c:forEach var="backlink" items="${item.plwiktBacklinks}">
+                                        <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink}" />
+                                    </c:forEach>
                                 </c:if>
                             </li>
                         </c:forEach>
