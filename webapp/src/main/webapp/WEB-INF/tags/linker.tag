@@ -4,6 +4,7 @@
 <%@ attribute name="target" required="true" %>
 <%@ attribute name="testMissingPage" %>
 <%@ attribute name="testMissingSection" %>
+<%@ attribute name="testRedirection" %>
 <%@ attribute name="sectionName" %>
 <%@ attribute name="display" %>
 
@@ -37,6 +38,11 @@
 			</c:otherwise>
 		</c:choose>
 		<c:set var="classVar" value="false-blue" />
+	</c:when>
+	<c:when test="${testRedirection eq true}">
+		<c:set var="href" value="w/index.php?redirect=no&title=${encodedParam}" />
+		<c:set var="title" value="(przekierowanie)" />
+		<c:set var="classVar" value="redirect" />
 	</c:when>
 	<c:otherwise>
 		<c:set var="href" value="wiki/${encoded}" />

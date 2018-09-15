@@ -55,6 +55,18 @@
   	<servlet-name>MorfeuszLookup</servlet-name>
   	<servlet-class>com.github.wikibot.webapp.MorfeuszLookup</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>MissingPlwiktRefsOnPlwiki</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingPlwiktRefsOnPlwiki</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>MissingPlwiktRefsOnPlwikiAPI</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingPlwiktRefsOnPlwiki</servlet-class>
+    <init-param>
+        <param-name>API</param-name>
+        <param-value>yes</param-value>
+    </init-param>
+  </servlet>
   <servlet-mapping>
   	<servlet-name>VerifyCitations</servlet-name>
   	<url-pattern>/verify-citations/*</url-pattern>
@@ -109,6 +121,14 @@
   <servlet-mapping>
   	<servlet-name>MorfeuszLookup</servlet-name>
   	<url-pattern>/morfeusz-lookup</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MissingPlwiktRefsOnPlwiki</servlet-name>
+    <url-pattern>/weblists/plwikt-missing-plwiki-backlinks</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MissingPlwiktRefsOnPlwikiAPI</servlet-name>
+    <url-pattern>/weblists/plwikt-missing-plwiki-backlinks/api</url-pattern>
   </servlet-mapping>
   <resource-ref>
   	<res-ref-name>jdbc/tools-db</res-ref-name>

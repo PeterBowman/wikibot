@@ -326,6 +326,7 @@ public class MissingRefsOnPlwiki {
 		fCtrl.delete();
 	}
 
+	// keep in sync with com.github.wikibot.webapp.MissingPlwiktRefsOnPlwiki
 	@XStreamAlias("entry")
 	static class Entry {
 		@XStreamAlias("plwikt")
