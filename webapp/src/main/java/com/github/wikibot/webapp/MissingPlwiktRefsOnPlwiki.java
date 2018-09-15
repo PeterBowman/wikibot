@@ -103,7 +103,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			request.setAttribute("results", results);
 			request.setAttribute("total", localEntries.size());
 			request.setAttribute("stats", localStats);
-			request.setAttribute("templates", localTemplates);
+			request.setAttribute("templates", localTemplates.toArray(new String[localTemplates.size()]));
 			request.setAttribute("timestamp", timestamp);
 			dispatcher.forward(request, response);
 		}
@@ -211,7 +211,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			return plwikiRedir;
 		}
 		
-		public List<String> plwiktBacklinks() {
+		public List<String> getPlwiktBacklinks() {
 			return plwiktBacklinks;
 		}
 		

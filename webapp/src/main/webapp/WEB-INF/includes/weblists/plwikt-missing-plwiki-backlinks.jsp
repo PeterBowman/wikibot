@@ -37,6 +37,45 @@
             z powrotem do tego samego hasła w WS.
         </p>
         <div id="plwikt-missing-plwiki-backlinks-content">
+            <table id="plwikt-missing-plwiki-backlinks-stats" class="wikitable mw-statistics floatright">
+                <caption>Statystyka</caption>
+                <tr>
+                    <th>transkluzji {{wikipedia}} (w sumie)</th>
+                    <td id="plwikt-missing-plwiki-backlinks-totalTemplateTransclusions" class="mw-statistics-numbers">
+                        ${stats['totalTemplateTransclusions']}
+                    </td>
+                </tr>
+                <tr>
+                    <th>transkluzji {{wikipedia}} (tylko hasła polskie)</th>
+                    <td id="plwikt-missing-plwiki-backlinks-targetedTemplateTransclusions" class="mw-statistics-numbers">
+                        ${stats['targetedTemplateTransclusions']}
+                    </td>
+                </tr>
+                <tr>
+                    <th>jednakowych artykułów docelowych w Wikipedii</th>
+                    <td id="plwikt-missing-plwiki-backlinks-targetedArticles" class="mw-statistics-numbers">
+                        ${stats['targetedArticles']}
+                    </td>
+                </tr>
+                <tr>
+                    <th>istniejących artykułów w Wikipedii</th>
+                    <td id="plwikt-missing-plwiki-backlinks-foundArticles" class="mw-statistics-numbers">
+                        ${stats['foundArticles']}
+                    </td>
+                </tr>
+                <tr>
+                    <th>przekierowań w Wikipedii</th>
+                    <td id="plwikt-missing-plwiki-backlinks-foundRedirects" class="mw-statistics-numbers">
+                        ${stats['foundRedirects']}
+                    </td>
+                </tr>
+                <tr>
+                    <th>jednakowych haseł w Wikisłowniku</th>
+                    <td id="plwikt-missing-plwiki-backlinks-filteredTitles" class="mw-statistics-numbers">
+                        ${stats['filteredTitles']}
+                    </td>
+                </tr>
+            </table>
             <p>
                 Ostatnia aktualizacja: <span id="plwikt-missing-plwiki-backlinks-timestamp">${timestamp}</span>.
                 <c:if test="${total ne 0}">
@@ -52,6 +91,14 @@
                         w zakresie od <strong id="plwikt-missing-plwiki-backlinks-start">${offset + 1}</strong>
                         do <strong id="plwikt-missing-plwiki-backlinks-end">${utils:min(offset + limit, total)}</strong>.
                     </p>
+                    <p>
+                        Obsługiwane szablony w Wikipedii:
+                        <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
+                            <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
+                            <c:out value="${status.last ? '.' : ', '}" />
+                        </c:forTokens>
+                    </p>
+                    <div style="clear: right;"></div>
                     <t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}"
                         limits="${paginatorLimits}" />
                     <ol id="plwikt-missing-plwiki-backlinks-results" start="${offset + 1}"
