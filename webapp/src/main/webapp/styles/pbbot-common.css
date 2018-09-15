@@ -35,5 +35,9 @@ td.mw-statistics-numbers {
 }
 
 .content-loading {
-	opacity: 0.5
+	opacity: 0.5;
+}
+
+.floatright {
+	margin-left: 0.5em;
 }
