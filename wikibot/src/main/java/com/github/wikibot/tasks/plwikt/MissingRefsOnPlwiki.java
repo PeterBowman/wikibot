@@ -17,7 +17,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -107,7 +106,7 @@ public class MissingRefsOnPlwiki {
 				"Wygenerowano ~~~~~.\n" +
 				"----\n";
 
-		ERRORS_SUBPAGE_INTRO = "Spis wywołań {{s|wikipedia}}, w których podano nieprawidłowy tytuł. " +
+		ERRORS_SUBPAGE_INTRO = "Spis wywołań {{s|wikipedia}} lub infoboksów, w których podano nieprawidłowy tytuł. " +
 				"Wygenerowano ~~~~~.\n" +
 				"----\n";
 	}
@@ -151,7 +150,7 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Targeted redirects on plwikipedia: %d%n", foundRedirects);
 
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
-		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
+		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents, errors);
 		removeFoundOccurrences(plwiktToPlwiki, plwikiToPlwikt, titleToRedir);
 
 		int filteredTitles = plwiktToPlwiki.size();
@@ -210,7 +209,7 @@ public class MissingRefsOnPlwiki {
 				continue;
 			}
 
-			List<String> list = new ArrayList<>();
+			Set<String> set = new TreeSet<>();
 
 			for (String template : ParseUtils.getTemplates("wikipedia", s.toString())) {
 				HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
@@ -218,22 +217,18 @@ public class MissingRefsOnPlwiki {
 
 				if (!param.isEmpty()) {
 					try {
-						list.add(plwikt.normalize(param));
+						set.add(plwiki.normalize(param));
 					} catch (IllegalArgumentException e) {
 						errors.add(String.format("#[[%s]]: <nowiki>%s</nowiki>", page.getTitle(), template));
 						continue;
 					}
 				} else {
-					list.add(page.getTitle());
+					set.add(plwiki.normalize(page.getTitle()));
 				}
 			}
 
-			if (!list.isEmpty()) {
-				Set<String> targets = list.stream()
-					.map(StringUtils::capitalize)
-					.collect(Collectors.toCollection(TreeSet::new));
-
-				map.put(page.getTitle(), targets);
+			if (!set.isEmpty()) {
+				map.put(page.getTitle(), set);
 			}
 		}
 
@@ -266,15 +261,15 @@ public class MissingRefsOnPlwiki {
 		return titleToRedir;
 	}
 
-	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
+	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages, List<String> errors) {
 		return Stream.of(pages)
 				.collect(Collectors.toMap(
 						PageContainer::getTitle,
-						pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText()))
+						pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText(), errors))
 						);
 	}
 
-	private static Set<String> getPlwiktBacklinks(String title, String text) {
+	private static Set<String> getPlwiktBacklinks(String title, String text, List<String> errors) {
 		Set<String> set = new HashSet<>();
 
 		for (Map.Entry<String, List<String>> templateEntry : TARGET_TEMPLATES.entrySet()) {
@@ -290,7 +285,12 @@ public class MissingRefsOnPlwiki {
 						String value = paramMap.getOrDefault(param, "");
 
 						if (!value.isEmpty()) {
-							set.add(value);
+							try {
+								set.add(plwikt.normalize(value));
+							} catch (IllegalArgumentException e) {
+								errors.add(String.format("#[[w:%s]]: %s=<nowiki>%s</nowiki>", title, param, value));
+								continue;
+							}
 						}
 					}
 				} else {
@@ -301,9 +301,14 @@ public class MissingRefsOnPlwiki {
 							String value = paramEntry.getValue();
 
 							if (!value.isEmpty()) {
-								set.add(value);
+								try {
+									set.add(plwikt.normalize(value));
+								} catch (IllegalArgumentException e) {
+									errors.add(String.format("#[[w:%s]]: <nowiki>'%s'</nowiki> w <nowiki>%s</nowiki>", title, value, template));
+									continue;
+								}
 							} else {
-								set.add(title);
+								set.add(plwikt.normalize(title));
 							}
 						}
 					}
