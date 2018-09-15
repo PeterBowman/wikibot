@@ -197,4 +197,6 @@ $( function () {
 	};
 	
 	queryNodes( $container );
+	
+	$( '.wikilink[data-section^="polski"]' ).definitionPopups();
 } );

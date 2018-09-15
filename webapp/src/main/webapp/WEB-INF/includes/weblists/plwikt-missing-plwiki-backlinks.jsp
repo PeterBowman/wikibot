@@ -16,6 +16,9 @@
 
 <t:template title="${title}" firstHeading="${title}" enableJS="true">
     <jsp:attribute name="head">
+        <link href="${pageContext.request.contextPath}/styles/tipsy.css" type="text/css" rel="stylesheet">
+        <script src="${pageContext.request.contextPath}/scripts/tipsy.js"></script>
+        <script src="${pageContext.request.contextPath}/scripts/definition-popups.js"></script>
         <script>
             window.plwiktMissingPlwikiBacklinks = {
                 defaultLimit: ${defaultLimit},
@@ -35,6 +38,8 @@
             {{<a href="https://pl.wiktionary.org/wiki/Szablon:wikipedia" target="_blank">wikipedia</a>}},
             których docelowy artykuł (po rozwiązaniu przekierowań) w Wikipedii bądź nie istnieje, bądź nie linkuje
             z powrotem do tego samego hasła w WS.
+            Najechanie kursorem na dowolny link prowadzący do Wikisłownika poskutkuje wyświetleniem okienka z
+            wyciągiem pola znaczeń odpowiedniego hasła tamże.
         </p>
         <div id="plwikt-missing-plwiki-backlinks-content">
             <table id="plwikt-missing-plwiki-backlinks-stats" class="wikitable mw-statistics floatright">
@@ -107,7 +112,7 @@
                         <c:if test="${fn:length(results) gt columnThreshold}">class="column-list"</c:if>>
                         <c:forEach var="item" items="${results}">
                             <li>
-                                <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${item.plwiktTitle}" />
+                                <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${item.plwiktTitle}" sectionName="polski" />
                                 <c:if test="${not empty item.plwikiRedir}">
                                     ↔
                                     <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item.plwikiRedir}"
@@ -119,7 +124,7 @@
                                 <c:if test="${not empty item.plwiktBacklinks}">
                                     • <i>linkuje do:</i> 
                                     <c:forEach var="backlink" items="${item.plwiktBacklinks}">
-                                        <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink}" />
+                                        <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink}" sectionName="polski" />
                                     </c:forEach>
                                 </c:if>
                             </li>
