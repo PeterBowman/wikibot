@@ -1,7 +1,10 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.text.Collator;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,20 +32,12 @@ import com.github.wikibot.utils.PageContainer;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
-	private static final String TARGET_PAGE = "Wikisłownikarz:PBbot/brak Wikisłownika na Wikipedii";
-	private static final String ERRORS_SUBPAGE = "/błędy";
-
-	private static final String TARGET_PAGE_INTRO;
-	private static final String ERRORS_SUBPAGE_INTRO;
-
-	private static final Map<String, List<String>> TARGET_TEMPLATES;
+	private static final Map<String, List<String>> TARGET_TEMPLATES = new LinkedHashMap<String, List<String>>();
 
 	private static Wikibot plwikt;
 	private static Wikibot plwiki;
 
 	static {
-		TARGET_TEMPLATES = new LinkedHashMap<String, List<String>>();
-
 		TARGET_TEMPLATES.put("Wikisłownik", null);
 		TARGET_TEMPLATES.put("Siostrzane projekty", Arrays.asList("słownik"));
 		TARGET_TEMPLATES.put("Artefakt legendarny infobox", Arrays.asList("wikisłownik"));
@@ -74,65 +69,30 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Złącze infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Związek chemiczny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Zwierzę infobox", Arrays.asList("wikisłownik"));
-
-		final String templates = TARGET_TEMPLATES.entrySet().stream()
-				.map(e -> {
-					List<String> values = e.getValue();
-
-					if (values == null) {
-						return String.format("* [[w:Szablon:%s]]", e.getKey());
-					} else {
-						return String.format("* [[w:Szablon:%s]] (parametry: %s)", e.getKey(), values);
-					}
-				})
-				.collect(Collectors.joining("\n"));
-
-		TARGET_PAGE_INTRO = "Spis polskich haseł w Wikisłowniku transkludujących szablon {{s|wikipedia}}, " +
-				"których docelowy artykuł (po rozwiązaniu przekierowań) w Wikipedii bądź nie istnieje, " +
-				"bądź nie linkuje z powrotem do tego samego hasła u nas. " +
-				"Obsługiwane szablony w Wikipedii:\n" +
-				templates + "\n" +
-				"Statystyka:\n" +
-				"* transkluzji {{s|wikipedia}} (w sumie): %1$s\n" +
-				"* transkluzji {{s|wikipedia}} (tylko hasła polskie): %2$s\n" +
-				"* jednakowych artykułów docelowych w Wikipedii: %3$s\n" +
-				"* istniejących artykułów w Wikipedii: %4$s (w tym przekierowań: %5$s)\n" +
-				"* rozmiar listy: %6$s\n" +
-				"Zobacz też:\n" +
-				"* [[Wikisłownikarz:Azureus/brak Wikisłownika na Wikipedii]] (do 2010)\n" +
-				"* [[w:Wikipedysta:Nostrix/Wikisłownik]]\n" +
-				"* [[%7$s|podstrona z błędami]]\n" +
-				"Zmiany wykonane ręcznie na tej stronie zostaną nadpisane przez bota. " +
-				"Wygenerowano ~~~~~.\n" +
-				"----\n";
-
-		ERRORS_SUBPAGE_INTRO = "Spis wywołań {{s|wikipedia}} lub infoboksów, w których podano nieprawidłowy tytuł. " +
-				"Wygenerowano ~~~~~.\n" +
-				"----\n";
 	}
 
 	public static void main(String[] args) throws Exception {
 		plwikt = Login.createSession("pl.wiktionary.org");
 		plwiki = Login.createSession("pl.wikipedia.org");
-
+		
+		Map<String, Integer> stats = new HashMap<>();
 		PageContainer[] plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
 
-		int totalTemplateTransclusions = plwiktTransclusions.length;
-		System.out.printf("Total {{wikipedia}} transclusions on plwiktionary: %d%n", totalTemplateTransclusions);
+		stats.put("totalTemplateTransclusions", plwiktTransclusions.length);
+		System.out.printf("Total {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("totalTemplateTransclusions"));
 
-		List<String> errors = new ArrayList<>();
-		Map<String, Set<String>> plwiktToPlwiki = buildTargetMap(plwiktTransclusions, errors);
+		Map<String, Set<String>> plwiktToPlwiki = buildTargetMap(plwiktTransclusions);
 
-		int targetedTemplateTransclusions = plwiktToPlwiki.size();
-		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", targetedTemplateTransclusions);
+		stats.put("targetedTemplateTransclusions", plwiktToPlwiki.size());
+		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("targetedTemplateTransclusions"));
 
 		String[] plwikiTitles = plwiktToPlwiki.values().stream()
 				.flatMap(Set::stream)
 				.distinct()
 				.toArray(String[]::new);
 
-		int targetedArticles = plwikiTitles.length;
-		System.out.printf("Targeted articles on plwikipedia: %d%n", targetedArticles);
+		stats.put("targetedArticles", plwikiTitles.length);
+		System.out.printf("Targeted articles on plwikipedia: %d%n", stats.get("targetedArticles"));
 
 		Map<String, Object>[] pageInfos = plwiki.getPageInfo(plwikiTitles);
 
@@ -140,62 +100,27 @@ public class MissingRefsOnPlwiki {
 		Set<String> missingPlwikiTitles = new HashSet<>(Arrays.asList(plwikiTitles));
 		missingPlwikiTitles.removeAll(Arrays.asList(foundPlwikiTitles));
 
-		int foundArticles = foundPlwikiTitles.length;
-		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", foundArticles);
+		stats.put("foundArticles", foundPlwikiTitles.length);
+		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", stats.get("foundArticles"));
 
 		String[] resolvedRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
 		Map<String, String> titleToRedir = translateRedirs(foundPlwikiTitles, resolvedRedirs);
 
-		int foundRedirects = titleToRedir.size();
-		System.out.printf("Targeted redirects on plwikipedia: %d%n", foundRedirects);
+		stats.put("foundRedirects", titleToRedir.size());
+		System.out.printf("Targeted redirects on plwikipedia: %d%n", stats.get("foundRedirects"));
 
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
-		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents, errors);
+		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
 		removeFoundOccurrences(plwiktToPlwiki, plwikiToPlwikt, titleToRedir);
 
-		int filteredTitles = plwiktToPlwiki.size();
-		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", filteredTitles);
-
-		File fHashMain = new File(LOCATION + "hash_main.ser");
-		File fHashErrors = new File(LOCATION + "hash_errors.ser");
-
-		plwikt.setMarkBot(false);
-
-		if (!fHashMain.exists() || (int)Misc.deserialize(fHashMain) != plwiktToPlwiki.hashCode()) {
-			Misc.serialize(plwiktToPlwiki.hashCode(), fHashMain);
-			String[] arr = plwiktToPlwiki.keySet().toArray(new String[plwiktToPlwiki.size()]);
-			Misc.serialize(arr, LOCATION + "stored_titles.ser");
-
-			System.out.printf("%d titles stored.%n", arr.length);
-
-			String out = String.format(TARGET_PAGE_INTRO,
-					Misc.makePluralPL(totalTemplateTransclusions),
-					Misc.makePluralPL(targetedTemplateTransclusions),
-					Misc.makePluralPL(targetedArticles),
-					Misc.makePluralPL(foundArticles),
-					Misc.makePluralPL(foundRedirects),
-					Misc.makePluralPL(filteredTitles),
-					ERRORS_SUBPAGE
-					);
-	
-			out += makeOutput(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles, titleToRedir);
-			plwikt.edit(TARGET_PAGE, out, "aktualizacja");
-		} else {
-			System.out.println("No changes detected in main list.");
-		}
-
-		System.out.printf("Errors found: %d%n", errors.size());
-
-		if (!fHashErrors.exists() || (int)Misc.deserialize(fHashErrors) != errors.hashCode()) {
-			Misc.serialize(errors.hashCode(), fHashErrors);
-			String out = ERRORS_SUBPAGE_INTRO + String.join("\n", errors);
-			plwikt.edit(TARGET_PAGE + ERRORS_SUBPAGE, out, "aktualizacja");
-		} else {
-			System.out.println("No changes detected in error list.");
-		}
+		stats.put("filteredTitles", plwiktToPlwiki.size());
+		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", stats.get("filteredTitles"));
+		
+		List<Entry> entries = makeEntryList(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles, titleToRedir);
+		storeData(entries, stats);
 	}
 
-	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages, List<String> errors) {
+	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) {
 		Collator coll = Misc.getCollator("pl");
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
@@ -219,7 +144,7 @@ public class MissingRefsOnPlwiki {
 					try {
 						set.add(plwiki.normalize(param));
 					} catch (IllegalArgumentException e) {
-						errors.add(String.format("#[[%s]]: <nowiki>%s</nowiki>", page.getTitle(), template));
+						e.printStackTrace();
 						continue;
 					}
 				} else {
@@ -261,15 +186,15 @@ public class MissingRefsOnPlwiki {
 		return titleToRedir;
 	}
 
-	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages, List<String> errors) {
+	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
 		return Stream.of(pages)
 				.collect(Collectors.toMap(
 						PageContainer::getTitle,
-						pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText(), errors))
+						pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText()))
 						);
 	}
 
-	private static Set<String> getPlwiktBacklinks(String title, String text, List<String> errors) {
+	private static Set<String> getPlwiktBacklinks(String title, String text) {
 		Set<String> set = new HashSet<>();
 
 		for (Map.Entry<String, List<String>> templateEntry : TARGET_TEMPLATES.entrySet()) {
@@ -288,7 +213,7 @@ public class MissingRefsOnPlwiki {
 							try {
 								set.add(plwikt.normalize(value));
 							} catch (IllegalArgumentException e) {
-								errors.add(String.format("#[[w:%s]]: %s=<nowiki>%s</nowiki>", title, param, value));
+								e.printStackTrace();
 								continue;
 							}
 						}
@@ -304,7 +229,7 @@ public class MissingRefsOnPlwiki {
 								try {
 									set.add(plwikt.normalize(value));
 								} catch (IllegalArgumentException e) {
-									errors.add(String.format("#[[w:%s]]: <nowiki>'%s'</nowiki> w <nowiki>%s</nowiki>", title, value, template));
+									e.printStackTrace();
 									continue;
 								}
 							} else {
@@ -339,50 +264,62 @@ public class MissingRefsOnPlwiki {
 		plwiktToPlwiki.entrySet().removeIf(e -> e.getValue().isEmpty());
 	}
 
-	private static String sanitizeBacklinkEntries(String entry) {
-		if (plwikt.namespace(entry) == Wiki.CATEGORY_NAMESPACE) {
-			entry = ":" + entry;
-		}
-
-		return entry;
-	}
-
-	private static String makeOutput(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
+	private static List<Entry> makeEntryList(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
 			Set<String> missingPlwikiTitles, Map<String, String> titleToRedir) {
-		List<String> out = new ArrayList<>(plwiktToPlwiki.size());
+		List<Entry> entries = new ArrayList<>(plwiktToPlwiki.size());
 
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 
 			for (String articleOnPlwiki : e.getValue()) {
-				String s = String.format("#[[%s]] ↔ [[w:%s]]", plwiktTitle, articleOnPlwiki);
+				Entry entry = new Entry();
+				entry.plwiktTitle = plwiktTitle;
 
 				if (titleToRedir.containsKey(articleOnPlwiki)) {
+					entry.plwikiRedir = articleOnPlwiki;
 					articleOnPlwiki = titleToRedir.get(articleOnPlwiki);
-					s += String.format(" ↔ [[w:%s]]", articleOnPlwiki);
 				}
 
+				entry.plwikiTitle = articleOnPlwiki;
+
 				if (missingPlwikiTitles.contains(articleOnPlwiki)) {
-					s += " (artykuł nie istnieje)";
-					out.add(s);
+					entry.missingPlwikiArticle = true;
 				} else {
 					Set<String> entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
 
 					if (!entriesOnPlwikt.isEmpty()) {
-						String links = entriesOnPlwikt.stream()
-								.map(MissingRefsOnPlwiki::sanitizeBacklinkEntries)
-								.map(entry -> String.format("[[%s]]", entry))
-								.collect(Collectors.joining(", "));
-
-						s += String.format(" (linkuje do: %s)", links);
-						out.add(s);
-					} else {
-						out.add(s);
+						entry.plwiktBacklinks = new ArrayList<>(entriesOnPlwikt);
 					}
 				}
+
+				entries.add(entry);
 			}
 		}
 
-		return String.join("\n", out);
+		return entries;
+	}
+
+	private static void storeData(List<Entry> entries, Map<String, Integer> stats) throws IOException {
+		File fEntries = new File(LOCATION + "entries.ser");
+		File fStats = new File(LOCATION + "stats.ser");
+		File fTemplates = new File(LOCATION + "templates.ser");
+		File fCtrl = new File(LOCATION + "UPDATED");
+		File fTimestamp = new File(LOCATION + "timestamp.ser");
+
+		Misc.serialize(entries, fEntries);
+		Misc.serialize(stats, fStats);
+		Misc.serialize(TARGET_TEMPLATES, fTemplates);
+		Misc.serialize(OffsetDateTime.now(), fTimestamp);
+		
+		fCtrl.delete();
+	}
+	
+	static class Entry implements Serializable {
+		private static final long serialVersionUID = 6144413619509078220L;
+		String plwiktTitle;
+		String plwikiTitle;
+		String plwikiRedir;
+		List<String> plwiktBacklinks;
+		boolean missingPlwikiArticle;
 	}
 }
