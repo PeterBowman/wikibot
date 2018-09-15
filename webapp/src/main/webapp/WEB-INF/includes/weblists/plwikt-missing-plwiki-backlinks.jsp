@@ -24,7 +24,7 @@
                 columnThreshold: ${columnThreshold}
             };
         </script>
-        <script src="scripts/plwikt-missing-plwiki-backlinks.js"></script>
+        <script src="${pageContext.request.contextPath}/scripts/plwikt-missing-plwiki-backlinks.js"></script>
     </jsp:attribute>
     <jsp:attribute name="contentSub">
         <a href="${pageContext.request.contextPath}/weblists">Powrót do indeksu</a>
@@ -41,37 +41,37 @@
                 <caption>Statystyka</caption>
                 <tr>
                     <th>transkluzji {{wikipedia}} (w sumie)</th>
-                    <td id="plwikt-missing-plwiki-backlinks-totalTemplateTransclusions" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-totalTemplateTransclusions" class="mw-statistics-numbers">
                         ${stats['totalTemplateTransclusions']}
                     </td>
                 </tr>
                 <tr>
                     <th>transkluzji {{wikipedia}} (tylko hasła polskie)</th>
-                    <td id="plwikt-missing-plwiki-backlinks-targetedTemplateTransclusions" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-targetedTemplateTransclusions" class="mw-statistics-numbers">
                         ${stats['targetedTemplateTransclusions']}
                     </td>
                 </tr>
                 <tr>
                     <th>jednakowych artykułów docelowych w Wikipedii</th>
-                    <td id="plwikt-missing-plwiki-backlinks-targetedArticles" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-targetedArticles" class="mw-statistics-numbers">
                         ${stats['targetedArticles']}
                     </td>
                 </tr>
                 <tr>
                     <th>istniejących artykułów w Wikipedii</th>
-                    <td id="plwikt-missing-plwiki-backlinks-foundArticles" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-foundArticles" class="mw-statistics-numbers">
                         ${stats['foundArticles']}
                     </td>
                 </tr>
                 <tr>
                     <th>przekierowań w Wikipedii</th>
-                    <td id="plwikt-missing-plwiki-backlinks-foundRedirects" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-foundRedirects" class="mw-statistics-numbers">
                         ${stats['foundRedirects']}
                     </td>
                 </tr>
                 <tr>
                     <th>jednakowych haseł w Wikisłowniku</th>
-                    <td id="plwikt-missing-plwiki-backlinks-filteredTitles" class="mw-statistics-numbers">
+                    <td id="plwikt-missing-plwiki-backlinks-stats-filteredTitles" class="mw-statistics-numbers">
                         ${stats['filteredTitles']}
                     </td>
                 </tr>
@@ -93,10 +93,12 @@
                     </p>
                     <p>
                         Obsługiwane szablony w Wikipedii:
-                        <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
-                            <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
-                            <c:out value="${status.last ? '.' : ', '}" />
-                        </c:forTokens>
+                        <span id="plwikt-missing-plwiki-backlinks-templates">
+	                        <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
+	                            <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
+	                            <c:out value="${status.last ? '.' : ', '}" />
+	                        </c:forTokens>
+                        </span>
                     </p>
                     <div style="clear: right;"></div>
                     <t:paginator limit="${limit}" offset="${offset}" hasNext="${total gt offset + limit}"
