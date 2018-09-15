@@ -1,8 +1,10 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
+import java.nio.file.Files;
 import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -29,6 +31,10 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamImplicit;
+import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
@@ -300,26 +306,41 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static void storeData(List<Entry> entries, Map<String, Integer> stats) throws IOException {
-		File fEntries = new File(LOCATION + "entries.ser");
-		File fStats = new File(LOCATION + "stats.ser");
-		File fTemplates = new File(LOCATION + "templates.ser");
+		File fEntries = new File(LOCATION + "entries.xml");
+		File fStats = new File(LOCATION + "stats.xml");
+		File fTemplates = new File(LOCATION + "templates.xml");
+		File fTimestamp = new File(LOCATION + "timestamp.xml");
 		File fCtrl = new File(LOCATION + "UPDATED");
-		File fTimestamp = new File(LOCATION + "timestamp.ser");
 
-		Misc.serialize(entries, fEntries);
-		Misc.serialize(stats, fStats);
-		Misc.serialize(TARGET_TEMPLATES, fTemplates);
-		Misc.serialize(OffsetDateTime.now(), fTimestamp);
-		
+		XStream xstream = new XStream(new StaxDriver());
+		xstream.processAnnotations(Entry.class);
+
+		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries))) {
+			xstream.toXML(entries, bos);
+		}
+
+		Files.write(fStats.toPath(), Arrays.asList(xstream.toXML(stats)));
+		Files.write(fTemplates.toPath(), Arrays.asList(xstream.toXML(TARGET_TEMPLATES)));
+		Files.write(fTimestamp.toPath(), Arrays.asList(xstream.toXML(OffsetDateTime.now())));
+
 		fCtrl.delete();
 	}
-	
-	static class Entry implements Serializable {
-		private static final long serialVersionUID = 6144413619509078220L;
+
+	@XStreamAlias("entry")
+	static class Entry {
+		@XStreamAlias("plwikt")
 		String plwiktTitle;
+
+		@XStreamAlias("plwiki")
 		String plwikiTitle;
+
+		@XStreamAlias("redir")
 		String plwikiRedir;
+
+		@XStreamImplicit(itemFieldName="linksTo")
 		List<String> plwiktBacklinks;
+
+		@XStreamAlias("missing")
 		boolean missingPlwikiArticle;
 	}
 }
