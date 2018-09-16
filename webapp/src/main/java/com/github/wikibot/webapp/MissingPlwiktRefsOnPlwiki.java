@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -76,12 +77,23 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		int limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
 		int offset = handleIntParameter(request, "offset", 0);
 		
+		boolean onlyRedirects = handleIntParameter(request, "onlyredirs", 0) != 0;
+		boolean onlyMissing = handleIntParameter(request, "onlymissing", 0) != 0;
+		
 		List<Entry> localEntries = new ArrayList<>(0);
 		Map<String, Integer> localStats = new HashMap<>(0);
 		List<String> localTemplates = new ArrayList<>(0);
 		Calendar localCalendar = Calendar.getInstance();
 		
 		checkCurrentState(localEntries, localStats, localTemplates, localCalendar); // synchronized, returns local copies
+		
+		if (onlyRedirects) {
+			localEntries = localEntries.stream().filter(e -> e.plwikiRedir != null).collect(Collectors.toList());
+		}
+		
+		if (onlyMissing) {
+			localEntries = localEntries.stream().filter(e -> e.missingPlwikiArticle).collect(Collectors.toList());
+		}
 		
 		List<Entry> results = getDataView(localEntries, limit, offset);
 		DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, new Locale("pl"));
