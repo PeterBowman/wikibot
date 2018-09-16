@@ -83,7 +83,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>jednakowych haseł w Wikisłowniku</th>
+                    <th>jednakowych haseł z tej listy w Wikisłowniku</th>
                     <td id="plwikt-missing-plwiki-backlinks-stats-filteredTitles" class="mw-statistics-numbers">
                         ${stats['filteredTitles']}
                     </td>
