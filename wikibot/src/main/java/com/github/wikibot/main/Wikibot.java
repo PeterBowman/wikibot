@@ -399,10 +399,13 @@ public class Wikibot extends WMFWiki {
         Map<String, Map<String, String>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
         String[] pages2 = Arrays.copyOf(pages, pages.length);
-        for (String temp : constructTitleString(pages))
+        List<String> chunks = constructTitleString(pages);
+        for (int i = 0; i < chunks.size(); i++)
         {
+        	String temp = chunks.get(i);
             postparams.put("titles", temp);
-            String line = makeApiCall(getparams, postparams, "getPageProps");
+            String caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
+            String line = makeApiCall(getparams, postparams, caller);
             if (isResolvingRedirects())
                 resolveRedirectParser(pages2, line);
 
@@ -453,7 +456,7 @@ public class Wikibot extends WMFWiki {
                 props[i].put("inputpagename", pages[i]);
             }
         }
-        log(Level.INFO, "getPageProps", "Successfully retrieved page properties for " + Arrays.toString(pages));
+        log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.length + " titles)");
         return props;
     }
 }
