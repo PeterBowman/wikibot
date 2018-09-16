@@ -1,11 +1,13 @@
 $( function () {
 	var $content, $results, $summaryLimit, $summaryStart, $summaryEnd, $timestamp, $total,
-		$templates, $stats, $paginators,
+		$templates, $stats, $filters, $paginators,
 		$container = $( '#mw-content-text' ),
 		URL = 'plwikt-missing-plwiki-backlinks/api',
 		TIMEOUT = 5000,
 		currentLimit = plwiktMissingPlwikiBacklinks.limit,
 		currentOffset = plwiktMissingPlwikiBacklinks.offset,
+		currentRedirsOn = plwiktMissingPlwikiBacklinks.currentRedirsOn,
+		currentRedlinksOn = plwiktMissingPlwikiBacklinks.currentRedlinksOn,
 		disableClicks = false,
 		initialRequest = true;
 	
@@ -19,6 +21,7 @@ $( function () {
 		$total = $el.find( '#plwikt-missing-plwiki-backlinks-total' );
 		$templates = $( '#plwikt-missing-plwiki-backlinks-templates' );
 		$stats = $el.find( '#plwikt-missing-plwiki-backlinks-stats' );
+		$filters = $el.find( '#plwikt-missing-plwiki-backlinks-filter' );
 		$paginators = $el.find( '.paginator' );
 	}
 	
@@ -47,7 +50,7 @@ $( function () {
 		currentLimit = Math.max( currentLimit, 0 );
 	}
 	
-	function handlePaginators( data, $el ) {
+	function handlePaginators( data ) {
 		$paginators.find( '.paginator-prev-value, .paginator-next-value' ).text( currentLimit );
 		
 		$paginators.find( '.paginator-prev, .paginator-next' ).each( function () {
@@ -66,7 +69,9 @@ $( function () {
 				
 				$a.attr( 'href', '?' + $.param( {
 					offset: currentOffset + currentLimit * ( isNext ? 1 : -1 ),
-					limit: currentLimit
+					limit: currentLimit,
+					onlyredirs: currentRedirsOn ? 1 : 0,
+					onlymissing : currentRedlinksOn ? 1 : 0
 				} ) );
 			}
 		} );
@@ -76,8 +81,59 @@ $( function () {
 			
 			$this.attr( 'href', '?' + $.param( {
 				offset: currentOffset,
-				limit: $this.text()
+				limit: $this.text(),
+				onlyredirs: currentRedirsOn ? 1 : 0,
+				onlymissing : currentRedlinksOn ? 1 : 0
 			} ) );
+		} );
+	}
+	
+	function readFilterData( $el ) {
+		switch ( $el.attr( 'class' ) ) {
+			case 'redirect':
+				currentRedirsOn = !currentRedirsOn;
+				break;
+			case 'new':
+				currentRedlinksOn = !currentRedlinksOn;
+				break;
+		}
+		
+		currentLimit = plwiktMissingPlwikiBacklinks.defaultLimit;
+		currentOffset = 0;
+	}
+	
+	function handleFilters( data ) {
+		var searchValues = {
+				offset: 0, // reset!
+				limit: plwiktMissingPlwikiBacklinks.defaultLimit, // reset!
+				onlyredirs: currentRedirsOn ? 1 : 0,
+				onlymissing : currentRedlinksOn ? 1 : 0
+			};
+		
+		$.each( $filters.find( 'a' ), function ( i, el ) {
+			var $el = $( el ),
+				$switch = $el.next( '.plwikt-missing-plwiki-backlinks-filter-switch' ),
+				query = {},
+				enabled = false,
+				wrap = false;
+			
+			switch ( $el.attr( 'class' ) ) {
+				case 'redirect':
+					enabled = currentRedirsOn;
+					query.onlyredirs = !enabled ? 1 : 0;
+					break;
+				case 'new':
+					enabled = currentRedlinksOn;
+					query.onlymissing = !enabled ? 1 : 0;
+					break;
+			}
+			
+			$el.attr( 'href', '?' + $.param( $.extend( {}, searchValues, query ) ) );
+			$switch.text( enabled ? '(włączone)' : '(wyłączone)' );
+			
+			if ( enabled ) {
+				$switch.wrapInner( '<strong>' );
+			}
 		} );
 	}
 	
@@ -137,26 +193,29 @@ $( function () {
 	}
 	
 	function pushHistoryState( data, url ) {
-		var paginatorValues;
+		var searchValues;
 		
 		if ( !window.history ) {
 			return;
 		}
 		
-		paginatorValues = {
+		searchValues = {
 			offset: currentOffset,
-			limit: currentLimit	
+			limit: currentLimit	,
+			onlyredirs: currentRedirsOn ? 1 : 0,
+			onlymissing : currentRedlinksOn ? 1 : 0
 		};
 		
 		history[url !== undefined ? 'pushState' : 'replaceState']( $.extend( {
 			data: data
-		}, paginatorValues ), '', location.origin + location.pathname + (
-			url || location.search || '?' + $.param( paginatorValues )
+		}, searchValues ), '', location.origin + location.pathname + (
+			url || location.search || '?' + $.param( searchValues )
 		) );
 	}
 	
-	$container.on( 'click', '.paginator a', function ( evt ) {
+	$container.on( 'click', '.paginator a, #plwikt-missing-plwiki-backlinks-filter a', function ( evt ) {
 		var $this = $( this ),
+			isPaginator = !!$this.parents( '.paginator' ).length;
 			href = $this.attr( 'href' );
 		
 		if ( disableClicks ) {
@@ -177,8 +236,14 @@ $( function () {
 				initialRequest = false;
 			}
 			
-			readPaginatorData( $this );
+			if ( isPaginator ) {
+				readPaginatorData( $this );
+			} else {
+				readFilterData( $this );
+			}
+			
 			handlePaginators( data[ 0 ] );
+			handleFilters( data[ 0 ] );
 			updateResults( data[ 0 ] );
 			$content.removeClass( 'content-loading' );
 			disableClicks = false;
@@ -193,7 +258,10 @@ $( function () {
 		if ( evt.state ) {
 			currentOffset = evt.state.offset;
 			currentLimit = evt.state.limit;
+			currentRedirsOn = !!evt.state.onlyredirs;
+			currentRedlinksOn = !!evt.state.onlymissing;
 			handlePaginators( evt.state.data );
+			handleFilters( evt.state.data );
 			updateResults( evt.state.data );
 			queryNodes( $container );
 		}
