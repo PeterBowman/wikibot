@@ -164,7 +164,7 @@
                                     • <i>linkuje do:</i> 
                                     <c:forEach var="backlink" items="${item.plwiktBacklinks}">
                                         <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink.key}" sectionName="polski"
-                                            testMissingPage="${backlink.value}" />
+                                            testMissingPage="${backlink.value eq false}" />
                                     </c:forEach>
                                 </c:if>
                             </li>

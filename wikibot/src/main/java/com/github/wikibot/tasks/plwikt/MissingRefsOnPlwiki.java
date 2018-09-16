@@ -34,7 +34,6 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public class MissingRefsOnPlwiki {
@@ -383,7 +382,7 @@ public class MissingRefsOnPlwiki {
 		@XStreamAlias("redir")
 		String plwikiRedir;
 
-		@XStreamImplicit(itemFieldName="linksTo")
+		@XStreamAlias("backlinks")
 		Map<String, Boolean> plwiktBacklinks;
 
 		@XStreamAlias("missing")

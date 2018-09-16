@@ -31,7 +31,6 @@ import org.json.JSONObject;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 /**
@@ -211,7 +210,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		@XStreamAlias("redir")
 		String plwikiRedir;
 		
-		@XStreamImplicit(itemFieldName="linksTo")
+		@XStreamAlias("backlinks")
 		Map<String, Boolean> plwiktBacklinks;
 		
 		@XStreamAlias("missing")
