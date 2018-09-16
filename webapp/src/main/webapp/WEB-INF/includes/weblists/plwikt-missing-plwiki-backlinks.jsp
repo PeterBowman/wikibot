@@ -106,12 +106,14 @@
                     </p>
                     <p>
                         Filtruj według wyników w Wikipedii:
-                        <a href='<t:replace-param onlyredirs="${param.onlyredirs eq 1 ? 0 : 1}" offset="0" />' class="redirect">przekierowania</a>
+                        <a href='<t:replace-param onlyredirs="${param.onlyredirs eq 1 ? 0 : 1}" offset="0" />' class="redirect"
+                            style="text-decoration: underline;">przekierowania</a>
                         <c:choose>
                             <c:when test="${param.onlyredirs eq 1}"><strong>(włączone)</strong></c:when>
                             <c:otherwise>(wyłączone)</c:otherwise>
                         </c:choose>,
-                        <a href='<t:replace-param onlymissing="${param.onlymissing eq 1 ? 0 : 1}" offset="0" />' class="new">brakujące</a>
+                        <a href='<t:replace-param onlymissing="${param.onlymissing eq 1 ? 0 : 1}" offset="0" />' class="new"
+                            style="text-decoration: underline;">brakujące</a>
                         <c:choose>
                             <c:when test="${param.onlymissing eq 1}"><strong>(włączone)</strong></c:when>
                             <c:otherwise>(wyłączone)</c:otherwise>
