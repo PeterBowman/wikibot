@@ -9,7 +9,10 @@
 	<c:when test="${subPath eq 'plwikt-polish-masculine-nouns'}">
 		<jsp:forward page="/WEB-INF/includes/weblists/plwikt-polish-masculine-nouns.jsp" />
 	</c:when>
-	<c:when test="${subPath eq 'plwiki-sandbox-redirects'}">  <%-- UNUSED, see web.xml --%>
+	<c:when test="${subPath eq 'plwikt-missing-plwiki-backlinks'}"> <%-- UNUSED, see web.xml --%>
+        <jsp:forward page="/weblists/plwikt-missing-plwiki-backlinks" />
+    </c:when>
+	<c:when test="${subPath eq 'plwiki-sandbox-redirects'}"> <%-- UNUSED, see web.xml --%>
 		<jsp:forward page="/weblists/plwiki-sandbox-redirects" />
 	</c:when>
 	<c:otherwise>

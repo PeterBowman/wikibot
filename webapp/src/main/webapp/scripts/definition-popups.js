@@ -6,7 +6,19 @@
 			gravity: $.fn.tipsy.autoNS,
 			html: true
 		},
-		API_DELAY = 100;
+		API_DELAY = 100,
+		CHARS = 525,
+		plwiktQuery = {
+			prop: 'revisions',
+			rvprop: 'content'
+		},
+		extractsQuery = {
+			prop: 'extracts',
+			exchars: CHARS,
+			exintro: true,
+			//explaintext: true,
+			redirects: true
+		};
 	
 	function processExtract( extract ) {
 		return extract
@@ -82,18 +94,16 @@
 		return processExtract( defs );
 	};
 	
-	function makeRequest( title ) {
+	function makeRequest( href, title, customQuery ) {
 		return $.ajax( {
-			url: 'https://pl.wiktionary.org/w/api.php',
-			data: {
+			url: href + 'w/api.php',
+			data: $.extend( {
 				action: 'query',
-				prop: 'revisions',
-				rvprop: 'content',
 				titles: title,
 				format: 'json',
 				formatversion: 2,
 				origin: '*'
-			},
+			}, customQuery ),
 			contentType: 'application/json',
 			dataType: 'json'
 		} );
@@ -108,11 +118,17 @@
 	}
 	
 	$.fn.definitionPopups = function () {
-		return this.filter( '[data-target][data-section]' ).not( '.new, .false-blue' ).each( function () {
+		return this.filter( '[data-target][data-href]' ).not( '.new, .false-blue' ).each( function () {
 			var $el = $( this ),
+				useExtracts = !$el.is( '[data-section]' ),
 				target = $el.attr( 'data-target' ),
+				href = $el.attr( 'data-href' ),
 				section = $el.attr( 'data-section' ),
-				cacheKey = target + '#' + section;
+				cacheKey = href + target + '#' + section;
+			
+			if ( useExtracts ) {
+				cacheKey += '#' + section;
+			}
 			
 			$el.attr( 'original-title', $el.attr( 'title' ) ).removeAttr( 'title' );
 			
@@ -127,22 +143,28 @@
 				}
 				
 				timerID = setTimeout( function () {
-					var request = makeRequest( target );
+					var request = makeRequest( href, target, useExtracts ? extractsQuery : plwiktQuery );
 					
 					$el.data( 'request', request ).removeData( 'timer-id' );
 					
 					request.done( function ( json ) {
-						var pageText, parsed;
+						var pageText, parsed,
+							page = json.query.pages[0];
 					
 						$el.off( 'mouseenter.definition mouseleave.definition' );
 						$el.removeData( 'request' );
 						
-						try {
-							pageText = json.query.pages[0].revisions[0].content;
+						if ( useExtracts ) {
+							cache[ cacheKey ] = page.extract;
+						} else {
+							pageText = page.revisions[0].content;
 							parsed = parseArticle( pageText, section );
-							cache[ cacheKey ] = parsed.toString(); // force an exception if null
-						} catch ( TypeError ) {
-							return;
+							
+							if ( !parsed ) {
+								return;
+							}
+							
+							cache[ cacheKey ] = parsed.toString();
 						}
 						
 						bindTipsyActions( $el, cacheKey );

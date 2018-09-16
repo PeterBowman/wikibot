@@ -135,6 +135,11 @@
         <scope>system</scope>
         <systemPath>${project.basedir}/../wikibot/dist/jmorfeusz.jar</systemPath>
     </dependency>
+    <dependency>
+    	<groupId>com.thoughtworks.xstream</groupId>
+    	<artifactId>xstream</artifactId>
+    	<version>1.4.10</version>
+    </dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

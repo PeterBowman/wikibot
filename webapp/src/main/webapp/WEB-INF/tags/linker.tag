@@ -4,6 +4,8 @@
 <%@ attribute name="target" required="true" %>
 <%@ attribute name="testMissingPage" %>
 <%@ attribute name="testMissingSection" %>
+<%@ attribute name="testRedirection" %>
+<%@ attribute name="testDisambiguation" %>
 <%@ attribute name="sectionName" %>
 <%@ attribute name="display" %>
 
@@ -38,6 +40,16 @@
 		</c:choose>
 		<c:set var="classVar" value="false-blue" />
 	</c:when>
+	<c:when test="${testRedirection eq true}">
+		<c:set var="href" value="w/index.php?redirect=no&title=${encodedParam}" />
+		<c:set var="title" value="(przekierowanie)" />
+		<c:set var="classVar" value="redirect" />
+	</c:when>
+	<c:when test="${testDisambiguation eq true}">
+	   <c:set var="href" value="wiki/${encoded}" />
+	   <c:set var="title" value="(strona ujednoznaczniająca)" />
+	   <c:set var="classVar" value="disambig" />
+	</c:when>
 	<c:otherwise>
 		<c:set var="href" value="wiki/${encoded}" />
 	</c:otherwise>
@@ -48,6 +60,7 @@
 <a href="${fn:replace(hrefPattern, '$1', href)}"
 		class="${fn:trim(classVar)}"
 		data-target="${escaped}"
+		data-href="${fn:substring(hrefPattern, 0, fn:indexOf(hrefPattern, '$1'))}"
 		<c:if test="${not empty sectionName}">data-section="${sectionName}"</c:if> 
 		title='${escaped}<c:if test="${not empty title}">${" "}${title}</c:if>'
 		target="_blank"
