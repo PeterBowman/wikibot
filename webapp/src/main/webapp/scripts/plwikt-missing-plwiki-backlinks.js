@@ -8,6 +8,7 @@ $( function () {
 		currentOffset = plwiktMissingPlwikiBacklinks.offset,
 		currentRedirsOn = plwiktMissingPlwikiBacklinks.currentRedirsOn,
 		currentRedlinksOn = plwiktMissingPlwikiBacklinks.currentRedlinksOn,
+		currentDisambigsOn = plwiktMissingPlwikiBacklinks.currentDisambigsOn,
 		disableClicks = false,
 		initialRequest = true;
 	
@@ -51,6 +52,12 @@ $( function () {
 	}
 	
 	function handlePaginators( data ) {
+		var query = {
+			onlyredirs: currentRedirsOn ? 1 : 0,
+			onlymissing: currentRedlinksOn ? 1 : 0,
+			onlydisambigs: currentDisambigsOn ? 1 : 0
+		};
+		
 		$paginators.find( '.paginator-prev-value, .paginator-next-value' ).text( currentLimit );
 		
 		$paginators.find( '.paginator-prev, .paginator-next' ).each( function () {
@@ -67,24 +74,20 @@ $( function () {
 						.appendTo( $this.empty() );
 				}
 				
-				$a.attr( 'href', '?' + $.param( {
+				$a.attr( 'href', '?' + $.param( $.extend( {
 					offset: currentOffset + currentLimit * ( isNext ? 1 : -1 ),
-					limit: currentLimit,
-					onlyredirs: currentRedirsOn ? 1 : 0,
-					onlymissing : currentRedlinksOn ? 1 : 0
-				} ) );
+					limit: currentLimit
+				}, query ) ) );
 			}
 		} );
 		
 		$paginators.find( '.paginator-limits > a' ).each( function () {
 			var $this = $( this );
 			
-			$this.attr( 'href', '?' + $.param( {
+			$this.attr( 'href', '?' + $.param( $.extend( {
 				offset: currentOffset,
-				limit: $this.text(),
-				onlyredirs: currentRedirsOn ? 1 : 0,
-				onlymissing : currentRedlinksOn ? 1 : 0
-			} ) );
+				limit: $this.text()
+			}, query ) ) );
 		} );
 	}
 	
@@ -95,6 +98,9 @@ $( function () {
 				break;
 			case 'new':
 				currentRedlinksOn = !currentRedlinksOn;
+				break;
+			case 'disambig':
+				currentDisambigsOn = !currentDisambigsOn;
 				break;
 		}
 		
@@ -107,7 +113,8 @@ $( function () {
 				offset: 0, // reset!
 				limit: plwiktMissingPlwikiBacklinks.defaultLimit, // reset!
 				onlyredirs: currentRedirsOn ? 1 : 0,
-				onlymissing : currentRedlinksOn ? 1 : 0
+				onlymissing : currentRedlinksOn ? 1 : 0,
+				onlydisambigs: currentDisambigsOn ? 1 : 0
 			};
 		
 		$.each( $filters.find( 'a' ), function ( i, el ) {
@@ -125,6 +132,10 @@ $( function () {
 				case 'new':
 					enabled = currentRedlinksOn;
 					query.onlymissing = !enabled ? 1 : 0;
+					break;
+				case 'disambig':
+					enabled = currentDisambigsOn;
+					query.onlydisambigs = !enabled ? 1 : 0;
 					break;
 			}
 			
@@ -156,13 +167,14 @@ $( function () {
 				' data-section="polski">' + item.plwiktTitle + '</a>';
 			
 			if ( item.plwikiRedir ) {
-				out += ' ↔ <a class="wikilink redirect" target="_blank" title="' + item.plwikiRedir +
+				out += ' ↔ <a class="wikilink redirect" target="_blank" title="' + item.plwikiRedir + ' (przekierowanie)' +
 					'" href="https://pl.wikipedia.org/w/index.php?redirect=no&title=' + encodeURI( item.plwikiRedir ) +
 					'" data-target="' + item.plwikiRedir + '" data-href="https://pl.wikipedia.org/">w:' + item.plwikiRedir + '</a>';
 			}
 			
-			out += ' ↔ <a class="wikilink' + ( item.missingPlwikiArticle ? ' new' : '' ) + 
-				'" target="_blank" title="' + item.plwikiTitle +
+			out += ' ↔ <a class="wikilink' + ( item.plwikiMissing ? ' new' : '' ) + ( item.plwikiDisambig ? ' disambig' : '' ) +
+				'" target="_blank" title="' + item.plwikiTitle + ( item.plwikiMissing ? ' (strona nie istnieje)' : '' ) +
+				( item.plwikiDisambig ? ' (strona ujednoznaczniająca)' : '' ) +
 				'" href="https://pl.wikipedia.org/wiki/' + encodeURI( item.plwikiTitle ) +
 				'" data-target="' + item.plwikiTitle + '" data-href="https://pl.wikipedia.org/">w:' + item.plwikiTitle + '</a>';
 			
@@ -189,6 +201,7 @@ $( function () {
 		$stats.find( '#plwikt-missing-plwiki-backlinks-stats-targetedArticles' ).text( data.stats.targetedArticles );
 		$stats.find( '#plwikt-missing-plwiki-backlinks-stats-foundArticles' ).text( data.stats.foundArticles );
 		$stats.find( '#plwikt-missing-plwiki-backlinks-stats-foundRedirects' ).text( data.stats.foundRedirects );
+		$stats.find( '#plwikt-missing-plwiki-backlinks-stats-foundDisambigs' ).text( data.stats.foundDisambigs );
 		$stats.find( '#plwikt-missing-plwiki-backlinks-stats-filteredTitles' ).text( data.stats.filteredTitles );
 	}
 	
@@ -203,7 +216,8 @@ $( function () {
 			offset: currentOffset,
 			limit: currentLimit	,
 			onlyredirs: currentRedirsOn ? 1 : 0,
-			onlymissing : currentRedlinksOn ? 1 : 0
+			onlymissing : currentRedlinksOn ? 1 : 0,
+			onlydisambigs: currentDisambigsOn ? 1 : 0
 		};
 		
 		history[url !== undefined ? 'pushState' : 'replaceState']( $.extend( {
@@ -260,6 +274,7 @@ $( function () {
 			currentLimit = evt.state.limit;
 			currentRedirsOn = !!evt.state.onlyredirs;
 			currentRedlinksOn = !!evt.state.onlymissing;
+			currentDisambigsOn = !!evt.state.onlydisambigs;
 			handlePaginators( evt.state.data );
 			handleFilters( evt.state.data );
 			updateResults( evt.state.data );

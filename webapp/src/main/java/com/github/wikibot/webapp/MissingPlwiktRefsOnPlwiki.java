@@ -79,6 +79,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		
 		boolean onlyRedirects = handleIntParameter(request, "onlyredirs", 0) != 0;
 		boolean onlyMissing = handleIntParameter(request, "onlymissing", 0) != 0;
+		boolean onlyDisambigs = handleIntParameter(request, "onlydisambigs", 0) != 0;
 		
 		List<Entry> localEntries = new ArrayList<>(0);
 		Map<String, Integer> localStats = new HashMap<>(0);
@@ -88,11 +89,15 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		checkCurrentState(localEntries, localStats, localTemplates, localCalendar); // synchronized, returns local copies
 		
 		if (onlyRedirects) {
-			localEntries = localEntries.stream().filter(e -> e.plwikiRedir != null).collect(Collectors.toList());
+			localEntries = localEntries.stream().filter(e -> e.getPlwikiRedir() != null).collect(Collectors.toList());
 		}
 		
 		if (onlyMissing) {
-			localEntries = localEntries.stream().filter(e -> e.missingPlwikiArticle).collect(Collectors.toList());
+			localEntries = localEntries.stream().filter(Entry::isPlwikiMissing).collect(Collectors.toList());
+		}
+		
+		if (onlyDisambigs) {
+			localEntries = localEntries.stream().filter(Entry::isPlwikiDisambig).collect(Collectors.toList());
 		}
 		
 		List<Entry> results = getDataView(localEntries, limit, offset);
@@ -209,7 +214,10 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		List<String> plwiktBacklinks;
 		
 		@XStreamAlias("missing")
-		boolean missingPlwikiArticle;
+		boolean plwikiMissing;
+		
+		@XStreamAlias("disambig")
+		boolean plwikiDisambig;
 		
 		public String getPlwiktTitle() {
 			return plwiktTitle;
@@ -227,8 +235,12 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			return plwiktBacklinks;
 		}
 		
-		public boolean isMissingPlwikiArticle() {
-			return missingPlwikiArticle;
+		public boolean isPlwikiMissing() {
+			return plwikiMissing;
+		}
+		
+		public boolean isPlwikiDisambig() {
+			return plwikiDisambig;
 		}
 		
 		Entry copy() {
@@ -236,7 +248,8 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			entry.plwiktTitle = plwiktTitle;
 			entry.plwikiTitle = plwikiTitle;
 			entry.plwikiRedir = plwikiRedir;
-			entry.missingPlwikiArticle = missingPlwikiArticle;
+			entry.plwikiMissing = plwikiMissing;
+			entry.plwikiDisambig = plwikiDisambig;
 			
 			if (plwiktBacklinks != null) {
 				entry.plwiktBacklinks = new ArrayList<>(plwiktBacklinks);

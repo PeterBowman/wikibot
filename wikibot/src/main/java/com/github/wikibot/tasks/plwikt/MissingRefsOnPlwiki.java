@@ -80,49 +80,53 @@ public class MissingRefsOnPlwiki {
 	public static void main(String[] args) throws Exception {
 		plwikt = Login.createSession("pl.wiktionary.org");
 		plwiki = Login.createSession("pl.wikipedia.org");
-		
+
+		plwiki.setResolveRedirects(true);
+
 		Map<String, Integer> stats = new HashMap<>();
 		PageContainer[] plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
 
 		stats.put("totalTemplateTransclusions", plwiktTransclusions.length);
 		System.out.printf("Total {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("totalTemplateTransclusions"));
 
-		Map<String, Set<String>> plwiktToPlwiki = buildTargetMap(plwiktTransclusions);
+		Map<String, Set<String>> plwiktToParsedPlwiki = buildTargetMap(plwiktTransclusions);
 
-		stats.put("targetedTemplateTransclusions", plwiktToPlwiki.size());
+		stats.put("targetedTemplateTransclusions", plwiktToParsedPlwiki.size());
 		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("targetedTemplateTransclusions"));
 
-		String[] plwikiTitles = plwiktToPlwiki.values().stream()
+		String[] parsedPlwikiTitles = plwiktToParsedPlwiki.values().stream()
 				.flatMap(Set::stream)
 				.distinct()
 				.toArray(String[]::new);
 
-		stats.put("targetedArticles", plwikiTitles.length);
+		stats.put("targetedArticles", parsedPlwikiTitles.length);
 		System.out.printf("Targeted articles on plwikipedia: %d%n", stats.get("targetedArticles"));
 
-		Map<String, Object>[] pageInfos = plwiki.getPageInfo(plwikiTitles);
+		Map<String, String>[] plwikiPageProps = plwiki.getPageProps(parsedPlwikiTitles);
 
-		String[] foundPlwikiTitles = getFoundArticles(plwikiTitles, pageInfos);
-		Set<String> missingPlwikiTitles = new HashSet<>(Arrays.asList(plwikiTitles));
-		missingPlwikiTitles.removeAll(Arrays.asList(foundPlwikiTitles));
+		Map<String, String> plwikiRedirToTarget = new HashMap<>();
+		Set<String> plwikiDisambigs = new HashSet<>();
+		Set<String> plwikiMissing = new HashSet<>();
 
-		stats.put("foundArticles", foundPlwikiTitles.length);
+		String[] plwikiTargetArticles = analyzePlwikiPageProps(plwikiPageProps, plwikiRedirToTarget, plwikiDisambigs, plwikiMissing);
+
+		stats.put("foundArticles", plwikiTargetArticles.length);
 		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", stats.get("foundArticles"));
 
-		String[] resolvedRedirs = plwiki.resolveRedirects(foundPlwikiTitles);
-		Map<String, String> titleToRedir = translateRedirs(foundPlwikiTitles, resolvedRedirs);
-
-		stats.put("foundRedirects", titleToRedir.size());
+		stats.put("foundRedirects", plwikiRedirToTarget.size());
 		System.out.printf("Targeted redirects on plwikipedia: %d%n", stats.get("foundRedirects"));
 
-		PageContainer[] plwikiContents = plwiki.getContentOfPages(resolvedRedirs);
-		Map<String, Set<String>> plwikiToPlwikt = retrievePlwiktBacklinks(plwikiContents);
-		removeFoundOccurrences(plwiktToPlwiki, plwikiToPlwikt, titleToRedir);
+		stats.put("foundDisambigs", plwikiDisambigs.size());
+		System.out.printf("Targeted disambigs on plwikipedia: %d%n", stats.get("foundDisambigs"));
 
-		stats.put("filteredTitles", plwiktToPlwiki.size());
+		PageContainer[] plwikiContents = plwiki.getContentOfPages(plwikiTargetArticles);
+		Map<String, Set<String>> plwiktBacklinks = retrievePlwiktBacklinks(plwikiContents);
+		removeFoundOccurrences(plwiktToParsedPlwiki, plwiktBacklinks, plwikiRedirToTarget);
+
+		stats.put("filteredTitles", plwiktToParsedPlwiki.size());
 		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", stats.get("filteredTitles"));
 		
-		List<Entry> entries = makeEntryList(plwiktToPlwiki, plwikiToPlwikt, missingPlwikiTitles, titleToRedir);
+		List<Entry> entries = makeEntryList(plwiktToParsedPlwiki, plwiktBacklinks, plwikiMissing, plwikiRedirToTarget, plwikiDisambigs);
 		storeData(entries, stats);
 	}
 
@@ -166,30 +170,37 @@ public class MissingRefsOnPlwiki {
 		return map;
 	}
 
-	private static String[] getFoundArticles(String[] titles, Map<String, Object>[] pageInfos) {
-		List<String> list = new ArrayList<>();
+	private static String[] analyzePlwikiPageProps(Map<String, String>[] pageProps, Map<String, String> redirToTarget,
+			Set<String> disambigs, Set<String> missing) {
+		List<String> list = new ArrayList<>(pageProps.length);
 
-		for (int i = 0; i < pageInfos.length; i++) {
-			Map<String, Object> pageInfo = pageInfos[i];
+		for (int i = 0; i < pageProps.length; i++) {
+			Map<String, String> props = pageProps[i];
 
-			if (pageInfo != null && Boolean.TRUE.equals(pageInfo.get("exists"))) {
-				list.add(titles[i]);
+			if (props == null) {
+				continue;
 			}
+
+			String pagename = props.get("pagename");
+			String inputpagename = props.get("inputpagename");
+
+			if (props.containsKey("missing")) {
+				missing.add(pagename);
+				continue;
+			}
+
+			if (!inputpagename.equals(pagename)) {
+				redirToTarget.put(inputpagename, pagename);
+			}
+
+			if (props.containsKey("disambiguation")) {
+				disambigs.add(pagename);
+			}
+			
+			list.add(pagename);
 		}
 
 		return list.toArray(new String[list.size()]);
-	}
-
-	private static Map<String, String> translateRedirs(String[] titles, String[] redirs) {
-		Map<String, String> titleToRedir = new HashMap<>();
-
-		for (int i = 0; i < titles.length; i++) {
-			if (!redirs[i].equals(titles[i])) {
-				titleToRedir.put(titles[i], redirs[i]);
-			}
-		}
-
-		return titleToRedir;
 	}
 
 	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
@@ -251,14 +262,14 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static void removeFoundOccurrences(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
-			Map<String, String> titleToRedir) {
+			Map<String, String> redirToTarget) {
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
 			String plwiktTitle = e.getKey();
 			Iterator<String> it = e.getValue().iterator();
 
 			while (it.hasNext()) {
 				String plwikiTitle = it.next();
-				plwikiTitle = titleToRedir.getOrDefault(plwikiTitle, plwikiTitle);
+				plwikiTitle = redirToTarget.getOrDefault(plwikiTitle, plwikiTitle);
 				Set<String> backlinks = plwikiToPlwikt.get(plwikiTitle);
 
 				if (backlinks != null && backlinks.contains(plwiktTitle)) {
@@ -271,7 +282,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static List<Entry> makeEntryList(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
-			Set<String> missingPlwikiTitles, Map<String, String> titleToRedir) {
+			Set<String> plwikiMissing, Map<String, String> redirToTarget, Set<String> plwikiDisambigs) {
 		List<Entry> entries = new ArrayList<>(plwiktToPlwiki.size());
 
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
@@ -281,21 +292,25 @@ public class MissingRefsOnPlwiki {
 				Entry entry = new Entry();
 				entry.plwiktTitle = plwiktTitle;
 
-				if (titleToRedir.containsKey(articleOnPlwiki)) {
+				if (redirToTarget.containsKey(articleOnPlwiki)) {
 					entry.plwikiRedir = articleOnPlwiki;
-					articleOnPlwiki = titleToRedir.get(articleOnPlwiki);
+					articleOnPlwiki = redirToTarget.get(articleOnPlwiki);
 				}
 
 				entry.plwikiTitle = articleOnPlwiki;
 
-				if (missingPlwikiTitles.contains(articleOnPlwiki)) {
-					entry.missingPlwikiArticle = true;
+				if (plwikiMissing.contains(articleOnPlwiki)) {
+					entry.plwikiMissing = true;
 				} else {
 					Set<String> entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
 
 					if (!entriesOnPlwikt.isEmpty()) {
 						entry.plwiktBacklinks = new ArrayList<>(entriesOnPlwikt);
 					}
+				}
+
+				if (plwikiDisambigs.contains(articleOnPlwiki)) {
+					entry.plwikiDisambig = true;
 				}
 
 				entries.add(entry);
@@ -342,6 +357,9 @@ public class MissingRefsOnPlwiki {
 		List<String> plwiktBacklinks;
 
 		@XStreamAlias("missing")
-		boolean missingPlwikiArticle;
+		boolean plwikiMissing;
+
+		@XStreamAlias("disambig")
+		boolean plwikiDisambig;
 	}
 }

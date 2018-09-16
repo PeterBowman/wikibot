@@ -5,6 +5,7 @@
 <%@ attribute name="testMissingPage" %>
 <%@ attribute name="testMissingSection" %>
 <%@ attribute name="testRedirection" %>
+<%@ attribute name="testDisambiguation" %>
 <%@ attribute name="sectionName" %>
 <%@ attribute name="display" %>
 
@@ -43,6 +44,11 @@
 		<c:set var="href" value="w/index.php?redirect=no&title=${encodedParam}" />
 		<c:set var="title" value="(przekierowanie)" />
 		<c:set var="classVar" value="redirect" />
+	</c:when>
+	<c:when test="${testDisambiguation eq true}">
+	   <c:set var="href" value="wiki/${encoded}" />
+	   <c:set var="title" value="(strona ujednoznaczniająca)" />
+	   <c:set var="classVar" value="disambig" />
 	</c:when>
 	<c:otherwise>
 		<c:set var="href" value="wiki/${encoded}" />

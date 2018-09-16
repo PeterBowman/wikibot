@@ -26,6 +26,7 @@
                 offset: ${offset},
                 currentRedirsOn: ${param.onlyredirs eq 1},
                 currentRedlinksOn: ${param.onlymissing eq 1},
+                currentDisambigsOn: ${param.onlydisambigs eq 1},
                 columnThreshold: ${columnThreshold}
             };
         </script>
@@ -76,6 +77,12 @@
                     </td>
                 </tr>
                 <tr>
+                    <th>ujednoznacznień w Wikipedii</th>
+                    <td id="plwikt-missing-plwiki-backlinks-stats-foundDisambigs" class="mw-statistics-numbers">
+                        ${stats['foundDisambigs']}
+                    </td>
+                </tr>
+                <tr>
                     <th>jednakowych haseł w Wikisłowniku</th>
                     <td id="plwikt-missing-plwiki-backlinks-stats-filteredTitles" class="mw-statistics-numbers">
                         ${stats['filteredTitles']}
@@ -123,6 +130,14 @@
 	                            <c:when test="${param.onlymissing eq 1}"><strong>(włączone)</strong></c:when>
 	                            <c:otherwise>(wyłączone)</c:otherwise>
 	                        </c:choose>
+                        </span>,
+                        <a href='<t:replace-param onlydisambigs="${param.onlydisambigs eq 1 ? 0 : 1}" offset="0" />' class="disambig"
+                            style="text-decoration: underline;">ujednoznacznienia</a>
+                        <span class="plwikt-missing-plwiki-backlinks-filter-switch">
+                            <c:choose>
+                                <c:when test="${param.onlydisambigs eq 1}"><strong>(włączone)</strong></c:when>
+                                <c:otherwise>(wyłączone)</c:otherwise>
+                            </c:choose>
                         </span>.
                     </p>
                     <div style="clear: right;"></div>
@@ -140,7 +155,8 @@
                                 </c:if>
                                 ↔
                                 <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item.plwikiTitle}"
-                                    display="w:${item.plwikiTitle}" testMissingPage="${item.missingPlwikiArticle}" />
+                                    display="w:${item.plwikiTitle}" testMissingPage="${item.plwikiMissing}"
+                                    testDisambiguation="${item.plwikiDisambig}" />
                                 <c:if test="${not empty item.plwiktBacklinks}">
                                     • <i>linkuje do:</i> 
                                     <c:forEach var="backlink" items="${item.plwiktBacklinks}">
