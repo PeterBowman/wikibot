@@ -1,6 +1,6 @@
 $( function () {
 	var $content, $results, $summaryLimit, $summaryStart, $summaryEnd, $timestamp, $total,
-		$templates, $stats, $filters, $paginators,
+		$templateCount, $templates, $stats, $filters, $paginators,
 		$container = $( '#mw-content-text' ),
 		URL = 'plwikt-missing-plwiki-backlinks/api',
 		TIMEOUT = 5000,
@@ -20,6 +20,7 @@ $( function () {
 		$summaryEnd = $el.find( '#plwikt-missing-plwiki-backlinks-end' );
 		$timestamp = $el.find( '#plwikt-missing-plwiki-backlinks-timestamp' );
 		$total = $el.find( '#plwikt-missing-plwiki-backlinks-total' );
+		$templateCount = $el.find( '#plwikt-missing-plwiki-backlinks-template-count' );
 		$templates = $( '#plwikt-missing-plwiki-backlinks-templates' );
 		$stats = $el.find( '#plwikt-missing-plwiki-backlinks-stats' );
 		$filters = $el.find( '#plwikt-missing-plwiki-backlinks-filter' );
@@ -189,6 +190,8 @@ $( function () {
 			
 			return '<li>' + out + '</li>';
 		} ).join( '' ) ).attr( 'start', currentOffset + 1 );
+		
+		$templateCount.html( data.templates.length );
 		
 		$templates.html( $.map( data.templates, function ( template ) {
 			return '<a target="_blank" title="Szablon:' + template +

@@ -105,7 +105,10 @@
                         do <strong id="plwikt-missing-plwiki-backlinks-end">${utils:min(offset + limit, total)}</strong>.
                     </p>
                     <p>
-                        Obsługiwane szablony w Wikipedii:
+                        Obsługiwane szablony w Wikipedii
+                        (<span id="plwikt-missing-plwiki-backlinks-template-count">${fn:length(templates)}</span>):
+                    </p>
+                    <p>
                         <span id="plwikt-missing-plwiki-backlinks-templates">
 	                        <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
 	                            <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
