@@ -163,7 +163,8 @@
                                 <c:if test="${not empty item.plwiktBacklinks}">
                                     • <i>linkuje do:</i> 
                                     <c:forEach var="backlink" items="${item.plwiktBacklinks}">
-                                        <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink}" sectionName="polski" />
+                                        <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink.key}" sectionName="polski"
+                                            testMissingPage="${backlink.value}" />
                                     </c:forEach>
                                 </c:if>
                             </li>

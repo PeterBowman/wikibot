@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
@@ -211,7 +212,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		String plwikiRedir;
 		
 		@XStreamImplicit(itemFieldName="linksTo")
-		List<String> plwiktBacklinks;
+		Map<String, Boolean> plwiktBacklinks;
 		
 		@XStreamAlias("missing")
 		boolean plwikiMissing;
@@ -231,7 +232,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			return plwikiRedir;
 		}
 		
-		public List<String> getPlwiktBacklinks() {
+		public Map<String, Boolean> getPlwiktBacklinks() {
 			return plwiktBacklinks;
 		}
 		
@@ -252,7 +253,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			entry.plwikiDisambig = plwikiDisambig;
 			
 			if (plwiktBacklinks != null) {
-				entry.plwiktBacklinks = new ArrayList<>(plwiktBacklinks);
+				entry.plwiktBacklinks = new TreeMap<>(plwiktBacklinks);
 			}
 			
 			return entry;

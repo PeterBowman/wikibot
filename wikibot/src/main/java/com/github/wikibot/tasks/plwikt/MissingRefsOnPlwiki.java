@@ -120,13 +120,35 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Targeted disambigs on plwikipedia: %d%n", stats.get("foundDisambigs"));
 
 		PageContainer[] plwikiContents = plwiki.getContentOfPages(plwikiTargetArticles);
-		Map<String, Set<String>> plwiktBacklinks = retrievePlwiktBacklinks(plwikiContents);
-		removeFoundOccurrences(plwiktToParsedPlwiki, plwiktBacklinks, plwikiRedirToTarget);
+		Map<String, Set<String>> plwikiToPlwiktBacklinks = retrievePlwiktBacklinks(plwikiContents);
+
+		stats.put("totalPlwiktBacklinks", plwikiToPlwiktBacklinks.size());
+		System.out.printf("Total plwiktionary backlinks: %d%n", stats.get("totalPlwiktBacklinks"));
+
+		String[] plwiktBacklinks = plwikiToPlwiktBacklinks.values().stream()
+				.flatMap(Set::stream)
+				.distinct()
+				.filter(backlink -> !plwiktToParsedPlwiki.containsKey(backlink))
+				.toArray(String[]::new);
+
+		removeFoundOccurrences(plwiktToParsedPlwiki, plwikiToPlwiktBacklinks, plwikiRedirToTarget);
 
 		stats.put("filteredTitles", plwiktToParsedPlwiki.size());
 		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", stats.get("filteredTitles"));
-		
-		List<Entry> entries = makeEntryList(plwiktToParsedPlwiki, plwiktBacklinks, plwikiMissing, plwikiRedirToTarget, plwikiDisambigs);
+
+		Map<String, Object>[] plwiktPageInfos = plwikt.getPageInfo(plwiktBacklinks);
+
+		Set<String> plwiktMissing = Stream.of(plwiktPageInfos)
+				.filter(pageInfo -> pageInfo.get("exists").equals(Boolean.FALSE))
+				.map(pageInfo -> (String) pageInfo.get("pagename"))
+				.collect(Collectors.toSet());
+
+		stats.put("missingPlwiktBacklinks", plwikiMissing.size());
+		System.out.printf("Missing plwiktionary backlinks: %d%n", stats.get("missingPlwiktBacklinks"));
+
+		List<Entry> entries = makeEntryList(plwiktToParsedPlwiki, plwikiToPlwiktBacklinks, plwiktMissing, plwikiMissing,
+				plwikiRedirToTarget, plwikiDisambigs);
+
 		storeData(entries, stats);
 	}
 
@@ -282,7 +304,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static List<Entry> makeEntryList(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
-			Set<String> plwikiMissing, Map<String, String> redirToTarget, Set<String> plwikiDisambigs) {
+			Set<String> plwiktMissing, Set<String> plwikiMissing, Map<String, String> redirToTarget, Set<String> plwikiDisambigs) {
 		List<Entry> entries = new ArrayList<>(plwiktToPlwiki.size());
 
 		for (Map.Entry<String, Set<String>> e : plwiktToPlwiki.entrySet()) {
@@ -305,7 +327,12 @@ public class MissingRefsOnPlwiki {
 					Set<String> entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
 
 					if (!entriesOnPlwikt.isEmpty()) {
-						entry.plwiktBacklinks = new ArrayList<>(entriesOnPlwikt);
+						entry.plwiktBacklinks = entriesOnPlwikt.stream()
+								.collect(Collectors.toMap(
+										entryOnPlwikt -> entryOnPlwikt,
+										entryOnPlwikt -> !plwiktMissing.contains(entryOnPlwikt),
+										(a, b) -> a,
+										TreeMap::new));
 					}
 				}
 
@@ -354,7 +381,7 @@ public class MissingRefsOnPlwiki {
 		String plwikiRedir;
 
 		@XStreamImplicit(itemFieldName="linksTo")
-		List<String> plwiktBacklinks;
+		Map<String, Boolean> plwiktBacklinks;
 
 		@XStreamAlias("missing")
 		boolean plwikiMissing;
