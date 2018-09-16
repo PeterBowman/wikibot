@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -136,10 +137,12 @@ public class MissingRefsOnPlwiki {
 		stats.put("filteredTitles", plwiktToParsedPlwiki.size());
 		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", stats.get("filteredTitles"));
 
-		Map<String, Object>[] plwiktPageInfos = plwikt.getPageInfo(plwiktBacklinks);
+		// Wiki.getPageInfo's query rate is (very) slow because of having to test supported <actions/>
+		Map<String, String>[] plwiktPageProps = plwikt.getPageProps(plwiktBacklinks);
 
-		Set<String> plwiktMissing = Stream.of(plwiktPageInfos)
-				.filter(pageInfo -> pageInfo.get("exists").equals(Boolean.FALSE))
+		Set<String> plwiktMissing = Stream.of(plwiktPageProps)
+				.filter(Objects::nonNull) // just in case
+				.filter(pageInfo -> pageInfo.containsKey("missing"))
 				.map(pageInfo -> (String) pageInfo.get("pagename"))
 				.collect(Collectors.toSet());
 
