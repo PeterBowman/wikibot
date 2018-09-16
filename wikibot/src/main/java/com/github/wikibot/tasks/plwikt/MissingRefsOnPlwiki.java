@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -30,7 +31,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
@@ -155,7 +155,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) {
-		Collator coll = Misc.getCollator("pl");
+		Collator coll = Collator.getInstance(new Locale("pl"));
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
 		for (PageContainer page : pages) {
