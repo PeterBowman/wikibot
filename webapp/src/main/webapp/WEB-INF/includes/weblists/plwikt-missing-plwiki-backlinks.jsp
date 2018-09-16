@@ -37,9 +37,8 @@
             Spis polskich haseł w Wikisłowniku transkludujących szablon
             {{<a href="https://pl.wiktionary.org/wiki/Szablon:wikipedia" target="_blank">wikipedia</a>}},
             których docelowy artykuł (po rozwiązaniu przekierowań) w Wikipedii bądź nie istnieje, bądź nie linkuje
-            z powrotem do tego samego hasła w WS.
-            Najechanie kursorem na dowolny link prowadzący do Wikisłownika poskutkuje wyświetleniem okienka z
-            wyciągiem pola znaczeń odpowiedniego hasła tamże.
+            z powrotem do tego samego hasła w WS. Najechanie kursorem na dowolny link poskutkuje wyświetleniem okienka
+            z wyciągiem pola znaczeń w Wikisłowniku bądż wprowadzenia do artykułu w Wikipedii.
         </p>
         <div id="plwikt-missing-plwiki-backlinks-content">
             <table id="plwikt-missing-plwiki-backlinks-stats" class="wikitable mw-statistics floatright">

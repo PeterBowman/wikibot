@@ -96,24 +96,26 @@ $( function () {
 		$results.html( $.map( data.results, function ( item ) {
 			var out = '<a class="wikilink" target="_blank" title="' + item.plwiktTitle +
 				'" href="https://pl.wiktionary.org/wiki/' + encodeURI( item.plwiktTitle ) + '#pl' +
-				'" data-target="' + item.plwiktTitle + '">' + item.plwiktTitle + '</a>';
+				'" data-target="' + item.plwiktTitle + '" data-href="https://pl.wiktionary.org/" ' +
+				' data-section="polski">' + item.plwiktTitle + '</a>';
 			
 			if ( item.plwikiRedir ) {
 				out += ' ↔ <a class="wikilink redirect" target="_blank" title="' + item.plwikiRedir +
 					'" href="https://pl.wikipedia.org/w/index.php?redirect=no&title=' + encodeURI( item.plwikiRedir ) +
-					'">w:' + item.plwikiRedir + '</a>';
+					'" data-target="' + item.plwikiRedir + '" data-href="https://pl.wikipedia.org/">w:' + item.plwikiRedir + '</a>';
 			}
 			
 			out += ' ↔ <a class="wikilink' + ( item.missingPlwikiArticle ? ' new' : '' ) + 
 				'" target="_blank" title="' + item.plwikiTitle +
 				'" href="https://pl.wikipedia.org/wiki/' + encodeURI( item.plwikiTitle ) +
-				'">w:' + item.plwikiTitle + '</a>';
+				'" data-target="' + item.plwikiTitle + '" data-href="https://pl.wikipedia.org/">w:' + item.plwikiTitle + '</a>';
 			
 			if ( item.plwiktBacklinks ) {
 				out += '  • <i>linkuje do:</i> ' + $.map( item.plwiktBacklinks, function ( backlink ) {
 					return '<a class="wikilink" target="_blank" title="' + backlink +
 						'" href="https://pl.wiktionary.org/wiki/' + encodeURI( backlink ) + '#pl' +
-						'" data-target="' + backlink + '">' + backlink + '</a>';
+						'" data-target="' + backlink + '" data-href="https://pl.wiktionary.org/" ' +
+						' data-section="polski">' + backlink + '</a>';
 				} ).join( ', ' );
 			}
 			
@@ -181,6 +183,7 @@ $( function () {
 			$content.removeClass( 'content-loading' );
 			disableClicks = false;
 			pushHistoryState( data[ 0 ], href );
+			$results.find( '.wikilink' ).definitionPopups();
 		},  function ( jqXHR, textStatus, errorThrown ) {
 			location.search = href;
 		} );
@@ -198,5 +201,5 @@ $( function () {
 	
 	queryNodes( $container );
 	
-	$( '.wikilink' ).definitionPopups();
+	$results.find( '.wikilink' ).definitionPopups();
 } );
