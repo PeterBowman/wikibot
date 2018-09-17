@@ -31,6 +31,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -40,6 +42,7 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public final class InconsistentHeaderTitles {
 	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
@@ -61,6 +64,8 @@ public final class InconsistentHeaderTitles {
 	
 	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
 	
+	private static final Plural PLURAL_PL;
+	
 	private static Wikibot wb;
 	
 	private static Map<String, Collection<Item>> map;
@@ -73,6 +78,14 @@ public final class InconsistentHeaderTitles {
 			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
 			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
 			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
+		
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"hasło", "hasła", "haseł"}),
+			new WordForms(new String[] {"strona", "strony", "stron"}),
+			new WordForms(new String[] {"języku", "językach", "językach"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -323,9 +336,9 @@ public final class InconsistentHeaderTitles {
 		
 		page.setIntro(PAGE_INTRO + "\n" + String.format(
 			"Znaleziono %s (%s) w %s. Aktualizacja: ~~~~~.",
-			Misc.makePluralPL(total, "hasło", "hasła", "haseł"),
-			Misc.makePluralPL(unique, "strona", "strony", "stron"),
-			Misc.makePluralPL(map.keySet().size(), "języku", "językach", "językach")
+			PLURAL_PL.npl(total, " hasło"),
+			PLURAL_PL.npl(unique, " strona"),
+			PLURAL_PL.npl(map.keySet().size(), " języku")
 		));
 		
 		com.github.wikibot.parsing.Section[] sections = map.entrySet().stream()

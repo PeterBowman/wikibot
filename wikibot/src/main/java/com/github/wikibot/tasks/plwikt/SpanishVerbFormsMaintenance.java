@@ -27,6 +27,8 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -36,15 +38,27 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 import com.github.wikibot.utils.RAE;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural PLURAL_PL;
 	private static final String location = "./data/tasks.plwikt/SpanishVerbFormsMaintenance/";
 	private static final String locationser = location + "ser/";
 	private static final String RAEurl = "http://lema.rae.es/drae/srv/search?val=";
 	private static final String wikipage = "Wikipedysta:PBbot/formy czasowników hiszpańskich";
-
+	
+	static {
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"forma fleksyjna", "formy fleksyjne", "form fleksyjnych"}),
+			new WordForms(new String[] {"jednakowa", "jednakowe", "jednakowych"}),
+			new WordForms(new String[] {"tabelka", "tabelki", "tabelek"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
+	}
+	
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -332,10 +346,10 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		content.append("----\n");
 		content.append(String.format(
 				"Analizowano %s (%s) z %d czasowników (%s odmiany).",
-				Misc.makePluralPL(form_count, "formy fleksyjne", "form fleksyjnych"),
-				Misc.makePluralPL(dictionary.size(), "jednakowe", "jednakowych"),
+				PLURAL_PL.npl(form_count, " forma fleksyjna"),
+				PLURAL_PL.npl(dictionary.size(), " jednakowa"),
 				verb_count,
-				Misc.makePluralPL(size, "tabelki", "tabelek")
+				PLURAL_PL.npl(size, " tabelka")
 			));
 		content.append("Aktualizacja: ~~~~~.\n");
 		content.append("{{język linków|hiszpański}}\n");

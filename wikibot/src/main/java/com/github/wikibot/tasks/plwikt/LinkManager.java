@@ -30,6 +30,8 @@ import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 import org.wikipedia.Wiki.User;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
@@ -39,9 +41,11 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Misc.MyRandom;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public final class LinkManager implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural pluralPL;
 	private static final String location = "./data/tasks.plwikt/LinkManager/";
 	private static final String mainpage = "Wikipedysta:PBbot/linkowanie";
 	private static final int requestsectionnumber = 2;
@@ -62,6 +66,16 @@ public final class LinkManager implements Selectorizable {
 	private static final int pagecap = 100;
 	
 	private static String mainpagetext = null;
+	
+	static {
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"strona", "strony", "stron"}),
+			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
+			new WordForms(new String[] {"pozycję", "pozycje", "pozycji"})
+		};
+		
+		pluralPL = new Plural(PluralRules.POLISH, polishWords);
+	}
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -294,7 +308,7 @@ public final class LinkManager implements Selectorizable {
 		
 		String summary = String.format(
 			"aktualizacja listy, dodano %s (%s)",
-			Misc.makePluralPL(data.size(), "pozycję", "pozycje", "pozycji"),
+			pluralPL.npl(data.size(), " pozycję"),
 			String.join(", ", summarylist)
 		);
 		
@@ -504,8 +518,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append("Rozmiar listy roboczej: ");
-		sb.append(Misc.makePluralPL(pagemap.size(), "strona", "strony", "stron") + " (");
-		sb.append(Misc.makePluralPL(codes.size(), "wystąpienie", "wystąpienia", "wystąpień") + ")\n\n");
+		sb.append(pluralPL.npl(pagemap.size(), " strona") + " (");
+		sb.append(pluralPL.npl(codes.size(), " wystąpienie") + ")\n\n");
 		
 		sb.append("Zedytowanych: " + edited);
 		
@@ -729,8 +743,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append(": '''wyniki:''' ");
-		sb.append(Misc.makePluralPL(pagecount, "strona", "strony", "stron") + ", ");
-		sb.append(Misc.makePluralPL(matchcount, "wystąpienie", "wystąpienia", "wystąpień"));
+		sb.append(pluralPL.npl(pagecount, " strona") + ", ");
+		sb.append(pluralPL.npl(matchcount, " wystąpienie"));
 		
 		if (pagecount > pagecap) {
 			sb.append(" (ograniczono do " + pagecap + " stron)");

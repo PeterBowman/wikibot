@@ -20,6 +20,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
 
+import com.github.plural4j.Plural;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -27,6 +28,7 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public final class SpanishCanonicalInflectedForms {
 	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
@@ -35,6 +37,7 @@ public final class SpanishCanonicalInflectedForms {
 	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP;
 	
 	private static Wikibot wb;
+	private static final Plural PLURAL_PL;
 	
 	static {
 		STRIPPED_ACCENTS_MAP = new HashMap<>(5, 1);
@@ -44,6 +47,8 @@ public final class SpanishCanonicalInflectedForms {
 		STRIPPED_ACCENTS_MAP.put('í', 'i');
 		STRIPPED_ACCENTS_MAP.put('ó', 'o');
 		STRIPPED_ACCENTS_MAP.put('ú', 'u');
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -127,7 +132,7 @@ public final class SpanishCanonicalInflectedForms {
 		
 		page.setIntro(String.format(
 			"Lista zawiera %s. Aktualizacja: ~~~~~.",
-			Misc.makePluralPL(list.size(), "hasła", "haseł")
+			PLURAL_PL.npl(list.size(), " hasło")
 		));
 		
 		list.stream()

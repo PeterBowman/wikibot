@@ -24,6 +24,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -33,11 +35,13 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.github.wikibot.utils.PluralRules;
 
 public final class MisusedRegTemplates {
 	private static final String LOCATION = "./data/tasks.plwikt/MisusedRegTemplates/";
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/kategoryzacja regionalizmów";
 	private static final String PAGE_INTRO;
+	private static final Plural PLURAL_PL;
 	
 	private static final List<String> TEMPLATES = Arrays.asList(
 		// Polish
@@ -79,6 +83,13 @@ public final class MisusedRegTemplates {
 			"Rozpoznawane szablony: " + templateList + "." +
 			"\n\n" +
 			"Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.";
+		
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
+			new WordForms(new String[] {"stronie", "stronach", "stronach"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -237,8 +248,8 @@ public final class MisusedRegTemplates {
 				Collectors.joining("\n")
 			));
 		
-		String itemCount = Misc.makePluralPL(list.size(), "wystąpienie", "wystąpienia", "wystąpień");
-		String pageCount = Misc.makePluralPL(groupedMap.size(), "stronie", "stronach", "stronach");
+		String itemCount = PLURAL_PL.npl(list.size(), " wystąpienie");
+		String pageCount = PLURAL_PL.npl(groupedMap.size(), " stronie");
 		
 		String intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
 		

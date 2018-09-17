@@ -12,6 +12,7 @@ import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki;
 
+import com.github.plural4j.Plural;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -21,12 +22,18 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public class DevanagariIAST implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural pluralPL;
 	private static final String location = "./data/scripts.plwikt/DevanagariIAST/";
 	private static final String fList = location + "lista.txt";
 	private static final String wikipage = "Wikipedysta:PBbot/dewanagari bez transliteracji";
+	
+	static {
+		pluralPL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
+	}
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -79,7 +86,7 @@ public class DevanagariIAST implements Selectorizable {
 		sb.append(" ");
 		sb.append(String.format(
 			"Hindi: %s, inne: %d.",
-			Misc.makePluralPL(hindi.size(), "hasło", "hasła", "haseł"),
+			pluralPL.npl(hindi.size(), " hasło"),
 			nonHindi.size()
 		));
 		sb.append(" ");

@@ -22,6 +22,8 @@ import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki.Revision;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -32,14 +34,25 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public class PolishGerundsList implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural pluralPL;
 	private static final String location = "./data/tasks.plwikt/PolishGerundsList/";
 	private static final String locationser = location + "ser/";
 	private static final String location_old = MissingPolishGerunds.location;
 	private static final String wikipage = "Wikipedysta:PBbot/rzeczowniki odczasownikowe";
-
+	
+	static {
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"czasownik", "czasowniki", "czasowników"}),
+			new WordForms(new String[] {"rzeczownik odczasownikowy", "rzeczowniki odczasownikowe", "rzeczowników odczasownikowych"})
+		};
+		
+		pluralPL = new Plural(PluralRules.POLISH, polishWords);
+	}
+	
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -304,8 +317,8 @@ public class PolishGerundsList implements Selectorizable {
 		
 		Misc.serialize(String.format(
 			"Analizowano %s z tabelką odmiany oraz %s.",
-			Misc.makePluralPL(list.size(), "czasowniki", "czasowników"),
-			Misc.makePluralPL(gerunds.size(), "rzeczowniki odczasownikowe", "rzeczowników odczasownikowych")
+			list.size(), pluralPL.npl(list.size(), " czasownik"),
+			gerunds.size(), pluralPL.npl(gerunds.size(), " rzeczownik odczasownikowy")
 		), locationser + "stats.ser");
 	}
 	

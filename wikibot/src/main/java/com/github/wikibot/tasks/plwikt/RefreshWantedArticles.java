@@ -19,11 +19,13 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import com.github.plural4j.Plural;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 
 public final class RefreshWantedArticles {
 	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
@@ -38,12 +40,15 @@ public final class RefreshWantedArticles {
 	private static final Pattern P_OCCURRENCES_TARGET;
 	private static final Pattern P_OCCURRENCES_REFILL;
 	
+	private static final Plural PLURAL_PL;
+	
 	private static Wikibot wb;
 	
 	static {
 		P_LINK = Pattern.compile("\\[\\[([^\\]\n]+?)\\]\\]");
 		P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
 		P_OCCURRENCES_REFILL = Pattern.compile("^\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
+		PLURAL_PL = new Plural(PluralRules.POLISH, "utworzone,utworzone,utworzonych");
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -76,7 +81,7 @@ public final class RefreshWantedArticles {
 		
 		String text = doc.body().html();
 		int totalDone = doneVisible.size() + doneHidden.size();
-		String counter = Misc.makePluralPL(totalDone, "utworzone", "utworzone", "utworzonych");
+		String counter = PLURAL_PL.npl(totalDone, " utworzone");
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
 		wb.edit(TARGET_PAGE, text, summary);

@@ -164,11 +164,7 @@ public final class ReplaceEnDash implements Selectorizable {
 				String[] targets = ArrayUtils.relativeComplement(backlinks, missing.toArray(new String[missing.size()]));
 				targets = Stream.of(targets).map(link -> String.format("[[%s]]", link.replace(" – ", " - "))).toArray(String[]::new);
 				String links = String.join(", ", targets);
-				String summary = String.format(
-					"zamiana półpauzy na dywiz w %s: %s",
-					Misc.makePluralPL(targets.length, "linku", "linkach", "linkach"),
-					links
-				);
+				String summary = "zamiana półpauzy na dywiz: " + links;
 				wb.edit(title, text, summary, true, true, -2, null);
 			}
 		}

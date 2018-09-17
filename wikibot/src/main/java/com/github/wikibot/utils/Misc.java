@@ -80,53 +80,6 @@ public final class Misc {
 		}
 	}
 	
-	public static String makePluralPL(int value, String nominative, String genitive) {
-		return makePluralPL(value, null, nominative, genitive);
-	}
-	
-	public static String makePluralPL(int value, String singular, String nominative, String genitive) {
-		if (singular != null && value == 1) {
-			return Integer.toString(value) + " " + singular;
-		}
-		
-		String strValue = makePluralPL(value);
-		
-		switch (strValue.charAt(strValue.length() - 1)) {
-			case '2':
-			case '3':
-			case '4':
-				if (strValue.length() > 1 && strValue.charAt(strValue.length() - 2) == '1') {
-					return strValue + " " + genitive;
-				} else {
-					return strValue + " " + nominative;
-				}
-			default:
-				return strValue + " " + genitive;
-		}
-	}
-	
-	public static String makePluralPL(int value) {
-		String strValue = Integer.toString(value);
-		char[] digits = new char[strValue.length()];
-		strValue.getChars(0, strValue.length(), digits, 0);
-
-		if (digits.length > 4) {
-			String temp = "";
-			
-			for (int i = 1; i <= digits.length; i++) {
-				temp = digits[digits.length - i] + temp;
-				
-				if (i % 3 == 0 && i != digits.length) {
-					temp = " " + temp;
-				}
-			}
-			
-			strValue = temp;
-		}
-		
-		return strValue;
-	}
-	
 	public static void runTimer(Runnable runner) {
 		long start = System.currentTimeMillis();
 		
@@ -292,12 +245,5 @@ public final class Misc {
 	}
 
 	public static void main(String[] args) {
-		System.out.println(Misc.makePluralPL(22738730, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(21641, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(254634132, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(2653, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(26544, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(2646545, "krowy", "krów"));
-		System.out.println(Misc.makePluralPL(2646512, "krowy", "krów"));
 	}
 }
