@@ -2,6 +2,7 @@ package com.github.wikibot.main;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -200,17 +201,9 @@ public class Wikibot extends WMFWiki {
 		return coll.toArray(new Revision[coll.size()]);
     }
 	
-	public Revision[] recentChanges(OffsetDateTime start, OffsetDateTime end, Map<String, Boolean> rcoptions,
+	public Revision[] recentChanges(OffsetDateTime starttimestamp, OffsetDateTime endtimestamp, Map<String, Boolean> rcoptions,
 			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
-		String startTimestamp = start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-		String endTimestamp = end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-		return recentChanges(startTimestamp, endTimestamp, rcoptions, rctypes, toponly, excludeUser, ns);
-	}
-	
-	public Revision[] recentChanges(String starttimestamp, String endtimestamp, Map<String, Boolean> rcoptions,
-			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
-    {
 		Map<String, String> getparams = new HashMap<>();
 		getparams.put("list", "recentchanges");
 		getparams.put("rcdir", "newer");
@@ -237,13 +230,13 @@ public class Wikibot extends WMFWiki {
         }
 
         if (starttimestamp != null) {
-        	getparams.put("rcstart", starttimestamp);
+        	getparams.put("rcstart", starttimestamp.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         
         if (endtimestamp == null) {
-        	getparams.put("rcend", OffsetDateTime.now(timezone()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        	getparams.put("rcend", OffsetDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         } else {
-        	getparams.put("rcend", endtimestamp);
+        	getparams.put("rcend", endtimestamp.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         
         List<Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", -1, (line, results) -> {
