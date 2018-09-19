@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -26,6 +27,9 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class RefreshWantedArticles {
 	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
@@ -41,6 +45,7 @@ public final class RefreshWantedArticles {
 	private static final Pattern P_OCCURRENCES_REFILL;
 	
 	private static final Plural PLURAL_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
 	private static Wikibot wb;
 	
@@ -49,6 +54,7 @@ public final class RefreshWantedArticles {
 		P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
 		P_OCCURRENCES_REFILL = Pattern.compile("^\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
 		PLURAL_PL = new Plural(PluralRules.POLISH, "utworzone,utworzone,utworzonych");
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -81,7 +87,7 @@ public final class RefreshWantedArticles {
 		
 		String text = doc.body().html();
 		int totalDone = doneVisible.size() + doneHidden.size();
-		String counter = PLURAL_PL.npl(totalDone, " utworzone");
+		String counter = String.format("%d %s", NUMBER_FORMAT_PL.format(totalDone), PLURAL_PL.npl(totalDone, " utworzone"));
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
 		wb.edit(TARGET_PAGE, text, summary);

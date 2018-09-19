@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -35,10 +36,14 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class PolishGerundsList implements Selectorizable {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
+	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final String location = "./data/tasks.plwikt/PolishGerundsList/";
 	private static final String locationser = location + "ser/";
 	private static final String location_old = MissingPolishGerunds.location;
@@ -51,8 +56,11 @@ public class PolishGerundsList implements Selectorizable {
 		};
 		
 		pluralPL = new Plural(PluralRules.POLISH, polishWords);
+		
+		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
+	@Override
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -156,7 +164,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		IOUtils.writeToFile(txt.join("\n"), location + "sin formato.txt");
 		System.out.println("Errores encontrados: " + work_list.size());
-			
+		
 		try {
 			Misc.serialize(work_list, locationser + "sin formato.ser");
 	    } catch (IOException e) {
@@ -316,9 +324,9 @@ public class PolishGerundsList implements Selectorizable {
 		Files.write(Paths.get(location + "sin entrada.txt"), listNoDictEntry);
 		
 		Misc.serialize(String.format(
-			"Analizowano %s z tabelką odmiany oraz %s.",
-			list.size(), pluralPL.npl(list.size(), " czasownik"),
-			gerunds.size(), pluralPL.npl(gerunds.size(), " rzeczownik odczasownikowy")
+			"Analizowano %d %s z tabelką odmiany oraz %d %s.",
+			numberFormatPL.format(list.size()), pluralPL.pl(list.size(), "czasownik"),
+			numberFormatPL.format(gerunds.size()), pluralPL.pl(gerunds.size(), "rzeczownik odczasownikowy")
 		), locationser + "stats.ser");
 	}
 	
