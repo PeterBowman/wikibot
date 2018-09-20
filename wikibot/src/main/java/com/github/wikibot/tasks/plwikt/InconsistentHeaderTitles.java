@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.Collator;
-import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -99,8 +98,8 @@ public final class InconsistentHeaderTitles {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		Collator collator = Misc.getCollator("pl");
-		map = new ConcurrentSkipListMap<>(collator::compare);
+		Collator collator = Collator.getInstance(new Locale("pl", "PL"));
+		map = new ConcurrentSkipListMap<>(collator);
 		
 		CommandLine line = readOptions(args);
 		

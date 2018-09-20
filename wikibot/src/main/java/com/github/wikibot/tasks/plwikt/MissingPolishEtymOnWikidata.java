@@ -1,8 +1,10 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
+import java.text.Collator;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -78,7 +80,7 @@ public final class MissingPolishEtymOnWikidata {
 				f -> f.getContainingSection().get().getContainingPage().get().getTitle(),
 				Field::getContent,
 				(a, b) -> a,
-				() -> new TreeMap<>(Misc.getCollator("pl"))));
+				() -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
 
 		File fHash = new File(LOCATION + "hash.ser");
 

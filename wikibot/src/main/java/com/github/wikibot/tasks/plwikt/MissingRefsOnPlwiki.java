@@ -155,7 +155,7 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) {
-		Collator coll = Collator.getInstance(new Locale("pl"));
+		Collator coll = Collator.getInstance(new Locale("pl", "PL"));
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
 		for (PageContainer page : pages) {

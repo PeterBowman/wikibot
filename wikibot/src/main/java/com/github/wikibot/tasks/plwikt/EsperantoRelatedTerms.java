@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -118,7 +119,8 @@ public final class EsperantoRelatedTerms {
 	
 	private static Map<String, List<MorphemTitlePair>> findItems(Map<String, List<String>> morphemToTitle,
 			Map<String, List<String>> titleToMorphem, Map<String, String> contentMap) throws IOException {
-		Map<String, List<MorphemTitlePair>> items = new TreeMap<>(Misc.getCollator("eo"));
+		Collator collator = Collator.getInstance(new Locale("eo"));
+		Map<String, List<MorphemTitlePair>> items = new TreeMap<>(collator);
 		String[] allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", 0);
 		Set<String> esperantoSet = new HashSet<>(Arrays.asList(allEsperantoTitles));
 		
@@ -230,10 +232,12 @@ public final class EsperantoRelatedTerms {
 	}
 	
 	private static String buildItemList(List<MorphemTitlePair> list) {
+		Collator collator = Collator.getInstance(new Locale("eo"));
+		
 		return list.stream()
 			.collect(Collectors.groupingBy(
 				i -> i.morphem,
-				() -> new TreeMap<>(Misc.getCollator("eo")),
+				() -> new TreeMap<>(collator),
 				Collectors.mapping(
 					i -> String.format("[[%s]]", i.title),
 					Collectors.joining(", ")
@@ -273,8 +277,8 @@ public final class EsperantoRelatedTerms {
 
 		@Override
 		public int compareTo(MorphemTitlePair o) {
-			Collator col = Misc.getCollator("eo");
-			return col.compare(title, o.title);
+			Collator coll = Collator.getInstance(new Locale("eo"));
+			return coll.compare(title, o.title);
 		}
 		
 		@Override

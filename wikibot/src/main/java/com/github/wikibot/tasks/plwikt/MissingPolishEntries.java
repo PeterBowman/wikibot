@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -47,7 +48,8 @@ public class MissingPolishEntries {
 			"* rozmiar listy: %9$s\n" + 
 			"Wygenerowano ~~~~~.";
 		
-		COLLATOR_PL = Misc.getCollator("pl");
+		COLLATOR_PL = Collator.getInstance(new Locale("pl", "PL"));
+		COLLATOR_PL.setStrength(Collator.SECONDARY);
 	}
 	
 	public static void main(String[] args) throws Exception {

@@ -5,6 +5,7 @@ import static com.github.wikibot.parsing.Utils.streamOpt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.Collator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,13 +99,16 @@ public final class SpanishCanonicalInflectedForms {
 	private static List<String> retrieveList() throws IOException {
 		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY_NAME, Wiki.MAIN_NAMESPACE);
 		
+		Collator collator = Collator.getInstance(new Locale("es", "ES"));
+		collator.setStrength(Collator.SECONDARY);
+		
 		List<String> titles = Stream.of(pages)
 			.map(Page::wrap)
 			.flatMap(p -> streamOpt(p.getSection("hiszpański", true)))
 			.flatMap(s -> streamOpt(s.getField(FieldTypes.DEFINITIONS)))
 			.filter(SpanishCanonicalInflectedForms::matchNonInflectedDefinitions)
 			.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
-			.sorted(Misc.getCollator("es"))
+			.sorted(collator)
 			.collect(Collectors.toList());
 		
 		System.out.printf("%d titles extracted%n", titles.size());

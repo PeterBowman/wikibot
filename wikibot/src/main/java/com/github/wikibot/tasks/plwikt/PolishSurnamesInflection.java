@@ -15,6 +15,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -123,7 +124,9 @@ public final class PolishSurnamesInflection {
 			Misc.serialize(history, fHistory);
 		}
 		
-		Collections.sort(logs, new LogEntryComparator(Misc.getCollator("pl")));
+		Collator collator = Collator.getInstance(new Locale("pl", "PL"));
+		collator.setStrength(Collator.SECONDARY);
+		Collections.sort(logs, new LogEntryComparator(collator));
 		
 		storeLogs(logs);
 	}
