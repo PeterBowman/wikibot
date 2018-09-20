@@ -44,9 +44,11 @@ public final class DefinitionsField extends Field {
 		return header;
 	}
 	
+	// TODO
 	public boolean hasDefinitionHeader(String substring) {
 		boolean found = false;
 		
+		@SuppressWarnings("unused")
 		List<String> list = definitions.stream()
 			.map(def -> def.header)
 			.collect(Collectors.toList());

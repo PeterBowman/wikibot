@@ -4411,7 +4411,7 @@ public class Editor extends AbstractEditor {
 		List<Section> sections = page.filterSections(section ->
 			section != page.getReferencesSection().orElse(null) &&
 			!(section instanceof LangSection) &&
-			!STANDARD_HEADERS.contains(section)
+			!STANDARD_HEADERS.contains(section.getStrippedHeader())
 		);
 		
 		for (Section section : sections) {

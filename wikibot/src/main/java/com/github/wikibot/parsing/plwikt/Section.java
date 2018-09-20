@@ -204,13 +204,15 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	private void addMissingFields() {
-		for (FieldTypes field : sectionType.fieldTypes()) {
-			if (!fields.contains(field)) {
-				fields.add(Field.parseField(field, ""));
+		for (FieldTypes fieldType : sectionType.fieldTypes()) {
+			if (!fields.stream().anyMatch(field -> field.getFieldType().equals(fieldType))) {
+				fields.add(Field.parseField(fieldType, ""));
 			}
 		}
 	}
 	
+	// TODO
+	@SuppressWarnings("unused")
 	private void removeWrongFields() {
 		List<FieldTypes> onlyThisFields = Arrays.asList(sectionType.fieldTypes());
 		Iterator<Field> iterator = fields.iterator();
