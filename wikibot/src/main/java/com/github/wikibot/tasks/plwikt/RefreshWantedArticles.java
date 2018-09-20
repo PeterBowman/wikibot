@@ -87,7 +87,7 @@ public final class RefreshWantedArticles {
 		
 		String text = doc.body().html();
 		int totalDone = doneVisible.size() + doneHidden.size();
-		String counter = String.format("%d %s", NUMBER_FORMAT_PL.format(totalDone), PLURAL_PL.npl(totalDone, " utworzone"));
+		String counter = String.format("%d %s", NUMBER_FORMAT_PL.format(totalDone), PLURAL_PL.npl(totalDone, "utworzone"));
 		String summary = String.format("odświeżenie listy (%s)", counter);
 		
 		wb.edit(TARGET_PAGE, text, summary);
