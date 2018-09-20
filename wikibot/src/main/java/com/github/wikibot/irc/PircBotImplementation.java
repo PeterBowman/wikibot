@@ -6,9 +6,9 @@ import java.nio.charset.Charset;
 import org.apache.commons.io.FileUtils;
 import org.jibble.pircbot.PircBot;
 import org.telegram.telegrambots.ApiContextInitializer;
-import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.exceptions.TelegramApiException;
-import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import com.github.wikibot.telegram.SimpleMessageForwarderBot;
 

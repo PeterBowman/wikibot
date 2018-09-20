@@ -1,6 +1,6 @@
 package com.github.wikibot.dumps;
 
-import static org.apache.commons.lang3.StringEscapeUtils.unescapeXml;
+import static org.apache.commons.text.StringEscapeUtils.unescapeXml;
 
 import java.util.List;
 import java.util.stream.Collectors;
