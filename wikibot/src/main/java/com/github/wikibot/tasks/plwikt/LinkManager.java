@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -30,6 +31,8 @@ import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 import org.wikipedia.Wiki.User;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
@@ -39,9 +42,15 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.Misc.MyRandom;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class LinkManager implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural pluralPL;
+	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final String location = "./data/tasks.plwikt/LinkManager/";
 	private static final String mainpage = "Wikipedysta:PBbot/linkowanie";
 	private static final int requestsectionnumber = 2;
@@ -62,7 +71,20 @@ public final class LinkManager implements Selectorizable {
 	private static final int pagecap = 100;
 	
 	private static String mainpagetext = null;
+	
+	static {
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"strona", "strony", "stron"}),
+			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
+			new WordForms(new String[] {"pozycję", "pozycje", "pozycji"})
+		};
+		
+		pluralPL = new Plural(PluralRules.POLISH, polishWords);
+		
+		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+	}
 
+	@Override
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -108,7 +130,7 @@ public final class LinkManager implements Selectorizable {
 			System.out.println(e.getMessage());
 			return;
 		}
-	
+		
 		System.out.printf("Tamaño de la lista: %d%n", data.size());
 		
 		if (data.isEmpty()) {
@@ -126,7 +148,7 @@ public final class LinkManager implements Selectorizable {
 		Map<String, String> contentscache = new HashMap<>(10000);
 		
 		MyRandom r = new Misc.MyRandom(5);
-				
+		
 		for (LinkData entry : data) {
 			if ((entry.lang != null && entry.lang.isEmpty()) || entry.links == null || entry.forms == null) {
 				output.add(printErrorMessage(entry.target, "Nieprawidłowy format zgłoszenia."));
@@ -283,7 +305,7 @@ public final class LinkManager implements Selectorizable {
 		Misc.serialize(timestamps, f_timestamps);
 		
 		mainpagetext = wb.getPageText(mainpage);
-				
+		
 		if (mainpagetext.indexOf(worklistheader) == -1) {
 			System.out.printf("Imposible hallar la cabecera de la sección %s%n", worklistheader);
 			return;
@@ -293,8 +315,8 @@ public final class LinkManager implements Selectorizable {
 		mainpagetext += String.format("%s%n%s%n%n%s", worklistintro, String.join("\n", output), reportheader);
 		
 		String summary = String.format(
-			"aktualizacja listy, dodano %s (%s)",
-			Misc.makePluralPL(data.size(), "pozycję", "pozycje", "pozycji"),
+			"aktualizacja listy, dodano %d %s (%s)",
+			numberFormatPL.format(data.size()), pluralPL.pl(data.size(), "pozycję"),
 			String.join(", ", summarylist)
 		);
 		
@@ -335,7 +357,7 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		System.out.printf("Modificaciones aceptadas: %d%n", codes.size());
-				
+		
 		for (int code : codes) {
 			if (!editcodes.containsKey(code)) {
 				continue;
@@ -412,7 +434,7 @@ public final class LinkManager implements Selectorizable {
 					line = pagetext.substring(lineindex, endofline);
 					match = line.substring(diff.diffstart, diff.diffstart + diff.oldlink.length());
 				} catch (StringIndexOutOfBoundsException e) {
-					errormap.put(page, new String[]{ 
+					errormap.put(page, new String[]{
 						String.format("%s<!-- %s -->", errnotfound.replace("$1", diff.oldlink), line),
 						diff.newlink
 					});
@@ -483,7 +505,7 @@ public final class LinkManager implements Selectorizable {
 				errormap.put(page, new String[]{"strona zabezpieczona", difflistmod});
 			} catch (ConcurrentModificationException e) {
 				errormap.put(page, new String[]{"konflikt edycji", difflistmod});
-    		}
+			}
 		}
 		
 		f_codes.delete();
@@ -504,8 +526,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append("Rozmiar listy roboczej: ");
-		sb.append(Misc.makePluralPL(pagemap.size(), "strona", "strony", "stron") + " (");
-		sb.append(Misc.makePluralPL(codes.size(), "wystąpienie", "wystąpienia", "wystąpień") + ")\n\n");
+		sb.append(numberFormatPL.format(pagemap.size())).append(pluralPL.pl(pagemap.size(), "strona") + " (");
+		sb.append(numberFormatPL.format(codes.size())).append(pluralPL.pl(codes.size(), "wystąpienie") + ")\n\n");
 		
 		sb.append("Zedytowanych: " + edited);
 		
@@ -729,8 +751,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append(": '''wyniki:''' ");
-		sb.append(Misc.makePluralPL(pagecount, "strona", "strony", "stron") + ", ");
-		sb.append(Misc.makePluralPL(matchcount, "wystąpienie", "wystąpienia", "wystąpień"));
+		sb.append(numberFormatPL.format(pagecount)).append(pluralPL.pl(pagecount, "strona") + ", ");
+		sb.append(numberFormatPL.format(matchcount)).append(pluralPL.pl(matchcount, "wystąpienie"));
 		
 		if (pagecount > pagecap) {
 			sb.append(" (ograniczono do " + pagecap + " stron)");
@@ -749,7 +771,7 @@ public final class LinkManager implements Selectorizable {
 			String[] words = null;
 			
 			if (entry.hasDash) {
-				words = form.split("-");	
+				words = form.split("-");
 			} else {
 				words = form.split("\\s");
 			}
@@ -757,7 +779,7 @@ public final class LinkManager implements Selectorizable {
 			if (words.length != entry.links.length) {
 				throw new UnsupportedOperationException("Każda z podanych form powinna składać się z takiej samej ilości wyrazów co liczba linków składowych wyrazu docelowego.");
 			}
-						
+			
 			if (words[0].toLowerCase().equals(words[0])) {
 				String link = linker(words, entry.links, sep);
 				entry.linkedFormsLower.add(link);
@@ -872,7 +894,7 @@ public final class LinkManager implements Selectorizable {
 		while ((b = text.indexOf("\n", a)) != -1) {
 			String line = text.substring(a, b);
 			List<LinkDiff> linediffs = new ArrayList<>();
-						
+			
 			for (String form : entry.linkedFormsUpper) {
 				String targetlink = entry.upperLinksMap.get(form);
 				linediffs.addAll(searchLinkedForms(line, a, form, targetlink));

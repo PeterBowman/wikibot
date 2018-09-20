@@ -6,12 +6,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki;
 
+import com.github.plural4j.Plural;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -21,13 +23,25 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class DevanagariIAST implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural pluralPL;
+	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final String location = "./data/scripts.plwikt/DevanagariIAST/";
 	private static final String fList = location + "lista.txt";
 	private static final String wikipage = "Wikipedysta:PBbot/dewanagari bez transliteracji";
+
+	static {
+		pluralPL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
+		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+	}
 	
+	@Override
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -78,8 +92,9 @@ public class DevanagariIAST implements Selectorizable {
 		sb.append("Hasła w alfabecie dewanagari niekorzystające z szablonu {{s|IAST}} w polu '''transliteracja'''.");
 		sb.append(" ");
 		sb.append(String.format(
-			"Hindi: %s, inne: %d.",
-			Misc.makePluralPL(hindi.size(), "hasło", "hasła", "haseł"),
+			"Hindi: %d %s, inne: %d.",
+			numberFormatPL.format(hindi.size()),
+			pluralPL.pl(hindi.size(), "hasło"),
 			nonHindi.size()
 		));
 		sb.append(" ");

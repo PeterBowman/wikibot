@@ -183,11 +183,9 @@ public class MissingPolishEntries {
 				)
 				.collect(Collectors.joining("\n\n"));
 		
-		return String.format(PAGE_INTRO, stats.dumpFile, Misc.makePluralPL(stats.allEntries),
-				Misc.makePluralPL(stats.polishLemmas), Misc.makePluralPL(stats.polishInflected),
-				Misc.makePluralPL(stats.polishRedirs), Misc.makePluralPL(stats.polishOverall()),
-				Misc.makePluralPL(stats.databaseLemmas), Misc.makePluralPL(stats.databaseOverall),
-				Misc.makePluralPL(stats.worklistSize)
+		return String.format(PAGE_INTRO, stats.dumpFile, stats.allEntries, stats.polishLemmas,
+				stats.polishInflected, stats.polishRedirs, stats.polishOverall(),
+				stats.databaseLemmas, stats.databaseOverall, stats.worklistSize
 			) + "\n\n" + out;
 	}
 	

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +21,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
 
+import com.github.plural4j.Plural;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -27,6 +29,10 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class SpanishCanonicalInflectedForms {
 	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
@@ -35,6 +41,8 @@ public final class SpanishCanonicalInflectedForms {
 	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP;
 	
 	private static Wikibot wb;
+	private static final Plural PLURAL_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
 	static {
 		STRIPPED_ACCENTS_MAP = new HashMap<>(5, 1);
@@ -44,6 +52,10 @@ public final class SpanishCanonicalInflectedForms {
 		STRIPPED_ACCENTS_MAP.put('í', 'i');
 		STRIPPED_ACCENTS_MAP.put('ó', 'o');
 		STRIPPED_ACCENTS_MAP.put('ú', 'u');
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
+		
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -126,8 +138,8 @@ public final class SpanishCanonicalInflectedForms {
 			com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(String.format(
-			"Lista zawiera %s. Aktualizacja: ~~~~~.",
-			Misc.makePluralPL(list.size(), "hasła", "haseł")
+			"Lista zawiera %d %s. Aktualizacja: ~~~~~.",
+			NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "hasło")
 		));
 		
 		list.stream()

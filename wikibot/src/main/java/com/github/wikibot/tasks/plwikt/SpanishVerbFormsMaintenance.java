@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -27,6 +28,8 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -36,15 +39,35 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
 import com.github.wikibot.utils.RAE;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 final class SpanishVerbFormsMaintenance implements Selectorizable {
 	private static Wikibot wb;
+	private static final Plural PLURAL_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	private static final String location = "./data/tasks.plwikt/SpanishVerbFormsMaintenance/";
 	private static final String locationser = location + "ser/";
 	private static final String RAEurl = "http://lema.rae.es/drae/srv/search?val=";
 	private static final String wikipage = "Wikipedysta:PBbot/formy czasowników hiszpańskich";
-
+	
+	static {
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"forma fleksyjna", "formy fleksyjne", "form fleksyjnych"}),
+			new WordForms(new String[] {"jednakowa", "jednakowe", "jednakowych"}),
+			new WordForms(new String[] {"tabelka", "tabelki", "tabelek"}),
+			new WordForms(new String[] {"czasownika", "czasowników", "czasowników"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
+		
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+	}
+	
+	@Override
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
@@ -85,64 +108,64 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		String[] verbs = Stream.of(pages).map(PageContainer::getTitle).toArray(String[]::new);
 		Files.write(Paths.get(location + "verbos.txt"), Arrays.asList(verbs));
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
-	    
-	    List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
-	    StringBuilder urlB = new StringBuilder();
-	    Pattern p = Pattern.compile("<td( colspan=\"2\")?>[\\*]*(\\[\\[\\w+#es\\|\\w+\\]\\]&nbsp;)?\\[\\[([a-záéíóúüñ]+)");
-	    	
-	    int size = verb_templates.size();
-	    
-	    for (int i = 1; i <= size; i++) {
-	    	String template = verb_templates.get(i - 1);
-	    	
-	    	if (ParseUtils.getTemplateParam(template, "zaimek", true) != null) {
-	    		if (i != size) {
-	    			continue;
-	    		}
-	    	} else {
-	    		template = ParseUtils.setTemplateParam(template, "widoczny", "tak", false);
-	    		urlB.append("\n" + template);
-	    	}
-	    		
-	    	if (i % 50 == 0 || i == size) {
-	    		String expanded = wb.expandTemplates(urlB.toString());
-	    		System.out.printf("Expansión de plantillas %d/%d\n", i, size);
-		    	Matcher m = p.matcher(expanded);
-		    		
-		   		while (m.find()) {
-		   			String aux = m.group(3);
-		    			
-		           	if (!"haber".equals(aux)) {
-		           		verb_forms.add(aux);
-		           	}
-		        }
-		    		
-		   		urlB = new StringBuilder();
-	    	}
-	    }
-	    	
-	    int form_count = verb_forms.size();
-	    System.out.printf("Se han extraído %d formas verbales\n", form_count);
-	    
-	    Files.write(Paths.get(location + "formas.txt"), verb_forms);
-	    System.out.println("Archivo \"formas.txt\" actualizado");
-	    
-	    // exit program
-	    if (onlyGetData) {
-	    	System.out.println("Finalizando programa - sumario: FALSE, escritura: FALSE.");
-	    	return;
-	    }
-	    
-	 	Map<String, Boolean> dictionary;
-	 	File f_hm = new File(locationser + "hashmap.ser");
-	 	
+		
+		List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
+		StringBuilder urlB = new StringBuilder();
+		Pattern p = Pattern.compile("<td( colspan=\"2\")?>[\\*]*(\\[\\[\\w+#es\\|\\w+\\]\\]&nbsp;)?\\[\\[([a-záéíóúüñ]+)");
+		
+		int size = verb_templates.size();
+		
+		for (int i = 1; i <= size; i++) {
+			String template = verb_templates.get(i - 1);
+			
+			if (ParseUtils.getTemplateParam(template, "zaimek", true) != null) {
+				if (i != size) {
+					continue;
+				}
+			} else {
+				template = ParseUtils.setTemplateParam(template, "widoczny", "tak", false);
+				urlB.append("\n" + template);
+			}
+			
+			if (i % 50 == 0 || i == size) {
+				String expanded = wb.expandTemplates(urlB.toString());
+				System.out.printf("Expansión de plantillas %d/%d\n", i, size);
+				Matcher m = p.matcher(expanded);
+				
+				while (m.find()) {
+					String aux = m.group(3);
+					
+					if (!"haber".equals(aux)) {
+						verb_forms.add(aux);
+					}
+				}
+				
+				urlB = new StringBuilder();
+			}
+		}
+		
+		int form_count = verb_forms.size();
+		System.out.printf("Se han extraído %d formas verbales\n", form_count);
+		
+		Files.write(Paths.get(location + "formas.txt"), verb_forms);
+		System.out.println("Archivo \"formas.txt\" actualizado");
+		
+		// exit program
+		if (onlyGetData) {
+			System.out.println("Finalizando programa - sumario: FALSE, escritura: FALSE.");
+			return;
+		}
+		
+		Map<String, Boolean> dictionary;
+		File f_hm = new File(locationser + "hashmap.ser");
+		
 		if (f_hm.exists()) {
 			dictionary = Misc.deserialize(f_hm);
 			System.out.println("Tamaño de la lista extraída: " + dictionary.size());
 		} else {
 			dictionary = new HashMap<>(form_count);
 		}
-	 	
+		
 		PageContainer[] pages2 = wb.getContentOfPages(verb_forms.toArray(new String[verb_forms.size()]));
 		Map<String, Integer> cached = new HashMap<>(dictionary.size());
 		Map<RAE, Integer> live = new HashMap<>();
@@ -153,12 +176,12 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 				.map(PageContainer::getText)
 				.findAny()
 				.orElse(null);
-
-		    int op = -1;
-		    						
+			
+			int op = -1;
+			
 			if (content != null) {
 				Section section = Page.store(form, content).getSection("język hiszpański").orElse(null);
-					
+				
 				if (section != null) {
 					String definitions = section.getField(FieldTypes.DEFINITIONS).get().getContent();
 					
@@ -168,7 +191,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 					
 					boolean isFlex = false;
 					boolean isNotFlex = false;
-						
+					
 					for (String meaning : meanings) {
 						if (meaning.contains("{{forma czasownika")) {
 							isFlex = true;
@@ -176,11 +199,11 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 							isNotFlex = true;
 						}
 					}
-						
+					
 					if (isFlex && !isNotFlex) {
 						op = 3; // only verb forms
 					} else if (!isFlex && isNotFlex) {
-						op = 2; // only stand-alone meanings 
+						op = 2; // only stand-alone meanings
 					}
 				} else {
 					op = 1; // no Spanish section
@@ -312,7 +335,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 				"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
 				form_count, verb_count, output
 			)));
-			
+		
 		System.out.printf("%d verbos analizados, %d formas extraídas\n", verb_count, form_count);
 		System.out.printf("Tamaño de la lista obtenida: %d\n", summ_count);
 		
@@ -321,25 +344,25 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		
 		// exit program
 		if (noWrite) {
-	    	System.out.println("Finalizando programa - sumario: TRUE, escritura: FALSE.");
-	    	return;
-	    }
+			System.out.println("Finalizando programa - sumario: TRUE, escritura: FALSE.");
+			return;
+		}
 		
 		// editing page
 		String wikipage_content = wb.getPageText(wikipage);
-			
+		
 		StringBuilder content = new StringBuilder(wikipage_content.substring(0, wikipage_content.indexOf("----")));
 		content.append("----\n");
 		content.append(String.format(
-				"Analizowano %s (%s) z %d czasowników (%s odmiany).",
-				Misc.makePluralPL(form_count, "formy fleksyjne", "form fleksyjnych"),
-				Misc.makePluralPL(dictionary.size(), "jednakowe", "jednakowych"),
-				verb_count,
-				Misc.makePluralPL(size, "tabelki", "tabelek")
+				"Analizowano %d %s (%d %s) z %d %s (%d %s odmiany).",
+				NUMBER_FORMAT_PL.format(form_count), PLURAL_PL.pl(form_count, "forma fleksyjna"),
+				NUMBER_FORMAT_PL.format(dictionary.size()), PLURAL_PL.pl(dictionary.size(), "jednakowa"),
+				NUMBER_FORMAT_PL.format(verb_count), PLURAL_PL.pl(verb_count, "czasownika"),
+				NUMBER_FORMAT_PL.format(size), PLURAL_PL.pl(size, "tabelka")
 			));
 		content.append("Aktualizacja: ~~~~~.\n");
 		content.append("{{język linków|hiszpański}}\n");
-			
+		
 		wb.edit(wikipage, content.toString() + output, "aktualizacja", false, true, -2, null);
 		
 		System.out.println("Finalizando programa - sumario: TRUE, escritura: TRUE.");
@@ -360,7 +383,7 @@ class MyRAE extends RAE {
 	}
 	
 	@Override
-    public RAE call() throws IOException {
+	public RAE call() throws IOException {
 		if (hashmap.containsKey(entry)) {
 			isSerial = true;
 			isStandAloneVerbForm = hashmap.get(entry);

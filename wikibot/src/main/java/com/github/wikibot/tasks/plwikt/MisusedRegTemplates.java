@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,6 +25,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -33,11 +36,17 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class MisusedRegTemplates {
 	private static final String LOCATION = "./data/tasks.plwikt/MisusedRegTemplates/";
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/kategoryzacja regionalizmów";
 	private static final String PAGE_INTRO;
+	private static final Plural PLURAL_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
 	private static final List<String> TEMPLATES = Arrays.asList(
 		// Polish
@@ -79,6 +88,15 @@ public final class MisusedRegTemplates {
 			"Rozpoznawane szablony: " + templateList + "." +
 			"\n\n" +
 			"Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.";
+		
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
+			new WordForms(new String[] {"stronie", "stronach", "stronach"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
+		
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -237,8 +255,8 @@ public final class MisusedRegTemplates {
 				Collectors.joining("\n")
 			));
 		
-		String itemCount = Misc.makePluralPL(list.size(), "wystąpienie", "wystąpienia", "wystąpień");
-		String pageCount = Misc.makePluralPL(groupedMap.size(), "stronie", "stronach", "stronach");
+		String itemCount = String.format("%d %s", NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "wystąpienie"));
+		String pageCount = String.format("%d %s", NUMBER_FORMAT_PL.format(groupedMap.size()), PLURAL_PL.pl(groupedMap.size(), "stronie"));
 		
 		String intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
 		

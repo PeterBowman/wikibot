@@ -6,11 +6,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.Collator;
+import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +33,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -40,6 +44,10 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.github.wikibot.utils.PluralRules;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class InconsistentHeaderTitles {
 	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
@@ -61,6 +69,9 @@ public final class InconsistentHeaderTitles {
 	
 	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
 	
+	private static final Plural PLURAL_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
+	
 	private static Wikibot wb;
 	
 	private static Map<String, Collection<Item>> map;
@@ -73,6 +84,16 @@ public final class InconsistentHeaderTitles {
 			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
 			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
 			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
+		
+		WordForms[] polishWords = new WordForms[] {
+			new WordForms(new String[] {"hasło", "hasła", "haseł"}),
+			new WordForms(new String[] {"strona", "strony", "stron"}),
+			new WordForms(new String[] {"języku", "językach", "językach"})
+		};
+		
+		PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
+		
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -322,10 +343,10 @@ public final class InconsistentHeaderTitles {
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(PAGE_INTRO + "\n" + String.format(
-			"Znaleziono %s (%s) w %s. Aktualizacja: ~~~~~.",
-			Misc.makePluralPL(total, "hasło", "hasła", "haseł"),
-			Misc.makePluralPL(unique, "strona", "strony", "stron"),
-			Misc.makePluralPL(map.keySet().size(), "języku", "językach", "językach")
+			"Znaleziono %d %s (%d %s) w %d %s. Aktualizacja: ~~~~~.",
+			NUMBER_FORMAT_PL.format(total), PLURAL_PL.pl(total, "hasło"),
+			NUMBER_FORMAT_PL.format(unique), PLURAL_PL.pl(unique, "strona"),
+			NUMBER_FORMAT_PL.format(map.keySet().size()), PLURAL_PL.pl(map.keySet().size(), "języku")
 		));
 		
 		com.github.wikibot.parsing.Section[] sections = map.entrySet().stream()
