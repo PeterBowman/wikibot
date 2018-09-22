@@ -472,7 +472,7 @@ if (modified) {
 	const jobsArr = Java.to(jobs, "java.lang.String[]");
 	
 	try {
-		Files.write(Paths.get(DUMPS_PENDING_FILE), Arrays.asList(jobsArr), StandardOpenOption.WRITE);
+		Files.write(Paths.get(DUMPS_PENDING_FILE), Arrays.asList(jobsArr), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 	} catch (e) {
 		log("EXCEPTION: ${e}");
 		exit(2);
