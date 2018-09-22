@@ -4,10 +4,14 @@ const Paths = Java.type("java.nio.file.Paths");
 const FileFilter = Java.type("java.io.FileFilter");
 const SimpleDateFormat = Java.type("java.text.SimpleDateFormat");
 const Calendar = Java.type("java.util.Calendar");
+const Arrays = Java.type("java.util.Arrays");
+const StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
 
 const JSON_DATA_FILE = new File("${$ENV.HOME}/scripts/dump_config.json");
 const DUMPS_HISTORY = ".dumpsrc";
+const DUMPS_PENDING = "dumps_pending";
 const DUMPS_HISTORY_FILE = new File("${$ENV.HOME}/${DUMPS_HISTORY}");
+const DUMPS_PENDING_FILE = new File("${$ENV.HOME}/${DUMPS_PENDING}");
 const PUBLIC_DUMPS = new File($ENV.DUMPS_PUBLIC);
 const DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
@@ -30,10 +34,6 @@ const DumpEntry = (function() {
 			s += "; norolldown";
 		}
 		
-		if (this.grid) {
-			s += "; grid";
-		}
-		
 		if (this.script) {
 			s += "; script=${this.script}";
 		}
@@ -50,7 +50,6 @@ const DumpEntry = (function() {
 			dumpTypes: "",
 			updated: false,
 			rollDown: true,
-			grid: false,
 			targetedFiles: null
 		};
 	}
@@ -80,9 +79,6 @@ const DumpEntry = (function() {
 					break;
 				case "norolldown":
 					opts.rollDown = false;
-					break;
-				case "grid":
-					opts.grid = true;
 					break;
 				default:
 					log("WARNING: ${entry}");
@@ -455,41 +451,32 @@ if (modified) {
 		output.push(entry.serializeData());
 		
 		if (entry.updated && entry.script) {
-			let job = "";
 			let args = entry.targetedFiles.map(function(file) file.getPath());
-			
-			if (entry.grid) {
-				// FIXME: this is broken, see http://stackoverflow.com/a/30696663
-				// See also http://alvinalexander.com/java/java-exec-system-command-pipeline-pipe
-				//job += "jsub -sync y ";
-			}
-			
-			job += entry.script + " ";
-			job += args.join(" ");
+			let job = entry.script + " " + args.join(" ");
 			jobs.push(job);
+			print(job);
 		}
 	}
 	
 	log("Writing output to ${DUMPS_HISTORY_FILE.getPath()}");
-	
-	const stringArr = Java.to(output, "java.lang.String[]");
-	const Arrays = Java.type("java.util.Arrays");
-	const StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
+	const outputArr = Java.to(output, "java.lang.String[]");
 	
 	try {
-		Files.write(Paths.get(DUMPS_HISTORY_FILE), Arrays.asList(stringArr), StandardOpenOption.WRITE);
+		Files.write(Paths.get(DUMPS_HISTORY_FILE), Arrays.asList(outputArr), StandardOpenOption.WRITE);
 	} catch (e) {
 		log("EXCEPTION: ${e.message}");
 		exit(2);
 	}
 	
-	jobs.forEach(function(job, i) {
-		log("Submitting job ${i + 1}/${jobs.length}");
-		print(job);
-		$EXEC(job);
-		print($ERR);
-		print($OUT);
-	});
+	log("Registering ${jobs.length} job(s) into ${DUMPS_PENDING_FILE.getPath()}");
+	const jobsArr = Java.to(jobs, "java.lang.String[]");
+	
+	try {
+		Files.write(Paths.get(DUMPS_PENDING_FILE), Arrays.asList(jobsArr), StandardOpenOption.WRITE);
+	} catch (e) {
+		log("EXCEPTION: ${e.message}");
+		exit(2);
+	}
 } else {
 	log("No changes detected!");
 }
