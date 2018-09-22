@@ -4,17 +4,21 @@ const Paths = Java.type("java.nio.file.Paths");
 const FileFilter = Java.type("java.io.FileFilter");
 const SimpleDateFormat = Java.type("java.text.SimpleDateFormat");
 const Calendar = Java.type("java.util.Calendar");
+const Arrays = Java.type("java.util.Arrays");
+const StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
 
 const JSON_DATA_FILE = new File("${$ENV.HOME}/scripts/dump_config.json");
 const DUMPS_HISTORY = ".dumpsrc";
+const DUMPS_PENDING = "dumps_pending";
 const DUMPS_HISTORY_FILE = new File("${$ENV.HOME}/${DUMPS_HISTORY}");
+const DUMPS_PENDING_FILE = new File("${$ENV.HOME}/${DUMPS_PENDING}");
 const PUBLIC_DUMPS = new File($ENV.DUMPS_PUBLIC);
 const DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
-const DumpEntry = (function() {
+const DumpEntry = (function () {
 	var staticMembers = {};
 	
-	var fn = function(opts) {
+	var fn = function (opts) {
 		validate(opts);
 		
 		for (let opt in opts) {
@@ -22,16 +26,12 @@ const DumpEntry = (function() {
 		}
 	}
 	
-	fn.prototype.serializeData = function() {
+	fn.prototype.serializeData = function () {
 		var s = "project=${this.project}; date=${this.date}";
 		s += "; dumptypes=${this.dumpTypes.join(',')}";
 		
 		if (!this.rollDown) {
 			s += "; norolldown";
-		}
-		
-		if (this.grid) {
-			s += "; grid";
 		}
 		
 		if (this.script) {
@@ -50,12 +50,11 @@ const DumpEntry = (function() {
 			dumpTypes: "",
 			updated: false,
 			rollDown: true,
-			grid: false,
 			targetedFiles: null
 		};
 	}
 	
-	staticMembers.parseStoredEntry = function(entry) {
+	staticMembers.parseStoredEntry = function (entry) {
 		var opts = initOpts();
 		var params = entry.split(/; +/);
 		
@@ -81,9 +80,6 @@ const DumpEntry = (function() {
 				case "norolldown":
 					opts.rollDown = false;
 					break;
-				case "grid":
-					opts.grid = true;
-					break;
 				default:
 					log("WARNING: ${entry}");
 					log("Ignoring unrecognized config parameter: ${param}");
@@ -94,7 +90,7 @@ const DumpEntry = (function() {
 		return new fn(opts);
 	};
 	
-	staticMembers.parseCommandLine = function(line) {
+	staticMembers.parseCommandLine = function (line) {
 		var opts = initOpts();
 		// TODO: write code
 		return opts;
@@ -123,13 +119,13 @@ const DumpEntry = (function() {
 }());
 
 // TODO: add support for /incr folders, split into subclasses
-const DumpFolder = (function() {
+const DumpFolder = (function () {
 	const INFO_FILE_NAME = "dumpruninfo.txt";
 	const SHA1_CHECKSUM_FILE_SUFFIX = "sha1sums.txt";
 	
 	var store = {};
 	
-	var fn = function(project, path) {
+	var fn = function (project, path) {
 		if (store[path] !== undefined) {
 			return store[path];
 		} else {
@@ -151,7 +147,7 @@ const DumpFolder = (function() {
 		}
 	}
 	
-	fn.prototype.testStatusInfo = function(query) {
+	fn.prototype.testStatusInfo = function (query) {
 		if (Array.isArray(query)) {
 			return query.every(this.testStatusInfo, this);
 		}
@@ -175,11 +171,11 @@ const DumpFolder = (function() {
 		return true;
 	};
 	
-	fn.prototype.retrieveFiles = function(query) {
+	fn.prototype.retrieveFiles = function (query) {
 		var arr = [];
 		
 		if (Array.isArray(query)) {
-			query.forEach(function(v) arr = arr.concat(this.retrieveFiles(v)), this);
+			query.forEach(function (v) arr = arr.concat(this.retrieveFiles(v)), this);
 		} else {
 			let path = this.dir.getPath();
 			let fileName = buildFileName.call(this, query);
@@ -204,7 +200,7 @@ const DumpFolder = (function() {
 		return arr;
 	};
 	
-	fn.prototype.testChecksum = function(file) {
+	fn.prototype.testChecksum = function (file) {
 		var fileName = file.getName();
 		var checksum = this.sha1checksums[fileName];
 		
@@ -241,7 +237,7 @@ const DumpFolder = (function() {
 	function getDumpInfo(file) {
 		var info = this.info;
 		
-		readLinesFromFile(file, function(line) {
+		readLinesFromFile(file, function (line) {
 			var split = line.split("; ");
 			var key = split[0].replace(/^name:/, "");
 			var status = split[1].replace(/^status:/, "");
@@ -257,7 +253,7 @@ const DumpFolder = (function() {
 	function getChecksums(file) {
 		var sha1checksums = this.sha1checksums;
 		
-		readLinesFromFile(file, function(line) {
+		readLinesFromFile(file, function (line) {
 			var split = line.split(/ +/);
 			sha1checksums[split[1]] = split[0];
 		});
@@ -297,7 +293,7 @@ function log(message) {
 
 function readLinesFromFile(file, func) {
 	Files.lines(Paths.get(file))
-		.filter(function(line) !line.isEmpty() && !line.startsWith("#"))
+		.filter(function (line) !line.isEmpty() && !line.startsWith("#"))
 		.forEach(func);
 }
 
@@ -330,7 +326,7 @@ function loadJSON() {
 }
 
 function retrieveDumpFolders(parentDir, startCal) {
-	var fileDirs = parentDir.listFiles(new FileFilter(function(file) file.isDirectory()));
+	var fileDirs = parentDir.listFiles(new FileFilter(function (file) file.isDirectory()));
 	var arr = [];
 	
 	for each (let fileDir in fileDirs) {
@@ -352,9 +348,9 @@ function retrieveDumpFolders(parentDir, startCal) {
 		});
 	}
 	
-	arr.sort(function(a, b) -a.cal.compareTo(b.cal));
+	arr.sort(function (a, b) -a.cal.compareTo(b.cal));
 	
-	return arr.map(function(item) item.dumpFolder);
+	return arr.map(function (item) item.dumpFolder);
 }
 
 function processDumpFolder(entry, dumpFolder) {
@@ -369,7 +365,7 @@ function processDumpFolder(entry, dumpFolder) {
 		return;
 	}
 	
-	if (!targetedFiles.every(function(file) dumpFolder.testChecksum(file))) {
+	if (!targetedFiles.every(function (file) dumpFolder.testChecksum(file))) {
 		return;
 	}
 	
@@ -399,7 +395,7 @@ if (arguments.length === 0) {
 	}
 	
 	let stored = [];
-	readLinesFromFile(DUMPS_HISTORY_FILE, function(line) stored.push(line));
+	readLinesFromFile(DUMPS_HISTORY_FILE, function (line) stored.push(line));
 	
 	entries = stored.map(DumpEntry.parseStoredEntry);
 	log("Dump history retrieved (${Object.keys(entries).length} items)");
@@ -455,41 +451,32 @@ if (modified) {
 		output.push(entry.serializeData());
 		
 		if (entry.updated && entry.script) {
-			let job = "";
-			let args = entry.targetedFiles.map(function(file) file.getPath());
-			
-			if (entry.grid) {
-				// FIXME: this is broken, see http://stackoverflow.com/a/30696663
-				// See also http://alvinalexander.com/java/java-exec-system-command-pipeline-pipe
-				//job += "jsub -sync y ";
-			}
-			
-			job += entry.script + " ";
-			job += args.join(" ");
+			let args = entry.targetedFiles.map(function (file) file.getPath());
+			let job = entry.script + " " + args.join(" ");
 			jobs.push(job);
+			print(job);
 		}
 	}
 	
 	log("Writing output to ${DUMPS_HISTORY_FILE.getPath()}");
-	
-	const stringArr = Java.to(output, "java.lang.String[]");
-	const Arrays = Java.type("java.util.Arrays");
-	const StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
+	const outputArr = Java.to(output, "java.lang.String[]");
 	
 	try {
-		Files.write(Paths.get(DUMPS_HISTORY_FILE), Arrays.asList(stringArr), StandardOpenOption.WRITE);
+		Files.write(Paths.get(DUMPS_HISTORY_FILE), Arrays.asList(outputArr), StandardOpenOption.WRITE);
 	} catch (e) {
 		log("EXCEPTION: ${e.message}");
 		exit(2);
 	}
 	
-	jobs.forEach(function(job, i) {
-		log("Submitting job ${i + 1}/${jobs.length}");
-		print(job);
-		$EXEC(job);
-		print($ERR);
-		print($OUT);
-	});
+	log("Registering ${jobs.length} job(s) into ${DUMPS_PENDING_FILE.getPath()}");
+	const jobsArr = Java.to(jobs, "java.lang.String[]");
+	
+	try {
+		Files.write(Paths.get(DUMPS_PENDING_FILE), Arrays.asList(jobsArr), StandardOpenOption.WRITE);
+	} catch (e) {
+		log("EXCEPTION: ${e.message}");
+		exit(2);
+	}
 } else {
 	log("No changes detected!");
 }
