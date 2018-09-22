@@ -56,11 +56,11 @@ public class OrphanTalkPages {
 			targets.add(title);
 		}
 		
-		Map<String, Object>[] infos = wb.getPageInfo(targets.toArray(new String[targets.size()]));
+		boolean[] exist = wb.exists(targets.toArray(new String[targets.size()]));
 		List<String> missing = new ArrayList<>(targets.size());
 		
 		for (int i = 0; i < targets.size(); i++) {
-			if (!(boolean)infos[i].get("exists")) {
+			if (!exist[i]) {
 				missing.add(targets.get(i));
 			}
 		}

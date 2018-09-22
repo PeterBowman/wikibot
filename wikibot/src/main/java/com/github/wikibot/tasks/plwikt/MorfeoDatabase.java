@@ -182,11 +182,11 @@ public final class MorfeoDatabase {
 	}
 	
 	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
-		Map<String, Object>[] info = wb.getPageInfo(morphems);
+		boolean[] exist = wb.exists(morphems);
 		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
 		
-		for (int i = 0; i < info.length; i++) {
-			if ((boolean) info[i].get("exists")) {
+		for (int i = 0; i < morphems.length; i++) {
+			if (exist[i]) {
 				map.put(morphems[i], null);
 			} else {
 				map.put(morphems[i], MORPHEM_RED_LINK);

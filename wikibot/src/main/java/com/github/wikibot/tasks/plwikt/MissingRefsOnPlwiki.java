@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -136,14 +135,7 @@ public class MissingRefsOnPlwiki {
 		stats.put("filteredTitles", plwiktToParsedPlwiki.size());
 		System.out.printf("Filtered plwiktionary-to-plwikipedia list: %d%n", stats.get("filteredTitles"));
 
-		// Wiki.getPageInfo's query rate is (very) slow because of having to test supported <actions/>
-		Map<String, String>[] plwiktPageProps = plwikt.getPageProps(plwiktBacklinks);
-
-		Set<String> plwiktMissing = Stream.of(plwiktPageProps)
-				.filter(Objects::nonNull) // just in case
-				.filter(pageInfo -> pageInfo.containsKey("missing"))
-				.map(pageInfo -> (String) pageInfo.get("pagename"))
-				.collect(Collectors.toSet());
+		Set<String> plwiktMissing = getMissingPlwiktPages(plwiktBacklinks);
 
 		stats.put("missingPlwiktBacklinks", plwikiMissing.size());
 		System.out.printf("Missing plwiktionary backlinks: %d%n", stats.get("missingPlwiktBacklinks"));
@@ -303,6 +295,21 @@ public class MissingRefsOnPlwiki {
 		}
 
 		plwiktToPlwiki.entrySet().removeIf(e -> e.getValue().isEmpty());
+	}
+
+	private static Set<String> getMissingPlwiktPages(String[] titles) throws IOException {
+		Set<String> set = new HashSet<>();
+		boolean[] exist = plwikt.exists(titles);
+
+		for (int i = 0; i < titles.length; i++) {
+			String title = titles[i];
+
+			if (!exist[i]) {
+				set.add(title);
+			}
+		}
+
+		return set;
 	}
 
 	private static List<Entry> makeEntryList(Map<String, Set<String>> plwiktToPlwiki, Map<String, Set<String>> plwikiToPlwikt,
