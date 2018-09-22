@@ -142,7 +142,7 @@ const DumpFolder = (function () {
 			loadData.call(this);
 			this.dataLoadSuccess = true;
 		} catch (e) {
-			log("EXCEPTION: ${e.message}");
+			log("EXCEPTION: ${e}");
 			this.dataLoadSuccess = false;
 		}
 	}
@@ -464,7 +464,7 @@ if (modified) {
 	try {
 		Files.write(Paths.get(DUMPS_HISTORY_FILE), Arrays.asList(outputArr), StandardOpenOption.WRITE);
 	} catch (e) {
-		log("EXCEPTION: ${e.message}");
+		log("EXCEPTION: ${e}");
 		exit(2);
 	}
 	
@@ -474,7 +474,7 @@ if (modified) {
 	try {
 		Files.write(Paths.get(DUMPS_PENDING_FILE), Arrays.asList(jobsArr), StandardOpenOption.WRITE);
 	} catch (e) {
-		log("EXCEPTION: ${e.message}");
+		log("EXCEPTION: ${e}");
 		exit(2);
 	}
 } else {
