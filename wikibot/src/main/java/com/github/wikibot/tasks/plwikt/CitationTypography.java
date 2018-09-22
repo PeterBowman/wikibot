@@ -246,7 +246,7 @@ public final class CitationTypography {
 		if (path.equals("local")) {
 			reader = new XMLDumpReader("pl.wiktionary.org");
 		} else {
-			reader = new XMLDumpReader(path);
+			reader = new XMLDumpReader(new File(path));
 		}
 		
 		int size = wb.getSiteStatistics().get("pages");

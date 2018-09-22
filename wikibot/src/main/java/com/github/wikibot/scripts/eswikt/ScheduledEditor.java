@@ -2,6 +2,7 @@ package com.github.wikibot.scripts.eswikt;
 
 import static org.wikiutils.ParseUtils.getTemplates;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
@@ -63,7 +64,7 @@ public final class ScheduledEditor {
 					processAllpages();
 					break;
 				case "-d":
-					XMLDumpReader reader = new XMLDumpReader(args[1]);
+					XMLDumpReader reader = new XMLDumpReader(new File(args[1]));
 					processDumpFile(reader);
 					break;
 				default:

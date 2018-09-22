@@ -141,7 +141,7 @@ public final class XMLDumpReader {
 			case "es.wiktionary.org":
 				return "eswiktionary";
 			default:
-				throw new UnsupportedOperationException();
+				throw new UnsupportedOperationException("unknown domain name: " + domain);
 		}
 	}
 	
