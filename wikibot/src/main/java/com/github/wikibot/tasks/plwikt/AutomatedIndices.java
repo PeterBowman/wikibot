@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
@@ -23,13 +25,27 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
+import com.ibm.icu.text.Collator;
+import com.ibm.icu.util.ULocale;
 
 public final class AutomatedIndices {
 	private static final String LOCATION = "./data/tasks.plwikt/AutomatedIndices/";
 	private static final String WORKLIST = "Wikisłownikarz:Beau.bot/indeksy/lista";
 	private static final String TEMPLATE = "Wikisłownikarz:Beau.bot/indeksy/szablon";
 	
+	private static final ULocale POLISH_LOCALE;
+	
+	private static Map<String, String> languageToIcuCode;
+	
 	private static Wikibot wb;
+	
+	static {
+		POLISH_LOCALE = new ULocale("pl");
+		
+		languageToIcuCode = new HashMap<>();
+		languageToIcuCode.put("łaciński", "la");
+		languageToIcuCode.put("nowogrecki", "el");
+	}
 
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
@@ -52,9 +68,17 @@ public final class AutomatedIndices {
 					.collect(Collectors.toList())
 			));
 		
+		Map<String, ULocale> langToLocale = langToEntries.keySet().stream()
+			.map(AutomatedIndices::stripLanguagePrefix)
+			.collect(Collectors.toMap(
+				lang -> lang,
+				AutomatedIndices::getLocale
+			));
+		
 		XMLDumpReader reader = getDumpReader(args);
 		int stats = wb.getSiteStatistics().get("pages");
-		ConcurrentMap<String, List<String>> map = new ConcurrentSkipListMap<>();
+		ConcurrentMap<String, List<String>> indexToTitles = new ConcurrentSkipListMap<>();
+		ConcurrentMap<String, String> indexToLang = new ConcurrentHashMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			stream.parallel()
@@ -64,10 +88,14 @@ public final class AutomatedIndices {
 				.flatMap(p -> p.getAllSections().stream())
 				.filter(s -> langToEntries.containsKey(s.getLang()))
 				.flatMap(s -> Utils.streamOpt(s.getField(FieldTypes.DEFINITIONS)))
-				.forEach(f -> processDefinitionsField(f, langToEntries, map));
+				.forEach(f -> processDefinitionsField(f, langToEntries, indexToTitles, indexToLang));
 		}
 		
-		map.values().forEach(Collections::sort);
+		indexToTitles.entrySet().parallelStream()
+			.forEach(e -> Collections.sort(
+				e.getValue(),
+				Collator.getInstance(langToLocale.get(indexToLang.get(e.getKey())))
+			));
 	}
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
@@ -78,17 +106,33 @@ public final class AutomatedIndices {
 		}
 	}
 	
-	private static void processDefinitionsField(Field f, Map<String, List<Entry>> langToEntries, ConcurrentMap<String, List<String>> map) {
+	private static String stripLanguagePrefix(String lang) {
+		return lang.replace("język ", "");
+	}
+	
+	private static ULocale getLocale(String lang) {
+		String code = Stream.of(ULocale.getAvailableLocales())
+			.filter(locale -> locale.getDisplayLanguage(POLISH_LOCALE).equals(lang))
+			.map(ULocale::getISO3Language)
+			.distinct()
+			.findFirst()
+			.orElse(languageToIcuCode.getOrDefault(lang, ""));
+		
+		return ULocale.createCanonical(code);
+	}
+	
+	private static void processDefinitionsField(Field f, Map<String, List<Entry>> langToEntries, ConcurrentMap<String, List<String>> indexToTitles,
+			ConcurrentMap<String, String> indexToLang) {
 		String lang = f.getContainingSection().get().getLang();
 		String title = f.getContainingSection().get().getContainingPage().get().getTitle();
 		String text = f.getContent();
 		
 		for (Entry entry : langToEntries.get(lang)) {
 			if (entry.templates.stream().anyMatch(template -> !ParseUtils.getTemplates(template, text).isEmpty())) {
-				String shortLang = lang.replace("język ", "");
+				String shortLang = stripLanguagePrefix(lang);
 				String index = String.format("%s - %s", StringUtils.capitalize(shortLang), StringUtils.capitalize(entry.indexName));
 				
-				map.compute(index, (key, value) -> {
+				indexToTitles.compute(index, (key, value) -> {
 					if (value == null) {
 						value = new ArrayList<>();
 					}
@@ -96,6 +140,8 @@ public final class AutomatedIndices {
 					value.add(title);
 					return value;
 				});
+				
+				indexToLang.putIfAbsent(index, shortLang);
 			}
 		}
 	}
