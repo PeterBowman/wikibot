@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,9 +41,13 @@ public final class AutomatedIndices {
 	private static final String WORKLIST = "Wikisłownikarz:Beau.bot/indeksy/lista";
 	private static final String TEMPLATE = "Wikisłownikarz:Beau.bot/indeksy/szablon";
 	
+	private static final List<String> MAINTAINERS = Arrays.asList("Peter Bowman");
+	private static final String ERROR_REPORT_TEMPLATE_FMT = "{{re|%s}}";
+	
 	private static final ULocale POLISH_LOCALE;
 	
 	private static Map<String, String> languageToIcuCode;
+	private static List<String> errors;
 	
 	private static Wikibot wb;
 	
@@ -50,6 +57,8 @@ public final class AutomatedIndices {
 		languageToIcuCode = new HashMap<>();
 		languageToIcuCode.put("łaciński", "la");
 		languageToIcuCode.put("nowogrecki", "el");
+		
+		errors = new ArrayList<>();
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -60,13 +69,13 @@ public final class AutomatedIndices {
 		
 		Set<Entry> entries = templates.stream()
 			.map(Entry::parseTemplate)
-			.collect(Collectors.toSet());
+			.filter(Objects::nonNull)
+			.collect(Collectors.toCollection(HashSet::new));
 		
 		entries.forEach(System.out::println);
 		
 		if (entries.size() != templates.size()) {
-			throw new IllegalArgumentException(String.format("Entry list has duplicates: %d entries, %d templates",
-					entries.size(), templates.size()));
+			errors.add(String.format("Entry list has duplicates: %d entries, %d templates", entries.size(), templates.size()));
 		}
 		
 		validateEntries(entries);
@@ -136,6 +145,13 @@ public final class AutomatedIndices {
 		}
 		
 		Misc.serialize(indexToHash, fHash);
+		
+		if (!errors.isEmpty()) {
+			String talkPage = wb.getTalkPage(WORKLIST);
+			String text = errors.stream().map(err -> String.format("# %s", err)).collect(Collectors.joining("\n"));
+			text = String.format(ERROR_REPORT_TEMPLATE_FMT, String.join("|", MAINTAINERS)) + ":\n" + text + "\n~~~~";
+			wb.newSection(talkPage, reader.getFile().getName(), text, false, false);
+		}
 	}
 	
 	private static void validateEntries(Set<Entry> entries) throws IOException {
@@ -146,12 +162,16 @@ public final class AutomatedIndices {
 			.toArray(String[]::new);
 		
 		boolean[] existLanguageTemplates = wb.exists(languageTemplates);
+		Set<String> missingLanguageTemplates = new HashSet<>();
 		
 		for (int i = 0; i < languageTemplates.length; i++) {
 			if (!existLanguageTemplates[i]) {
-				throw new IllegalArgumentException(languageTemplates[i] + " does not exist");
+				errors.add(languageTemplates[i] + " does not exist");
+				missingLanguageTemplates.add(languageTemplates[i]);
 			}
 		}
+		
+		entries.stream().map(e -> e.languageTemplates).forEach(list -> list.removeIf(missingLanguageTemplates::contains));
 		
 		String[] defTemplates = entries.stream()
 			.flatMap(e -> e.templates.stream())
@@ -160,12 +180,16 @@ public final class AutomatedIndices {
 			.toArray(String[]::new);
 		
 		boolean[] existDefTemplates = wb.exists(defTemplates);
+		Set<String> missingDefTemplates = new HashSet<>();
 		
 		for (int i = 0; i < defTemplates.length; i++) {
 			if (!existDefTemplates[i]) {
-				throw new IllegalArgumentException(defTemplates[i] + " does not exist");
+				errors.add(defTemplates[i] + " does not exist");
+				missingDefTemplates.add(defTemplates[i]);
 			}
 		}
+		
+		entries.stream().map(e -> e.templates).forEach(list -> list.removeIf(missingDefTemplates::contains));
 		
 		String[] categories = entries.stream()
 			.flatMap(e -> e.categories.stream())
@@ -175,13 +199,19 @@ public final class AutomatedIndices {
 		
 		if (categories.length != 0) {
 			boolean[] existCategories = wb.exists(categories);
+			Set<String> missingCategories = new HashSet<>();
 			
 			for (int i = 0; i < categories.length; i++) {
 				if (!existCategories[i]) {
-					throw new IllegalArgumentException(categories[i] + " does not exist");
+					errors.add(categories[i] + " does not exist");
+					missingCategories.add(categories[i]);
 				}
 			}
+			
+			entries.stream().map(e -> e.categories).forEach(list -> list.removeIf(missingCategories::contains));
 		}
+		
+		entries.removeIf(e -> e.languageTemplates.isEmpty() || e.templates.isEmpty() || e.categories.isEmpty());
 	}
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
@@ -292,7 +322,8 @@ public final class AutomatedIndices {
 			entry.categories = makeList(SEP.splitAsStream(params.getOrDefault("kategorie", "")));
 			
 			if (entry.indexName.isEmpty() || entry.templates.isEmpty() || entry.languageTemplates.isEmpty()) {
-				throw new IllegalArgumentException("Unable to parse template " + template.replace("\n", ""));
+				errors.add("Illegal parameters to template " + template.replace("\n", ""));
+				return null;
 			}
 			
 			return entry;
