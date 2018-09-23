@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,7 +79,7 @@ public final class AutomatedIndices {
 		
 		XMLDumpReader reader = getDumpReader(args);
 		int stats = wb.getSiteStatistics().get("pages");
-		ConcurrentMap<String, List<String>> indexToTitles = new ConcurrentSkipListMap<>();
+		ConcurrentMap<String, List<String>> indexToTitles = new ConcurrentHashMap<>();
 		ConcurrentMap<String, String> indexToLang = new ConcurrentHashMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
@@ -163,10 +162,9 @@ public final class AutomatedIndices {
 			ConcurrentMap<String, String> indexToLang) {
 		String lang = f.getContainingSection().get().getLang();
 		String title = f.getContainingSection().get().getContainingPage().get().getTitle();
-		String text = f.getContent();
 		
 		for (Entry entry : langToEntries.get(lang)) {
-			if (entry.templates.stream().anyMatch(template -> !ParseUtils.getTemplates(template, text).isEmpty())) {
+			if (entry.templates.stream().anyMatch(template -> !ParseUtils.getTemplates(template, f.getContent()).isEmpty())) {
 				String shortLang = stripLanguagePrefix(lang);
 				String index = String.format("%s - %s", StringUtils.capitalize(shortLang), StringUtils.capitalize(entry.indexName));
 				
