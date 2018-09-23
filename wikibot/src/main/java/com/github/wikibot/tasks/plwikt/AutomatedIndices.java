@@ -97,6 +97,8 @@ public final class AutomatedIndices {
 				AutomatedIndices::getLocale
 			));
 		
+		System.out.println(langToLocale);
+		
 		XMLDumpReader reader = getDumpReader(args);
 		int stats = wb.getSiteStatistics().get("pages");
 		ConcurrentMap<String, List<String>> indexToTitles = new ConcurrentHashMap<>();
