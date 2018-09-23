@@ -2,12 +2,14 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -54,12 +56,20 @@ public final class AutomatedIndices {
 		wb = Login.createSession("pl.wiktionary.org");
 		
 		String pageText = wb.getPageText(WORKLIST);
+		List<String> templates = ParseUtils.getTemplatesIgnoreCase(TEMPLATE, pageText);
 		
-		List<Entry> entries = ParseUtils.getTemplatesIgnoreCase(TEMPLATE, pageText).stream()
+		Set<Entry> entries = templates.stream()
 			.map(Entry::parseTemplate)
-			.collect(Collectors.toList());
+			.collect(Collectors.toSet());
 		
 		entries.forEach(System.out::println);
+		
+		if (entries.size() != templates.size()) {
+			throw new IllegalArgumentException(String.format("Entry list has duplicates: %d entries, %d templates",
+					entries.size(), templates.size()));
+		}
+		
+		validateEntries(entries);
 		
 		Map<String, List<Entry>> langToEntries = entries.stream()
 			.flatMap(entry -> entry.languageTemplates.stream())
@@ -128,6 +138,52 @@ public final class AutomatedIndices {
 		Misc.serialize(indexToHash, fHash);
 	}
 	
+	private static void validateEntries(Set<Entry> entries) throws IOException {
+		String[] languageTemplates = entries.stream()
+			.flatMap(e -> e.languageTemplates.stream())
+			.distinct()
+			.map(t -> String.format("Szablon:%s", t))
+			.toArray(String[]::new);
+		
+		boolean[] existLanguageTemplates = wb.exists(languageTemplates);
+		
+		for (int i = 0; i < languageTemplates.length; i++) {
+			if (!existLanguageTemplates[i]) {
+				throw new IllegalArgumentException(languageTemplates[i] + " does not exist");
+			}
+		}
+		
+		String[] defTemplates = entries.stream()
+			.flatMap(e -> e.templates.stream())
+			.distinct()
+			.map(t -> String.format("Szablon:%s", t))
+			.toArray(String[]::new);
+		
+		boolean[] existDefTemplates = wb.exists(defTemplates);
+		
+		for (int i = 0; i < defTemplates.length; i++) {
+			if (!existDefTemplates[i]) {
+				throw new IllegalArgumentException(defTemplates[i] + " does not exist");
+			}
+		}
+		
+		String[] categories = entries.stream()
+			.flatMap(e -> e.categories.stream())
+			.distinct()
+			.map(c -> String.format("Kategoria:%s", c))
+			.toArray(String[]::new);
+		
+		if (categories.length != 0) {
+			boolean[] existCategories = wb.exists(categories);
+			
+			for (int i = 0; i < categories.length; i++) {
+				if (!existCategories[i]) {
+					throw new IllegalArgumentException(categories[i] + " does not exist");
+				}
+			}
+		}
+	}
+	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
 		if (args.length == 0) {
 			return new XMLDumpReader("pl.wiktionary.org");
@@ -181,7 +237,7 @@ public final class AutomatedIndices {
 		}
 	}
 	
-	private static String makeIndexText(String index, List<String> titles, ULocale locale, List<Entry> entries) {
+	private static String makeIndexText(String index, List<String> titles, ULocale locale, Set<Entry> entries) {
 		final String separator = " - ";
 		String langUpper = index.substring(0, index.indexOf(separator));
 		String langLower = StringUtils.uncapitalize(langUpper);
@@ -231,23 +287,19 @@ public final class AutomatedIndices {
 			
 			Entry entry = new Entry();
 			entry.indexName = params.getOrDefault("nazwa indeksu", "");
-			entry.templates = SEP.splitAsStream(params.getOrDefault("szablony tematyczne", "")).map(String::trim).collect(Collectors.toList());
-			entry.languageTemplates = SEP.splitAsStream(params.getOrDefault("szablony języków", "")).map(String::trim).collect(Collectors.toList());
-			entry.categories = SEP.splitAsStream(params.getOrDefault("kategorie", "")).map(String::trim).collect(Collectors.toList());
-			
-			entry.validate();
+			entry.templates = makeList(SEP.splitAsStream(params.getOrDefault("szablony tematyczne", "")));
+			entry.languageTemplates = makeList(SEP.splitAsStream(params.getOrDefault("szablony języków", "")));
+			entry.categories = makeList(SEP.splitAsStream(params.getOrDefault("kategorie", "")));
 			
 			if (entry.indexName.isEmpty() || entry.templates.isEmpty() || entry.languageTemplates.isEmpty()) {
-				throw new IllegalArgumentException("Unable to parse template " + template);
+				throw new IllegalArgumentException("Unable to parse template " + template.replace("\n", ""));
 			}
 			
 			return entry;
 		}
 		
-		private void validate() {
-			templates.removeIf(String::isEmpty);
-			languageTemplates.removeIf(String::isEmpty);
-			categories.removeIf(String::isEmpty);
+		private static List<String> makeList(Stream<String> stream) {
+			return stream.map(String::trim).filter(s -> !s.isEmpty()).distinct().collect(Collectors.toList());
 		}
 		
 		@Override
@@ -259,6 +311,24 @@ public final class AutomatedIndices {
 			sb.append(",categories=").append(categories);
 			sb.append("]");
 			return sb.toString();
+		}
+		
+		@Override
+		public int hashCode() {
+			return indexName.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) {
+				return true;
+			}
+			
+			if (!(obj instanceof Entry)) {
+				return false;
+			}
+			
+			return indexName.equals(((Entry) obj).indexName);
 		}
 	}
 }
