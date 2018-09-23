@@ -25,6 +25,7 @@ import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
+import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.ibm.icu.text.Collator;
@@ -88,6 +89,7 @@ public final class AutomatedIndices {
 				.filter(XMLRevision::nonRedirect)
 				.map(Page::wrap)
 				.flatMap(p -> p.getAllSections().stream())
+				.map(AutomatedIndices::normalizeLangName)
 				.filter(s -> langToEntries.containsKey(s.getLang()))
 				.flatMap(s -> Utils.streamOpt(s.getField(FieldTypes.DEFINITIONS)))
 				.forEach(f -> processDefinitionsField(f, langToEntries, indexToTitles, indexToLang));
@@ -147,6 +149,14 @@ public final class AutomatedIndices {
 			.orElse(languageToIcuCode.getOrDefault(lang, ""));
 		
 		return ULocale.createCanonical(code);
+	}
+	
+	private static Section normalizeLangName(Section s) {
+		if (s.getLang().equals("termin obcy w języku polskim")) {
+			s.setLang("język polski");
+		}
+		
+		return s;
 	}
 	
 	private static void processDefinitionsField(Field f, Map<String, List<Entry>> langToEntries, ConcurrentMap<String, List<String>> indexToTitles,
