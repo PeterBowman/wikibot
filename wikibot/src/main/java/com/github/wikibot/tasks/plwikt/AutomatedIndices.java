@@ -6,10 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -33,6 +33,7 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.util.ULocale;
 
@@ -282,14 +283,11 @@ public final class AutomatedIndices {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("{{język linków|%s}}", langLower)).append("{{TOCright}}").append("\n\n");
 		
-		Collator collator = Collator.getInstance(locale);
-		collator.setStrength(Collator.SECONDARY);
-		
 		titles.stream()
 			.collect(Collectors.groupingBy(
 				title -> String.valueOf(title.charAt(0)),
-				// sort first letter ignoring case, then reverse natural order ('A' before 'a')
-				() -> new TreeMap<>(collator.thenComparing(Collator.getInstance(Locale.ENGLISH).reversed())),
+				// sort first letter ignoring case and diacritics, then reverse natural order ('A' before 'a')
+				() -> new TreeMap<>(makeComparator(locale)),
 				Collectors.mapping(
 					title -> String.format("[[%s]]", title),
 					Collectors.joining(" • ")
@@ -308,6 +306,43 @@ public final class AutomatedIndices {
 			.forEach(category -> sb.append(String.format("[[Kategoria:%s]]", category)).append("\n"));
 		
 		return sb.toString().trim();
+	}
+	
+	private static Comparator<Object> makeComparator(ULocale locale) {
+		final Collator collPrimary = Collator.getInstance(locale);
+		collPrimary.setStrength(Collator.PRIMARY);
+		
+		final Collator collSecondary = Collator.getInstance(locale);
+		collSecondary.setStrength(Collator.SECONDARY);
+		
+		final Collator collTertiary = Collator.getInstance(locale);
+		collTertiary.setStrength(Collator.TERTIARY);
+		
+		return collPrimary.thenComparing((o1, o2) -> {
+			if (o1.equals(o2)) {
+				return 0;
+			}
+			
+			String s1 = (String) o1;
+			String s2 = (String) o2;
+			
+			int secondaryCompare = collSecondary.compare(s1, s2);
+			
+			if (secondaryCompare == 0) {
+				// same diacritic mark (or lack of), but different case
+				return -collTertiary.compare(s1, s2);
+			} else {
+				boolean isLower1 = UCharacter.isLowerCase(s1.codePointAt(0));
+				boolean isLower2 = UCharacter.isLowerCase(s2.codePointAt(0));
+				
+				if (!(isLower1 ^ isLower2)) {
+					// both are lower or upper case (XNOR)
+					return 0;
+				} else {
+					return -collTertiary.compare(s1, s2);
+				}
+			}
+		});
 	}
 	
 	private static final class Entry {
