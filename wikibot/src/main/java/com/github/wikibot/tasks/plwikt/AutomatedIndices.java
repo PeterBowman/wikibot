@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -25,6 +26,7 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.util.ULocale;
 
@@ -96,6 +98,32 @@ public final class AutomatedIndices {
 				e.getValue(),
 				Collator.getInstance(langToLocale.get(indexToLang.get(e.getKey())))
 			));
+		
+		File fHash = new File(LOCATION + "hash.ser");
+		Map<String, Integer> indexToHash;
+		
+		try {
+			indexToHash = Misc.deserialize(fHash);
+		} catch (Exception e1) {
+			indexToHash = new HashMap<>();
+		}
+		
+		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getFile().getName());
+		
+		for (Map.Entry<String, List<String>> e : indexToTitles.entrySet()) {
+			String index = e.getKey();
+			List<String> titles = e.getValue();
+			int newHash = titles.hashCode();
+			
+			if (!indexToHash.containsKey(index) || indexToHash.get(index) != newHash) {
+				indexToHash.put(index, newHash);
+				String lang = indexToLang.get(index);
+				String text = makeIndexText(index, titles, langToLocale.get(lang), entries);
+				wb.edit("Indeks:" + index, text, summary);
+			}
+		}
+		
+		Misc.serialize(indexToHash, fHash);
 	}
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
@@ -144,6 +172,39 @@ public final class AutomatedIndices {
 				indexToLang.putIfAbsent(index, shortLang);
 			}
 		}
+	}
+	
+	private static String makeIndexText(String index, List<String> titles, ULocale locale, List<Entry> entries) {
+		final String separator = " - ";
+		String langUpper = index.substring(0, index.indexOf(separator));
+		String langLower = StringUtils.uncapitalize(langUpper);
+		String indexType = index.substring(index.indexOf(separator) + separator.length());
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("{{język linków|%s}}", langLower)).append("{{TOCright}}").append("\n");
+		
+		titles.stream()
+			.collect(Collectors.groupingBy(
+				title -> String.valueOf(title.charAt(0)),
+				() -> new TreeMap<>(Collator.getInstance(locale)),
+				Collectors.mapping(
+					title -> String.format("[[%s]]", title),
+					Collectors.joining(" • ")
+				)
+			))
+			.entrySet().stream()
+			.map(e -> String.format("=== %s ===\n%s", e.getKey(), e.getValue()))
+			.forEach(section -> sb.append(section).append("\n\n"));
+		
+		sb.append("[[Kategoria:Słowniki tworzone automatycznie]]").append("\n");
+		sb.append(String.format("[[Kategoria:%s (słowniki tematyczne)|%s]]", langUpper, indexType)).append("\n");
+		
+		entries.stream()
+			.filter(entry -> entry.indexName.equals(StringUtils.uncapitalize(indexType)))
+			.flatMap(entry -> entry.categories.stream())
+			.forEach(category -> sb.append(String.format("[[Kategoria:%s]]", category)).append("\n"));
+		
+		return sb.toString().trim();
 	}
 	
 	private static final class Entry {
