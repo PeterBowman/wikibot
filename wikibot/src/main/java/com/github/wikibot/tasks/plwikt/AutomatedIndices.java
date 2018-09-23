@@ -131,6 +131,10 @@ public final class AutomatedIndices {
 		
 		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getFile().getName());
 		
+		wb.setMarkBot(true);
+		wb.setMarkMinor(false);
+		wb.setThrottle(1000);
+		
 		for (Map.Entry<String, List<String>> e : indexToTitles.entrySet()) {
 			String index = e.getKey();
 			List<String> titles = e.getValue();
