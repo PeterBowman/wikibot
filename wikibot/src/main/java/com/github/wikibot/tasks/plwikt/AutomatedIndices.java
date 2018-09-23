@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -189,12 +190,16 @@ public final class AutomatedIndices {
 		String indexType = index.substring(index.indexOf(separator) + separator.length());
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("{{język linków|%s}}", langLower)).append("{{TOCright}}").append("\n");
+		sb.append(String.format("{{język linków|%s}}", langLower)).append("{{TOCright}}").append("\n\n");
+		
+		Collator collator = Collator.getInstance(locale);
+		collator.setStrength(Collator.SECONDARY);
 		
 		titles.stream()
 			.collect(Collectors.groupingBy(
 				title -> String.valueOf(title.charAt(0)),
-				() -> new TreeMap<>(Collator.getInstance(locale)),
+				// sort first letter ignoring case, then reverse natural order ('A' before 'a')
+				() -> new TreeMap<>(collator.thenComparing(Collator.getInstance(Locale.ENGLISH).reversed())),
 				Collectors.mapping(
 					title -> String.format("[[%s]]", title),
 					Collectors.joining(" • ")
