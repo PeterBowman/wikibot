@@ -40,6 +40,7 @@ public class Wikibot extends WMFWiki {
     	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
+    	getparams.put("rvslots", "main");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		List<PageContainer> coll = getListedContent(getparams, pages, "getContents", "titles", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
@@ -50,6 +51,7 @@ public class Wikibot extends WMFWiki {
     	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
+    	getparams.put("rvslots", "main");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
 		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "pageids", biCons);
@@ -61,6 +63,7 @@ public class Wikibot extends WMFWiki {
     	getparams.put("action", "query");
     	getparams.put("prop", "revisions");
     	getparams.put("rvprop", "timestamp|content");
+    	getparams.put("rvslots", "main");
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
 		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "revids", biCons);
@@ -82,6 +85,7 @@ public class Wikibot extends WMFWiki {
 		Map<String, String> getparams = new HashMap<>();
 		getparams.put("prop", "revisions");
 		getparams.put("rvprop", "timestamp|content");
+		getparams.put("rvslots", "main");
 		getparams.put("generator", "categorymembers");
 		getparams.put("gcmtitle", "Category:" + normalize(removeNamespace(category)));
 		getparams.put("gcmtype", "page");
@@ -94,6 +98,7 @@ public class Wikibot extends WMFWiki {
 		Map<String, String> getparams = new HashMap<>();
 		getparams.put("prop", "revisions");
 		getparams.put("rvprop", "timestamp|content");
+		getparams.put("rvslots", "main");
 		getparams.put("generator", "embeddedin");
 		getparams.put("geititle", normalize(page));
 		getparams.put("geinamespace", constructNamespaceString(ns));
@@ -105,6 +110,7 @@ public class Wikibot extends WMFWiki {
 		Map<String, String> getparams = new HashMap<>();
 		getparams.put("prop", "revisions");
 		getparams.put("rvprop", "timestamp|content");
+		getparams.put("rvslots", "main");
 		getparams.put("generator", "backlinks");
 		getparams.put("gbltitle", normalize(page));
 		getparams.put("gblnamespace", constructNamespaceString(ns));
@@ -143,7 +149,7 @@ public class Wikibot extends WMFWiki {
 			.flatMap(page -> page.getElementsByTag("rev").stream()
 				.map(rev -> new PageContainer(
 					decode(page.attr("title")),
-					decode(rev.html()),
+					decode(rev.select("slot[role=main]").html()),
 					OffsetDateTime.parse(rev.attr("timestamp"))
 				))
 			)
