@@ -35,6 +35,7 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.Transliterator;
 import com.ibm.icu.util.ULocale;
 
 public final class AutomatedIndices {
@@ -46,6 +47,7 @@ public final class AutomatedIndices {
 	private static final String ERROR_REPORT_TEMPLATE_FMT = "{{re|%s}}";
 	
 	private static final ULocale POLISH_LOCALE;
+	private static final Transliterator DIACRITIC_TRANSLITERATOR;
 	
 	private static Map<String, String> languageToIcuCode;
 	private static List<String> errors;
@@ -54,6 +56,9 @@ public final class AutomatedIndices {
 	
 	static {
 		POLISH_LOCALE = new ULocale("pl");
+		
+		// https://stackoverflow.com/a/13071166/10404307
+		DIACRITIC_TRANSLITERATOR = Transliterator.getInstance("NFD; [:M:] Remove; NFC");
 		
 		languageToIcuCode = new HashMap<>();
 		languageToIcuCode.put("łaciński", "la");
@@ -294,7 +299,7 @@ public final class AutomatedIndices {
 				)
 			))
 			.entrySet().stream()
-			.map(e -> String.format("=== %s ===\n%s", e.getKey(), e.getValue()))
+			.map(e -> String.format("=== %s ===\n%s", removeDiacriticMarks(e.getKey(), locale), e.getValue()))
 			.forEach(section -> sb.append(section).append("\n\n"));
 		
 		sb.append("[[Kategoria:Słowniki tworzone automatycznie]]").append("\n");
@@ -343,6 +348,13 @@ public final class AutomatedIndices {
 				}
 			}
 		});
+	}
+	
+	private static String removeDiacriticMarks(String s, ULocale locale) {
+		Collator coll = Collator.getInstance(locale);
+		coll.setStrength(Collator.PRIMARY);
+		String stripped = DIACRITIC_TRANSLITERATOR.transliterate(s);
+		return coll.compare(s, stripped) == 0 ? stripped : s;
 	}
 	
 	private static final class Entry {
