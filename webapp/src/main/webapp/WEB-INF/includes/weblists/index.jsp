@@ -25,5 +25,10 @@
 				(plwiki) strony przeniesione do brudnopisu
 			</a>
 		</li>
+		<li>
+			<a href="${pageContext.request.contextPath}/weblists/eswikt-lonely-pages">
+				(eswiktionary) complemento para Especial:PáginasHuérfanas
+			</a>
+		</li>
 	</ul>
 </t:template>

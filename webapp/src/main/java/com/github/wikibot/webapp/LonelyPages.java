@@ -32,7 +32,7 @@ public class LonelyPages extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
 	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
-	private static final String JSP_DISPATCH_TARGET = "/jsp/lonely-pages.jsp";
+	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/eswikt-lonely-pages.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
 	private static final File fData = new File(LOCATION + "data.ser");

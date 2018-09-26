@@ -1,7 +1,7 @@
 $( function () {
 	var $content, $results, $summaryLimit, $summaryStart, $summaryEnd, $timestamp, $total, $paginators,
 		$container = $( '#mw-content-text' ),
-		URL = 'lonely-pages/api',
+		URL = 'eswikt-lonely-pages/api',
 		TIMEOUT = 5000,
 		currentLimit = lonelyPages.limit,
 		currentOffset = lonelyPages.offset,

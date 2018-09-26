@@ -24,7 +24,10 @@
 				columnThreshold: ${columnThreshold}
 			};
 		</script>
-		<script src="scripts/lonely-pages.js"></script>
+		<script src="${pageContext.request.contextPath}/scripts/eswikt-lonely-pages.js"></script>
+	</jsp:attribute>
+	<jsp:attribute name="contentSub">
+		<a href="${pageContext.request.contextPath}/weblists">Retorno al índice</a>
 	</jsp:attribute>
 	<jsp:body>
 		<p>

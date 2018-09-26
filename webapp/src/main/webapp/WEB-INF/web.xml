@@ -32,28 +32,8 @@
   	<servlet-class>com.github.wikibot.webapp.NKJPGenerator</servlet-class>
   </servlet>
   <servlet>
-  	<servlet-name>LonelyPages</servlet-name>
-  	<servlet-class>com.github.wikibot.webapp.LonelyPages</servlet-class>
-  </servlet>
-  <servlet>
-  	<servlet-name>LonelyPagesAPI</servlet-name>
-  	<servlet-class>com.github.wikibot.webapp.LonelyPages</servlet-class>
-  	<init-param>
-  		<param-name>API</param-name>
-  		<param-value>yes</param-value>
-  	</init-param>
-  </servlet>
-  <servlet>
   	<servlet-name>WebLists</servlet-name>
   	<jsp-file>/jsp/weblists.jsp</jsp-file>
-  </servlet>
-  <servlet>
-    <servlet-name>SandboxRedirects</servlet-name>
-    <servlet-class>com.github.wikibot.webapp.SandboxRedirects</servlet-class>
-  </servlet>
-  <servlet>
-  	<servlet-name>MorfeuszLookup</servlet-name>
-  	<servlet-class>com.github.wikibot.webapp.MorfeuszLookup</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>MissingPlwiktRefsOnPlwiki</servlet-name>
@@ -66,6 +46,26 @@
         <param-name>API</param-name>
         <param-value>yes</param-value>
     </init-param>
+  </servlet>
+  <servlet>
+    <servlet-name>SandboxRedirects</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.SandboxRedirects</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>LonelyPages</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.LonelyPages</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>LonelyPagesAPI</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.LonelyPages</servlet-class>
+    <init-param>
+        <param-name>API</param-name>
+        <param-value>yes</param-value>
+    </init-param>
+  </servlet>
+  <servlet>
+    <servlet-name>MorfeuszLookup</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MorfeuszLookup</servlet-class>
   </servlet>
   <servlet-mapping>
   	<servlet-name>VerifyCitations</servlet-name>
@@ -102,25 +102,9 @@
   	<url-pattern>/nkjp-generator</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-  	<servlet-name>LonelyPages</servlet-name>
-  	<url-pattern>/lonely-pages</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-  	<servlet-name>LonelyPagesAPI</servlet-name>
-  	<url-pattern>/lonely-pages/api</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-  	<servlet-name>WebLists</servlet-name>
-  	<url-pattern>/weblists/*</url-pattern>
-  	<url-pattern>/weblists/plwikt-polish-masculine-nouns</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>SandboxRedirects</servlet-name>
-    <url-pattern>/weblists/plwiki-sandbox-redirects</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-  	<servlet-name>MorfeuszLookup</servlet-name>
-  	<url-pattern>/morfeusz-lookup</url-pattern>
+    <servlet-name>WebLists</servlet-name>
+    <url-pattern>/weblists/*</url-pattern>
+    <url-pattern>/weblists/plwikt-polish-masculine-nouns</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>MissingPlwiktRefsOnPlwiki</servlet-name>
@@ -129,6 +113,24 @@
   <servlet-mapping>
     <servlet-name>MissingPlwiktRefsOnPlwikiAPI</servlet-name>
     <url-pattern>/weblists/plwikt-missing-plwiki-backlinks/api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>SandboxRedirects</servlet-name>
+    <url-pattern>/weblists/plwiki-sandbox-redirects</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>LonelyPages</servlet-name>
+    <url-pattern>/weblists/eswikt-lonely-pages</url-pattern>
+    <url-pattern>/lonely-pages</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>LonelyPagesAPI</servlet-name>
+    <url-pattern>/weblists/eswikt-lonely-pages/api</url-pattern>
+    <url-pattern>/eswikt-lonely-pages/api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MorfeuszLookup</servlet-name>
+    <url-pattern>/morfeusz-lookup</url-pattern>
   </servlet-mapping>
   <resource-ref>
   	<res-ref-name>jdbc/tools-db</res-ref-name>
