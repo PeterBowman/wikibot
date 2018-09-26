@@ -15,14 +15,6 @@
 <c:set var="paginatorLimits" value="100,250,500,1000,2000,5000" />
 
 <t:template title="${title}" firstHeading="${title}" enableJS="true">
-	<jsp:attribute name="headerNotice">
-		<t:ambox type="warning">
-			Esta herramienta se encuentra en fase de pruebas.
-			Por favor, notifica cualquier error o sugerencia en
-			<a href="https://es.wiktionary.org/wiki/Usuario_discusi%C3%B3n:Peter_Bowman" target="_blank">esta dirección</a>.
-			Gracias.
-		</t:ambox>
-	</jsp:attribute>
 	<jsp:attribute name="head">
 		<script>
 			window.lonelyPages = {
