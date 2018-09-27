@@ -15,8 +15,8 @@
 
 <c:set var="normalized" value="${fn:replace(target, '_', ' ')}" />
 <c:set var="escaped" value="${fn:escapeXml(normalized)}" />
-<c:set var="encoded" value="${utils:encodeUri(normalized)}" />
 <c:set var="encodedParam" value="${utils:encodeParam(normalized)}" />
+<c:set var="encodedTitle" value="${fn:replace(encodedParam, '+', '_')}" />
 
 <c:if test="${empty display}">
 	<c:set var="display" value="${normalized}" />
@@ -29,7 +29,7 @@
 		<c:set var="classVar" value="new" />
 	</c:when>
 	<c:when test="${testMissingSection eq true}">
-		<c:set var="href" value="wiki/${encoded}" />
+		<c:set var="href" value="wiki/${encodedTitle}" />
 		<c:choose>
 			<c:when test="${not empty sectionName}">
 				<c:set var="title" value='(brak sekcji ${sectionName})' />
@@ -46,12 +46,12 @@
 		<c:set var="classVar" value="redirect" />
 	</c:when>
 	<c:when test="${testDisambiguation eq true}">
-	   <c:set var="href" value="wiki/${encoded}" />
+	   <c:set var="href" value="wiki/${encodedTitle}" />
 	   <c:set var="title" value="(strona ujednoznaczniająca)" />
 	   <c:set var="classVar" value="disambig" />
 	</c:when>
 	<c:otherwise>
-		<c:set var="href" value="wiki/${encoded}" />
+		<c:set var="href" value="wiki/${encodedTitle}" />
 	</c:otherwise>
 </c:choose>
 
