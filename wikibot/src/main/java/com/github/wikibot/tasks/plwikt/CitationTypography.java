@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -85,7 +86,7 @@ public final class CitationTypography {
 		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
+		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
 		
 		// Don't use this, it either breaks the encoding or throws MysqlDataTruncation.
 		// defaultSQLProperties.setProperty("character_set_server", "utf8mb4");

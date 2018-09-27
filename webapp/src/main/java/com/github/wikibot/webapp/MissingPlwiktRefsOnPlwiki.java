@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -112,7 +113,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			json.put("stats", new JSONObject(localStats));
 			json.put("templates", new JSONArray(localTemplates));
 			json.put("timestamp", timestamp);
-			response.setCharacterEncoding("UTF-8");
+			response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 			response.setHeader("Content-Type", "application/json");
 			response.getWriter().append(json.toString());
 		} else {

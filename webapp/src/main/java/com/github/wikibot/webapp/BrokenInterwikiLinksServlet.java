@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -384,7 +385,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		
 		if (remainder.contains("%")) {
 			try {
-				remainder = URLDecoder.decode(remainder, "UTF-8");
+				remainder = URLDecoder.decode(remainder, StandardCharsets.UTF_8.name());
 			} catch (UnsupportedEncodingException e) {}
 		}
 		
@@ -831,7 +832,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			sourceArticle += sourcePage.title;
 			
-			sourceLink += URLEncoder.encode(sourceArticle, "UTF-8");
+			sourceLink += URLEncoder.encode(sourceArticle, StandardCharsets.UTF_8.name());
 			sourceLink += "\" target=\"_blank\">" + sourceArticle.replace("_", " ") + "</a>";
 			
 			String targetLink = "<a href=\"" + targetProject.url + "/wiki/";
@@ -848,7 +849,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			targetArticle += targetPage.title;
 			
-			targetLink += URLEncoder.encode(targetArticle, "UTF-8");
+			targetLink += URLEncoder.encode(targetArticle, StandardCharsets.UTF_8.name());
 			targetLink += "\" target=\"_blank\"";
 			
 			if (isMissing) {

@@ -2,6 +2,7 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -55,7 +56,7 @@ public final class MorfeoDatabase {
 	static {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", "UTF-8");
+		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
 	}
 	
 	public static void main(String[] args) throws Exception {

@@ -11,6 +11,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public final class UpdateLanguageCodes {
 		TsvParser parser = new TsvParser(settings);
 		
 		if (f_langs.exists()) {
-			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), "UTF-8"))) {
+			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), StandardCharsets.UTF_8))) {
 				list = parser.parseAll(reader);
 			}
 			
@@ -228,7 +229,7 @@ public final class UpdateLanguageCodes {
 	
 	private static void storeLangs(Map<String, String> map) throws FileNotFoundException, UnsupportedEncodingException {
 		TsvWriterSettings settings = new TsvWriterSettings();
-		Writer outputWriter = new OutputStreamWriter(new FileOutputStream(new File(F_LANGS)), "UTF8");
+		Writer outputWriter = new OutputStreamWriter(new FileOutputStream(new File(F_LANGS)), StandardCharsets.UTF_8);
 		TsvWriter writer = new TsvWriter(outputWriter, settings);
 		String[][] rows = map.keySet().stream().map(key -> new String[]{key, map.get(key)}).toArray(String[][]::new);
 		writer.writeRowsAndClose(rows);

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -73,7 +74,7 @@ public class LonelyPages extends HttpServlet {
 			json.put("results", new JSONArray(results));
 			json.put("total", localStorage.size());
 			json.put("timestamp", timestamp);
-			response.setCharacterEncoding("UTF-8");
+			response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 			response.setHeader("Content-Type", "application/json");
 			response.getWriter().append(json.toString());
 		} else {

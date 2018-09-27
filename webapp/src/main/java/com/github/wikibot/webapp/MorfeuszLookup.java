@@ -2,6 +2,7 @@ package com.github.wikibot.webapp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class MorfeuszLookup extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("application/json; charset=UTF-8");
-		response.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		response.setHeader("Access-Control-Allow-Origin", "https://pl.wiktionary.org");
 		
 		String actionStr = request.getParameter("action");

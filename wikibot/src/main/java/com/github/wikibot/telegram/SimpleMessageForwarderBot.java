@@ -1,7 +1,7 @@
 package com.github.wikibot.telegram;
 
 import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -181,8 +181,8 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		File fTelegramToken = new File(location + "telegram_token.txt");
 		File fTelegramChatid = new File(location + "telegram_chatid.txt");
 
-		String telegramToken = FileUtils.readFileToString(fTelegramToken, Charset.forName("UTF8")).trim();
-		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, Charset.forName("UTF8")).trim();
+		String telegramToken = FileUtils.readFileToString(fTelegramToken, StandardCharsets.UTF_8).trim();
+		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, StandardCharsets.UTF_8).trim();
 		
 		ApiContextInitializer.init();
 		TelegramBotsApi botsApi = new TelegramBotsApi();

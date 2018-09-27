@@ -1,6 +1,7 @@
 package com.github.wikibot.webapp;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -88,7 +89,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 			json.put("results", ja);
 			
 			response.setContentType("application/json; charset=UTF-8");
-			response.setCharacterEncoding("UTF-8");
+			response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 			response.getWriter().append(json.toString());
 		} catch (SQLException e) {
 			response.getWriter().append(emptyResult);

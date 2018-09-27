@@ -3,6 +3,7 @@ package com.github.wikibot.utils;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,7 +36,7 @@ public class Inflector extends OnlineDict<Inflector> {
 	}
 
 	public Inflector(String entry, Gender gender) {
-		super(entry, String.format("%s?typ=%s&nazwisko=", MAIN_URL, gender.param), "UTF-8");
+		super(entry, String.format("%s?typ=%s&nazwisko=", MAIN_URL, gender.param), StandardCharsets.UTF_8.name());
 		this.gender = gender;
 	}
 
@@ -47,7 +48,7 @@ public class Inflector extends OnlineDict<Inflector> {
 
 	@Override
 	protected String escape(String text) throws UnsupportedEncodingException {
-		return URLEncoder.encode(text, "UTF-8");
+		return URLEncoder.encode(text, StandardCharsets.UTF_8.name());
 	}
 
 	@Override
@@ -217,7 +218,7 @@ public class Inflector extends OnlineDict<Inflector> {
 			String encoded;
 			
 			try {
-				encoded = URLEncoder.encode(getEntry(), "UTF-8");
+				encoded = URLEncoder.encode(getEntry(), StandardCharsets.UTF_8.name());
 			} catch (UnsupportedEncodingException e) {
 				encoded = entry;
 			}

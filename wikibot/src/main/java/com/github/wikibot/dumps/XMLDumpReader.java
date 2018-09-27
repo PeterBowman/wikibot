@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,7 +96,7 @@ public final class XMLDumpReader {
 			case ZIP_GZ:
 				return new CompressorStreamFactory().createCompressorInputStream(bis);
 			case ZIP_7Z:
-				return new ArchiveStreamFactory("UTF8").createArchiveInputStream(bis);
+				return new ArchiveStreamFactory(StandardCharsets.UTF_8.name()).createArchiveInputStream(bis);
 			case XML:
 				return bis;
 			default:

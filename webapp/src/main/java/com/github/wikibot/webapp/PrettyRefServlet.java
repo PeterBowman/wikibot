@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -69,7 +70,7 @@ public class PrettyRefServlet extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		request.setCharacterEncoding("UTF-8");
+		request.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		
 		String title = request.getParameter("title");
 		String text = request.getParameter("text");
@@ -133,7 +134,7 @@ public class PrettyRefServlet extends HttpServlet {
 					request.setAttribute("output", output);
 					dispatcher.forward(request, response);
 				} else {
-					response.setCharacterEncoding("UTF-8");
+					response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 					response.setHeader("Content-Type", contentType);
 					response.getWriter().append(output);
 				}
@@ -157,7 +158,7 @@ public class PrettyRefServlet extends HttpServlet {
 					
 					json.put("backtrace", String.join("\n", backTrace));
 					
-					response.setCharacterEncoding("UTF-8");
+					response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 					response.setHeader("Content-Type", contentType);
 					response.getWriter().append(json.toString());
 				} else {

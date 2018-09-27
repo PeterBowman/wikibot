@@ -1,6 +1,7 @@
 package com.github.wikibot.utils;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -15,7 +16,7 @@ public class RAE extends OnlineDict<RAE> {
 	private final WebClient webClient = new WebClient(BrowserVersion.FIREFOX_52);
 		
     public RAE(String entry) {
-    	super(entry, "http://lema.rae.es/drae/srv/search?val=", "UTF-8");
+    	super(entry, "http://lema.rae.es/drae/srv/search?val=", StandardCharsets.UTF_8.name());
     	
     	webClient.setIncorrectnessListener(new IncorrectnessListener() {
             public void notify(String arg0, Object arg1) {}

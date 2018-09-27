@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -91,7 +92,7 @@ public final class MassReview {
 		
 		List<String[]> list;
 		
-		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), "UTF-8"))) {
+		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), StandardCharsets.UTF_8))) {
 			list = parser.parseAll(reader);
 		}
 		

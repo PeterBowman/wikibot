@@ -5,6 +5,7 @@ import static org.wikiutils.ParseUtils.getTemplates;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public final class ScheduledEditor {
 						return;
 					}
 					
-					String decoded = URLDecoder.decode(args[1], "UTF8");
+					String decoded = URLDecoder.decode(args[1], StandardCharsets.UTF_8.name());
 					processCategorymembers(decoded);
 					break;
 				case "-a":

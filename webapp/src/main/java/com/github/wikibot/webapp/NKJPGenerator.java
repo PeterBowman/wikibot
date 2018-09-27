@@ -3,6 +3,7 @@ package com.github.wikibot.webapp;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -44,7 +45,7 @@ public class NKJPGenerator extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		request.setCharacterEncoding("UTF-8");
+		request.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		response.setHeader("Access-Control-Allow-Origin", "https://pl.wiktionary.org");
 		
 		String address = request.getParameter("address");
@@ -347,7 +348,7 @@ public class NKJPGenerator extends HttpServlet {
 		
 		@Override
 		void send() throws ServletException, IOException {
-			response.setCharacterEncoding("UTF-8");
+			response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 			
 			String contentType = getContentType();
 			response.setHeader("Content-Type", contentType);
