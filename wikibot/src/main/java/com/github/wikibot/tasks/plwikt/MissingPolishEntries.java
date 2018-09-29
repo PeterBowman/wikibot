@@ -22,6 +22,9 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
+import com.ibm.icu.number.LocalizedNumberFormatter;
+import com.ibm.icu.number.NumberFormatter;
+import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class MissingPolishEntries {
 	private static final String DUMPS_PATH = "./data/dumps/";
@@ -30,6 +33,8 @@ public class MissingPolishEntries {
 	
 	private static final String PAGE_INTRO;
 	private static final Collator COLLATOR_PL;
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
+	
 	private static final boolean ALLOW_COMPRESSION = false;
 	
 	private static Stats stats = new Stats();
@@ -50,6 +55,8 @@ public class MissingPolishEntries {
 		
 		COLLATOR_PL = Collator.getInstance(new Locale("pl", "PL"));
 		COLLATOR_PL.setStrength(Collator.SECONDARY);
+		
+		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -185,9 +192,16 @@ public class MissingPolishEntries {
 				)
 				.collect(Collectors.joining("\n\n"));
 		
-		return String.format(PAGE_INTRO, stats.dumpFile, stats.allEntries, stats.polishLemmas,
-				stats.polishInflected, stats.polishRedirs, stats.polishOverall(),
-				stats.databaseLemmas, stats.databaseOverall, stats.worklistSize
+		return String.format(PAGE_INTRO,
+				stats.dumpFile,
+				NUMBER_FORMAT_PL.format(stats.allEntries),
+				NUMBER_FORMAT_PL.format(stats.polishLemmas),
+				NUMBER_FORMAT_PL.format(stats.polishInflected),
+				NUMBER_FORMAT_PL.format(stats.polishRedirs),
+				NUMBER_FORMAT_PL.format(stats.polishOverall()),
+				NUMBER_FORMAT_PL.format(stats.databaseLemmas),
+				NUMBER_FORMAT_PL.format(stats.databaseOverall),
+				NUMBER_FORMAT_PL.format(stats.worklistSize)
 			) + "\n\n" + out;
 	}
 	
