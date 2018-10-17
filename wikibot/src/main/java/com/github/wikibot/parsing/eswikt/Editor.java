@@ -117,8 +117,8 @@ public class Editor extends AbstractEditor {
 	
 	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
 	private static final List<String> AMBOX_TMPLS = Arrays.asList(
-		"ampliable", "creado por bot", "definición", "discutido", "esbozo", "estructura", "falta",
-		"referencias", "revisión"
+		"ampliable", "creado por bot", "definición", "discutido", "endesarrollo", "esbozo", "estructura",
+		"falta", "referencias", "revisión"
 	);
 	
 	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
