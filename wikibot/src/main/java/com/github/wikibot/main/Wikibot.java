@@ -21,6 +21,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 import org.wikipedia.WMFWiki;
+import org.wikipedia.Wiki;
 
 import com.github.wikibot.utils.PageContainer;
 
@@ -87,7 +88,7 @@ public class Wikibot extends WMFWiki {
 		getparams.put("rvprop", "timestamp|content");
 		getparams.put("rvslots", "main");
 		getparams.put("generator", "categorymembers");
-		getparams.put("gcmtitle", "Category:" + normalize(removeNamespace(category)));
+		getparams.put("gcmtitle", "Category:" + normalize(removeNamespace(category, Wiki.CATEGORY_NAMESPACE)));
 		getparams.put("gcmtype", "page");
 		getparams.put("gcmnamespace", constructNamespaceString(ns));
 		

@@ -22,7 +22,7 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 
 public final class SurnameAppendices {
-	private static final String PREFIX = "Apéndice:Personas/Apellidos/";
+	private static final String TARGET_PARENT_PAGE = "Apéndice:Personas/Apellidos/";
 	private static final String OTHER_SURNAMES_PAGE = "Apéndice:Personas/Apellidos/otros";
 	private static final String SURNAME_TEMPLATE = "Plantilla:apellido";
 	
@@ -72,7 +72,7 @@ public final class SurnameAppendices {
 				targetPage = OTHER_SURNAMES_PAGE;
 				header = "otros";
 			} else {
-				targetPage = PREFIX + firstLetter;
+				targetPage = TARGET_PARENT_PAGE + firstLetter;
 				header = firstLetter.toString();
 			}
 			
@@ -88,7 +88,9 @@ public final class SurnameAppendices {
 	}
 
 	private static String[] getSubPages() throws IOException {
-		return wb.listPages(PREFIX, null, Wiki.MEDIAWIKI_NAMESPACE);
+		int ns = wb.namespace(TARGET_PARENT_PAGE);
+		String prefix = wb.removeNamespace(TARGET_PARENT_PAGE, ns);
+		return wb.listPages(prefix, null, ns);
 	}
 	
 	private static String[] getSurnames() throws IOException {
@@ -135,7 +137,7 @@ public final class SurnameAppendices {
 	private static String prepareOutput(String header, List<String> surnames) {
 		StringBuilder sb = new StringBuilder(surnames.size() * 20);
 		
-		sb.append("{{Abecedario|").append(PREFIX.replaceFirst("/$", "")).append("}}");
+		sb.append("{{Abecedario|").append(TARGET_PARENT_PAGE.replaceFirst("/$", "")).append("}}");
 		sb.append("\n\n==").append(header).append("==\n\n");
 		
 		sb.append("{| border=0  width=100%").append("\n");
