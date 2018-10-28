@@ -150,6 +150,7 @@ juegos = Juegos
 lagos = Lagos, Topónimos
 lgbt = LGBT
 lingüística = Lingüística
+líquidos = Líquidos
 literatura = Literatura
 lógica = Lógica
 logística = Logística
