@@ -49,7 +49,7 @@ public class MissingPolishEntries {
 			"lecz brak sekcji polskiej.\n" + 
 			"* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$s\n" + 
 			"* haseł polskich: %3$s (podstawowe), %4$s (formy fleksyjne), %5$s (przekierowania), %6$s (łącznie)\n" + 
-			"* hasła w bazie SGJP: %7$s (wraz z formami odmienionymi: %8$s)\n" + 
+			"* haseł w bazie SGJP: %7$s (wraz z formami odmienionymi: %8$s)\n" + 
 			"* rozmiar listy: %9$s\n" + 
 			"Wygenerowano ~~~~~.";
 		
