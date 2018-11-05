@@ -258,6 +258,7 @@ Fisiología = fisiología
 Folclore = folclore
 Fonética = fonética
 Fotografía = fotografía
+fraccionario = fraccionarios
 Fútbol = fútbol
 Ganadería = ganadería
 Gastronomía = gastronomía

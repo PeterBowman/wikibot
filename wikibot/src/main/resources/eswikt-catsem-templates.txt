@@ -108,6 +108,7 @@ flores = Flores
 folclore = Folclore
 fonética = Fonética
 fotografía = Fotografía
+fraccionarios = Fraccionarios
 frutas = Frutas
 frutos = Frutos
 fútbol = Fútbol
