@@ -55,6 +55,7 @@ cirugía = Cirugía
 ciudades = Ciudades, Topónimos
 colores = Colores
 comercio = Comercio
+comunicación = Comunicación
 constelaciones = Constelaciones
 construcción = Construcción
 contabilidad = Contabilidad
