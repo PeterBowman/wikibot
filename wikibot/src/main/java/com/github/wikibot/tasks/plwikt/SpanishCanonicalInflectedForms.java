@@ -142,7 +142,7 @@ public final class SpanishCanonicalInflectedForms {
 			com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(String.format(
-			"Lista zawiera %d %s. Aktualizacja: ~~~~~.",
+			"Lista zawiera %s %s. Aktualizacja: ~~~~~.",
 			NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "hasło")
 		));
 		

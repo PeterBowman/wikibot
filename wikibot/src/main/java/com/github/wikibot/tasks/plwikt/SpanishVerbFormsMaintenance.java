@@ -354,7 +354,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		StringBuilder content = new StringBuilder(wikipage_content.substring(0, wikipage_content.indexOf("----")));
 		content.append("----\n");
 		content.append(String.format(
-				"Analizowano %d %s (%d %s) z %d %s (%d %s odmiany).",
+				"Analizowano %s %s (%s %s) z %s %s (%s %s odmiany).",
 				NUMBER_FORMAT_PL.format(form_count), PLURAL_PL.pl(form_count, "forma fleksyjna"),
 				NUMBER_FORMAT_PL.format(dictionary.size()), PLURAL_PL.pl(dictionary.size(), "jednakowa"),
 				NUMBER_FORMAT_PL.format(verb_count), PLURAL_PL.pl(verb_count, "czasownika"),

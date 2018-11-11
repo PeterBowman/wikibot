@@ -255,8 +255,8 @@ public final class MisusedRegTemplates {
 				Collectors.joining("\n")
 			));
 		
-		String itemCount = String.format("%d %s", NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "wystąpienie"));
-		String pageCount = String.format("%d %s", NUMBER_FORMAT_PL.format(groupedMap.size()), PLURAL_PL.pl(groupedMap.size(), "stronie"));
+		String itemCount = String.format("%s %s", NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "wystąpienie"));
+		String pageCount = String.format("%s %s", NUMBER_FORMAT_PL.format(groupedMap.size()), PLURAL_PL.pl(groupedMap.size(), "stronie"));
 		
 		String intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
 		

@@ -324,7 +324,7 @@ public class PolishGerundsList implements Selectorizable {
 		Files.write(Paths.get(location + "sin entrada.txt"), listNoDictEntry);
 		
 		Misc.serialize(String.format(
-			"Analizowano %d %s z tabelką odmiany oraz %d %s.",
+			"Analizowano %s %s z tabelką odmiany oraz %s %s.",
 			numberFormatPL.format(list.size()), pluralPL.pl(list.size(), "czasownik"),
 			numberFormatPL.format(gerunds.size()), pluralPL.pl(gerunds.size(), "rzeczownik odczasownikowy")
 		), locationser + "stats.ser");

@@ -92,7 +92,7 @@ public class DevanagariIAST implements Selectorizable {
 		sb.append("Hasła w alfabecie dewanagari niekorzystające z szablonu {{s|IAST}} w polu '''transliteracja'''.");
 		sb.append(" ");
 		sb.append(String.format(
-			"Hindi: %d %s, inne: %d.",
+			"Hindi: %s %s, inne: %d.",
 			numberFormatPL.format(hindi.size()),
 			pluralPL.pl(hindi.size(), "hasło"),
 			nonHindi.size()

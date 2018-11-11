@@ -315,7 +315,7 @@ public final class LinkManager implements Selectorizable {
 		mainpagetext += String.format("%s%n%s%n%n%s", worklistintro, String.join("\n", output), reportheader);
 		
 		String summary = String.format(
-			"aktualizacja listy, dodano %d %s (%s)",
+			"aktualizacja listy, dodano %s %s (%s)",
 			numberFormatPL.format(data.size()), pluralPL.pl(data.size(), "pozycję"),
 			String.join(", ", summarylist)
 		);
@@ -526,8 +526,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append("Rozmiar listy roboczej: ");
-		sb.append(numberFormatPL.format(pagemap.size())).append(pluralPL.pl(pagemap.size(), "strona") + " (");
-		sb.append(numberFormatPL.format(codes.size())).append(pluralPL.pl(codes.size(), "wystąpienie") + ")\n\n");
+		sb.append(numberFormatPL.format(pagemap.size())).append(pluralPL.pl(pagemap.size(), " strona") + " (");
+		sb.append(numberFormatPL.format(codes.size())).append(pluralPL.pl(codes.size(), " wystąpienie") + ")\n\n");
 		
 		sb.append("Zedytowanych: " + edited);
 		
@@ -751,8 +751,8 @@ public final class LinkManager implements Selectorizable {
 		}
 		
 		sb.append(": '''wyniki:''' ");
-		sb.append(numberFormatPL.format(pagecount)).append(pluralPL.pl(pagecount, "strona") + ", ");
-		sb.append(numberFormatPL.format(matchcount)).append(pluralPL.pl(matchcount, "wystąpienie"));
+		sb.append(numberFormatPL.format(pagecount)).append(pluralPL.pl(pagecount, " strona") + ", ");
+		sb.append(numberFormatPL.format(matchcount)).append(pluralPL.pl(matchcount, " wystąpienie"));
 		
 		if (pagecount > pagecap) {
 			sb.append(" (ograniczono do " + pagecap + " stron)");

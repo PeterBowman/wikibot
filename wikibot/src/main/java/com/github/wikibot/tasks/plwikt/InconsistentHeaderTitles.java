@@ -342,7 +342,7 @@ public final class InconsistentHeaderTitles {
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(PAGE_INTRO + "\n" + String.format(
-			"Znaleziono %d %s (%d %s) w %d %s. Aktualizacja: ~~~~~.",
+			"Znaleziono %s %s (%s %s) w %s %s. Aktualizacja: ~~~~~.",
 			NUMBER_FORMAT_PL.format(total), PLURAL_PL.pl(total, "hasło"),
 			NUMBER_FORMAT_PL.format(unique), PLURAL_PL.pl(unique, "strona"),
 			NUMBER_FORMAT_PL.format(map.keySet().size()), PLURAL_PL.pl(map.keySet().size(), "języku")
