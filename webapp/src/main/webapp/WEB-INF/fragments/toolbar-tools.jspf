@@ -6,7 +6,7 @@
 <li>
 	<a href="//dumps.wikimedia.org/backup-index.html" target="_blank">DB backup dumps</a>
 	<ul>
-		<li><a href="http://dumps.wikimedia.org/plwiktionary/" target="_blank">plwiktionary</a></li>
-		<li><a href="http://dumps.wikimedia.org/eswiktionary/" target="_blank">eswiktionary</a></li>
+		<li><a href="//dumps.wikimedia.org/plwiktionary/" target="_blank">plwiktionary</a></li>
+		<li><a href="//dumps.wikimedia.org/eswiktionary/" target="_blank">eswiktionary</a></li>
 	</ul>
 </li>
