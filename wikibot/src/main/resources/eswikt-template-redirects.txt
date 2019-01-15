@@ -101,6 +101,7 @@ mah = mh
 mlt = mt
 mri = mi
 nb = no
+nln = azd
 nrm = nrf
 oji = oj
 ood = nai
