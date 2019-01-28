@@ -84,6 +84,7 @@ ewe = ee
 fas = fa
 fiu-vro = vro
 ful = ff
+gem = gem-pro
 gkm = qgk
 gla = gd
 gle = ga
