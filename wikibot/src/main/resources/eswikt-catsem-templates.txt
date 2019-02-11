@@ -43,6 +43,7 @@ bolos = Bolos
 botánica = Botánica
 cardiología = Cardiología
 carpintería = Carpintería
+cereales = Cereales
 cerrajería = Cerrajería
 cetrería = Cetrería
 ciclismo = Ciclismo
