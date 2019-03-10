@@ -2,9 +2,12 @@ package com.github.wikibot.utils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -77,8 +80,9 @@ public class Login {
 	}
 	
 	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
-		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".ser";
-		return Misc.deserialize(filename);
+		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		System.out.println("Reading from: " + filename);
+		return Files.lines(Paths.get(filename)).findFirst().orElse("").trim().toCharArray();
 	}
 	
 	private static void promptAndStoreCredentials() throws FileNotFoundException, IOException {
@@ -88,8 +92,13 @@ public class Login {
 		System.out.print("Password: ");
 		char[] password = Misc.readPassword();
 		
-		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".ser";
-		Misc.serialize(password, filename);
+		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		
+		try {
+			Files.write(Paths.get(filename), Arrays.asList(new String(password)), StandardOpenOption.CREATE_NEW);
+		} catch (FileAlreadyExistsException e) {
+			System.out.println(String.format("File %s already exists!", filename));
+		}
 	}
 	
 	public static Wikibot createSession(String domain) throws CredentialException {
