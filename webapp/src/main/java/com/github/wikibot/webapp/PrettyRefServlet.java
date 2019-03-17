@@ -56,7 +56,7 @@ public class PrettyRefServlet extends HttpServlet {
 	 */
 	public PrettyRefServlet() {
 		super();
-		wiki = Wiki.createInstance("pl.wikipedia.org");
+		wiki = Wiki.newSession("pl.wikipedia.org");
 		
 		// populate the namespace cache, or at least attempt that
 		try {

@@ -242,7 +242,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static void fetchNamespaces(Project project) {
 		String url = project.url.replaceFirst("^https?://", "");
-		Wiki wiki = Wiki.createInstance(url);
+		Wiki wiki = Wiki.newSession(url);
 		Map<String, Integer> info = wiki.getNamespaces();
 		Map<String, Integer> copy = new LinkedHashMap<>(info.size(), 1);
 		
