@@ -333,7 +333,21 @@ public class MissingRefsOnPlwiki {
 				if (plwikiMissing.contains(articleOnPlwiki)) {
 					entry.plwikiMissing = true;
 				} else {
-					Set<String> entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
+					Set<String> entriesOnPlwikt;
+					
+					try {
+						entriesOnPlwikt = plwikiToPlwikt.get(articleOnPlwiki);
+					} catch (NullPointerException ex) {
+						System.out.printf("NullPointerException: %s%n", articleOnPlwiki);
+						continue;
+					}
+					
+					if (entriesOnPlwikt == null) {
+						// e.g. {{wikipedia|Pl:Zair (prowincja)}}
+						// https://pl.wiktionary.org/w/index.php?diff=6350864&title=Zair
+						System.out.printf("Null entry: %s%n", articleOnPlwiki);
+						continue;
+					}
 
 					if (!entriesOnPlwikt.isEmpty()) {
 						entry.plwiktBacklinks = entriesOnPlwikt.stream()
