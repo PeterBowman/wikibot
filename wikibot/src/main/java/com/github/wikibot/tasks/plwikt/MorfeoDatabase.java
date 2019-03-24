@@ -28,7 +28,6 @@ import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -120,8 +119,8 @@ public final class MorfeoDatabase {
 	private static Map<String, List<String>> retrieveItems(PageContainer[] pages) {
 		Map<String, List<String>> map = Stream.of(pages)
 			.map(Page::wrap)
-			.flatMap(page -> Utils.streamOpt(page.getSection("esperanto")))
-			.flatMap(section -> Utils.streamOpt(section.getField(FieldTypes.MORPHOLOGY)))
+			.flatMap(page -> page.getSection("esperanto").stream())
+			.flatMap(section -> section.getField(FieldTypes.MORPHOLOGY).stream())
 			.filter(field -> !field.isEmpty())
 			.collect(Collectors.toMap(
 				field -> field.getContainingSection().get().getContainingPage().get().getTitle(),

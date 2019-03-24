@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -16,7 +17,6 @@ import java.util.stream.Stream;
 import org.json.JSONObject;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -73,8 +73,9 @@ public final class MissingPolishEtymOnWikidata {
 
 		Map<String, String> map = Stream.of(wiktContent)
 			.map(Page::wrap)
-			.flatMap(p -> Utils.streamOpt(p.getPolishSection()))
-			.flatMap(s -> Utils.streamOpt(s.getField(FieldTypes.ETYMOLOGY)))
+			.map(Page::getPolishSection)
+			.flatMap(Optional::stream)
+			.flatMap(s -> s.getField(FieldTypes.ETYMOLOGY).stream())
 			.filter(f -> !f.isEmpty())
 			.collect(Collectors.toMap(
 				f -> f.getContainingSection().get().getContainingPage().get().getTitle(),

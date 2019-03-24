@@ -26,7 +26,6 @@ import org.wikiutils.ParseUtils;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -118,7 +117,7 @@ public final class AutomatedIndices {
 				.flatMap(p -> p.getAllSections().stream())
 				.peek(AutomatedIndices::normalizeLangName)
 				.filter(s -> langToEntries.containsKey(s.getLang()))
-				.flatMap(s -> Utils.streamOpt(s.getField(FieldTypes.DEFINITIONS)))
+				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
 				.forEach(f -> processDefinitionsField(f, langToEntries, indexToTitles, indexToLang));
 		}
 		

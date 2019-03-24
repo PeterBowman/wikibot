@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import static com.github.wikibot.parsing.Utils.streamOpt;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -104,8 +102,8 @@ public final class SpanishCanonicalInflectedForms {
 		
 		List<String> titles = Stream.of(pages)
 			.map(Page::wrap)
-			.flatMap(p -> streamOpt(p.getSection("hiszpański", true)))
-			.flatMap(s -> streamOpt(s.getField(FieldTypes.DEFINITIONS)))
+			.flatMap(p -> p.getSection("hiszpański", true).stream())
+			.flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
 			.filter(SpanishCanonicalInflectedForms::matchNonInflectedDefinitions)
 			.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
 			.sorted(collator)
