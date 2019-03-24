@@ -185,7 +185,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 				if (section != null) {
 					String definitions = section.getField(FieldTypes.DEFINITIONS).get().getContent();
 					
-					List<String> meanings = Stream.of(definitions.split("\n"))
+					List<String> meanings = definitions.lines()
 						.filter(line -> !line.startsWith(":"))
 						.collect(Collectors.toList());
 					

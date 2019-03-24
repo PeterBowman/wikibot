@@ -1646,7 +1646,7 @@ public class Editor extends AbstractEditor {
 			topSection.setTrailingNewlines(1);
 		}
 		
-		if (etymologyIntro.split("\n").length < 2) {
+		if (etymologyIntro.lines().count() < 2) {
 			return;
 		}
 		
@@ -1921,8 +1921,7 @@ public class Editor extends AbstractEditor {
 			section.getChildSections().isEmpty() &&
 			!containsIgnoreCase(section.getHeader(), "forma") &&
 			// TODO: execute after convertHashedDefinitions?
-			!Stream.of(removeCommentsAndNoWikiText(section.getIntro()).split("\n"))
-				.anyMatch(line -> line.startsWith("#")) &&
+			!removeCommentsAndNoWikiText(section.getIntro()).lines().anyMatch(line -> line.startsWith("#")) &&
 			filterTermSections(section) &&
 			filterFlexiveSections(section)
 		).forEach(Editor::processSectionFlexiveHeader);
@@ -2183,9 +2182,7 @@ public class Editor extends AbstractEditor {
 				String selfIntro = section.getIntro();
 				String parentIntro = parentSection.getIntro();
 				
-				String[] lines = String.join("\n", Arrays.asList(selfIntro, parentIntro)).split("\n");
-				
-				String newIntro = Stream.of(lines)
+				String newIntro = String.join("\n", Arrays.asList(selfIntro, parentIntro)).lines()
 					.sorted((line1, line2) -> -Boolean.compare(
 						line1.matches(P_AMBOX_TMPLS.pattern()),
 						line2.matches(P_AMBOX_TMPLS.pattern())
@@ -4363,8 +4360,7 @@ public class Editor extends AbstractEditor {
 		
 		page.filterSections(s ->
 			s.getLangSectionParent().isPresent() &&
-			Stream.of(removeCommentsAndNoWikiText(s.getIntro()).split("\n"))
-				.anyMatch(line -> line.startsWith("#")) &&
+			removeCommentsAndNoWikiText(s.getIntro()).lines().anyMatch(line -> line.startsWith("#")) &&
 			!P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find() &&
 			filterTermSections(s)
 		).forEach(section -> {
@@ -4376,11 +4372,9 @@ public class Editor extends AbstractEditor {
 				defn.increment();
 			});
 			
-			String[] lines = removeCommentsAndNoWikiText(intro).split("\n");
-			
 			// TODO: abort if nested lists are present ("#:")
 			// https://es.wiktionary.org/w/index.php?title=apple&oldid=3804168
-			if (!Stream.of(lines).anyMatch(line -> line.startsWith("#"))) {
+			if (!removeCommentsAndNoWikiText(intro).lines().anyMatch(line -> line.startsWith("#"))) {
 				section.setIntro(intro);
 			}
 		});
@@ -4517,9 +4511,7 @@ public class Editor extends AbstractEditor {
 		String lsText = langSection.toString();
 		String strippedText = removeCommentsAndNoWikiText(lsText);
 		
-		String[] lines = strippedText.split("\n");
-		
-		if (Stream.of(lines).anyMatch(line -> line.startsWith("#"))) {
+		if (strippedText.lines().anyMatch(line -> line.startsWith("#"))) {
 			return false;
 		}
 		

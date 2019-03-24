@@ -173,7 +173,7 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	private static boolean matchNonInflectedDefinitions(Field definitions) {
-		return Stream.of(definitions.getContent().split("\n"))
+		return definitions.getContent().lines()
 			.anyMatch(SpanishCanonicalInflectedForms::matchNonInflectedDefinitionLine);
 	}
 	

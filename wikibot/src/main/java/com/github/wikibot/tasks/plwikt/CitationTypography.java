@@ -818,7 +818,7 @@ public final class CitationTypography {
 			Field field = page.getSection(entry.langSection)
 				.flatMap(s -> s.getField(entry.fieldType))
 				.filter(f -> !f.isEmpty())
-				.filter(f -> Stream.of(f.getContent().split("\n"))
+				.filter(f -> f.getContent().lines()
 					.anyMatch(s -> s.equals(entry.originalText))
 				)
 				.orElseThrow(() -> new Error("Could not find targeted text for page '" + entry.title + "'."));
