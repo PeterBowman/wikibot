@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.wikiutils.ParseUtils;
-
 import com.github.wikibot.main.Selectorizable;
 
 public final class Misc {
@@ -132,7 +130,7 @@ public final class Misc {
 	public static String makeList(Map<String, String> map) {
 		String worklist = map.keySet().stream()
 			.map(title -> String.format("%s%n%n%s", title, map.get(title)))
-			.collect(Collectors.joining(String.format("%n%n%s%n%n", ParseUtils.getString('*', 40))));
+			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
 			
 		return worklist;
 	}
@@ -156,7 +154,7 @@ public final class Misc {
 	}
 
 	public static String makeMultiList(Map<String, Collection<String>> map) {
-		return makeMultiList(map, String.format("%n%n%s%n%n", ParseUtils.getString('-', 30)));
+		return makeMultiList(map, String.format("%n%n%s%n%n", "-".repeat(30)));
 	}
 	
 	public static String makeMultiList(Map<String, Collection<String>> map, String separator) {
@@ -167,7 +165,7 @@ public final class Misc {
 						map.get(title).stream().collect(Collectors.joining(separator))
 					)
 				)
-				.collect(Collectors.joining(String.format("%n%n%s%n%n", ParseUtils.getString('*', 40))));
+				.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
 			
 			return worklist;
 	}
