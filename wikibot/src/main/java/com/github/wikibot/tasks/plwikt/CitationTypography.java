@@ -87,6 +87,7 @@ public final class CitationTypography {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
 		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
+		defaultSQLProperties.setProperty("sslMode", "DISABLED");
 		
 		// Don't use this, it either breaks the encoding or throws MysqlDataTruncation.
 		// defaultSQLProperties.setProperty("character_set_server", "utf8mb4");

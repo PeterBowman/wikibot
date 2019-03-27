@@ -56,6 +56,7 @@ public final class MorfeoDatabase {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
 		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
+		defaultSQLProperties.setProperty("sslMode", "DISABLED");
 	}
 	
 	public static void main(String[] args) throws Exception {
