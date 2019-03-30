@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -252,7 +251,7 @@ public final class Edit implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get(worklist), List.of(Misc.makeList(map)));
 		
 		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
 			.collect(Collectors.toMap(

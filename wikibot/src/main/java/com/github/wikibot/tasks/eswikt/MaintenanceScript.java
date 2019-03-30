@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -75,7 +74,7 @@ public final class MaintenanceScript {
 		Map<String, Boolean> rcoptions = new HashMap<>();
 		rcoptions.put("redirect", false);
 		
-		List<String> rctypes = Arrays.asList(new String[] {"new", "edit"});
+		List<String> rctypes = List.of("new", "edit");
 		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
@@ -157,7 +156,7 @@ public final class MaintenanceScript {
 	
 	private static void storeTimestamp(OffsetDateTime timestamp) {
 		try {
-			Files.write(Paths.get(LAST_DATE), Arrays.asList(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+			Files.write(Paths.get(LAST_DATE), List.of(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		} catch (IOException e) {}
 	}
 

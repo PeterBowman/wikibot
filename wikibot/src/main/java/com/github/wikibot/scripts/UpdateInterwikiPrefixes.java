@@ -35,6 +35,6 @@ public final class UpdateInterwikiPrefixes {
 			System.out.printf("Differences: %s%n", coll);
 		}
 		
-		Files.write(Paths.get(DATA), Arrays.asList(text));
+		Files.write(Paths.get(DATA), List.of(text));
 	}
 }

@@ -63,7 +63,7 @@ public final class CitationTypography {
 	private static final Pattern P_OCCURENCE;
 	private static final Pattern P_LINE;
 	
-	private static final List<FieldTypes> ALLOWED_NON_POLISH_FIELDS = Arrays.asList(
+	private static final List<FieldTypes> ALLOWED_NON_POLISH_FIELDS = List.of(
 		FieldTypes.EXAMPLES, FieldTypes.ETYMOLOGY, FieldTypes.NOTES
 	);
 	
@@ -227,14 +227,14 @@ public final class CitationTypography {
 			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
+		List<String> rcTypes = List.of("new", "edit");
 		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getTitle),
@@ -406,7 +406,7 @@ public final class CitationTypography {
 				TreeMap::new
 			));
 		
-		Files.write(Paths.get(LOCATION + "diffs.txt"), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get(LOCATION + "diffs.txt"), List.of(Misc.makeList(map)));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {

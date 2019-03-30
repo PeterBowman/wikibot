@@ -276,7 +276,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	
 	@Override
 	public int compareTo(Section s) {
-		final List<String> list = Arrays.asList("użycie międzynarodowe", "polski", "termin obcy w języku polskim");
+		final List<String> list = List.of("użycie międzynarodowe", "polski", "termin obcy w języku polskim");
 		String targetLang = s.getLangShort();
 		boolean containsSelf = list.contains(langShort);
 		boolean containsOther = list.contains(targetLang);

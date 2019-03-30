@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -348,7 +349,7 @@ public class PrettyRefServlet extends HttpServlet {
 			sectionMapping.put(null, "Przypisy");
 			sectionMapping.put("uwaga", "Uwagi");
 			
-			final List<String> sectionHeaders = Arrays.asList("Uwagi", "Przypisy");
+			final List<String> sectionHeaders = List.of("Uwagi", "Przypisy");
 					
 			Map<String, List<Ref>> groupedRefs = new TreeMap<>((s1, s2) -> Integer.compare(
 					sectionHeaders.indexOf(sectionMapping.get(s1)),
@@ -418,7 +419,7 @@ public class PrettyRefServlet extends HttpServlet {
 	}
 
 	private static class Template {
-		private static final List<String> LOWERCASE_CAPITALISATION = Arrays.asList(
+		private static final List<String> LOWERCASE_CAPITALISATION = List.of(
 			"Cytuj", "Cytuj grę komputerową", "Cytuj książkę", "Cytuj odcinek", "Cytuj pismo", "Cytuj stronę"
 		);
 		
@@ -505,14 +506,14 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		private static final Pattern POSIX_CATEGORIES_RE = Pattern.compile("(?:\\p{L}|\\p{M}|\\p{N})+", Pattern.UNICODE_CHARACTER_CLASS);
 		
-		private static final List<String> URI_SCHEMES = Arrays.asList("http", "https", "ftp");
+		private static final List<String> URI_SCHEMES = List.of("http", "https", "ftp");
 		
-		private static final List<String> TLD = Arrays.asList(
+		private static final List<String> TLD = List.of(
 			"biz", "com", "info", "name", "net", "org", "pro", "aero", "asia", "cat", "coop", "edu", "gov", "int",
 			"jobs", "mil", "mobi", "museum", "tel", "travel", "xxx", "co"
 		);
 		
-		private static final List<String> CCTLD = Arrays.asList(
+		private static final List<String> CCTLD = List.of(
 			"ac", "ad", "ae", "af", "ag", "ai", "al", "am", "ao", "aq", "ar", "as", "at", "au", "aw", "ax", "az",
 			"ba", "bb", "bd", "be", "bf", "bg", "bh", "bi", "bj", "bm", "bn", "bo", "br", "bs", "bt", "bw", "by",
 			"bz", "ca", "cc", "cd", "cf", "cg", "ch", "ci", "ck", "cl", "cm", "cn", "co", "cr", "cu", "cv", "cx",
@@ -530,7 +531,7 @@ public class PrettyRefServlet extends HttpServlet {
 			"za", "zm", "zw"
 		);
 		
-		private static final List<String> IGNORED_URI_EXTENSIONS = Arrays.asList("cgi-bin", "html", "shtml", "jhtml");
+		private static final List<String> IGNORED_URI_EXTENSIONS = List.of("cgi-bin", "html", "shtml", "jhtml");
 		
 		private static final Pattern TLD_RE, CCTLD_RE;
 		
@@ -573,7 +574,7 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 					
 					String params = m.group(1).trim();
-					List<String> list = new ArrayList<>(Arrays.asList(params.split("\\s*\\|\\s*", 0)));
+					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toList());
 					Iterator<String> i = list.iterator();
 					
 					while (i.hasNext()) {

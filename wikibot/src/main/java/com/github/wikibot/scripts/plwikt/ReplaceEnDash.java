@@ -107,7 +107,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
-		Files.write(Paths.get(reviewedList), Arrays.asList(Misc.makeMultiList(map, "\n")));
+		Files.write(Paths.get(reviewedList), List.of(Misc.makeMultiList(map, "\n")));
 	}
 	
 	public static void rename() throws LoginException, IOException {

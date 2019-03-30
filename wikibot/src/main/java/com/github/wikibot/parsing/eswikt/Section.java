@@ -1,6 +1,5 @@
 package com.github.wikibot.parsing.eswikt;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +14,11 @@ import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
 
 public class Section extends AbstractSection<Section> implements Comparable<Section> {
-	public static final List<String> HEAD_SECTIONS = Arrays.asList(
+	public static final List<String> HEAD_SECTIONS = List.of(
 		"Pronunciación y escritura", "Notación", "Etimología"
 	);
 	
-	public static final List<String> BOTTOM_SECTIONS = Arrays.asList(
+	public static final List<String> BOTTOM_SECTIONS = List.of(
 		"Locuciones", "Refranes", "Conjugación", "Evidencias", "Otras formas", "Información adicional",
 		"Véase también", "Traducciones"
 	);

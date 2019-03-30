@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,26 +38,26 @@ public final class ShortCommas implements Selectorizable {
 	private static Pattern patt;
 	
 	static {
-		String[] shorts = new String[] {
+		List<String> shorts = List.of(
 			"starop", "akadfranc", "algierarab", "arabhiszp", "belgfranc", "belghol", "brazport", "egiparab", "eurport",
 			"francmetr", "hiszpam", "kanadang", "kanadfranc", "korpłd", "korpłn", "lewantarab", "libijarab",
 			"marokarab", "nidhol", "niemdial", "niemrfn", "surinhol", "szkocang", "szwajcfranc", "szwajcniem",
 			"szwajcwł", "tunezarab", "nłac", "płac", "stłac",
 			// templates
 			"skrócenie od", "odczasownikowy od", "zob", "hiszp-pis", "niem-pis", "dokonany od", "niedokonany od"
-		};
+		);
 		
 		File f = new File(ShortCommas.shorts);
 		
 		try {
-			Set<String> tempSet = new HashSet<>(Arrays.asList(shorts));
+			Set<String> tempSet = new HashSet<>(shorts);
 			tempSet.addAll(Files.readAllLines(Paths.get(f.getPath())));
-			shorts = tempSet.toArray(new String[tempSet.size()]);
+			shorts = new ArrayList<>(tempSet);
 		} catch (IOException e) {
 			System.out.printf("No se ha encontrado el archivo shorts.txt");
 		}
 		
-		System.out.printf("Tamaño de la lista de abreviaturas: %d%n", shorts.length);
+		System.out.printf("Tamaño de la lista de abreviaturas: %d%n", shorts.size());
 		String shortlist = String.join("|", shorts);
 		patt = Pattern.compile(".*?\\{\\{ *?(?:" + shortlist + ") *?\\}\\}(?:(;) \\{\\{ *?zob *?\\||(,) (?:\\{\\{ *?(?:" + shortlist + ") *?(?:\\}|\\|)|'')).*", Pattern.DOTALL);
 	}
@@ -94,7 +93,7 @@ public final class ShortCommas implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		Set<String> wlh = new HashSet<>(Arrays.asList(wb.whatTranscludesHere("Szablon:skrót", 0)));
+		Set<String> wlh = Set.of(wb.whatTranscludesHere("Szablon:skrót", 0));
 		List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
 		XMLDumpReader dumpReader = new XMLDumpReader("pl.wiktionary.org");
 		int size = wb.getSiteStatistics().get("pages");
@@ -172,7 +171,7 @@ public final class ShortCommas implements Selectorizable {
 			System.out.printf("%d errores: %s%n", errors.length, errors.toString());
 		}
 		
-		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeMultiList(map, "\n\n")));
+		Files.write(Paths.get(worklist), List.of(Misc.makeMultiList(map, "\n\n")));
 		Misc.serialize(pages, info);
 	}
 	

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -569,7 +570,7 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		Files.write(Paths.get("./data/eswikt-catgram.txt"), Arrays.asList(sb.toString()));
+		Files.write(Paths.get("./data/eswikt-catgram.txt"), List.of(sb.toString()));
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -592,6 +593,6 @@ public final class Catgram {
 			sb.append("\n");
 		}
 		
-		Files.write(Paths.get("./data/eswikt-catgram-output.txt"), Arrays.asList(sb.toString()));
+		Files.write(Paths.get("./data/eswikt-catgram-output.txt"), List.of(sb.toString()));
 	}
 }

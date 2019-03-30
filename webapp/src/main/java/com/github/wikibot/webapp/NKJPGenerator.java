@@ -5,7 +5,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,7 +34,7 @@ import org.nibor.autolink.LinkType;
 public class NKJPGenerator extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final List<String> templateParams = Arrays.asList(
+	private static final List<String> templateParams = List.of(
 		"autorzy", "tytuł_pub", "tytuł_art", "data", "hash", "match_start", "match_end"
 	);
 	
@@ -101,7 +100,7 @@ public class NKJPGenerator extends HttpServlet {
 		URL url = new URL(urlString);
 		String query = url.getQuery();
 		
-		List<String> mandatoryParams = Arrays.asList("pid", "match_start", "match_end", "wynik");
+		List<String> mandatoryParams = List.of("pid", "match_start", "match_end", "wynik");
 		Map<String, String> params = new HashMap<>();
 		
 		for (String paramWithValue : query.split("&")) {
@@ -147,7 +146,7 @@ public class NKJPGenerator extends HttpServlet {
 	}
 	
 	private static void extractNKJPData(Document doc, Map<String, String> resultMap) {
-		List<String> mandatoryParams = Arrays.asList("autorzy", "tytuł_pub");
+		List<String> mandatoryParams = List.of("autorzy", "tytuł_pub");
 		
 		for (Element tr : doc.body().getElementsByTag("tr")) {
 			if (tr.children().size() != 2) {

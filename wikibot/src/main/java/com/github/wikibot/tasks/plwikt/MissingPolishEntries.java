@@ -115,7 +115,7 @@ public class MissingPolishEntries {
 		String[] resolvedRedirs = wb.resolveRedirects(allRedirs);
 		
 		List<String> polishRedirs = new ArrayList<>(2000);
-		Set<String> set = new HashSet<>(Arrays.asList(polishTitles));
+		Set<String> set = Set.of(polishTitles);
 		
 		for (int i = 0; i < allRedirs.length; i++) {
 			String redir = allRedirs[i];

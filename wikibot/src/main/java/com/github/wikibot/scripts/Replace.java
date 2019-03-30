@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -80,7 +79,7 @@ public final class Replace implements Selectorizable {
 				page -> replace(page.getText(), target, replacement)
 			));
 		
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(map)));
 		
 		System.out.printf("Tamaño final: %d%n", map.size());
 		

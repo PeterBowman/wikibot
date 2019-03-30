@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -80,7 +79,7 @@ public final class MassReview {
 		System.out.printf("Last reviewed: %s%n", lastReviewed);
 		
 		Files.write(Paths.get(F_ERRORS), errors);
-		Files.write(Paths.get(F_LAST), Arrays.asList(lastReviewed));
+		Files.write(Paths.get(F_LAST), List.of(lastReviewed));
 		
 		wb.logout();
 	}

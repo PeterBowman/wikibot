@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -95,7 +94,7 @@ public class Login {
 		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		
 		try {
-			Files.write(Paths.get(filename), Arrays.asList(new String(password)), StandardOpenOption.CREATE_NEW);
+			Files.write(Paths.get(filename), List.of(new String(password)), StandardOpenOption.CREATE_NEW);
 		} catch (FileAlreadyExistsException e) {
 			System.out.println(String.format("File %s already exists!", filename));
 		}

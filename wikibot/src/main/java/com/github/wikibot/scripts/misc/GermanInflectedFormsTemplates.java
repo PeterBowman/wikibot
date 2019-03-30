@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +166,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 			}
 		}
 		
-		Files.write(Paths.get(location + "work_list_headers.txt"), Arrays.asList(String.join("\n\n", list)));
+		Files.write(Paths.get(location + "work_list_headers.txt"), List.of(String.join("\n\n", list)));
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	

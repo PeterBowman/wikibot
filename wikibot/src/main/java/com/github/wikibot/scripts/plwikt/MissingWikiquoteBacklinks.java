@@ -111,7 +111,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		}
 		
 		Misc.serialize(wiktpages, ser_pages);
-		Files.write(Paths.get(worklist), Arrays.asList(Misc.makeMultiList(map)));
+		Files.write(Paths.get(worklist), List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {

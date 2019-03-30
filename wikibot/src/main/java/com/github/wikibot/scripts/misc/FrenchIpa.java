@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -71,6 +72,6 @@ public class FrenchIpa {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Files.write(Paths.get("./data/scripts.misc/FrenchIpa/list.txt"), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get("./data/scripts.misc/FrenchIpa/list.txt"), List.of(Misc.makeList(map)));
 	}
 }

@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,7 +41,7 @@ public final class AutomatedIndices {
 	private static final String WORKLIST = "Wikisłownikarz:Beau.bot/indeksy/lista";
 	private static final String TEMPLATE = "Wikisłownikarz:Beau.bot/indeksy/szablon";
 	
-	private static final List<String> MAINTAINERS = Arrays.asList("Peter Bowman");
+	private static final List<String> MAINTAINERS = List.of("Peter Bowman");
 	private static final String ERROR_REPORT_TEMPLATE_FMT = "{{re|%s}}";
 	
 	private static final ULocale POLISH_LOCALE;

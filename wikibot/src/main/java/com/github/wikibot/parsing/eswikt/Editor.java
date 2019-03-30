@@ -85,7 +85,7 @@ public class Editor extends AbstractEditor {
 	private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
 	
 	private static final List<String> LENG_PARAM_TMPLS;
-	private static final List<String> LENG_PARAM_TMPLS_STANDARD = Arrays.asList(
+	private static final List<String> LENG_PARAM_TMPLS_STANDARD = List.of(
 		"etimología", "etimología2", "transliteración", "homófono", "grafía alternativa", "variantes",
 		"parónimo", "sinónimo", "antónimo", "hiperónimo", "hipónimo", "uso", "ámbito", "apellido",
 		"doble conjugación", "derivad", "grafía", "pron-graf", "rima", "relacionado", "pronunciación",
@@ -95,47 +95,47 @@ public class Editor extends AbstractEditor {
 		"adverbio de sustantivo", "merónimo", "holónimo"
 	);
 	
-	private static final List<String> PRON_TMPLS = Arrays.asList(
+	private static final List<String> PRON_TMPLS = List.of(
 		"pronunciación", "pron.la",  "audio", "transliteración", "homófono", "grafía alternativa",
 		"variantes", "parónimo", "diacrítico", "ortografía alternativa"
 	);
 	
-	private static final List<String> PRON_TMPLS_ALIAS = Arrays.asList(
+	private static final List<String> PRON_TMPLS_ALIAS = List.of(
 		null, null, null, "transliteraciones", "homófonos", "grafías alternativas",
 		"variante", "parónimos", null, "ortografías alternativas"
 	);
 	
-	private static final List<String> TERM_TMPLS = Arrays.asList(
+	private static final List<String> TERM_TMPLS = List.of(
 		"ámbito", "uso", "sinónimo", "antónimo", "hipónimo", "hiperónimo", "relacionado", "anagrama",
 		"derivado", "merónimo", "holónimo"
 	);
 	
-	private static final List<String> TERM_TMPLS_ALIAS = Arrays.asList(
+	private static final List<String> TERM_TMPLS_ALIAS = List.of(
 		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas",
 		"derivados", "merónimos", "holónimos"
 	);
 	
 	// https://es.wiktionary.org/wiki/Categor%C3%ADa:Wikcionario:Plantillas_de_mantenimiento
-	private static final List<String> AMBOX_TMPLS = Arrays.asList(
+	private static final List<String> AMBOX_TMPLS = List.of(
 		"ampliable", "creado por bot", "definición", "discutido", "endesarrollo", "esbozo", "estructura",
 		"falta", "referencias", "revisión"
 	);
 	
-	private static final List<String> SPANISH_PRON_TMPL_PARAMS = Arrays.asList(
+	private static final List<String> SPANISH_PRON_TMPL_PARAMS = List.of(
 		"y", "ll", "s", "c", "ys", "yc", "lls", "llc"
 	);
 	
-	private static final List<String> RECONSTRUCTED_LANGS = Arrays.asList(
+	private static final List<String> RECONSTRUCTED_LANGS = List.of(
 		"poz-pol", "ine",
 		"chono" // https://es.wiktionary.org/w/index.php?title=cot&diff=3383057&oldid=3252255
 	);
 	
-	private static final List<String> SOFT_REDIR_TMPLS = Arrays.asList(
+	private static final List<String> SOFT_REDIR_TMPLS = List.of(
 		"grafía", "grafía obsoleta", "grafía rara", "variante", "variante obsoleta", "variante rara",
 		"contracción", "redirección suave"
 	);
 	
-	private static final List<String> SECTION_TMPLS = Arrays.asList(
+	private static final List<String> SECTION_TMPLS = List.of(
 		"abreviatura", "adjetivo", "adjetivo cardinal", "adjetivo numeral", "adjetivo ordinal",
 		"adjetivo posesivo", "adverbio", "adverbio de afirmación", "adverbio de cantidad",
 		"adverbio de duda", "adverbio de lugar", "adverbio de modo", "adverbio de negación",
@@ -153,7 +153,7 @@ public class Editor extends AbstractEditor {
 		"verbo pronominal", "verbo transitivo"
 	);
 	
-	private static final List<String> FLEX_FORM_TMPLS = Arrays.asList(
+	private static final List<String> FLEX_FORM_TMPLS = List.of(
 		// {{forma}}'s use cases are too unpredictable: "forma",
 		"forma sustantivo", "forma sustantivo plural", "forma adjetivo", "forma adjetivo 2", "forma verbo",
 		"forma verbo-en", "forma verbal arcaica-en", "forma participio", "forma pronombre", "forma sufijo",
@@ -184,13 +184,13 @@ public class Editor extends AbstractEditor {
 	private boolean allowJsoup;
 	
 	static {
-		final List<String> templateNsAliases = Arrays.asList("Template", "Plantilla", "msg");
+		final List<String> templateNsAliases = List.of("Template", "Plantilla", "msg");
 		
 		P_PREFIXED_TEMPLATE = Pattern.compile("\\{\\{([ :]*?(?:" + String.join("|", templateNsAliases) + ") *?: *).+?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 		
-		final List<String> fileNsAliases = Arrays.asList("File", "Image", "Archivo", "Imagen");
+		final List<String> fileNsAliases = List.of("File", "Image", "Archivo", "Imagen");
 		
-		final List<String> categoryNsAliases = Arrays.asList("Category", "Categoría");
+		final List<String> categoryNsAliases = List.of("Category", "Categoría");
 		
 		final List<String> specialLinksList = new ArrayList<>(Page.INTERWIKI_PREFIXES.size() + fileNsAliases.size());
 		specialLinksList.addAll(fileNsAliases);
@@ -206,7 +206,7 @@ public class Editor extends AbstractEditor {
 		// TODO: review headers ("=" signs)
 		P_LINE_JOINER = Pattern.compile("(?<![\n>=]|__|-{4}|\\}\\}|\\|\\}|\\[\\[ ?(?:" + specialLinksGroup + ") ?:.{1,300}?\\]\\])\n(?!\\[\\[ *?(?:" + specialLinksGroup + "):(?:\\[\\[.+?\\]\\]|\\[.+?\\]|.*?)+\\]\\]|\\{\\|)(<ref[ >]|[^\n<:;#\\*\\{\\}\\|=!])", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.DOTALL);
 		
-		final List<String> tempListLS = Arrays.asList(
+		final List<String> tempListLS = List.of(
 			"t+", "descendiente", "desc", "anotación"
 			// no longer transcluding a bulleted list: "etimología", "etimología2"
 		);
@@ -224,7 +224,7 @@ public class Editor extends AbstractEditor {
 		
 		P_LINE_SPLITTER_LEFT = Pattern.compile("(?<!\n[ :;*#]{0,5})(\\{\\{ *?(?:" + tempListLSGroup + ") *?(?:\\|(?:\\{\\{.+?\\}\\}|.*?)+)*\\}\\})", Pattern.DOTALL);
 		
-		final List<String> tempListBS = Arrays.asList(
+		final List<String> tempListBS = List.of(
 			"desambiguación", "arriba", "centro", "abajo", "escond-arriba", "escond-centro",
 			"escond-abajo", "rel-arriba", "rel-centro", "rel-abajo", "trad-arriba",
 			"trad-centro", "trad-abajo", "rel4-arriba", "rel4-centro", "clear", "derivados",
@@ -249,7 +249,7 @@ public class Editor extends AbstractEditor {
 		STANDARD_HEADERS.addAll(Section.HEAD_SECTIONS);
 		STANDARD_HEADERS.addAll(Section.BOTTOM_SECTIONS);
 		
-		List<String> translationsTemplate = Arrays.asList(
+		List<String> translationsTemplate = List.of(
 			"{{trad-arriba}}",
 			TRANSLATIONS_COMMENT,
 			"{{trad-centro}}",
@@ -260,7 +260,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	static {
-		final List<String> pCommentsList = Arrays.asList(
+		final List<String> pCommentsList = List.of(
 			"<!--( *?|\n*?)-->",
 			"<!-- ?si hay términos que se diferencian .*?-->",
 			"<!-- ?(en|EN) para inglés,.*?-->",
@@ -2738,10 +2738,10 @@ public class Editor extends AbstractEditor {
 								String num = (count != 1) ? Integer.toString(count) : "";
 								String pron = "", altPron = "";
 								
-								if (Arrays.asList("s", "c").contains(type)) {
+								if (List.of("s", "c").contains(type)) {
 									pron = "seseo";
 									altPron = type.equals("s") ? "Seseante" : "No seseante";
-								} else if (Arrays.asList("ll", "y").contains(type)) {
+								} else if (List.of("ll", "y").contains(type)) {
 									pron = "yeísmo";
 									altPron = type.equals("y") ? "Yeísta" : "No yeísta";
 								} else {
@@ -4255,7 +4255,7 @@ public class Editor extends AbstractEditor {
 		String initial = removeBrTags(text);
 		Page page = Page.store(title, initial);
 		
-		List<String> templates = Arrays.asList("arriba", "trad-arriba", "rel-arriba", "derivados");
+		List<String> templates = List.of("arriba", "trad-arriba", "rel-arriba", "derivados");
 		
 		for (Section section : page.getAllSections()) {
 			if (!section.nextSection().isPresent()) {

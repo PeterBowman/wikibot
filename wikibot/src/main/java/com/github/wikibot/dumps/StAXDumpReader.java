@@ -1,6 +1,5 @@
 package com.github.wikibot.dumps;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -12,7 +11,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseable {
-	private static final List<String> RECOGNIZED_TAGS = Arrays.asList(
+	private static final List<String> RECOGNIZED_TAGS = List.of(
 		"title", "ns", "id", "redirect", "parentid", "timestamp", "username", "minor", "comment", "text"
 	);
 	

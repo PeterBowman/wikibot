@@ -2,7 +2,6 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.text.Collator;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,7 +32,7 @@ public final class MissingPolishEtymOnWikidata {
 
 	// https://www.wikidata.org/wiki/Property:P5191
 	// https://www.wikidata.org/wiki/Property:P5238
-	private static final List<String> TARGET_PROPERTIES = Arrays.asList("P5191", "P5238");
+	private static final List<String> TARGET_PROPERTIES = List.of("P5191", "P5238");
 
 	private static final String TARGET_PAGE_INTRO;
 

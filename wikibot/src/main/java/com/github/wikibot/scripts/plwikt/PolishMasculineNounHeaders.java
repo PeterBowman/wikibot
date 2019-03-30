@@ -125,7 +125,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
 		Misc.serialize(pages, f_serialized);
 	}
 	

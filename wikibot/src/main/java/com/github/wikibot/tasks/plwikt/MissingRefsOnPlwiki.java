@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,43 +37,47 @@ import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public class MissingRefsOnPlwiki {
 	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
-	private static final Map<String, List<String>> TARGET_TEMPLATES = new LinkedHashMap<String, List<String>>();
+	private static final Map<String, List<String>> TARGET_TEMPLATES;
 
 	private static Wikibot plwikt;
 	private static Wikibot plwiki;
 
 	static {
-		TARGET_TEMPLATES.put("Wikisłownik", null);
-		TARGET_TEMPLATES.put("Siostrzane projekty", Arrays.asList("słownik"));
-		TARGET_TEMPLATES.put("Artefakt legendarny infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Białko infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Biogram infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Element elektroniczny infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Grafem infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Imię infobox", Arrays.asList("wikisłownik"));
-		//TARGET_TEMPLATES.put("Język infobox", Arrays.asList("wikisłownik")); // links back to categories only
-		TARGET_TEMPLATES.put("Klucz infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Kraina historyczna infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Miasto infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Miejscowość infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Minerał infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Narzędzie infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Pismo infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Polskie miasto infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Postać fikcyjna infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Postać religijna infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Preparat leczniczy infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Roślina infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Rzeka infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Takson infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Wielokąt infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Wieś infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Wojna infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Złącze infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Związek chemiczny infobox", Arrays.asList("wikisłownik"));
-		TARGET_TEMPLATES.put("Zwierzę infobox", Arrays.asList("wikisłownik"));
+		Map<String, List<String>> _temp_map = new LinkedHashMap<String, List<String>>();
+		
+		_temp_map.put("Wikisłownik", Collections.emptyList());
+		_temp_map.put("Siostrzane projekty", List.of("słownik"));
+		_temp_map.put("Artefakt legendarny infobox", List.of("wikisłownik"));
+		_temp_map.put("Białko infobox", List.of("wikisłownik"));
+		_temp_map.put("Biogram infobox", List.of("wikisłownik"));
+		_temp_map.put("Element elektroniczny infobox", List.of("wikisłownik"));
+		_temp_map.put("Grafem infobox", List.of("wikisłownik"));
+		_temp_map.put("Imię infobox", List.of("wikisłownik"));
+		//_sorted_map.put("Język infobox", List.of("wikisłownik")); // links back to categories only
+		_temp_map.put("Klucz infobox", List.of("wikisłownik"));
+		_temp_map.put("Kraina historyczna infobox", List.of("wikisłownik"));
+		_temp_map.put("Miasto infobox", List.of("wikisłownik"));
+		_temp_map.put("Miejscowość infobox", List.of("wikisłownik"));
+		_temp_map.put("Minerał infobox", List.of("wikisłownik"));
+		_temp_map.put("Narzędzie infobox", List.of("wikisłownik"));
+		_temp_map.put("Państwo infobox", List.of("wikisłownik"));
+		_temp_map.put("Pierwiastek infobox", List.of("wikisłownik"));
+		_temp_map.put("Pismo infobox", List.of("wikisłownik"));
+		_temp_map.put("Polskie miasto infobox", List.of("wikisłownik"));
+		_temp_map.put("Postać fikcyjna infobox", List.of("wikisłownik"));
+		_temp_map.put("Postać religijna infobox", List.of("wikisłownik"));
+		_temp_map.put("Preparat leczniczy infobox", List.of("wikisłownik"));
+		_temp_map.put("Roślina infobox", List.of("wikisłownik"));
+		_temp_map.put("Rzeka infobox", List.of("wikisłownik"));
+		_temp_map.put("Takson infobox", List.of("wikisłownik"));
+		_temp_map.put("Wielokąt infobox", List.of("wikisłownik"));
+		_temp_map.put("Wieś infobox", List.of("wikisłownik"));
+		_temp_map.put("Wojna infobox", List.of("wikisłownik"));
+		_temp_map.put("Złącze infobox", List.of("wikisłownik"));
+		_temp_map.put("Związek chemiczny infobox", List.of("wikisłownik"));
+		_temp_map.put("Zwierzę infobox", List.of("wikisłownik"));
+		
+		TARGET_TEMPLATES = Collections.unmodifiableMap(_temp_map);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -238,7 +242,7 @@ public class MissingRefsOnPlwiki {
 			for (String template : templates) {
 				HashMap<String, String> paramMap = ParseUtils.getTemplateParametersWithValue(template);
 
-				if (params != null) {
+				if (!params.isEmpty()) {
 					for (String param : params) {
 						String value = paramMap.getOrDefault(param, "");
 
@@ -384,9 +388,9 @@ public class MissingRefsOnPlwiki {
 			xstream.toXML(entries, bos);
 		}
 
-		Files.write(fStats.toPath(), Arrays.asList(xstream.toXML(stats)));
-		Files.write(fTemplates.toPath(), Arrays.asList(xstream.toXML(TARGET_TEMPLATES)));
-		Files.write(fTimestamp.toPath(), Arrays.asList(xstream.toXML(OffsetDateTime.now())));
+		Files.write(fStats.toPath(), List.of(xstream.toXML(stats)));
+		Files.write(fTemplates.toPath(), List.of(xstream.toXML(TARGET_TEMPLATES)));
+		Files.write(fTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
 
 		fCtrl.delete();
 	}

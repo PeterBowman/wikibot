@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +73,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		
 		System.out.printf("Encontrados: %d%n", targets.size());
 		Misc.serialize(targets, f_serialized);
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException, LoginException {

@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -691,7 +690,7 @@ public final class LinkManager implements Selectorizable {
 							aux.templatelinker = line;
 						} else {
 							String[] forms = line.split("\\s*?,\\s*");
-							Set<String> set = new HashSet<>(Arrays.asList(forms));
+							Set<String> set = Set.of(forms);
 							aux.forms = set.toArray(new String[set.size()]);
 						}
 						break;

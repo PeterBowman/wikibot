@@ -107,7 +107,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
@@ -163,7 +163,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		Misc.serialize(serialized, f_serialized);
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeMultiList(map)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void getModelVc() throws IOException {
@@ -202,7 +202,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Files.write(Paths.get(location + "Vc.txt"), Arrays.asList(Misc.makeList(map)));
+		Files.write(Paths.get(location + "Vc.txt"), List.of(Misc.makeList(map)));
 	}
 
 	public static void edit() throws ClassNotFoundException, IOException {

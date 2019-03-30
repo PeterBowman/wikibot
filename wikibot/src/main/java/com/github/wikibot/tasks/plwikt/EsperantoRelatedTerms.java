@@ -68,7 +68,7 @@ public final class EsperantoRelatedTerms {
 			return;
 		}
 		
-		Files.write(Paths.get(LOCATION + "output.txt"), Arrays.asList(sb.toString()));
+		Files.write(Paths.get(LOCATION + "output.txt"), List.of(sb.toString()));
 		editPage(sb.toString());
 	}
 	

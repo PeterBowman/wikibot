@@ -66,7 +66,7 @@ public final class InconsistentHeaderTitles {
 	// http://www.freeformatter.com/html-entities.html
 	private static final Pattern P_ENTITIES = Pattern.compile("&(nbsp|ensp|emsp|thinsp|zwnj|zwj|lrm|rlm);");
 	
-	private static final List<String> HEADER_TEMPLATES = Arrays.asList("zh", "ko", "ja");
+	private static final List<String> HEADER_TEMPLATES = List.of("zh", "ko", "ja");
 	
 	private static final Plural PLURAL_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
@@ -140,7 +140,7 @@ public final class InconsistentHeaderTitles {
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage();
-		Files.write(Paths.get(LOCATION + "page.txt"), Arrays.asList(page.toString()));
+		Files.write(Paths.get(LOCATION + "page.txt"), List.of(page.toString()));
 		
 		wb.setMarkBot(false);
 		wb.edit(page.getTitle(), page.toString(), "aktualizacja");
@@ -229,14 +229,14 @@ public final class InconsistentHeaderTitles {
 			earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
 		}
 		
-		List<String> rcTypes = Arrays.asList(new String[] {"new", "edit"});
+		List<String> rcTypes = List.of("new", "edit");
 		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		Files.write(Paths.get(LOCATION + "timestamp.txt"), Arrays.asList(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
 			Stream.of(revs).map(Wiki.Revision::getTitle),

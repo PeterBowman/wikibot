@@ -35,7 +35,7 @@ public final class Page extends AbstractPage<Section> {
 			INTERWIKI_PREFIXES = Files.readAllLines(Paths.get("./data/interwiki.txt"));
 			List<String> excluded = new ArrayList<>(INTERWIKI_PREFIXES);
 			// TODO: review per [[Especial:Diff/2709872]]
-			//excluded.addAll(Arrays.asList("Category", "Categoría", "File", "Archivo"));
+			//excluded.addAll(List.of("Category", "Categoría", "File", "Archivo"));
 			String regex = "\n(?:\\[\\[(?:" + String.join("|", excluded) + "):[^\\]]+?\\]\\]\\s*)+$";
 			P_INTERWIKI = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 		} catch (IOException e) {

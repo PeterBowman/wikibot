@@ -10,7 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -209,11 +208,11 @@ public final class MorfeoDatabase {
 		String[] _suffix = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", 0);
 		String[] _grammatical = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", 0);
 		
-		Set<String> all = new HashSet<>(Arrays.asList(_all));
-		Set<String> normal = new HashSet<>(Arrays.asList(_normal));
-		Set<String> prefix = new HashSet<>(Arrays.asList(_prefix));
-		Set<String> suffix = new HashSet<>(Arrays.asList(_suffix));
-		Set<String> grammatical = new HashSet<>(Arrays.asList(_grammatical));
+		Set<String> all = Set.of(_all);
+		Set<String> normal = Set.of(_normal);
+		Set<String> prefix = Set.of(_prefix);
+		Set<String> suffix = Set.of(_suffix);
+		Set<String> grammatical = Set.of(_grammatical);
 		
 		for (String morphem : list) {
 			if (!all.contains(morphem)) {

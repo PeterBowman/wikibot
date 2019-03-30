@@ -1,6 +1,5 @@
 package com.github.wikibot.dumps;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -10,7 +9,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class SAXPageHandler extends DefaultHandler {
 
-	protected static final List<String> CONTENT_TAGS = Arrays.asList(
+	protected static final List<String> CONTENT_TAGS = List.of(
 		"title", "ns", "id", "parentid", "timestamp", "username", "comment", "text"
 	);
 

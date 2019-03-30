@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -48,7 +47,7 @@ public final class MisusedRegTemplates {
 	private static final Plural PLURAL_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
-	private static final List<String> TEMPLATES = Arrays.asList(
+	private static final List<String> TEMPLATES = List.of(
 		// Polish
 		"białystok", "częstochowa", "góry", "kielce", "kraków", "kresy", "kujawy", "łódź",
 		"lwów", "mazowsze", "podhale", "poznań", "roztoczański", "śląsk", "warszawa",

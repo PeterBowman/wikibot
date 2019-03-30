@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +102,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		System.out.printf("Tamaño de la lista: %d%n", worklist.size());
 		
 		Misc.serialize(pages, f_info);
-		Files.write(Paths.get(f_worklist), Arrays.asList(Misc.makeList(worklist)));
+		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(worklist)));
 	}
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,7 +105,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 			.collect(Collectors.toList());
 		
 		String[] verbs = Stream.of(pages).map(PageContainer::getTitle).toArray(String[]::new);
-		Files.write(Paths.get(location + "verbos.txt"), Arrays.asList(verbs));
+		Files.write(Paths.get(location + "verbos.txt"), List.of(verbs));
 		System.out.printf("Se han extraído %d plantillas de conjugación de %d verbos\n", verb_templates.size(), verb_count);
 		
 		List<String> verb_forms = new ArrayList<>(verb_templates.size() * 51);
@@ -331,7 +330,7 @@ final class SpanishVerbFormsMaintenance implements Selectorizable {
 		Misc.sortList(output_list, "es");
 		String output = String.join("\n", output_list);
 		
-		Files.write(Paths.get(location + "resumen.txt"), Arrays.asList(String.format(
+		Files.write(Paths.get(location + "resumen.txt"), List.of(String.format(
 				"Analizowano %d form fleksyjnych z %d czasowników.\n%s",
 				form_count, verb_count, output
 			)));
