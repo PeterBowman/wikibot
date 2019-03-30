@@ -122,7 +122,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		try {
 			System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
 			Context context = (Context) new InitialContext().lookup("java:comp/env");
-			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-analytics");
+			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-web");
 		} catch (NamingException | SecurityException e) {
 			throw new UnavailableException(e.getMessage());
 		}

@@ -38,9 +38,9 @@ public final class MorfeoDatabase {
 	private static final String LOCATION = "./data/tasks.plwikt/MorfeoDatabase/";
 	private static final Properties defaultSQLProperties = new Properties();
 	
-	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.labsdb:3306/plwiktionary_p";
-	private static final String SQL_EOM_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_eom_backlinks";
-	private static final String SQL_COMMON_URI = "jdbc:mysql://tools-db:3306/s52584__plwikt_common";
+	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.eqiad.wmflabs:3306/plwiktionary_p";
+	private static final String SQL_EOM_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_eom_backlinks";
+	private static final String SQL_COMMON_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_common";
 	
 	private static final byte MORPHEM_RED_LINK = 0;
 	private static final byte MORPHEM_MISSING = 1;

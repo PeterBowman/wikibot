@@ -22,7 +22,7 @@ import com.github.wikibot.utils.Misc;
 public final class LonelyPages {
 	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
 	private static final Properties defaultSQLProperties = new Properties();	
-	private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.labsdb:3306/eswiktionary_p";
+	private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.analytics.db.svc.eqiad.wmflabs:3306/eswiktionary_p";
 	
 	static {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
