@@ -53,16 +53,17 @@ public final class MissingPolishEtymOnWikidata {
 		Map<String, Set<String>> wiktToLexemes = Stream.of(wdPages)
 			.map(PageContainer::getText)
 			.map(JSONObject::new)
-			.filter(json -> {
-				JSONObject obj = json.optJSONObject("claims");
-				return obj != null && !TARGET_PROPERTIES.stream().anyMatch(obj::has);
-			})
+			.filter(json -> Optional.ofNullable(json.optJSONObject("claims"))
+				.filter(obj -> !TARGET_PROPERTIES.stream().anyMatch(obj::has))
+				.isPresent()
+			)
+			.filter(json -> json.getJSONObject("lemmas").has("pl")) // e.g. L33443: "polština"
 			.collect(Collectors.groupingBy(
-				json -> (String)json.getJSONObject("lemmas")
+				json -> json.getJSONObject("lemmas")
 					.getJSONObject("pl")
-					.get("value"),
+					.getString("value"),
 				Collectors.mapping(
-					json -> (String)json.get("id"),
+					json -> json.getString("id"),
 					Collectors.toCollection(TreeSet::new)
 				)
 			));
@@ -85,7 +86,7 @@ public final class MissingPolishEtymOnWikidata {
 
 		File fHash = new File(LOCATION + "hash.ser");
 
-		if (fHash.exists() && (int)Misc.deserialize(fHash) == map.hashCode()) {
+		if (fHash.exists() && (int) Misc.deserialize(fHash) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
