@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.parsing.ParsingException;
@@ -80,8 +79,10 @@ public class LangSection extends Section {
 	}
 
 	public void setLangCode(String langCode) {
-		if (StringUtils.isBlank(langCode)) {
-			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		Objects.requireNonNull(langCode);
+		
+		if (langCode.isBlank()) {
+			throw new UnsupportedOperationException("The passed argument cannot be blank.");
 		}
 		
 		this.langCode = langCode.toLowerCase();
@@ -94,8 +95,10 @@ public class LangSection extends Section {
 	}
 
 	public void setLangName(String langName) throws UnsupportedOperationException {
-		if (StringUtils.isBlank(langName)) {
-			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		Objects.requireNonNull(langName);
+		
+		if (langName.isBlank()) {
+			throw new UnsupportedOperationException("The passed argument cannot be blank.");
 		}
 		
 		String langCode = Page.CODE_TO_LANG.keySet().stream()
@@ -117,8 +120,10 @@ public class LangSection extends Section {
 	}
 	
 	public void setTemplateType(String templateType) {
-		if (StringUtils.isBlank(templateType)) {
-			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		Objects.requireNonNull(templateType);
+		
+		if (templateType.isBlank()) {
+			throw new UnsupportedOperationException("The passed argument cannot be blank.");
 		}
 		
 		this.templateType = templateType;
@@ -137,8 +142,10 @@ public class LangSection extends Section {
 	
 	@Override
 	public void setHeader(String header) {
-		if (StringUtils.isBlank(header)) {
-			throw new UnsupportedOperationException("The passed argument cannot be null or empty.");
+		Objects.requireNonNull(header);
+		
+		if (header.isBlank()) {
+			throw new UnsupportedOperationException("The passed argument cannot be blank.");
 		}
 		
 		this.header = header;

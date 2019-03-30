@@ -11,7 +11,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
 public abstract class AbstractSection<T extends AbstractSection<T>> {
@@ -564,16 +563,16 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	public String toString() {
 		StringBuilder sb = new StringBuilder(1500);
 		sb.append(headerLeadingComments);
-		sb.append(String.format(headerFormat, StringUtils.repeat('=', level), header));
+		sb.append(String.format(headerFormat, "=".repeat(level), header));
 		sb.append(headerTrailingComments);
 
 		if (!intro.isEmpty()) {
 			sb.append("\n");
 		}
 		
-		sb.append(StringUtils.repeat('\n', leadingNewlines));
+		sb.append("\n".repeat(leadingNewlines));
 		sb.append(intro);
-		sb.append(StringUtils.repeat('\n', trailingNewlines));
+		sb.append("\n".repeat(trailingNewlines));
 		
 		if (!childSections.isEmpty()) {
 			sb.append("\n");

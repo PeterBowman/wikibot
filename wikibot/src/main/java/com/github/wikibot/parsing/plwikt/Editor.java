@@ -48,7 +48,7 @@ public class Editor extends AbstractEditor {
 				continue;
 			}
 			
-			String inflectionText = inflection.getContent();
+			final String inflectionText = inflection.getContent();
 			Matcher m = pLinkToTemplateZw.matcher(inflectionText);
 			StringBuffer sb = new StringBuffer();
 			
@@ -76,7 +76,7 @@ public class Editor extends AbstractEditor {
 			
 			String modified = sb.toString();
 			
-			if (!modified.equals(inflection)) {
+			if (!modified.equals(inflectionText)) {
 				inflection.editContent(modified);
 			}
 		}

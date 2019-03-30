@@ -16,8 +16,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
 
@@ -104,7 +102,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 
 	private void parseSection() {
-		intro += StringUtils.repeat('\n', trailingNewlines);
+		intro += "\n".repeat(trailingNewlines);
 		
 		SortedMap<Integer, FieldTypes> indexMap = Stream.of(FieldTypes.values())
 			.collect(Collectors.toMap(

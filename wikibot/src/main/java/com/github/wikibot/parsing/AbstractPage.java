@@ -15,8 +15,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-
 public abstract class AbstractPage<T extends AbstractSection<T>> {
 	protected String title;
 	protected String intro;
@@ -310,9 +308,9 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append(StringUtils.repeat('\n', leadingNewlines));
+		sb.append("\n".repeat(leadingNewlines));
 		sb.append(intro);
-		sb.append(StringUtils.repeat('\n', trailingNewlines));
+		sb.append("\n".repeat(trailingNewlines));
 		
 		if (!intro.isEmpty()) {
 			sb.append("\n");

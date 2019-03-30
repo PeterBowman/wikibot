@@ -4,8 +4,6 @@ import java.security.InvalidParameterException;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class Field implements Comparable<Field> {
 	private FieldTypes fieldType;
 	protected String content;
@@ -172,9 +170,9 @@ public class Field implements Comparable<Field> {
 			}
 		}
 		
-		sb.append(StringUtils.repeat('\n', leadingNewlines));
+		sb.append("\n".repeat(leadingNewlines));
 		sb.append(content);
-		sb.append(StringUtils.repeat('\n', trailingNewlines));
+		sb.append("\n".repeat(trailingNewlines));
 		sb.append(eolMark != null ? eolMark : "");
 		
 		return sb.toString();
