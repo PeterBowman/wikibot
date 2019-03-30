@@ -1,6 +1,6 @@
 <li><a href="/admin/tool/pbbot" target="_blank">Tool account</a></li>
 <li><a href="/tool-db-usage/owner/s52584" target="_blank">Tool DB usage</a></li>
-<li><a href="/grid-jobs/tool/pbbot" target="_blank">Grid jobs</a></li>
+<li><a href="/sge-jobs/tool/pbbot" target="_blank">Grid jobs</a></li>
 <li><a href="/tools-info" target="_blank">Tools info</a></li>
 
 <li>
