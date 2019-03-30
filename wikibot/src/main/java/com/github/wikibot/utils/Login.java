@@ -118,7 +118,7 @@ public class Login {
 			throw new CredentialException("Unable to retrieve credentials: " + e.getMessage());
 		}
 		
-		Wikibot wb = Wikibot.createInstance(domain);
+		Wikibot wb = Wikibot.newSession(domain);
 		login(wb, username, password);
 		
 		return wb;

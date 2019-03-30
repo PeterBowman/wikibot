@@ -55,7 +55,7 @@ public final class GermanNounDeclension implements Selectorizable {
 				makeLists();
 				break;
 			case '3':
-				wb = Wikibot.createInstance("pl.wiktionary.org");
+				wb = Wikibot.newSession("pl.wiktionary.org");
 				checkErrors();
 				break;
 			case 'e':

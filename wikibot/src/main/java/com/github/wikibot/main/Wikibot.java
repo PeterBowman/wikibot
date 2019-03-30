@@ -30,7 +30,7 @@ public class Wikibot extends WMFWiki {
     	super(domain);
     }
     
-    public static Wikibot createInstance(String domain) {
+    public static Wikibot newSession(String domain) {
     	Wikibot wb = new Wikibot(domain);
     	wb.initVars();
     	return wb;

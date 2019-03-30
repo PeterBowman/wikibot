@@ -15,7 +15,7 @@ public final class UpdateInterwikiPrefixes {
 	private static final String DATA = "./data/interwiki.txt";
 	
 	public static void main(String[] args) throws IOException {
-		Wikibot wb = Wikibot.createInstance("meta.wikimedia.org");
+		Wikibot wb = Wikibot.newSession("meta.wikimedia.org");
 		String text = wb.getPageText("MediaWiki:Interwiki config-sorting order-native-languagename-firstword").trim();
 		
 		if (text.isEmpty()) {
