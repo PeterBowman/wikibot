@@ -101,8 +101,8 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> PRON_TMPLS_ALIAS = List.of(
-		null, null, null, "transliteraciones", "homófonos", "grafías alternativas",
-		"variante", "parónimos", null, "ortografías alternativas"
+		"", "", "", "transliteraciones", "homófonos", "grafías alternativas",
+		"variante", "parónimos", "", "ortografías alternativas"
 	);
 	
 	private static final List<String> TERM_TMPLS = List.of(
