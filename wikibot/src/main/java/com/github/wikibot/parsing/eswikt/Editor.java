@@ -111,7 +111,7 @@ public class Editor extends AbstractEditor {
 	);
 	
 	private static final List<String> TERM_TMPLS_ALIAS = List.of(
-		null, null, "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas",
+		"", "", "sinónimos", "antónimos", "hipónimos", "hiperónimos", "relacionados", "anagramas",
 		"derivados", "merónimos", "holónimos"
 	);
 	
