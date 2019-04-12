@@ -3,4 +3,4 @@
 params="-J-Dnashorn.args=-scripting -strict --language=es6"
 script="$1"
 shift
-exec "$JAVA_HOME/bin/jjs" "$params" "$HOME/scripts/$script.js" "$@"
+exec "/usr/bin/jjs" "$params" "$HOME/scripts/$script.js" "$@"
