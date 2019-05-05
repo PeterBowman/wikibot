@@ -209,7 +209,7 @@ const DumpFolder = (function () {
 			return false;
 		}
 		
-		if (!$EXEC("echo '${checksum} ${fileName}' | sha1sum -c --status; echo $?")) {
+		if (!$EXEC("echo '${checksum} ${this.path}/${fileName}' | sha1sum -c --status; echo $?")) {
 			log("sha1 checksum doesn't match for file ${fileName} (or sha1sum command failed)");
 			return false;
 		} else {
