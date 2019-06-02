@@ -55,7 +55,8 @@ public final class MisusedRegTemplates {
 		"reg-pl", "gw-pl",
 		// Polish (deprecated)
 		"białystok", "częstochowa", "góry", "kielce", "kraków", "kresy", "kujawy", "łódź",
-		"lwów", "mazowsze", "podhale", "poznań", "roztoczański", "śląsk", "warszawa",
+		"lwów", "mazowsze", "podhale", "poznań", "roztoczański", "sącz", "śląsk", "warmia",
+		"warszawa", "zaol",
 		// English
 		"szkocang",
 		// Arabic
