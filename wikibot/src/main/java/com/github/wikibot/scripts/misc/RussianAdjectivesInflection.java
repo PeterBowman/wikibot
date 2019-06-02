@@ -82,14 +82,14 @@ class RussianAdjectivesInflection implements Selectorizable {
 	}
 	
 	public static void analyze_adj(boolean edit) throws IOException, LoginException {
-		PrintWriter pw_analized = null;
+		PrintWriter pw_analized;
 		
 		// open files
 		try {
 			pw_analized = new PrintWriter(new File(location + "analizados.txt"));
-		}
-		catch (FileNotFoundException e) {
+		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
+			throw e;
 		}
 		
 		//String check = "^\\d+\\s[\u0000-\uFFFF]+\\s\\|\\|\\s:\\s\\(\\d\\.\\d-?\\d?\\)\\s\\{\\{lp\\}\\}\\s[\u0000-\uFFFF]+\\|[\u0000-\uFFFF]{2,3},\\s~[\u0000-\uFFFF]{2,3},\\s~[\u0000-\uFFFF]{2,3};\\s\\{\\{lm\\}\\}\\s~[\u0000-\uFFFF]+;\\s\'\'krótka\\sforma\'\'.*";
@@ -99,8 +99,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		int counter = 0;
 		boolean first = true;
 		
-		BufferedReader br = new BufferedReader(new FileReader(location + "adjetivos.txt"));
-	    try {
+	    try (pw_analized; BufferedReader br = new BufferedReader(new FileReader(location + "adjetivos.txt"));) {
 	        String line = null;
 
 	        while ((line = br.readLine()) != null) {
@@ -182,9 +181,6 @@ class RussianAdjectivesInflection implements Selectorizable {
 		        	pw_analized.println(intro + (new RussianAdjectivesRegex(line)).run() + "\n");
 	        	}
 	        }
-	    } finally {
-	        br.close();
-	        pw_analized.close();
 	    }
 	}
 	

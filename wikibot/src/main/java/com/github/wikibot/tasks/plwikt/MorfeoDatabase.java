@@ -83,10 +83,9 @@ public final class MorfeoDatabase {
 		
 		inspectEsperantoCategories(morphemInfo);
 		
-		Connection eomConn = null;
+		Connection eomConn = DriverManager.getConnection(SQL_EOM_URI, properties);
 		
-		try {
-			eomConn = DriverManager.getConnection(SQL_EOM_URI, properties);
+		try (eomConn) {
 			eomConn.setAutoCommit(false);
 			
 			int deleted = deleteMorfeoItems(eomConn, items);
@@ -105,10 +104,6 @@ public final class MorfeoDatabase {
 			e.printStackTrace();
 			eomConn.rollback();
 			return;
-		} finally {
-			if (eomConn != null) {
-				eomConn.close();
-			}
 		}
 		
 		try (Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties)) {
