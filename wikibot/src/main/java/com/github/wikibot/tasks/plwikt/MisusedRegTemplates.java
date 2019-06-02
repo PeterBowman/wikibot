@@ -3,7 +3,9 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -34,11 +36,12 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class MisusedRegTemplates {
 	private static final String LOCATION = "./data/tasks.plwikt/MisusedRegTemplates/";
@@ -49,6 +52,8 @@ public final class MisusedRegTemplates {
 	
 	private static final List<String> TEMPLATES = List.of(
 		// Polish
+		"reg-pl", "gw-pl",
+		// Polish (deprecated)
 		"białystok", "częstochowa", "góry", "kielce", "kraków", "kresy", "kujawy", "łódź",
 		"lwów", "mazowsze", "podhale", "poznań", "roztoczański", "śląsk", "warszawa",
 		// English
@@ -69,6 +74,10 @@ public final class MisusedRegTemplates {
 		"brazport",
 		// Italian
 		"szwajcwł", "tosk"
+	);
+	
+	private static final List<String> TEMPLATES_NEW_GEN = List.of(
+		"reg-pl", "gw-pl", "reg-es"
 	);
 	
 	private static Wikibot wb;
@@ -177,7 +186,7 @@ public final class MisusedRegTemplates {
 	}
 	
 	private static boolean filterTemplates(Map<String, String> params) {
-		if (params.get("templateName").equals("reg-es")) {
+		if (TEMPLATES_NEW_GEN.contains(params.get("templateName"))) {
 			return params.getOrDefault("ParamWithoutName2", "").isEmpty();
 		}
 		
@@ -191,17 +200,23 @@ public final class MisusedRegTemplates {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		File fHash = new File(LOCATION + "hash.ser");
+		File fHash = new File(LOCATION + "hash.txt");
+		File fList = new File(LOCATION + "list.xml");
 		
 		try {
-			storedHashCode = Misc.deserialize(fHash);
-		} catch (ClassNotFoundException | IOException e) {
+			storedHashCode = Integer.parseInt(Files.readString(fHash.toPath()));
+		} catch (IOException | NumberFormatException e) {
+			e.printStackTrace();
 			storedHashCode = 0;
 		}
 		
+		XStream xstream = new XStream();
+		xstream.processAnnotations(Item.class);
+		
 		if (storedHashCode != newHashCode) {
-			Misc.serialize(newHashCode, fHash);
-			Misc.serialize(list, LOCATION + "list.ser");
+			OpenOption[] options = new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
+			Files.writeString(fHash.toPath(), Integer.toString(newHashCode), options);
+			Files.writeString(fList.toPath(), xstream.toXML(list), options);
 			return true;
 		} else {
 			return false;
@@ -262,9 +277,8 @@ public final class MisusedRegTemplates {
 		return intro + "\n\n" + elements;
 	}
 	
-	private static class Item implements Serializable, Comparable<Item> {
-		private static final long serialVersionUID = -8690746740605131323L;
-		
+	@XStreamAlias("item")
+	private static class Item implements Comparable<Item> {
 		String pageTitle;
 		String langName;
 		FieldTypes fieldType;
