@@ -34,7 +34,7 @@ public final class NewPageTagger {
 		
 		Wiki.RequestHelper rcHelper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		
-		wb.recentChanges(rcHelper).stream()
+		wb.newPages(rcHelper).stream()
 			.filter(Wiki.Revision::isNew)
 			.filter(NewPageTagger::hasDeleteActions)
 			.forEach(NewPageTagger::applyTag);
