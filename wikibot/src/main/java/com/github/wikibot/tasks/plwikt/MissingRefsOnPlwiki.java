@@ -68,12 +68,14 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Roślina infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Rzeka infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Takson infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Wielkość fizyczna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wielokąt infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wieś infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wojna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Złącze infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Związek chemiczny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Zwierzę infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Żywność infobox", Arrays.asList("wikisłownik"));
 	}
 
 	public static void main(String[] args) throws Exception {
