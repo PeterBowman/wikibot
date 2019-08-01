@@ -175,23 +175,22 @@ public final class MisusedRegTemplates {
 		return page.getAllSections().stream()
 			.map(Section::getAllFields)
 			.flatMap(Collection::stream)
-			.filter(field -> field.getFieldType() != FieldTypes.DEFINITIONS)
 			.filter(field -> !field.isEmpty())
 			.flatMap(field -> TEMPLATES.stream()
 				.map(template -> ParseUtils.getTemplates(template, field.getContent()))
 				.flatMap(Collection::stream)
 				.map(ParseUtils::getTemplateParametersWithValue)
-				.filter(MisusedRegTemplates::filterTemplates)
+				.filter(params -> filterTemplates(params, field.getFieldType() == FieldTypes.DEFINITIONS))
 				.map(params -> Item.constructNewItem(field, params))
 			);
 	}
 	
-	private static boolean filterTemplates(Map<String, String> params) {
+	private static boolean filterTemplates(Map<String, String> params, boolean isDefinition) {
 		if (TEMPLATES_NEW_GEN.contains(params.get("templateName"))) {
-			return params.getOrDefault("ParamWithoutName2", "").isEmpty();
+			return isDefinition ^ params.getOrDefault("ParamWithoutName2", "").isEmpty();
 		}
 		
-		return params.entrySet().stream()
+		return isDefinition ^ params.entrySet().stream()
 			.filter(entry -> !entry.getKey().equals("templateName"))
 			.filter(entry -> !TEMPLATES.contains(entry.getValue()))
 			.count() == 0;
@@ -253,10 +252,7 @@ public final class MisusedRegTemplates {
 				item -> item.pageTitle,
 				LinkedHashMap::new,
 				Collectors.mapping(
-					item -> String.format(
-						"&#123;{%s}} (%s, %s)",
-						item.templateName, item.langName, item.fieldType.localised()
-					),
+					Item::buildEntry,
 					Collectors.toList()
 				)
 			));
@@ -304,6 +300,16 @@ public final class MisusedRegTemplates {
 		@Override
 		public String toString() {
 			return String.format("[%s,%s,%s,%s]", pageTitle, langName, fieldType, templateName);
+		}
+		
+		public String buildEntry() {
+			String format = "&#123;{%s}} (%s, %s)";
+			
+			if (fieldType == FieldTypes.DEFINITIONS) {
+				format = "&#123;{%s}} (%s, '''%s''')";
+			}
+			
+			return String.format(format, templateName, langName, fieldType.localised());
 		}
 		
 		@Override
