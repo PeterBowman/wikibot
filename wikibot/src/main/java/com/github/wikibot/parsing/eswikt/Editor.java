@@ -92,7 +92,7 @@ public class Editor extends AbstractEditor {
 		"diacrítico", "ampliable", "variante", "variante obsoleta", "grafía obsoleta", "grafía rara",
 		"sustantivo de verbo", "sustantivo de adjetivo", "antropónimo masculino", "antropónimo femenino",
 		"adjetivo de padecimiento", "adjetivo de sustantivo", "adjetivo de verbo", "adverbio de adjetivo",
-		"adverbio de sustantivo", "merónimo", "holónimo"
+		"adverbio de sustantivo", "merónimo", "holónimo", "datación"
 	);
 	
 	private static final List<String> PRON_TMPLS = List.of(
