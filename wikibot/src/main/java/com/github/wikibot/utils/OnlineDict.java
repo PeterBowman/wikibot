@@ -3,7 +3,6 @@ package com.github.wikibot.utils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -24,7 +23,7 @@ public abstract class OnlineDict<T> implements Callable<T> {
 	// and the data volume is large!)
 	private final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
 
-	protected abstract String escape(String text) throws UnsupportedEncodingException;
+	protected abstract String escape(String text);
 	protected abstract String stripContent(String text);
 
 	public OnlineDict(String entry, String url, String encoding) {

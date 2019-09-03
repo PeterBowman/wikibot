@@ -1,6 +1,5 @@
 package com.github.wikibot.utils;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -20,8 +19,8 @@ public class Gramota extends OnlineDict<Gramota> {
 	}
 
 	@Override
-	protected String escape(String text) throws UnsupportedEncodingException {
-		return URLEncoder.encode(text, StandardCharsets.UTF_8.name());
+	protected String escape(String text) {
+		return URLEncoder.encode(text, StandardCharsets.UTF_8);
 	}
 
 	@Override

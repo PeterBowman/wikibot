@@ -1,6 +1,5 @@
 package com.github.wikibot.webapp;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -100,10 +99,6 @@ public final class Utils {
 	}
 	
 	public static String encodeParam(String str) {
-		try {
-			return URLEncoder.encode(str, StandardCharsets.UTF_8.name());
-		} catch (UnsupportedEncodingException e) {
-			return str;
-		}
+		return URLEncoder.encode(str, StandardCharsets.UTF_8);
 	}
 }

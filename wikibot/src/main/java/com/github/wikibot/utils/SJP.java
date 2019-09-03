@@ -1,7 +1,6 @@
 package com.github.wikibot.utils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -18,8 +17,8 @@ public class SJP extends OnlineDict<SJP> {
     }
     
 	@Override
-	protected String escape(String text) throws UnsupportedEncodingException {
-		return URLEncoder.encode(text, StandardCharsets.UTF_8.name());
+	protected String escape(String text) {
+		return URLEncoder.encode(text, StandardCharsets.UTF_8);
 	}
 	
 	@Override

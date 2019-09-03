@@ -3,7 +3,6 @@ package com.github.wikibot.webapp;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -222,7 +221,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			printResults(writer, sourceProject, targetProject, request, requestInfo);
 			session.setAttribute("lastRequest", requestInfo);
-		} catch (SQLException | IOException | UncheckedIOException e) {
+		} catch (SQLException | UncheckedIOException e) {
 			writer.append("<p>")
 				.append("Komunikacja z bazą danych się nie powiodła. Komunikat błędu: ")
 				.append("</p>").append("\n")
@@ -384,9 +383,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		}
 		
 		if (remainder.contains("%")) {
-			try {
-				remainder = URLDecoder.decode(remainder, StandardCharsets.UTF_8.name());
-			} catch (UnsupportedEncodingException e) {}
+			remainder = URLDecoder.decode(remainder, StandardCharsets.UTF_8);
 		}
 		
 		if (!remainder.matches("_*") && !remainder.contains("?") && currentProject.equals(reference)) {
@@ -475,7 +472,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	}
 	
 	private static void printResults(PrintWriter writer, Project sourceProject, Project targetProject,
-			HttpServletRequest request, RequestInfo requestInfo) throws UnsupportedEncodingException {
+			HttpServletRequest request, RequestInfo requestInfo) {
 		writer.append("<p>");
 		
 		writer.append("Czas przetwarzania zapytania: ")
@@ -817,7 +814,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			);
 		}
 		
-		String printHTML() throws UnsupportedEncodingException {
+		String printHTML() {
 			String sourceLink = "<a href=\"" + sourceProject.url + "/wiki/";
 			String sourceArticle = "";
 			
@@ -832,7 +829,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			sourceArticle += sourcePage.title;
 			
-			sourceLink += URLEncoder.encode(sourceArticle, StandardCharsets.UTF_8.name());
+			sourceLink += URLEncoder.encode(sourceArticle, StandardCharsets.UTF_8);
 			sourceLink += "\" target=\"_blank\">" + sourceArticle.replace("_", " ") + "</a>";
 			
 			String targetLink = "<a href=\"" + targetProject.url + "/wiki/";
@@ -849,7 +846,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			targetArticle += targetPage.title;
 			
-			targetLink += URLEncoder.encode(targetArticle, StandardCharsets.UTF_8.name());
+			targetLink += URLEncoder.encode(targetArticle, StandardCharsets.UTF_8);
 			targetLink += "\" target=\"_blank\"";
 			
 			if (isMissing) {

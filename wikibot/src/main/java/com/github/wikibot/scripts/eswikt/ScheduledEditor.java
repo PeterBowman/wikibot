@@ -58,7 +58,7 @@ public final class ScheduledEditor {
 						return;
 					}
 					
-					String decoded = URLDecoder.decode(args[1], StandardCharsets.UTF_8.name());
+					String decoded = URLDecoder.decode(args[1], StandardCharsets.UTF_8);
 					processCategorymembers(decoded);
 					break;
 				case "-a":
