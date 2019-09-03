@@ -46,7 +46,7 @@ public class EomBacklinksAPI extends HttpServlet {
 		String limitParam = request.getParameter("limit");
 		final String emptyResult = "{\"results\":[]}";
 		
-		if (searchParam == null || searchParam.trim().isEmpty() || searchParam.contains("|")) {
+		if (searchParam == null || searchParam.isBlank() || searchParam.contains("|")) {
 			response.getWriter().append(emptyResult);
 			return;
 		}

@@ -47,7 +47,7 @@ public class VerifyCitationsAPI extends HttpServlet {
 		
 		if (
 			typeParam == null || (!typeParam.trim().equals("user") && !typeParam.trim().equals("title")) ||
-			searchParam == null || searchParam.trim().isEmpty() || searchParam.contains("|")
+			searchParam == null || searchParam.isBlank() || searchParam.contains("|")
 		) {
 			response.getWriter().append(emptyResult);
 			return;

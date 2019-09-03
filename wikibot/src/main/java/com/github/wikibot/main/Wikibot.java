@@ -37,22 +37,24 @@ public class Wikibot extends WMFWiki {
     }
 	
     public PageContainer[] getContentOfPages(String[] pages) throws IOException {
-    	Map<String, String> getparams = new HashMap<>();
-    	getparams.put("action", "query");
-    	getparams.put("prop", "revisions");
-    	getparams.put("rvprop", "timestamp|content");
-    	getparams.put("rvslots", "main");
+    	Map<String, String> getparams = Map.of(
+    		"action", "query",
+    		"prop", "revisions",
+    		"rvprop", "timestamp|content",
+    		"rvslots", "main"
+    	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		List<PageContainer> coll = getListedContent(getparams, pages, "getContents", "titles", biCons);
 		return coll.toArray(new PageContainer[coll.size()]);
 	}
     
     public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
-    	Map<String, String> getparams = new HashMap<>();
-    	getparams.put("action", "query");
-    	getparams.put("prop", "revisions");
-    	getparams.put("rvprop", "timestamp|content");
-    	getparams.put("rvslots", "main");
+    	Map<String, String> getparams = Map.of(
+    		"action", "query",
+    		"prop", "revisions",
+    		"rvprop", "timestamp|content",
+    		"rvslots", "main"
+    	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
 		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "pageids", biCons);
@@ -60,11 +62,12 @@ public class Wikibot extends WMFWiki {
 	}
     
     public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
-    	Map<String, String> getparams = new HashMap<>();
-    	getparams.put("action", "query");
-    	getparams.put("prop", "revisions");
-    	getparams.put("rvprop", "timestamp|content");
-    	getparams.put("rvslots", "main");
+    	Map<String, String> getparams = Map.of(
+    		"action", "query",
+    		"prop", "revisions",
+    		"rvprop", "timestamp|content",
+    		"rvslots", "main"
+    	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
 		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "revids", biCons);
@@ -83,38 +86,41 @@ public class Wikibot extends WMFWiki {
 	 * @throws IOException
 	 */
 	public PageContainer[] getContentOfCategorymembers(String category, int... ns) throws IOException {
-		Map<String, String> getparams = new HashMap<>();
-		getparams.put("prop", "revisions");
-		getparams.put("rvprop", "timestamp|content");
-		getparams.put("rvslots", "main");
-		getparams.put("generator", "categorymembers");
-		getparams.put("gcmtitle", "Category:" + normalize(removeNamespace(category, Wiki.CATEGORY_NAMESPACE)));
-		getparams.put("gcmtype", "page");
-		getparams.put("gcmnamespace", constructNamespaceString(ns));
+		Map<String, String> getparams = Map.of(
+			"prop", "revisions",
+			"rvprop", "timestamp|content",
+			"rvslots", "main",
+			"generator", "categorymembers",
+			"gcmtitle", "Category:" + normalize(removeNamespace(category, Wiki.CATEGORY_NAMESPACE)),
+			"gcmtype", "page",
+			"gcmnamespace", constructNamespaceString(ns)
+		);
 		
 		return getGeneratedContent(getparams, "gcm");
 	}
 	
 	public PageContainer[] getContentOfTransclusions(String page, int... ns) throws IOException {
-		Map<String, String> getparams = new HashMap<>();
-		getparams.put("prop", "revisions");
-		getparams.put("rvprop", "timestamp|content");
-		getparams.put("rvslots", "main");
-		getparams.put("generator", "embeddedin");
-		getparams.put("geititle", normalize(page));
-		getparams.put("geinamespace", constructNamespaceString(ns));
+		Map<String, String> getparams = Map.of(
+			"prop", "revisions",
+			"rvprop", "timestamp|content",
+			"rvslots", "main",
+			"generator", "embeddedin",
+			"geititle", normalize(page),
+			"geinamespace", constructNamespaceString(ns)
+		);
 		
 		return getGeneratedContent(getparams, "gei");
 	}
 	
 	public PageContainer[] getContentOfBacklinks(String page, int... ns) throws IOException {
-		Map<String, String> getparams = new HashMap<>();
-		getparams.put("prop", "revisions");
-		getparams.put("rvprop", "timestamp|content");
-		getparams.put("rvslots", "main");
-		getparams.put("generator", "backlinks");
-		getparams.put("gbltitle", normalize(page));
-		getparams.put("gblnamespace", constructNamespaceString(ns));
+		Map<String, String> getparams = Map.of(
+			"prop", "revisions",
+			"rvprop", "timestamp|content",
+			"rvslots", "main",
+			"generator", "backlinks",
+			"gbltitle", normalize(page),
+			"gblnamespace", constructNamespaceString(ns)
+		);
 		
 		return getGeneratedContent(getparams, "gbl");
 	}
@@ -175,8 +181,7 @@ public class Wikibot extends WMFWiki {
 		getparams.put("prop", "wikitext");
 		if (title != null)
 			getparams.put("title", normalize(title));
-		Map<String, Object> postparams = new HashMap<>();
-		postparams.put("text", text);
+		Map<String, Object> postparams = Map.of("text", text);
 		
 		String line = makeApiCall(getparams, postparams, "expandTemplates");
 		
@@ -188,12 +193,13 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public Revision[] getTopRevision(String[] titles) throws IOException {
-		Map<String, String> getparams = new HashMap<>();
-		getparams.put("action", "query");
-		getparams.put("prop", "revisions");
-		getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|sha1");
-		getparams.put("meta", "tokens");
-		getparams.put("type", "rollback");
+		Map<String, String> getparams = Map.of(
+			"action", "query",
+			"prop", "revisions",
+			"rvprop", "timestamp|user|ids|flags|size|comment|sha1",
+			"meta", "tokens",
+			"type", "rollback"
+		);
         
 		BiConsumer<String, List<Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {

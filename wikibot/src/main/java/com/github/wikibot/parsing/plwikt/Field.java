@@ -1,6 +1,7 @@
 package com.github.wikibot.parsing.plwikt;
 
 import java.security.InvalidParameterException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +40,7 @@ public class Field implements Comparable<Field> {
 	}
 	
 	public boolean isEmpty() {
-		if (content.trim().isEmpty()) {
+		if (content.isBlank()) {
 			return true;
 		} else if (fieldType == FieldTypes.EXAMPLES && content.trim().equals(": (1.1)")) {
 			return true;
@@ -173,7 +174,7 @@ public class Field implements Comparable<Field> {
 		sb.append("\n".repeat(leadingNewlines));
 		sb.append(content);
 		sb.append("\n".repeat(trailingNewlines));
-		sb.append(eolMark != null ? eolMark : "");
+		sb.append(Objects.requireNonNullElse(eolMark, ""));
 		
 		return sb.toString();
 	}

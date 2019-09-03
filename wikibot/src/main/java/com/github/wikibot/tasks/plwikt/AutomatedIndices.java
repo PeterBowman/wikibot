@@ -44,26 +44,16 @@ public final class AutomatedIndices {
 	private static final List<String> MAINTAINERS = List.of("Peter Bowman");
 	private static final String ERROR_REPORT_TEMPLATE_FMT = "{{re|%s}}";
 	
-	private static final ULocale POLISH_LOCALE;
-	private static final Transliterator DIACRITIC_TRANSLITERATOR;
+	private static final ULocale POLISH_LOCALE = new ULocale("pl");
 	
-	private static Map<String, String> languageToIcuCode;
-	private static List<String> errors;
+	// https://stackoverflow.com/a/13071166/10404307
+	private static final Transliterator DIACRITIC_TRANSLITERATOR = Transliterator.getInstance("NFD; [:M:] Remove; NFC");
+	
+	private static final Map<String, String> languageToIcuCode = Map.of("łaciński", "la", "nowogrecki", "el");
+	
+	private static List<String> errors = new ArrayList<>();
 	
 	private static Wikibot wb;
-	
-	static {
-		POLISH_LOCALE = new ULocale("pl");
-		
-		// https://stackoverflow.com/a/13071166/10404307
-		DIACRITIC_TRANSLITERATOR = Transliterator.getInstance("NFD; [:M:] Remove; NFC");
-		
-		languageToIcuCode = new HashMap<>();
-		languageToIcuCode.put("łaciński", "la");
-		languageToIcuCode.put("nowogrecki", "el");
-		
-		errors = new ArrayList<>();
-	}
 
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");

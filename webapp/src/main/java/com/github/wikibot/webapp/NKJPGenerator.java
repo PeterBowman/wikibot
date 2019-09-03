@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import javax.servlet.RequestDispatcher;
@@ -221,11 +222,7 @@ public class NKJPGenerator extends HttpServlet {
 		
 		@SuppressWarnings("unused")
 		void setFormat(String format) {
-			if (format == null) {
-				format = "plain";
-			}
-			
-			this.format = format;
+			this.format = Objects.toString(format, "plain");
 		}
 		
 		String getContentType() {

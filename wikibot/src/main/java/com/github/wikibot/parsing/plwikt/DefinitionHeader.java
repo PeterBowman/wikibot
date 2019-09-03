@@ -2,6 +2,7 @@ package com.github.wikibot.parsing.plwikt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class DefinitionHeader {
 	String header;
@@ -9,7 +10,7 @@ public class DefinitionHeader {
 	
 	DefinitionHeader(String header, List<String> definitions) {
 		this.header = header;
-		this.definitions = (definitions != null) ? definitions : new ArrayList<>();
+		this.definitions = Objects.requireNonNullElse(definitions, new ArrayList<>());
 	}
 	
 	public String toString() {

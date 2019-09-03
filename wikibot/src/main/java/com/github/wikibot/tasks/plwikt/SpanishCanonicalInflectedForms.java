@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.Collator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -37,25 +36,15 @@ public final class SpanishCanonicalInflectedForms {
 	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
 	private static final String TARGET_PAGE = "Indeks:Hiszpańskie formy czasownikowe";
 	private static final String CATEGORY_NAME = "Formy czasowników hiszpańskich";
-	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP;
+	
+	private static final Map<Character, Character> STRIPPED_ACCENTS_MAP = Map.of('á', 'a', 'é', 'e', 'í', 'i', 'ó', 'o', 'ú', 'u');
+	
+	private static final Plural PLURAL_PL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
+	
+	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL"))
+			.grouping(GroupingStrategy.MIN2);
 	
 	private static Wikibot wb;
-	private static final Plural PLURAL_PL;
-	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
-	
-	static {
-		STRIPPED_ACCENTS_MAP = new HashMap<>(5, 1);
-		
-		STRIPPED_ACCENTS_MAP.put('á', 'a');
-		STRIPPED_ACCENTS_MAP.put('é', 'e');
-		STRIPPED_ACCENTS_MAP.put('í', 'i');
-		STRIPPED_ACCENTS_MAP.put('ó', 'o');
-		STRIPPED_ACCENTS_MAP.put('ú', 'u');
-		
-		PLURAL_PL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
-		
-		NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
-	}
 	
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");

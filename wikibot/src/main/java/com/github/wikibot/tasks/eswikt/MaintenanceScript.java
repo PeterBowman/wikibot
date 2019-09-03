@@ -71,9 +71,7 @@ public final class MaintenanceScript {
 			return;
 		}
 		
-		Map<String, Boolean> rcoptions = new HashMap<>();
-		rcoptions.put("redirect", false);
-		
+		Map<String, Boolean> rcoptions = Map.of("redirect", false);
 		List<String> rctypes = List.of("new", "edit");
 		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 		

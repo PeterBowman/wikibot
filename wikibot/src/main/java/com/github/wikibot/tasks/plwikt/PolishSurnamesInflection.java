@@ -694,7 +694,7 @@ public final class PolishSurnamesInflection {
 			ListOrderedMap<List<MeaningNumber>, String> data = new ListOrderedMap<>();
 			String content = field.getContent();
 			
-			if (content.trim().isEmpty()) {
+			if (content.isBlank()) {
 				return new FieldEditor(field, data);
 			}
 			

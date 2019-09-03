@@ -86,12 +86,12 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		response.setHeader("Access-Control-Allow-Origin", "*");
 		
-		if ((title == null || title.trim().isEmpty()) && (text == null || text.trim().isEmpty())) {
+		if ((title == null || title.isBlank()) && (text == null || text.isBlank())) {
 			RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
 			dispatcher.forward(request, response);
 		} else {
 			try {
-				if (text == null || text.trim().isEmpty()) {
+				if (text == null || text.isBlank()) {
 					title = title.trim();
 					
 					synchronized (wiki) {
@@ -578,7 +578,7 @@ public class PrettyRefServlet extends HttpServlet {
 					Iterator<String> i = list.iterator();
 					
 					while (i.hasNext()) {
-						if (i.next().trim().isEmpty()) {
+						if (i.next().isBlank()) {
 							i.remove();
 						}
 					}
@@ -820,7 +820,7 @@ public class PrettyRefServlet extends HttpServlet {
 				}
 			}
 			
-			if (ident.trim().isEmpty()) {
+			if (ident.isBlank()) {
 				ident = "autonazwa";
 			}
 			

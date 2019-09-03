@@ -93,7 +93,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	}
 	
 	private void buildHeaderFormatString(String header) {
-		if (header.trim().isEmpty()) {
+		if (header.isBlank()) {
 			headerFormat = "%1$s %1$s";
 		} else {
 			headerFormat = header.replaceAll("^( *+).+?( *+)$", "%1\\$s$1%2\\$s$2%1\\$s");

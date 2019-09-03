@@ -12,7 +12,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,20 +99,18 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			}
 		}
 		
-		List<String> _multilingualProjects = Arrays.asList(
+		MULTILINGUAL_PROJECTS = Set.of(
 			"specieswiki", "foundationwiki", "commonswiki", "metawiki", "incubatorwiki", "outreachwiki",
 			"mediawikiwiki", "testwiki", "wikidatawiki", "qualitywiki", "testwikidatawiki",
 			"advisorywiki", "donatewiki", "nostalgiawiki", "tenwiki", "test2wiki", "usabilitywiki"
 		);
 		
-		List<String> _longPrefixes = Arrays.asList(
+		LONG_PREFIXES = Set.of(
 			"wikipedia", "wiktionary", "wikinews", "wikibooks", "wikiquote", "wikisource", "wikispecies",
 			"wikiversity", "wikivoyage", "wikimedia", "commons", "meta", "wikidata" // "nost"?
 		);
 		
 		PREFIX_TO_DATABASE_FAMILY = Collections.unmodifiableMap(_prefixToDatabase);
-		MULTILINGUAL_PROJECTS = Collections.unmodifiableSet(new HashSet<>(_multilingualProjects));
-		LONG_PREFIXES = Collections.unmodifiableSet(new HashSet<>(_longPrefixes));
 	}
 	
 	@Override

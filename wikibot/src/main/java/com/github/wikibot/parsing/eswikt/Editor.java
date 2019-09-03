@@ -760,7 +760,7 @@ public class Editor extends AbstractEditor {
 				
 				String deletedString = sbCopy.substring(sb.length());
 				
-				if (!deletedString.trim().isEmpty()) {
+				if (!deletedString.isBlank()) {
 					makeSummary.setTrue();
 				}
 			}
@@ -820,7 +820,7 @@ public class Editor extends AbstractEditor {
 				} else {
 					return;
 				}
-			} else if (pipe.trim().isEmpty()) { // this case wouldn't render an <a> link, just plain text
+			} else if (pipe.isBlank()) { // this case wouldn't render an <a> link, just plain text
 				if (strippedTarget.equals(target)) { // [[test|]]s -> [[test]]s
 					link = String.format(reducedLinkFormat, target, trail);
 				} else { // [[test#xx|]]s -> [[test#xx|tests]]
@@ -2079,7 +2079,7 @@ public class Editor extends AbstractEditor {
 		intro = P_IMAGES.matcher(intro).replaceAll("");
 		intro = P_CATEGORY_LINKS.matcher(intro).replaceAll("");
 		
-		return intro.trim().isEmpty();
+		return intro.isBlank();
 	}
 	
 	public void normalizeSectionLevels() {
@@ -3109,7 +3109,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		// https://es.wiktionary.org/w/index.php?diff=3020098
-		if (!copy.replace(",", "").trim().isEmpty()) {
+		if (!copy.replace(",", "").isBlank()) {
 			return null;
 		}
 		
@@ -4313,7 +4313,7 @@ public class Editor extends AbstractEditor {
 				
 				StringBuilder buff = new StringBuilder(pre.length() + post.length());
 				
-				if (pre.trim().isEmpty() && post.trim().isEmpty()) {
+				if (pre.isBlank() && post.isBlank()) {
 					if (!pre.isEmpty()) {
 						buff.append('\n');
 						
@@ -4326,7 +4326,7 @@ public class Editor extends AbstractEditor {
 				} else {
 					post = post.replaceFirst("^ *", "");
 					
-					if (!pre.trim().isEmpty() && !post.trim().isEmpty()) {
+					if (!pre.isBlank() && !post.isBlank()) {
 						buff.append(pre);
 						buff.append('\n').append('\n');
 						buff.append(post);

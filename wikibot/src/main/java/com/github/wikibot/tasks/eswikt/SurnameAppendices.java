@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,23 +28,11 @@ public final class SurnameAppendices {
 	
 	private static final int COLUMNS = 5;
 	
-	private static final Collator collator;
-	private static final Map<Character, Character> stressedVowels;
+	private static final Collator collator = Collator.getInstance(new Locale("es"));
+	
+	private static final Map<Character, Character> stressedVowels = Map.of('Á', 'A', 'É', 'E', 'Í', 'I', 'Ó', 'O', 'Ú', 'U');
 	
 	private static Wikibot wb;
-	
-	static {
-		collator = Collator.getInstance(new Locale("es"));
-		
-		final Map<Character, Character> _stressedVowels = new HashMap<>();
-		_stressedVowels.put('Á', 'A');
-		_stressedVowels.put('É', 'E');
-		_stressedVowels.put('Í', 'I');
-		_stressedVowels.put('Ó', 'O');
-		_stressedVowels.put('Ú', 'U');
-		
-		stressedVowels = Collections.unmodifiableMap(_stressedVowels);
-	}
 
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("es.wiktionary.org");

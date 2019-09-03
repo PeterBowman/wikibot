@@ -9,7 +9,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -94,14 +93,13 @@ public class SandboxRedirects extends HttpServlet {
 					break;
 				}
 				
-				Map<String, Object> info = new HashMap<>();
-				info.put("source", logTitle);
-				info.put("sourceExists", logData.sourceExists);
-				info.put("target", logData.targetPage);
-				info.put("targetDisplay", logData.targetDisplay);
-				info.put("timestamp", formatDate(logTimestamp));
-				
-				results.add(info);
+				results.add(Map.of(
+					"source", logTitle,
+					"sourceExists", logData.sourceExists,
+					"target", logData.targetPage,
+					"targetDisplay", logData.targetDisplay,
+					"timestamp", formatDate(logTimestamp)
+				));
 			}
 		} catch (SQLException e) {
 			throw new UnavailableException(e.getMessage());
