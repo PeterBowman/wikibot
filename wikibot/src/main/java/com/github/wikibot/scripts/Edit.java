@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -208,7 +207,7 @@ public final class Edit implements Selectorizable {
 		String category = "Kategoria:Formy czasownikowe wg języków";
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
 		List<String> titles = wb.getCategoryMembers(category, Wiki.CATEGORY_NAMESPACE);
-		PageContainer[] pages = wb.getContentOfPages(titles.toArray(String[]::new));
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -231,21 +230,21 @@ public final class Edit implements Selectorizable {
 	}
 	
 	public static void getDiffs() throws IOException {
-		String[] titles = Files.lines(Paths.get(difflist))
+		List<String> titles = Files.lines(Paths.get(difflist))
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		System.out.printf("Tamaño de la lista: %d%n", titles.length);
+		System.out.printf("Tamaño de la lista: %d%n", titles.size());
 		
-		if (titles.length == 0) {
+		if (titles.isEmpty()) {
 			return;
 		}
 
-		PageContainer[] pages = wb.getContentOfPages(titles);
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		
-		Map<String, String> map = Stream.of(pages)
+		Map<String, String> map = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getText,
@@ -255,7 +254,7 @@ public final class Edit implements Selectorizable {
 		
 		Files.write(Paths.get(worklist), List.of(Misc.makeList(map)));
 		
-		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
+		Map<String, OffsetDateTime> timestamps = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getTimestamp

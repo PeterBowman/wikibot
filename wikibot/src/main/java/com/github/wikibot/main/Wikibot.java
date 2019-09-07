@@ -5,15 +5,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -36,7 +33,7 @@ public class Wikibot extends WMFWiki {
     	return wb;
     }
 	
-    public PageContainer[] getContentOfPages(String[] pages) throws IOException {
+    public List<PageContainer> getContentOfPages(List<String> pages) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -44,11 +41,10 @@ public class Wikibot extends WMFWiki {
     		"rvslots", "main"
     	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
-		List<PageContainer> coll = getListedContent(getparams, pages, "getContents", "titles", biCons);
-		return coll.toArray(new PageContainer[coll.size()]);
+		return getListedContent(getparams, pages, "getContents", "titles", biCons);
 	}
     
-    public PageContainer[] getContentOfPageIds(Long[] pageids) throws IOException {
+    public List<PageContainer> getContentOfPageIds(List<Long> pageids) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -56,12 +52,11 @@ public class Wikibot extends WMFWiki {
     		"rvslots", "main"
     	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
-		String[] stringified = Stream.of(pageids).map(Object::toString).toArray(String[]::new);
-		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "pageids", biCons);
-		return coll.toArray(new PageContainer[coll.size()]);
+		List<String> stringified = pageids.stream().map(Object::toString).collect(Collectors.toList());
+		return getListedContent(getparams, stringified, "getContents", "pageids", biCons);
 	}
     
-    public PageContainer[] getContentOfRevIds(Long[] revids) throws IOException {
+    public List<PageContainer> getContentOfRevIds(List<Long> revids) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -69,9 +64,8 @@ public class Wikibot extends WMFWiki {
     		"rvslots", "main"
     	);
 		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
-		String[] stringified = Stream.of(revids).map(Object::toString).toArray(String[]::new);
-		List<PageContainer> coll = getListedContent(getparams, stringified, "getContents", "revids", biCons);
-		return coll.toArray(new PageContainer[coll.size()]);
+		List<String> stringified = revids.stream().map(Object::toString).collect(Collectors.toList());
+		return getListedContent(getparams, stringified, "getContents", "revids", biCons);
     }
 	
 	/**
@@ -85,7 +79,7 @@ public class Wikibot extends WMFWiki {
 	 * @return a Map containing page titles and its respective contents
 	 * @throws IOException
 	 */
-	public PageContainer[] getContentOfCategorymembers(String category, int... ns) throws IOException {
+	public List<PageContainer> getContentOfCategorymembers(String category, int... ns) throws IOException {
 		Map<String, String> getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
@@ -99,7 +93,7 @@ public class Wikibot extends WMFWiki {
 		return getGeneratedContent(getparams, "gcm");
 	}
 	
-	public PageContainer[] getContentOfTransclusions(String page, int... ns) throws IOException {
+	public List<PageContainer> getContentOfTransclusions(String page, int... ns) throws IOException {
 		Map<String, String> getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
@@ -112,7 +106,7 @@ public class Wikibot extends WMFWiki {
 		return getGeneratedContent(getparams, "gei");
 	}
 	
-	public PageContainer[] getContentOfBacklinks(String page, int... ns) throws IOException {
+	public List<PageContainer> getContentOfBacklinks(String page, int... ns) throws IOException {
 		Map<String, String> getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
@@ -125,11 +119,11 @@ public class Wikibot extends WMFWiki {
 		return getGeneratedContent(getparams, "gbl");
 	}
 	
-	private <T> List<T> getListedContent(Map<String, String> getparams, String[] titles, String caller,
+	private <T> List<T> getListedContent(Map<String, String> getparams, List<String> titles, String caller,
 			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
-		List<String> chunks = constructTitleString(List.of(titles));
-		List<T> list = new ArrayList<>(titles.length);
+		List<String> chunks = constructTitleString(titles);
+		List<T> list = new ArrayList<>(titles.size());
 		Map<String, Object> postparams = new HashMap<>();
 		
 		for (int i = 0; i < chunks.size(); i++) {
@@ -143,9 +137,8 @@ public class Wikibot extends WMFWiki {
 		return list;
 	}
 
-	private PageContainer[] getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
-		List<PageContainer> list = makeListQuery(queryPrefix, getparams, null, "getGeneratedContent", -1, this::parseContentLine);
-		return list.toArray(new PageContainer[list.size()]);
+	private List<PageContainer> getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
+		return makeListQuery(queryPrefix, getparams, null, "getGeneratedContent", -1, this::parseContentLine);
 	}
 	
 	private void parseContentLine(String line, List<PageContainer> list) {
@@ -163,11 +156,10 @@ public class Wikibot extends WMFWiki {
 			.forEach(list::add);
 	}
 	
-	public Map<String, OffsetDateTime> getTimestamps(String[] pages) throws IOException {
-		return Stream.of(getTopRevision(pages))
-			.collect(Collectors.toMap(
-				Revision::getTitle,
-				Revision::getTimestamp
+	public Map<String, OffsetDateTime> getTimestamps(List<String> pages) throws IOException {
+		return getTopRevision(pages).stream().collect(Collectors.toMap(
+				Wiki.Revision::getTitle,
+				Wiki.Revision::getTimestamp
 			));
 	}
 	
@@ -192,7 +184,7 @@ public class Wikibot extends WMFWiki {
 		return decode(line.substring(a, b));
 	}
 	
-	public Revision[] getTopRevision(String[] titles) throws IOException {
+	public List<Wiki.Revision> getTopRevision(List<String> titles) throws IOException {
 		Map<String, String> getparams = Map.of(
 			"action", "query",
 			"prop", "revisions",
@@ -201,7 +193,7 @@ public class Wikibot extends WMFWiki {
 			"type", "rollback"
 		);
         
-		BiConsumer<String, List<Revision>> biCons = (line, list) -> {
+		BiConsumer<String, List<Wiki.Revision>> biCons = (line, list) -> {
 			for (int page = line.indexOf("<page "); page != -1; page = line.indexOf("<page ", ++page)) {
 				String title = parseAttribute(line, "title", page);
 				int start = line.indexOf("<rev ", page);
@@ -210,11 +202,10 @@ public class Wikibot extends WMFWiki {
 			}
 		};
 		
-		Collection<Revision> coll = getListedContent(getparams, titles, "getTopRevision", "titles", biCons);
-		return coll.toArray(new Revision[coll.size()]);
+		return getListedContent(getparams, titles, "getTopRevision", "titles", biCons);
     }
 	
-	public Revision[] recentChanges(OffsetDateTime starttimestamp, OffsetDateTime endtimestamp, Map<String, Boolean> rcoptions,
+	public List<Wiki.Revision> recentChanges(OffsetDateTime starttimestamp, OffsetDateTime endtimestamp, Map<String, Boolean> rcoptions,
 			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
 		Map<String, String> getparams = new HashMap<>();
@@ -252,7 +243,7 @@ public class Wikibot extends WMFWiki {
         	getparams.put("rcend", endtimestamp.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         
-        List<Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", -1, (line, results) -> {
+        List<Wiki.Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", -1, (line, results) -> {
         	for (int i = line.indexOf("<rc "); i != -1; i = line.indexOf("<rc ", ++i)) {
                 int j = line.indexOf("/>", i);
                 results.add(parseRevision(line.substring(i, j), ""));
@@ -261,10 +252,10 @@ public class Wikibot extends WMFWiki {
 
         int temp = revisions.size();
         log(Level.INFO, "Successfully retrieved recent changes (" + temp + " revisions)", "recentChanges");
-        return revisions.toArray(new Revision[temp]);
+        return revisions;
     }
     
-    public String[] allLinks(String prefix, int namespace) throws IOException {
+    public List<String> allLinks(String prefix, int namespace) throws IOException {
     	Map<String, String> getparams = new HashMap<>();
     	getparams.put("list", "alllinks");
 
@@ -295,10 +286,10 @@ public class Wikibot extends WMFWiki {
 		int size = pages.size();
 		log(Level.INFO, "allPages", "Successfully retrieved links list (" + size + " pages)");
 		
-		return pages.toArray(String[]::new);
+		return pages;
     }
     
-    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, String from, 
+    public List<String> listPages(String prefix, Map<String, Object> protectionstate, int namespace, String from, 
             String to, Boolean redirects) throws IOException
     {
         // @revised 0.15 to add short/long pages
@@ -361,10 +352,10 @@ public class Wikibot extends WMFWiki {
         // tidy up
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
-        return pages.toArray(String[]::new);
+        return pages;
     }
     
-    public synchronized void review(Revision rev, String comment) throws LoginException, IOException {
+    public synchronized void review(Wiki.Revision rev, String comment) throws LoginException, IOException {
 		requiresExtension("Flagged Revisions");
 		throttle();
 		
@@ -392,11 +383,7 @@ public class Wikibot extends WMFWiki {
 		log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
 	}
     
-    public Map<String, String> getPageProps(String page) throws IOException {
-    	return getPageProps(new String[] { page })[0];
-    }
-    
-    public Map<String, String>[] getPageProps(String[] pages) throws IOException
+    public List<Map<String, String>> getPageProps(List<String> pages) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
@@ -404,8 +391,8 @@ public class Wikibot extends WMFWiki {
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, String>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
-        List<String> pages2 = Arrays.asList(pages);
-        List<String> chunks = constructTitleString(List.of(pages));
+        List<String> pages2 = new ArrayList<>(pages);
+        List<String> chunks = constructTitleString(pages);
         for (int i = 0; i < chunks.size(); i++)
         {
         	String temp = chunks.get(i);
@@ -450,19 +437,18 @@ public class Wikibot extends WMFWiki {
             }
         }
 
-        @SuppressWarnings("unchecked")
-		Map<String, String>[] props = new HashMap[pages.length];
+		List<Map<String, String>> props = new ArrayList<>(pages.size());
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.size(); i++)
         {
             Map<String, String> tempmap = metamap.get(normalize(pages2.get(i)));
             if (tempmap != null)
             {
-                props[i] = new HashMap<>(tempmap);
-                props[i].put("inputpagename", pages[i]);
+                props.add(i, new HashMap<>(tempmap));
+                props.get(i).put("inputpagename", pages.get(i));
             }
         }
-        log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.length + " titles)");
+        log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.size() + " titles)");
         return props;
     }
 }

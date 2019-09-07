@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -84,12 +83,12 @@ public final class SpanishCanonicalInflectedForms {
 	}
 	
 	private static List<String> retrieveList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY_NAME, Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers(CATEGORY_NAME, Wiki.MAIN_NAMESPACE);
 		
 		Collator collator = Collator.getInstance(new Locale("es", "ES"));
 		collator.setStrength(Collator.SECONDARY);
 		
-		List<String> titles = Stream.of(pages)
+		List<String> titles = pages.stream()
 			.map(Page::wrap)
 			.flatMap(p -> p.getSection("hiszpański", true).stream())
 			.flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())

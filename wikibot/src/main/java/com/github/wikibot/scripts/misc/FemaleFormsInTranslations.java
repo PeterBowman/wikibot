@@ -17,7 +17,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -69,9 +68,9 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> fempages = wb.getContentOfTransclusions("Szablon:zobtłum rodz", Wiki.MAIN_NAMESPACE);
 		
-		List<Translations> nouns = Stream.of(fempages)
+		List<Translations> nouns = fempages.stream()
 			.map(Page::wrap)
 			.map(page -> {
 				Section s = page.getPolishSection().get();
@@ -83,10 +82,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 			})
 			.collect(Collectors.toList());
 		
-		PageContainer[] mascpages = wb.getContentOfPages(
-			nouns.stream()
-				.map(item -> item.alt_gender)
-				.toArray(String[]::new)
+		List<PageContainer> mascpages = wb.getContentOfPages(
+			nouns.stream().map(item -> item.alt_gender).collect(Collectors.toList())
 		);
 		
 		int count = 0;
@@ -268,8 +265,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		Set<String> masc_set = masc_list.keySet();
 		Set<String> fem_set = fem_list.keySet();
 		
-		PageContainer[] masc_pages = wb.getContentOfPages(masc_set.toArray(String[]::new));
-		PageContainer[] fem_pages = wb.getContentOfPages(fem_set.toArray(String[]::new));
+		List<PageContainer> masc_pages = wb.getContentOfPages(new ArrayList<>(masc_set));
+		List<PageContainer> fem_pages = wb.getContentOfPages(new ArrayList<>(fem_set));
 		
 		for (PageContainer page : masc_pages) {
 			String translationsText = Optional.of(Page.wrap(page))

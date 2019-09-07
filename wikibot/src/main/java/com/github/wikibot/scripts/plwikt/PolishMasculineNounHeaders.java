@@ -99,18 +99,18 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void getContents() throws UnsupportedEncodingException, IOException {
-		String[] lines = Files.lines(Paths.get(f_allpages)).toArray(String[]::new);
-		String[] selection = Arrays.copyOfRange(lines, 0, Math.min(LIMIT, lines.length - 1));
+		List<String> lines = Files.lines(Paths.get(f_allpages)).collect(Collectors.toList());
+		List<String> selection = lines.subList(0, Math.min(LIMIT, lines.size() - 1));
 		
-		System.out.printf("Tamaño de la lista: %d%n", selection.length);
+		System.out.printf("Tamaño de la lista: %d%n", selection.size());
 		
-		if (selection.length == 0) {
+		if (selection.isEmpty()) {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(selection);
+		List<PageContainer> pages = wb.getContentOfPages(selection);
 		
-		Map<String, Collection<String>> map = Stream.of(pages)
+		Map<String, Collection<String>> map = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				page -> {

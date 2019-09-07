@@ -89,20 +89,20 @@ public class MissingPolishEntries {
 	private static List<String> retrieveNonPolishEntries() throws IOException {
 		List<String> titles = new ArrayList<>();
 		
-		String[] allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
+		List<String> allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
 		List<String> polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
 		List<String> polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
 		List<String> polishRedirs = findRedirects(polishTitles);
 		
 		Set<String> set = new HashSet<>();
-		set.addAll(Arrays.asList(allTitles));
+		set.addAll(allTitles);
 		set.removeAll(polishTitles);
 		set.removeAll(polishInflected);
 		set.removeAll(polishRedirs);
 		
 		titles.addAll(set);
 		
-		stats.allEntries = allTitles.length;
+		stats.allEntries = allTitles.size();
 		stats.polishLemmas = polishTitles.size();
 		stats.polishInflected = polishInflected.size();
 		stats.polishRedirs = polishRedirs.size();
@@ -111,14 +111,14 @@ public class MissingPolishEntries {
 	}
 	
 	private static List<String> findRedirects(List<String> polishTitles) throws IOException {
-		String[] allRedirs = wb.listPages("", null, 0, null, null, Boolean.TRUE);
-		List<String> resolvedRedirs = wb.resolveRedirects(Arrays.asList(allRedirs));
+		List<String> allRedirs = wb.listPages("", null, 0, null, null, Boolean.TRUE);
+		List<String> resolvedRedirs = wb.resolveRedirects(allRedirs);
 		
 		List<String> polishRedirs = new ArrayList<>(2000);
 		Set<String> set = new HashSet<>(polishTitles);
 		
-		for (int i = 0; i < allRedirs.length; i++) {
-			String redir = allRedirs[i];
+		for (int i = 0; i < allRedirs.size(); i++) {
+			String redir = allRedirs.get(i);
 			String resolvedRedir = resolvedRedirs.get(i);
 			
 			if (set.contains(resolvedRedir)) {

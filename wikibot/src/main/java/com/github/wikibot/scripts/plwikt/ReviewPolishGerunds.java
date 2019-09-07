@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
@@ -50,11 +51,11 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		String[] titles = Files.lines(Paths.get(f_pages)).toArray(String[]::new);
-		PageContainer[] pages = wb.getContentOfPages(titles);
+		List<String> titles = Files.lines(Paths.get(f_pages)).collect(Collectors.toList());
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		Map<String, String> worklist = new LinkedHashMap<>();
 		
-		System.out.printf("Tamaño de la lista: %d%n", titles.length);
+		System.out.printf("Tamaño de la lista: %d%n", titles.size());
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();

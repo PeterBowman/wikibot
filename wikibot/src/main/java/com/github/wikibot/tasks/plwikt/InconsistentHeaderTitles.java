@@ -173,17 +173,16 @@ public final class InconsistentHeaderTitles {
 			throws IOException {
 		String[] newTitles = extractRecentChanges();
 		
-		String[] distinctTitles = Stream.of(newTitles, bufferedTitles)
+		List<String> distinctTitles = Stream.of(newTitles, bufferedTitles)
 			.flatMap(Stream::of)
 			.distinct()
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		if (distinctTitles.length == 0) {
+		if (distinctTitles.isEmpty()) {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(distinctTitles);
-		Stream.of(pages).parallel().forEach(InconsistentHeaderTitles::findErrors);
+		wb.getContentOfPages(distinctTitles).parallelStream().forEach(InconsistentHeaderTitles::findErrors);
 	}
 
 	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
@@ -230,7 +229,7 @@ public final class InconsistentHeaderTitles {
 		}
 		
 		List<String> rcTypes = List.of("new", "edit");
-		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
@@ -239,7 +238,7 @@ public final class InconsistentHeaderTitles {
 		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getTitle),
+			revs.stream().map(Wiki.Revision::getTitle),
 			logs.stream().map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}

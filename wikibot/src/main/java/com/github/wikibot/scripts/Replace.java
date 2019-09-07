@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -60,19 +59,19 @@ public final class Replace implements Selectorizable {
 	public void getDiffs() throws FileNotFoundException, IOException, ClassNotFoundException {
 		String target = "prettytable";
 		String replacement = "wikitable";
-		String[] titles = Files.lines(Paths.get(f_titles)).toArray(String[]::new);
+		List<String> titles = Files.lines(Paths.get(f_titles)).collect(Collectors.toList());
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
-		System.out.printf("Tamaño de la lista: %d%n", titles.length);
+		System.out.printf("Tamaño de la lista: %d%n", titles.size());
 		
-		if (titles.length == 0) {
+		if (titles.isEmpty()) {
 			return;
 		}
 		
-		PageContainer[] pages = wb.getContentOfPages(titles);
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		
-		Map<String, String> map = Stream.of(pages)
+		Map<String, String> map = pages.stream()
 			.filter(page -> page.getText().contains(target))
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
@@ -83,8 +82,8 @@ public final class Replace implements Selectorizable {
 		
 		System.out.printf("Tamaño final: %d%n", map.size());
 		
-		if (map.size() != pages.length) {
-			List<String> all = Stream.of(pages).map(PageContainer::getTitle).collect(Collectors.toList());
+		if (map.size() != pages.size()) {
+			List<String> all = pages.stream().map(PageContainer::getTitle).collect(Collectors.toList());
 			Set<String> found = map.keySet();
 			all.removeAll(found);
 			
@@ -94,7 +93,7 @@ public final class Replace implements Selectorizable {
 		Misc.serialize(target, f_target);
 		Misc.serialize(replacement, f_replacement);
 		
-		Map<String, OffsetDateTime> timestamps = Stream.of(pages)
+		Map<String, OffsetDateTime> timestamps = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getTimestamp

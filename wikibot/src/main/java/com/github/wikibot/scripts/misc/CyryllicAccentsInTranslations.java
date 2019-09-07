@@ -55,7 +55,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	}
 	
 	public static void getContents() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Misc.serialize(pages, contentlist);
 	}
 	

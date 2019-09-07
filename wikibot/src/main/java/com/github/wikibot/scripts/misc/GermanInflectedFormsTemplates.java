@@ -67,7 +67,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		
 		int count = 0;
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers("Formy czasowników niemieckich", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {
@@ -146,7 +146,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	}
 	
 	public static void findWrongHeaders() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers("Język niemiecki - czasowniki", Wiki.MAIN_NAMESPACE);
 		List<String> list = new ArrayList<>(250);
 		
 		for (PageContainer page : pages) {

@@ -112,13 +112,13 @@ public final class PolishSurnamesInflection {
 		
 		List<LogEntry> logs = new ArrayList<>();
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers(SURNAME_CATEGORY, Wiki.MAIN_NAMESPACE);
 		
 		wb.setThrottle(5000);
 		wb.setMarkMinor(false);
 		
 		try {
-			Stream.of(pages).sequential().forEach(pc -> doWork(pc, storage, history, logs));
+			pages.forEach(pc -> doWork(pc, storage, history, logs));
 		} finally {
 			Misc.serialize(storage, fStorage);
 			Misc.serialize(history, fHistory);

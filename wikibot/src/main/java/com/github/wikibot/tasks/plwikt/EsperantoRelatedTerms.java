@@ -84,7 +84,7 @@ public final class EsperantoRelatedTerms {
 		excluded.addAll(cat2);
 		excluded.addAll(cat3);
 		
-		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 				
 		for (PageContainer page : morfeoTransclusions) {
 			for (String template : ParseUtils.getTemplates("morfeo", page.getText())) {

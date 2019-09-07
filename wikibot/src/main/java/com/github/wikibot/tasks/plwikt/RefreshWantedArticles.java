@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -175,33 +174,33 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static List<String> filterDoneArticles(List<String> titles) throws IOException {
-		PageContainer[] pages = wb.getContentOfPages(titles.toArray(String[]::new));
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		
 		// Missing pages have been already filtered out
-		List<String> nonMissingTitles = Stream.of(pages)
+		List<String> nonMissingTitles = pages.stream()
 			.map(PageContainer::getTitle)
 			.collect(Collectors.toList());
 		
 		List<String> redirects = wb.resolveRedirects(nonMissingTitles);
 		
-		for (int i = 0; i < pages.length; i++) {
+		for (int i = 0; i < pages.size(); i++) {
 			String redirect = redirects.get(i);
 			
 			if (!redirect.equals(nonMissingTitles.get(i))) {
-				PageContainer old = pages[i];
+				PageContainer old = pages.get(i);
 				
 				try {
 					String redirectText = wb.getPageText(List.of(redirect)).get(0);
-					pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
+					pages.add(i, new PageContainer(old.getTitle(), redirectText, old.getTimestamp()));
 				} catch (FileNotFoundException | NullPointerException e) {
 					System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
-					pages[i] = null;
+					pages.add(i, null);
 					continue;
 				}
 			}
 		}
 		
-		return Stream.of(pages)
+		return pages.stream()
 			.filter(Objects::nonNull)
 			.map(Page::wrap)
 			.filter(page -> page.getPolishSection().isPresent())

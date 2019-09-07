@@ -90,8 +90,8 @@ public final class GermanNounDeclension implements Selectorizable {
 		int excludesize = 0;
 		int count = 0;
 		
-		PageContainer[] pages = wb.getContentOfCategorymembers("Język niemiecki - rzeczowniki", Wiki.MAIN_NAMESPACE);
-		List<String> list = new ArrayList<>(pages.length);
+		List<PageContainer> pages = wb.getContentOfCategorymembers("Język niemiecki - rzeczowniki", Wiki.MAIN_NAMESPACE);
+		List<String> list = new ArrayList<>(pages.size());
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();

@@ -10,11 +10,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -52,8 +52,8 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", Wiki.MAIN_NAMESPACE);
-		Map<String, OffsetDateTime> info = Stream.of(pages)
+		List<PageContainer> pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", Wiki.MAIN_NAMESPACE);
+		Map<String, OffsetDateTime> info = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getTimestamp

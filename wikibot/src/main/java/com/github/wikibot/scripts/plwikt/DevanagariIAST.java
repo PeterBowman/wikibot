@@ -54,8 +54,8 @@ public class DevanagariIAST implements Selectorizable {
 	}
 	
 	public static void getList(boolean edit) throws IOException, LoginException {
-		String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
-		PageContainer[] pages = wb.getContentOfPages(titles);
+		List<String> titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, "अ", "ॿ", Boolean.FALSE);
+		List<PageContainer> pages = wb.getContentOfPages(titles);
 		List<String> hindi = new ArrayList<>();
 		List<String> nonHindi = new ArrayList<>();
 		
@@ -75,7 +75,7 @@ public class DevanagariIAST implements Selectorizable {
 			}
 		}
 		
-		System.out.printf("Total: %d, hindi: %d, non-hindi: %d%n", pages.length, hindi.size(), nonHindi.size());
+		System.out.printf("Total: %d, hindi: %d, non-hindi: %d%n", pages.size(), hindi.size(), nonHindi.size());
 		
 		String out = makePage(hindi, nonHindi);
 		Files.write(Paths.get(fList), List.of(out));

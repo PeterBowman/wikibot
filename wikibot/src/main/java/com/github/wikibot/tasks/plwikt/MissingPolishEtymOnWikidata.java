@@ -2,6 +2,7 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.text.Collator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -11,7 +12,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.json.JSONObject;
 
@@ -47,9 +47,9 @@ public final class MissingPolishEtymOnWikidata {
 	public static void main(String[] args) throws Exception {
 		Wikibot wd = Login.createSession("www.wikidata.org");
 		Map<String, Integer> namespaceIds = wd.getNamespaces();
-		PageContainer[] wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
+		List<PageContainer> wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
 
-		Map<String, Set<String>> wiktToLexemes = Stream.of(wdPages)
+		Map<String, Set<String>> wiktToLexemes = wdPages.stream()
 			.map(PageContainer::getText)
 			.map(JSONObject::new)
 			.filter(json -> Optional.ofNullable(json.optJSONObject("claims"))
@@ -68,10 +68,10 @@ public final class MissingPolishEtymOnWikidata {
 			));
 
 		Wikibot plwikt = Login.createSession("pl.wiktionary.org");
-		String[] wiktTitles = wiktToLexemes.keySet().toArray(String[]::new);
-		PageContainer[] wiktContent = plwikt.getContentOfPages(wiktTitles);
+		List<String> wiktTitles = new ArrayList<>(wiktToLexemes.keySet());
+		List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktTitles);
 
-		Map<String, String> map = Stream.of(wiktContent)
+		Map<String, String> map = wiktContent.stream()
 			.map(Page::wrap)
 			.map(Page::getPolishSection)
 			.flatMap(Optional::stream)

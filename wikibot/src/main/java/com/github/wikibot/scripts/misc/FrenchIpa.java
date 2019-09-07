@@ -2,12 +2,13 @@ package com.github.wikibot.scripts.misc;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
+
+import org.wikipedia.Wiki;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -21,7 +22,7 @@ public class FrenchIpa {
 	public static void main (String[] args) throws Exception {
 		Wikibot wb = Login.createSession("pl.wiktionary.org");
 		
-		String[] pages = Stream.of(wb.getCategoryMembers("francuski (indeks)", 0))
+		List<String> pages = wb.getCategoryMembers("francuski (indeks)", Wiki.MAIN_NAMESPACE).stream()
 			.filter(title -> (
 				title.contains("bl") ||
 				title.contains("cl") ||
@@ -37,12 +38,12 @@ public class FrenchIpa {
 				title.contains("tr") ||
 				title.contains("vr")
 			))
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		System.out.printf("Tamaño de la lista: %d%n", pages.length);
-		Files.write(Paths.get("./test2.txt"), Arrays.asList(pages));
+		System.out.printf("Tamaño de la lista: %d%n", pages.size());
+		Files.write(Paths.get("./test2.txt"), pages);
 		
-		PageContainer[] contents = wb.getContentOfPages(pages);
+		List<PageContainer> contents = wb.getContentOfPages(pages);
 		Map<String, String> map = new HashMap<>();
 		
 		for (PageContainer page : contents) {

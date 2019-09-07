@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -85,9 +84,9 @@ public class MissingRefsOnPlwiki {
 		plwiki.setResolveRedirects(true);
 
 		Map<String, Integer> stats = new HashMap<>();
-		PageContainer[] plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> plwiktTransclusions = plwikt.getContentOfTransclusions("Szablon:wikipedia", Wiki.MAIN_NAMESPACE);
 
-		stats.put("totalTemplateTransclusions", plwiktTransclusions.length);
+		stats.put("totalTemplateTransclusions", plwiktTransclusions.size());
 		System.out.printf("Total {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("totalTemplateTransclusions"));
 
 		Map<String, Set<String>> plwiktToParsedPlwiki = buildTargetMap(plwiktTransclusions);
@@ -95,23 +94,23 @@ public class MissingRefsOnPlwiki {
 		stats.put("targetedTemplateTransclusions", plwiktToParsedPlwiki.size());
 		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("targetedTemplateTransclusions"));
 
-		String[] parsedPlwikiTitles = plwiktToParsedPlwiki.values().stream()
+		List<String> parsedPlwikiTitles = plwiktToParsedPlwiki.values().stream()
 				.flatMap(Set::stream)
 				.distinct()
-				.toArray(String[]::new);
+				.collect(Collectors.toList());
 
-		stats.put("targetedArticles", parsedPlwikiTitles.length);
+		stats.put("targetedArticles", parsedPlwikiTitles.size());
 		System.out.printf("Targeted articles on plwikipedia: %d%n", stats.get("targetedArticles"));
 
-		Map<String, String>[] plwikiPageProps = plwiki.getPageProps(parsedPlwikiTitles);
+		List<Map<String, String>> plwikiPageProps = plwiki.getPageProps(parsedPlwikiTitles);
 
 		Map<String, String> plwikiRedirToTarget = new HashMap<>();
 		Set<String> plwikiDisambigs = new HashSet<>();
 		Set<String> plwikiMissing = new HashSet<>();
 
-		String[] plwikiTargetArticles = analyzePlwikiPageProps(plwikiPageProps, plwikiRedirToTarget, plwikiDisambigs, plwikiMissing);
+		List<String> plwikiTargetArticles = analyzePlwikiPageProps(plwikiPageProps, plwikiRedirToTarget, plwikiDisambigs, plwikiMissing);
 
-		stats.put("foundArticles", plwikiTargetArticles.length);
+		stats.put("foundArticles", plwikiTargetArticles.size());
 		System.out.printf("Targeted articles on plwikipedia (non-missing): %d%n", stats.get("foundArticles"));
 
 		stats.put("foundRedirects", plwikiRedirToTarget.size());
@@ -120,7 +119,7 @@ public class MissingRefsOnPlwiki {
 		stats.put("foundDisambigs", plwikiDisambigs.size());
 		System.out.printf("Targeted disambigs on plwikipedia: %d%n", stats.get("foundDisambigs"));
 
-		PageContainer[] plwikiContents = plwiki.getContentOfPages(plwikiTargetArticles);
+		List<PageContainer> plwikiContents = plwiki.getContentOfPages(plwikiTargetArticles);
 		Map<String, Set<String>> plwikiToPlwiktBacklinks = retrievePlwiktBacklinks(plwikiContents);
 
 		stats.put("totalPlwiktBacklinks", plwikiToPlwiktBacklinks.size());
@@ -148,7 +147,7 @@ public class MissingRefsOnPlwiki {
 		storeData(entries, stats);
 	}
 
-	private static Map<String, Set<String>> buildTargetMap(PageContainer[] pages) {
+	private static Map<String, Set<String>> buildTargetMap(List<PageContainer> pages) {
 		Collator coll = Collator.getInstance(new Locale("pl", "PL"));
 		Map<String, Set<String>> map = new TreeMap<String, Set<String>>(coll);
 
@@ -188,12 +187,12 @@ public class MissingRefsOnPlwiki {
 		return map;
 	}
 
-	private static String[] analyzePlwikiPageProps(Map<String, String>[] pageProps, Map<String, String> redirToTarget,
+	private static List<String> analyzePlwikiPageProps(List<Map<String, String>> pageProps, Map<String, String> redirToTarget,
 			Set<String> disambigs, Set<String> missing) {
-		List<String> list = new ArrayList<>(pageProps.length);
+		List<String> list = new ArrayList<>(pageProps.size());
 
-		for (int i = 0; i < pageProps.length; i++) {
-			Map<String, String> props = pageProps[i];
+		for (int i = 0; i < pageProps.size(); i++) {
+			Map<String, String> props = pageProps.get(i);
 
 			if (props == null) {
 				continue;
@@ -218,15 +217,14 @@ public class MissingRefsOnPlwiki {
 			list.add(pagename);
 		}
 
-		return list.toArray(String[]::new);
+		return list;
 	}
 
-	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {
-		return Stream.of(pages)
-				.collect(Collectors.toMap(
-						PageContainer::getTitle,
-						pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText()))
-						);
+	private static Map<String, Set<String>> retrievePlwiktBacklinks(List<PageContainer> pages) {
+		return pages.stream().collect(Collectors.toMap(
+				PageContainer::getTitle,
+				pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText()))
+			);
 	}
 
 	private static Set<String> getPlwiktBacklinks(String title, String text) {

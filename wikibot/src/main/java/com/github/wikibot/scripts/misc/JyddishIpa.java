@@ -9,6 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -112,7 +113,7 @@ public class JyddishIpa implements Selectorizable {
 		int errors = 0;
 		StringBuilder sb_list = new StringBuilder(size);
 		
-		PageContainer[] pages = wb.getContentOfPages(int_list);
+		List<PageContainer> pages = wb.getContentOfPages(Arrays.asList(int_list));
 		
 		for (PageContainer page : pages) {
 		//for (Entry<String, String> entry : contenmap.entrySet()) {

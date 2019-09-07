@@ -5,11 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -52,10 +51,10 @@ public final class SJPTemplates {
 		
 		for (String title : titles) {
 			List<Wiki.Revision> revs = wb.getPageHistory(title, null);
-			Long[] revids = revs.stream().map(Wiki.Revision::getID).toArray(Long[]::new);
-			PageContainer[] pcs = wb.getContentOfRevIds(revids);
+			List<Long> revids = revs.stream().map(Wiki.Revision::getID).collect(Collectors.toList());
+			List<PageContainer> pcs = wb.getContentOfRevIds(revids);
 			
-			PageContainer page = Stream.of(pcs)
+			PageContainer page = pcs.stream()
 				.sorted((pc1, pc2) -> pc1.getTimestamp().compareTo(pc2.getTimestamp()))
 				.filter(pc -> !ParseUtils.getTemplates("sjp.pl", pc.getText()).isEmpty())
 				.findFirst()
@@ -66,9 +65,8 @@ public final class SJPTemplates {
 				continue;
 			}
 			
-			List<PageContainer> temp = Arrays.asList(pcs);
-			Collections.reverse(temp);
-			int index = temp.indexOf(page);
+			Collections.reverse(pcs);
+			int index = pcs.indexOf(page);
 			Wiki.Revision targetRev = revs.get(index);
 			
 			targetRevs.add(targetRev);

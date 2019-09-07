@@ -227,7 +227,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!fetchlist.isEmpty()) {
-				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(String[]::new));
+				List<PageContainer> temp = wb.getContentOfPages(fetchlist);
 				
 				for (PageContainer page : temp) {
 					try {
@@ -290,7 +290,7 @@ public final class LinkManager implements Selectorizable {
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
-					timestamps.putAll(wb.getTimestamps(tmp.keySet().toArray(String[]::new)));
+					timestamps.putAll(wb.getTimestamps(new ArrayList<>(tmp.keySet())));
 				}
 			}
 		}

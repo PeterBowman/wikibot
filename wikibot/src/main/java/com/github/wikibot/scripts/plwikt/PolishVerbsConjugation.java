@@ -46,7 +46,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		List<PageContainer> targets = new ArrayList<>();
 		Map<String, String> map = new HashMap<>(1000);
 		

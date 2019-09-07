@@ -67,7 +67,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 	}
 	
 	public static void checkGerunds() throws IOException, LoginException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		
 		List<String> errors = new ArrayList<>(100);
 		List<String> refl = new ArrayList<>(100);
@@ -126,7 +126,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 		
 		Misc.serialize(list, f_list_ser);
 		
-		System.out.printf("Verbos escaneados: %d\n", pages.length);
+		System.out.printf("Verbos escaneados: %d\n", pages.size());
 		System.out.printf("Encontrados: %d\n", gerunds.size());
 		System.out.printf("Reflexivos: %d\n", refl.size());
 		System.out.printf("Errores: %d\n", errors.size());

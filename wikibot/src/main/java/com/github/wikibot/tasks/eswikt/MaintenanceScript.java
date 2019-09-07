@@ -73,13 +73,13 @@ public final class MaintenanceScript {
 		
 		Map<String, Boolean> rcoptions = Map.of("redirect", false);
 		List<String> rctypes = List.of("new", "edit");
-		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
+		List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		List<String> titles = Stream.of(
-				Stream.of(revs).collect(new RevisionCollector(gap)),
+				revs.stream().collect(new RevisionCollector(gap)),
 				logs.stream().collect(new LogCollector(gap))
 			)
 			.flatMap(Collection::stream)
@@ -87,10 +87,10 @@ public final class MaintenanceScript {
 			.filter(title -> !StringUtils.containsAny(title, '/', ':'))
 			.collect(Collectors.toList());
 		
-		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(String[]::new)))
+		List<PageContainer> pages = wb.getContentOfPages(titles).stream()
 			// TODO: implement a Comparator in PageContainer so this is not necessary anymore
 			.sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.getTitle()), titles.indexOf(pc2.getTitle())))
-			.toArray(PageContainer[]::new);
+			.collect(Collectors.toList());
 		
 		for (PageContainer pc : pages) {
 			AbstractEditor editor = new Editor(pc);

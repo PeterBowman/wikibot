@@ -43,7 +43,7 @@ public final class KurdishTranslations implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Pattern patt = Pattern.compile("\\* ?kurdyjski:? ?[^\\n]*");
 		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
 		int found = 0;

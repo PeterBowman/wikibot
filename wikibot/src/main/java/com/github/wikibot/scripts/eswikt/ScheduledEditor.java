@@ -78,9 +78,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processCategorymembers(String category) throws IOException {
-		PageContainer[] pages = wb.getContentOfCategorymembers(category, Wiki.MAIN_NAMESPACE);
-		
-		Stream.of(pages)
+		wb.getContentOfCategorymembers(category, Wiki.MAIN_NAMESPACE).stream()
 			.filter(ScheduledEditor::filterPages)
 			.allMatch(ScheduledEditor::processPage);
 	}
@@ -89,11 +87,11 @@ public final class ScheduledEditor {
 		String lastEntry = retrieveLastEntry();
 		
 		while (true) {
-			PageContainer[] pages;
+			List<PageContainer> pages;
 			
 			try {
-				String[] titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
-				String[] batch = Arrays.copyOfRange(titles, 0, BATCH);
+				List<String> titles = wb.listPages("", null, Wiki.MAIN_NAMESPACE, lastEntry, null, Boolean.FALSE);
+				List<String> batch = titles.subList(0, BATCH);
 				pages = wb.getContentOfPages(batch);
 			} catch (IOException | UnknownError e) {
 				e.printStackTrace();
@@ -104,26 +102,26 @@ public final class ScheduledEditor {
 				return;
 			}
 			
-			if (pages.length < 2) {
+			if (pages.size() < 2) {
 				break;
 			}
 			
 			// TODO: enable parallelization?
-			for (int i = 0; i < pages.length - 1; i++) {
-				PageContainer pc = pages[i];
+			for (int i = 0; i < pages.size() - 1; i++) {
+				PageContainer pc = pages.get(i);
 				
 				if (!filterPages(pc)) {
 					continue;
 				}
 				
 				if (!processPage(pc)) {
-					String nextEntry = pages[i + 1].getTitle();
+					String nextEntry = pages.get(i + 1).getTitle();
 					storeEntry(nextEntry);
 					return;
 				}
 			}
 			
-			lastEntry = pages[pages.length - 1].getTitle();
+			lastEntry = pages.get(pages.size() - 1).getTitle();
 			storeEntry(lastEntry);
 		}
 	}

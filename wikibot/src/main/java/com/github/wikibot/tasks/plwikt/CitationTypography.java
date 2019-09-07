@@ -117,15 +117,13 @@ public final class CitationTypography {
 		Map<String, Integer> titleToPageId = new HashMap<>(titles.size() * 2);
 		
 		if (!titles.isEmpty()) {
-			String[] combinedTitles = titles.toArray(String[]::new);
-			PageContainer[] pages = wb.getContentOfPages(combinedTitles);
+			List<PageContainer> pages = wb.getContentOfPages(new ArrayList<>(titles));
 			
-			entries = Stream.of(pages).parallel()
+			entries = pages.parallelStream()
 				.flatMap(CitationTypography::mapOccurrences)
 				.collect(Collectors.toList());
 			
-			contentCache = Stream.of(pages)
-				.collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
+			contentCache = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
 			
 			System.out.printf("%d entries extracted.%n", entries.size());
 			
@@ -228,7 +226,7 @@ public final class CitationTypography {
 		}
 		
 		List<String> rcTypes = List.of("new", "edit");
-		Wiki.Revision[] revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+		List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 		
 		Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
@@ -237,7 +235,7 @@ public final class CitationTypography {
 		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
-			Stream.of(revs).map(Wiki.Revision::getTitle),
+			revs.stream().map(Wiki.Revision::getTitle),
 			logs.stream().map(Wiki.LogEntry::getDetails).filter(targetTitle -> wb.namespace((String) targetTitle) == Wiki.MAIN_NAMESPACE)
 		).distinct().toArray(String[]::new);
 	}
@@ -666,12 +664,10 @@ public final class CitationTypography {
 			titles.removeAll(contentCache.keySet());
 			
 			if (!titles.isEmpty()) {
-				String[] arr = titles.toArray(String[]::new);
+				List<String> l = new ArrayList<>(titles);
 				
 				try {
-					Stream.of(wb.getContentOfPages(arr)).forEach(pc ->
-						contentCache.putIfAbsent(pc.getTitle(), pc.getText())
-					);
+					wb.getContentOfPages(l).forEach(pc -> contentCache.putIfAbsent(pc.getTitle(), pc.getText()));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

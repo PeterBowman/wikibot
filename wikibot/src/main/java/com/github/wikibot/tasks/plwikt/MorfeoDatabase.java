@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -61,7 +60,7 @@ public final class MorfeoDatabase {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 		Map<String, List<String>> items = retrieveItems(pages);
 		
 		List<String> morphems = items.values().stream()
@@ -111,8 +110,8 @@ public final class MorfeoDatabase {
 		}
 	}
 	
-	private static Map<String, List<String>> retrieveItems(PageContainer[] pages) {
-		Map<String, List<String>> map = Stream.of(pages)
+	private static Map<String, List<String>> retrieveItems(List<PageContainer> pages) {
+		Map<String, List<String>> map = pages.stream()
 			.map(Page::wrap)
 			.flatMap(page -> page.getSection("esperanto").stream())
 			.flatMap(section -> section.getField(FieldTypes.MORPHOLOGY).stream())

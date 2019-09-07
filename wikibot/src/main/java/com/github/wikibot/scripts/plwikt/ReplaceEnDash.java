@@ -72,8 +72,8 @@ public final class ReplaceEnDash implements Selectorizable {
 		titles = new ArrayList<>();
 		
 		for (Integer namespace : namespaces) {
-			String[] temp = wb.allLinks("", namespace);
-			titles.addAll(Arrays.asList(temp));
+			List<String> temp = wb.allLinks("", namespace);
+			titles.addAll(temp);
 		}
 		
 		targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);

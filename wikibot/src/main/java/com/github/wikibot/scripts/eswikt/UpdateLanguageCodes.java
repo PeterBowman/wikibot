@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -50,7 +49,7 @@ public final class UpdateLanguageCodes {
 	public static void main(String[] args) throws IOException, LoginException {
 		Map<String, String> storedLangs = extractStoredLangs();
 		Wikibot wb = Login.createSession("es.wiktionary.org");
-		PageContainer[] pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
 		Map<String, String> fetchedLangs = extractFetchedLangs(pages);
 		
 		List<String> addedCodes = updateAddedLangs(storedLangs, fetchedLangs);
@@ -109,8 +108,8 @@ public final class UpdateLanguageCodes {
 			));
 	}
 	
-	private static Map<String, String> extractFetchedLangs(PageContainer[] pages) {
-		return Stream.of(pages)
+	private static Map<String, String> extractFetchedLangs(List<PageContainer> pages) {
+		return pages.stream()
 			.filter(page -> !ParseUtils.getTemplates("base idioma", page.getText()).isEmpty())
 			.collect(Collectors.toMap(
 				page -> page.getTitle().substring(page.getTitle().indexOf(":") + 1),

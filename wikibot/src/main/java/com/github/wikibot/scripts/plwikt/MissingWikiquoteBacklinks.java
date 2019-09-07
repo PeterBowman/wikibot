@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -62,16 +62,11 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
 		
-		Long[] wiktids = list.stream()
-			.map(data -> Long.parseLong(data[0]))
-			.toArray(Long[]::new);
+		List<Long> wiktids = list.stream().map(data -> Long.parseLong(data[0])).collect(Collectors.toList());
+		List<String> quotetitles = list.stream().map(data -> data[1]).collect(Collectors.toList());
 		
-		String[] quotetitles = list.stream()
-			.map(data -> data[1])
-			.toArray(String[]::new);
-		
-		PageContainer[] wiktpages = wb.getContentOfPageIds(wiktids);
-		PageContainer[] quotepages = quote.getContentOfPages(quotetitles);
+		List<PageContainer> wiktpages = wb.getContentOfPageIds(wiktids);
+		List<PageContainer> quotepages = quote.getContentOfPages(quotetitles);
 		Map<String, Collection<String>> map = new HashMap<>(list.size());
 		
 		for (PageContainer wiktpage : wiktpages) {
@@ -85,7 +80,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			
 			Field notes = s.getField(FieldTypes.NOTES).get();
 			
-			PageContainer qpage = Stream.of(quotepages)
+			PageContainer qpage = quotepages.stream()
 				.filter(page -> page.getTitle().toUpperCase().equals(wiktpage.getTitle().toUpperCase()))
 				.findFirst()
 				.orElse(null);

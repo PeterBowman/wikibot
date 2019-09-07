@@ -257,7 +257,7 @@ public class PolishGerundsList implements Selectorizable {
 		List<String> listErrors = new ArrayList<>(200);
 		List<String> listNoDictEntry = new ArrayList<>(500);
 		
-		PageContainer[] pages = wb.getContentOfPages(gerunds.toArray(String[]::new));
+		List<PageContainer> pages = wb.getContentOfPages(new ArrayList<>(gerunds));
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -308,7 +308,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		System.out.printf(
 			"Faltan: %d. Solo definición: %d, solo plantilla: %d, errores: %d, sin entrada: %d\n",
-			gerunds.size() - pages.length, listOnlyDefinitions.size(), listOnlyTemplates.size(), listErrors.size(), listNoDictEntry.size()
+			gerunds.size() - pages.size(), listOnlyDefinitions.size(), listOnlyTemplates.size(), listErrors.size(), listNoDictEntry.size()
 		);
 		
 		Misc.serialize(listOnlyDefinitions, locationser + "sin plantilla.ser");

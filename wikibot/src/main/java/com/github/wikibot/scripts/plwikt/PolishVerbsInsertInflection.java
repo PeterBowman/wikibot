@@ -71,9 +71,9 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		List<String> inflections = wb.whatTranscludesHere(List.of("Szablon:odmiana-czasownik-polski"), Wiki.MAIN_NAMESPACE).get(0);
 		targets = ArrayUtils.relativeComplement(targets, inflections.toArray(String[]::new));
 		
-		PageContainer[] pages = wb.getContentOfPages(targets);
+		List<PageContainer> pages = wb.getContentOfPages(Arrays.asList(targets));
 		List<PageContainer> serialized = new ArrayList<>();
-		Map<String, Collection<String>> map = new HashMap<>(pages.length);
+		Map<String, Collection<String>> map = new HashMap<>(pages.size());
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -111,9 +111,9 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:koniugacjaPL", Wiki.MAIN_NAMESPACE);
 		List<PageContainer> serialized = new ArrayList<>();
-		Map<String, Collection<String>> map = new HashMap<>(pages.length);
+		Map<String, Collection<String>> map = new HashMap<>(pages.size());
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();
@@ -167,10 +167,10 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 	
 	public static void getModelVc() throws IOException {
-		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
+		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:odmiana-czasownik-polski", Wiki.MAIN_NAMESPACE);
 		Map<String, String> map = new HashMap<>();
 		
-		System.out.printf("Tamaño de la lista: %d%n", pages.length);
+		System.out.printf("Tamaño de la lista: %d%n", pages.size());
 		
 		for (PageContainer page : pages) {
 			String inflectionText = Optional.of(Page.wrap(page))
