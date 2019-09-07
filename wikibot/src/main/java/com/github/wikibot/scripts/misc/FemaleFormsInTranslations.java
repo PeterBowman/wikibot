@@ -340,7 +340,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		for (Entry<String, String> entry : list.entrySet()) {
 			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(title);
+			String content = wb.getPageText(List.of(title)).get(0);
 			Page p = Page.store(title, content);
     		
 			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);
@@ -369,7 +369,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		for (Entry<String, String> entry : list.entrySet()) {
 			String title = entry.getKey();
 			String translations = entry.getValue();
-			String content = wb.getPageText(title);
+			String content = wb.getPageText(List.of(title)).get(0);
 			Page p = Page.store(title, content);
     		
 			p.getPolishSection().get().getField(FieldTypes.TRANSLATIONS).get().editContent(translations, true);

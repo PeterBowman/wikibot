@@ -130,12 +130,12 @@ public final class CitationTypography {
 			System.out.printf("%d entries extracted.%n", entries.size());
 			
 			if (!entries.isEmpty()) {
-				String[] arr = entries.stream().map(entry -> entry.title).distinct().toArray(String[]::new);
+				List<String> l = entries.stream().map(entry -> entry.title).distinct().collect(Collectors.toList());
 				
 				try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
-					queryPageTable(plwiktConn, arr, titleToPageId);
+					queryPageTable(plwiktConn, l, titleToPageId);
 				} catch (SQLException e) {
-					queryPageIdsFallback(arr, titleToPageId, line.hasOption("debug"));
+					queryPageIdsFallback(l, titleToPageId, line.hasOption("debug"));
 				}
 				
 				entries.removeIf(entry -> !titleToPageId.containsKey(entry.title));
@@ -338,9 +338,9 @@ public final class CitationTypography {
 		return Optional.ofNullable(apostrophes).orElse("") + sb.toString() + ".";
 	}
 	
-	private static void queryPageTable(Connection conn, String[] titles, Map<String, Integer> titleToPageId)
+	private static void queryPageTable(Connection conn, List<String> titles, Map<String, Integer> titleToPageId)
 			throws SQLException {
-		String values = Stream.of(titles)
+		String values = titles.stream()
 			.map(title -> String.format("'%s'", title.replace("'", "\\'").replace(" ", "_")))
 			.collect(Collectors.joining(", "));
 		
@@ -359,30 +359,27 @@ public final class CitationTypography {
 		}
 	}
 	
-	private static void queryPageIdsFallback(String[] titles, Map<String, Integer> titleToPageId, boolean dbg)
+	private static void queryPageIdsFallback(List<String> titles, Map<String, Integer> titleToPageId, boolean dbg)
 			throws IOException {
 		if (dbg) {
 			try {
 				Map<String, Integer> stored = Misc.deserialize(LOCATION + "title_to_page_id.ser");
 				titleToPageId.putAll(stored);
-				
-				titles = Stream.of(titles)
-					.filter(title -> !stored.containsKey(title))
-					.toArray(String[]::new);
+				titles.removeIf(title -> stored.containsKey(title));
 			} catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();
 			}
 			
-			if (titles.length == 0) {
+			if (titles.isEmpty()) {
 				return;
 			}
 		}
 		
-		Map<String, Object>[] infos = wb.getPageInfo(titles);
+		List<Map<String, Object>> infos = wb.getPageInfo(titles);
 		
-		for (int i = 0; i < infos.length; i++) {
-			Map<String, Object> info = infos[i];
-			String title = titles[i];
+		for (int i = 0; i < infos.size(); i++) {
+			Map<String, Object> info = infos.get(i);
+			String title = titles.get(i);
 			long pageId = (long) info.getOrDefault("pageid", -1);
 			
 			if (pageId == -1) {
@@ -803,7 +800,7 @@ public final class CitationTypography {
 		
 		try {
 			OffsetDateTime basetime = wb.getTopRevision(entry.title).getTimestamp();
-			String pageText = wb.getPageText(entry.title);
+			String pageText = wb.getPageText(List.of(entry.title)).get(0);
 			
 			if (pageText == null) {
 				throw new FileNotFoundException("Page does not exist: " + entry.title);

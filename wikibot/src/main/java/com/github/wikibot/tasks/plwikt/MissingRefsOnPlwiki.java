@@ -126,11 +126,11 @@ public class MissingRefsOnPlwiki {
 		stats.put("totalPlwiktBacklinks", plwikiToPlwiktBacklinks.size());
 		System.out.printf("Total plwiktionary backlinks: %d%n", stats.get("totalPlwiktBacklinks"));
 
-		String[] plwiktBacklinks = plwikiToPlwiktBacklinks.values().stream()
+		List<String> plwiktBacklinks = plwikiToPlwiktBacklinks.values().stream()
 				.flatMap(Set::stream)
 				.distinct()
 				.filter(backlink -> !plwiktToParsedPlwiki.containsKey(backlink))
-				.toArray(String[]::new);
+				.collect(Collectors.toList());
 
 		removeFoundOccurrences(plwiktToParsedPlwiki, plwikiToPlwiktBacklinks, plwikiRedirToTarget);
 
@@ -299,12 +299,12 @@ public class MissingRefsOnPlwiki {
 		plwiktToPlwiki.entrySet().removeIf(e -> e.getValue().isEmpty());
 	}
 
-	private static Set<String> getMissingPlwiktPages(String[] titles) throws IOException {
+	private static Set<String> getMissingPlwiktPages(List<String> titles) throws IOException {
 		Set<String> set = new HashSet<>();
 		boolean[] exist = plwikt.exists(titles);
 
-		for (int i = 0; i < titles.length; i++) {
-			String title = titles[i];
+		for (int i = 0; i < titles.size(); i++) {
+			String title = titles.get(i);
 
 			if (!exist[i]) {
 				set.add(title);

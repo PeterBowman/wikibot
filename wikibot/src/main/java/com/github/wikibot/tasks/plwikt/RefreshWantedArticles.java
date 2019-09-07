@@ -60,7 +60,7 @@ public final class RefreshWantedArticles {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		String content = wb.getPageText(TARGET_PAGE);
+		String content = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 		
 		Document doc = Jsoup.parseBodyFragment(content);
 		doc.outputSettings().prettyPrint(false);
@@ -178,20 +178,20 @@ public final class RefreshWantedArticles {
 		PageContainer[] pages = wb.getContentOfPages(titles.toArray(new String[titles.size()]));
 		
 		// Missing pages have been already filtered out
-		String[] nonMissingTitles = Stream.of(pages)
+		List<String> nonMissingTitles = Stream.of(pages)
 			.map(PageContainer::getTitle)
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		String[] redirects = wb.resolveRedirects(nonMissingTitles);
+		List<String> redirects = wb.resolveRedirects(nonMissingTitles);
 		
 		for (int i = 0; i < pages.length; i++) {
-			String redirect = redirects[i];
+			String redirect = redirects.get(i);
 			
-			if (!redirect.equals(nonMissingTitles[i])) {
+			if (!redirect.equals(nonMissingTitles.get(i))) {
 				PageContainer old = pages[i];
 				
 				try {
-					String redirectText = wb.getPageText(redirect);
+					String redirectText = wb.getPageText(List.of(redirect)).get(0);
 					pages[i] = new PageContainer(old.getTitle(), redirectText, old.getTimestamp());
 				} catch (FileNotFoundException | NullPointerException e) {
 					System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
@@ -263,7 +263,7 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static void fetchMoreArticles(List<String> list, Set<String> storeSet) throws IOException {
-		String text = wb.getPageText(REFILL_PAGE);
+		String text = wb.getPageText(List.of(REFILL_PAGE)).get(0);
 		Matcher m = P_OCCURRENCES_REFILL.matcher(text);
 		List<String> titles = new ArrayList<>(500);
 		

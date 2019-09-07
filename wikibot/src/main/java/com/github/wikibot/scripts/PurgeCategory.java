@@ -1,6 +1,7 @@
 package com.github.wikibot.scripts;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -15,17 +16,17 @@ public final class PurgeCategory {
 		//String page = "Szablon:*";
 		boolean isTranscluded = false;
 		
-		String[] pages = isTranscluded
-			? wiki.whatLinksHere("Kategoria:" + category, Wikibot.MAIN_NAMESPACE)
+		List<String> pages = isTranscluded
+			? wiki.whatLinksHere(List.of("Kategoria:" + category), false, false, Wikibot.MAIN_NAMESPACE).get(0)
 			: wiki.getCategoryMembers(category, Wikibot.MAIN_NAMESPACE);
 		
 		//String[] pages = wb.whatTranscludesHere(page);
 		
-		System.out.printf("Se han extraído %d páginas%n", pages.length);
+		System.out.printf("Se han extraído %d páginas%n", pages.size());
 				
 		Misc.runTimer(() -> {
 			try {
-				wiki.purge(true, pages);
+				wiki.purge(true, pages.toArray(String[]::new));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

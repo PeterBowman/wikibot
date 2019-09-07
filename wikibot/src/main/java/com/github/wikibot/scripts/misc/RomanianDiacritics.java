@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Selectorizable;
@@ -39,7 +40,7 @@ public final class RomanianDiacritics implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		String[] words = wb.getCategoryMembers("rumuński (indeks)", 0);		
+		List<String> words = wb.getCategoryMembers("rumuński (indeks)", Wiki.MAIN_NAMESPACE);		
 		PrintWriter pw_a = null, pw_b = null;
 		int count_a = 0, count_b = 0;
 		

@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -119,7 +121,7 @@ public final class Edit implements Selectorizable {
 		//String[] phrases = new String[]{"rzeczownikowe", "przymiotnikowe", "czasownikowe", "przysłówkowe"};
 		//String[] types = new String[]{"rzeczowniki", "przymiotniki", "czasowniki", "przysłówki"};
 		
-		String[] pages = wb.getCategoryMembers(category, 14);
+		List<String> pages = wb.getCategoryMembers(category, Wiki.CATEGORY_NAMESPACE);
 		
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
 		
@@ -177,7 +179,7 @@ public final class Edit implements Selectorizable {
 		String nametmpl = "Kategoria:$1 - zaimki";
 		
 		String category = "Kategoria:Części mowy wg języków";
-		String[] langs = wb.getCategoryMembers(category, 14);
+		List<String> langs = wb.getCategoryMembers(category, Wiki.CATEGORY_NAMESPACE);
 		
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
 		
@@ -205,8 +207,8 @@ public final class Edit implements Selectorizable {
 	public static void getContents() throws UnsupportedEncodingException, IOException {
 		String category = "Kategoria:Formy czasownikowe wg języków";
 		PrintWriter pw = new PrintWriter(new File(location + "template.txt"));
-		String[] titles = wb.getCategoryMembers(category, 14);
-		PageContainer[] pages = wb.getContentOfPages(titles);
+		List<String> titles = wb.getCategoryMembers(category, Wiki.CATEGORY_NAMESPACE);
+		PageContainer[] pages = wb.getContentOfPages(titles.toArray(String[]::new));
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();

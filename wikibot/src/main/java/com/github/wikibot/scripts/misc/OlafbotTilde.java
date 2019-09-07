@@ -70,7 +70,7 @@ public final class OlafbotTilde implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		String cnt = wb.getPageText("Wikipedysta:Olafbot/SK/tyldy");
+		String cnt = wb.getPageText(List.of("Wikipedysta:Olafbot/SK/tyldy")).get(0);
 		LinkedHashMap<String, String> pages = new LinkedHashMap<>(1200);
 		PrintWriter pw = new PrintWriter(new File(location + "all.txt"));
 		

@@ -90,43 +90,43 @@ public class MissingPolishEntries {
 		List<String> titles = new ArrayList<>();
 		
 		String[] allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
-		String[] polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
-		String[] polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
-		String[] polishRedirs = findRedirects(polishTitles);
+		List<String> polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
+		List<String> polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
+		List<String> polishRedirs = findRedirects(polishTitles);
 		
 		Set<String> set = new HashSet<>();
 		set.addAll(Arrays.asList(allTitles));
-		set.removeAll(Arrays.asList(polishTitles));
-		set.removeAll(Arrays.asList(polishInflected));
-		set.removeAll(Arrays.asList(polishRedirs));
+		set.removeAll(polishTitles);
+		set.removeAll(polishInflected);
+		set.removeAll(polishRedirs);
 		
 		titles.addAll(set);
 		
 		stats.allEntries = allTitles.length;
-		stats.polishLemmas = polishTitles.length;
-		stats.polishInflected = polishInflected.length;
-		stats.polishRedirs = polishRedirs.length;
+		stats.polishLemmas = polishTitles.size();
+		stats.polishInflected = polishInflected.size();
+		stats.polishRedirs = polishRedirs.size();
 		
 		return titles;
 	}
 	
-	private static String[] findRedirects(String[] polishTitles) throws IOException {
+	private static List<String> findRedirects(List<String> polishTitles) throws IOException {
 		String[] allRedirs = wb.listPages("", null, 0, null, null, Boolean.TRUE);
-		String[] resolvedRedirs = wb.resolveRedirects(allRedirs);
+		List<String> resolvedRedirs = wb.resolveRedirects(Arrays.asList(allRedirs));
 		
 		List<String> polishRedirs = new ArrayList<>(2000);
-		Set<String> set = Set.of(polishTitles);
+		Set<String> set = new HashSet<>(polishTitles);
 		
 		for (int i = 0; i < allRedirs.length; i++) {
 			String redir = allRedirs[i];
-			String resolvedRedir = resolvedRedirs[i];
+			String resolvedRedir = resolvedRedirs.get(i);
 			
 			if (set.contains(resolvedRedir)) {
 				polishRedirs.add(redir);
 			}
 		}
 		
-		return polishRedirs.toArray(new String[polishRedirs.size()]);
+		return polishRedirs;
 	}
 	
 	private static void retainSgjpEntries(List<String> titles) throws IOException {

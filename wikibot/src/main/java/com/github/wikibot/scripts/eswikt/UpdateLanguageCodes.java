@@ -66,7 +66,7 @@ public final class UpdateLanguageCodes {
 			addedCodes.size(), removedCodes.size(), modifiedCodes.size()
 		);
 		
-		String fetchedText = wb.getPageText(TARGET_PAGE);
+		String fetchedText = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 		String generatedTable = generateTable(storedLangs);
 		
 		if (fetchedText.contains(generatedTable)) {

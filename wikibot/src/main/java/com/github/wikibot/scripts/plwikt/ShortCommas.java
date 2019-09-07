@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Selectorizable;
@@ -85,7 +87,7 @@ public final class ShortCommas implements Selectorizable {
 	}
 	
 	public static void getShorts() throws IOException {
-		List<String> templates = Stream.of(wb.getCategoryMembers("Szablony skrótów", 10))
+		List<String> templates = wb.getCategoryMembers("Szablony skrótów", Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(template -> template.replace("Szablon:", ""))
 			.collect(Collectors.toList());
 		
@@ -93,7 +95,7 @@ public final class ShortCommas implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		Set<String> wlh = Set.of(wb.whatTranscludesHere("Szablon:skrót", 0));
+		Set<String> wlh = new HashSet<>(wb.whatTranscludesHere(List.of("Szablon:skrót"), Wiki.MAIN_NAMESPACE).get(0));
 		List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
 		XMLDumpReader dumpReader = new XMLDumpReader("pl.wiktionary.org");
 		int size = wb.getSiteStatistics().get("pages");

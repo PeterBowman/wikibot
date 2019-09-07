@@ -149,7 +149,7 @@ public final class SpanishCanonicalInflectedForms {
 				page.appendSections(section);
 			});
 		
-		String pageText = wb.getPageText(TARGET_PAGE);
+		String pageText = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 		pageText = pageText.substring(0, pageText.indexOf("-->") + 3);
 		page.setIntro(pageText + "\n" + page.getIntro());
 		

@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,14 +75,14 @@ public final class EsperantoRelatedTerms {
 			Map<String, List<String>> titleToMorphem,
 			Map<String, String> contentMap)
 		throws IOException {
-		String[] cat1 = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", 0);
-		String[] cat2 = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe", 0);
-		String[] cat3 = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", 0);
+		List<String> cat1 = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", Wiki.MAIN_NAMESPACE);
+		List<String> cat2 = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe", Wiki.MAIN_NAMESPACE);
+		List<String> cat3 = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", Wiki.MAIN_NAMESPACE);
 		
-		Set<String> excluded = new HashSet<>(cat1.length + cat2.length + cat3.length);
-		excluded.addAll(Arrays.asList(cat1));
-		excluded.addAll(Arrays.asList(cat2));
-		excluded.addAll(Arrays.asList(cat3));
+		Set<String> excluded = new HashSet<>(cat1.size() + cat2.size() + cat3.size());
+		excluded.addAll(cat1);
+		excluded.addAll(cat2);
+		excluded.addAll(cat3);
 		
 		PageContainer[] morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 				
@@ -121,8 +120,8 @@ public final class EsperantoRelatedTerms {
 			Map<String, List<String>> titleToMorphem, Map<String, String> contentMap) throws IOException {
 		Collator collator = Collator.getInstance(new Locale("eo"));
 		Map<String, List<MorphemTitlePair>> items = new TreeMap<>(collator);
-		String[] allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", 0);
-		Set<String> esperantoSet = new HashSet<>(Arrays.asList(allEsperantoTitles));
+		List<String> allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", Wiki.MAIN_NAMESPACE);
+		Set<String> esperantoSet = new HashSet<>(allEsperantoTitles);
 		
 		for (Map.Entry<String, String> entry : contentMap.entrySet()) {
 			String title = entry.getKey();
@@ -187,7 +186,7 @@ public final class EsperantoRelatedTerms {
 	
 	private static void removeIgnoredItems(Map<String, List<MorphemTitlePair>> items) throws IOException {
 		Pattern patt = Pattern.compile("# *\\[\\[([^\\]]+?)\\]\\]: *\\[\\[([^\\]]+?)\\]\\] *\\(([^\\)]+?)\\)$", Pattern.MULTILINE);
-		String pageText = wb.getPageText(TARGET_PAGE_EXCLUDED);
+		String pageText = wb.getPageText(List.of(TARGET_PAGE_EXCLUDED)).get(0);
 		Matcher m = patt.matcher(pageText);
 		
 		while (m.find()) {
@@ -251,7 +250,7 @@ public final class EsperantoRelatedTerms {
 	}
 	
 	private static void editPage(String text) throws IOException, LoginException {
-		String pageText = wb.getPageText(TARGET_PAGE);
+		String pageText = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 		
 		if (pageText.contains("<!--") && pageText.contains("-->")) {
 			pageText = pageText.substring(0, pageText.lastIndexOf("-->") + 3) + "\n";

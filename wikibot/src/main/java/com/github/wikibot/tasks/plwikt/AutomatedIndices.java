@@ -58,7 +58,7 @@ public final class AutomatedIndices {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		String pageText = wb.getPageText(WORKLIST);
+		String pageText = wb.getPageText(List.of(WORKLIST)).get(0);
 		List<String> templates = ParseUtils.getTemplatesIgnoreCase(TEMPLATE, pageText);
 		
 		Set<Entry> entries = templates.stream()
@@ -155,56 +155,56 @@ public final class AutomatedIndices {
 	}
 	
 	private static void validateEntries(Set<Entry> entries) throws IOException {
-		String[] languageTemplates = entries.stream()
+		List<String> languageTemplates = entries.stream()
 			.flatMap(e -> e.languageTemplates.stream())
 			.distinct()
 			.map(t -> String.format("Szablon:%s", t))
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
 		boolean[] existLanguageTemplates = wb.exists(languageTemplates);
 		Set<String> missingLanguageTemplates = new HashSet<>();
 		
-		for (int i = 0; i < languageTemplates.length; i++) {
+		for (int i = 0; i < languageTemplates.size(); i++) {
 			if (!existLanguageTemplates[i]) {
-				errors.add(languageTemplates[i] + " does not exist");
-				missingLanguageTemplates.add(languageTemplates[i]);
+				errors.add(languageTemplates.get(i) + " does not exist");
+				missingLanguageTemplates.add(languageTemplates.get(i));
 			}
 		}
 		
 		entries.stream().map(e -> e.languageTemplates).forEach(list -> list.removeIf(missingLanguageTemplates::contains));
 		
-		String[] defTemplates = entries.stream()
+		List<String> defTemplates = entries.stream()
 			.flatMap(e -> e.templates.stream())
 			.distinct()
 			.map(t -> String.format("Szablon:%s", t))
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
 		boolean[] existDefTemplates = wb.exists(defTemplates);
 		Set<String> missingDefTemplates = new HashSet<>();
 		
-		for (int i = 0; i < defTemplates.length; i++) {
+		for (int i = 0; i < defTemplates.size(); i++) {
 			if (!existDefTemplates[i]) {
-				errors.add(defTemplates[i] + " does not exist");
-				missingDefTemplates.add(defTemplates[i]);
+				errors.add(defTemplates.get(i) + " does not exist");
+				missingDefTemplates.add(defTemplates.get(i));
 			}
 		}
 		
 		entries.stream().map(e -> e.templates).forEach(list -> list.removeIf(missingDefTemplates::contains));
 		
-		String[] categories = entries.stream()
+		List<String> categories = entries.stream()
 			.flatMap(e -> e.categories.stream())
 			.distinct()
 			.map(c -> String.format("Kategoria:%s", c))
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		if (categories.length != 0) {
+		if (!categories.isEmpty()) {
 			boolean[] existCategories = wb.exists(categories);
 			Set<String> missingCategories = new HashSet<>();
 			
-			for (int i = 0; i < categories.length; i++) {
+			for (int i = 0; i < categories.size(); i++) {
 				if (!existCategories[i]) {
-					errors.add(categories[i] + " does not exist");
-					missingCategories.add(categories[i]);
+					errors.add(categories.get(i) + " does not exist");
+					missingCategories.add(categories.get(i));
 				}
 			}
 			

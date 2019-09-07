@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +36,7 @@ public class OrphanTalkPages {
 		List<String> list = new ArrayList<>(3000);
 		
 		for (int namespace : namespaces) {
-			list.addAll(Arrays.asList(wb.listPages("", null, namespace)));
+			list.addAll(wb.listPages("", null, namespace));
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
@@ -56,7 +55,7 @@ public class OrphanTalkPages {
 			targets.add(title);
 		}
 		
-		boolean[] exist = wb.exists(targets.toArray(new String[targets.size()]));
+		boolean[] exist = wb.exists(targets);
 		List<String> missing = new ArrayList<>(targets.size());
 		
 		for (int i = 0; i < targets.size(); i++) {

@@ -143,8 +143,8 @@ public final class MissingPolishGerunds implements Selectorizable {
 			.map(gerund -> "nie" + gerund)
 			.collect(Collectors.toSet());
 		
-		Map<String, Object>[] infos_aff = wb.getPageInfo(set_aff.toArray(new String[set_aff.size()]));
-		Map<String, Object>[] infos_neg = wb.getPageInfo(set_neg.toArray(new String[set_neg.size()]));
+		List<Map<String, Object>> infos_aff = wb.getPageInfo(new ArrayList<>(set_aff));
+		List<Map<String, Object>> infos_neg = wb.getPageInfo(new ArrayList<>(set_neg));
 		
 		for (Map<String, Object> info : infos_aff) {
 			if (info != null && !(boolean)info.get("exists")) {

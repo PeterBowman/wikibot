@@ -29,8 +29,8 @@ public final class SJPTemplates {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		String[] titles = wb.whatTranscludesHere("Szablon:sjp.pl", Wiki.MAIN_NAMESPACE);
-		List<Wiki.Revision> targetRevs = new ArrayList<>(titles.length);
+		List<String> titles = wb.whatTranscludesHere(List.of("Szablon:sjp.pl"), Wiki.MAIN_NAMESPACE).get(0);
+		List<Wiki.Revision> targetRevs = new ArrayList<>(titles.size());
 		
 		extractRevisions(titles, targetRevs);
 		targetRevs.sort((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()));
@@ -46,7 +46,7 @@ public final class SJPTemplates {
 		wb.edit(WIKI_PAGE, output, "aktualizacja");
 	}
 	
-	private static void extractRevisions(String[] titles, List<Wiki.Revision> targetRevs)
+	private static void extractRevisions(List<String> titles, List<Wiki.Revision> targetRevs)
 			throws IOException, InterruptedException {
 		List<String> errors = new ArrayList<>();
 		

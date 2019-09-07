@@ -60,8 +60,8 @@ public final class ReplaceEnDash implements Selectorizable {
 		
 		for (Integer namespace : namespaces) {
 			// FIXME: limited to 5000 pages
-			String[] temp = wb.listPages("", null, namespace, -1, -1, false);
-			titles.addAll(Arrays.asList(temp));
+			List<String> temp = wb.listPages("", null, namespace, -1, -1, false);
+			titles.addAll(temp);
 		}
 		
 		String[] targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
@@ -140,7 +140,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		for (Entry<String, String[]> entry : map.entrySet()) {
 			String title = entry.getKey();
 			String[] backlinks = entry.getValue();
-			String text = wb.getPageText(title);
+			String text = wb.getPageText(List.of(title)).get(0);
 			List<String> missing = new ArrayList<>(); 
 			
 			for (String backlink : backlinks) {

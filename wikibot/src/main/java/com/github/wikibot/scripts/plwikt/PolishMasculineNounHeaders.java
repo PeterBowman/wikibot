@@ -69,10 +69,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void getList() throws IOException {
-		List<String> masc = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", Wiki.MAIN_NAMESPACE));
-		List<String> mrz = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", Wiki.MAIN_NAMESPACE));
-		List<String> mos = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", Wiki.MAIN_NAMESPACE));
-		List<String> mzw = Arrays.asList(wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", Wiki.MAIN_NAMESPACE));
+		List<String> masc = wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskiego", Wiki.MAIN_NAMESPACE);
+		List<String> mrz = wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskorzeczowego", Wiki.MAIN_NAMESPACE);
+		List<String> mos = wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskoosobowego", Wiki.MAIN_NAMESPACE);
+		List<String> mzw = wb.getCategoryMembers("Język polski - rzeczowniki rodzaju męskozwierzęcego‎", Wiki.MAIN_NAMESPACE);
 		
 		masc = new ArrayList<>(masc);
 		masc.removeAll(mrz);
@@ -81,14 +81,14 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		
 		System.out.printf("Todos los sustantivos: %d%n", masc.size());
 		
-		List<String> decl = Arrays.asList(wb.whatTranscludesHere("Szablon:odmiana-rzeczownik-polski", 0));
+		List<String> decl = wb.whatTranscludesHere(List.of("Szablon:odmiana-rzeczownik-polski"), Wiki.MAIN_NAMESPACE).get(0);
 		
 		masc.retainAll(decl);
 		
 		System.out.printf("Sustantivos con declinación: %d%n", decl.size());
 		System.out.printf("Sustantivos masculinos con declinación: %d%n", masc.size());
 		
-		List<String> acronyms = Arrays.asList(wb.getCategoryMembers("Język polski - skrótowce", Wiki.MAIN_NAMESPACE));
+		List<String> acronyms = wb.getCategoryMembers("Język polski - skrótowce", Wiki.MAIN_NAMESPACE);
 		
 		masc.removeAll(acronyms);
 		

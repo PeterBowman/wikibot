@@ -9,12 +9,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.ArrayUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Selectorizable;
@@ -66,12 +67,12 @@ public class JyddishIpa implements Selectorizable {
 				return;
 			}
 		} else {
-			String[] catmembers_list = wb.getCategoryMembers("jidysz (indeks)", 0);
-			String[] IPA_list  = wb.whatTranscludesHere("Szablon:IPA", 0);
-			String[] IPA2_list = wb.whatTranscludesHere("Szablon:IPA2", 0);
+			List<String> catmembers_list = wb.getCategoryMembers("jidysz (indeks)", Wiki.MAIN_NAMESPACE);
+			List<String> IPA_list  = wb.whatTranscludesHere(List.of("Szablon:IPA"), Wiki.MAIN_NAMESPACE).get(0);
+			List<String> IPA2_list = wb.whatTranscludesHere(List.of("Szablon:IPA2"), Wiki.MAIN_NAMESPACE).get(0);
 						
-			ArrayList<String> list = new ArrayList<>(IPA_list.length + IPA2_list.length);
-			list.addAll(Arrays.asList(IPA_list));
+			ArrayList<String> list = new ArrayList<>(IPA_list.size() + IPA2_list.size());
+			list.addAll(IPA_list);
 			
 			outer_loop:
 			for (String page : IPA2_list) {
@@ -83,7 +84,7 @@ public class JyddishIpa implements Selectorizable {
 				list.add(page);
 			}
 			
-			int_list = ArrayUtils.intersection(catmembers_list, list.toArray(new String[list.size()]));
+			int_list = ArrayUtils.intersection(catmembers_list.toArray(String[]::new), list.toArray(String[]::new));
 			
 			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
 			out.writeObject(int_list);

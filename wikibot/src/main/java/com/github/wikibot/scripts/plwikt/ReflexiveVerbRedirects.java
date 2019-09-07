@@ -5,13 +5,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -77,9 +75,9 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 
 		System.out.printf("Tamaño de la lista de pronominales: %d%n", pron.size());
 		
-		Map<String, Object>[] infos = wb.getPageInfo(pron.toArray(new String[pron.size()]));
+		List<Map<String, Object>> infos = wb.getPageInfo(pron);
 		
-		List<String> missing = Stream.of(infos)
+		List<String> missing = infos.stream()
 			.filter(Objects::nonNull)
 			.filter(info -> !(boolean)info.get("exists"))
 			.map(info -> (String)info.get("displaytitle"))
@@ -92,12 +90,11 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	}
 	
 	public static void getDuplicates() throws IOException {
-		String[] titles = wb.getCategoryMembers("Język polski - czasowniki", Wiki.MAIN_NAMESPACE);
-		List<String> verbs = Arrays.asList(titles);
+		List<String> titles = wb.getCategoryMembers("Język polski - czasowniki", Wiki.MAIN_NAMESPACE);
 		
-		List<String> duplicates = Stream.of(titles)
+		List<String> duplicates = titles.stream()
 			.filter(title -> !title.endsWith(" się"))
-			.filter(title -> verbs.contains(title + " się"))
+			.filter(title -> titles.contains(title + " się"))
 			.collect(Collectors.toList());
 		
 		System.out.printf("Tamaño de la lista de duplicados: %d%n", duplicates.size());

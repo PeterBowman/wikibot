@@ -303,7 +303,7 @@ public final class LinkManager implements Selectorizable {
 		Misc.serialize(editcodes, f_codes);
 		Misc.serialize(timestamps, f_timestamps);
 		
-		mainpagetext = wb.getPageText(mainpage);
+		mainpagetext = wb.getPageText(List.of(mainpage)).get(0);
 		
 		if (mainpagetext.indexOf(worklistheader) == -1) {
 			System.out.printf("Imposible hallar la cabecera de la sección %s%n", worklistheader);
@@ -394,7 +394,7 @@ public final class LinkManager implements Selectorizable {
 			String page = entry.getKey();
 			List<LinkDiff> list = entry.getValue();
 			Set<String> difflist = new HashSet<>();
-			String pagetext = wb.getPageText(page);
+			String pagetext = wb.getPageText(List.of(page)).get(0);
 			
 			if (pagetext == null) {
 				throw new FileNotFoundException("Page does not exist: " + page);
@@ -546,7 +546,7 @@ public final class LinkManager implements Selectorizable {
 		
 		sb.append(String.format("%nEdycji do tej pory: %d", stats));
 		
-		worklist = wb.getPageText(mainpage);
+		worklist = wb.getPageText(List.of(mainpage)).get(0);
 		
 		if (worklist.indexOf(reportheader) == -1) {
 			System.out.printf("Imposible hallar la cabecera de la sección %s%n", reportheader);
@@ -619,7 +619,7 @@ public final class LinkManager implements Selectorizable {
 					
 					if (diff.matches(".*?<td class=\"diff-addedline\"><div>\\* *?Zatwierdzone: *?tak *?</div></td>.*")) {
 						String username = rev.getUser();
-						User user = wb.getUser(username);
+						User user = wb.getUsers(List.of(username)).get(0);
 						
 						if (user.getGroups().contains("editor")) {
 							try {
@@ -647,7 +647,7 @@ public final class LinkManager implements Selectorizable {
 	}
 	
 	private static boolean assertBot() throws IOException {
-		String content = wb.getPageText(mainpage);
+		String content = wb.getPageText(List.of(mainpage)).get(0);
 		int a = content.indexOf(reportheader);
 		
 		if (a == -1) {
@@ -835,7 +835,7 @@ public final class LinkManager implements Selectorizable {
 	}
 	
 	private static String[] fetchForms(String title) throws IOException {
-		String content = wb.getPageText(title);
+		String content = wb.getPageText(List.of(title)).get(0);
 		
 		if (content == null) {
 			throw new FileNotFoundException("Page does not exist: " + title);

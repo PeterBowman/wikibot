@@ -16,7 +16,7 @@ public final class UpdateInterwikiPrefixes {
 	
 	public static void main(String[] args) throws IOException {
 		Wikibot wb = Wikibot.newSession("meta.wikimedia.org");
-		String text = wb.getPageText("MediaWiki:Interwiki config-sorting order-native-languagename-firstword").trim();
+		String text = wb.getPageText(List.of("MediaWiki:Interwiki config-sorting order-native-languagename-firstword")).get(0).trim();
 		
 		if (text.isEmpty()) {
 			System.out.println("Error: empty page");

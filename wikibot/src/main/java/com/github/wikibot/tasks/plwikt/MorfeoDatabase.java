@@ -64,12 +64,12 @@ public final class MorfeoDatabase {
 		PageContainer[] pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 		Map<String, List<String>> items = retrieveItems(pages);
 		
-		String[] morphems = items.values().stream()
+		List<String> morphems = items.values().stream()
 			.flatMap(Collection::stream)
 			.distinct()
-			.toArray(String[]::new);
+			.collect(Collectors.toList());
 		
-		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.length);
+		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.size());
 		
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();
@@ -142,8 +142,8 @@ public final class MorfeoDatabase {
 		return new ArrayList<>(params.values());
 	}
 	
-	private static Map<String, Byte> findMissingPages(Connection conn, String[] morphems) throws SQLException {
-		String values = Stream.of(morphems)
+	private static Map<String, Byte> findMissingPages(Connection conn, List<String> morphems) throws SQLException {
+		String values = morphems.stream()
 			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
 			.collect(Collectors.joining(","));
 		
@@ -153,17 +153,17 @@ public final class MorfeoDatabase {
 			+ " AND page_title IN (" + values + ");";
 		
 		ResultSet rs = conn.createStatement().executeQuery(query);
-		Set<String> set = new HashSet<>(morphems.length);
+		Set<String> set = new HashSet<>(morphems.size());
 		
 		while (rs.next()) {
 			String title = rs.getString("page_title");
 			set.add(title);
 		}
 		
-		System.out.printf("%d out of %d pages found in plwiktionary_p.%n", set.size(), morphems.length);
+		System.out.printf("%d out of %d pages found in plwiktionary_p.%n", set.size(), morphems.size());
 		
 		// Map.merge doesn't like null values, don't use java 8 streams here
-		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
+		Map<String, Byte> map = new HashMap<>(morphems.size(), 1);
 		
 		for (String morphem : morphems) {
 			if (set.contains(morphem)) {
@@ -176,15 +176,15 @@ public final class MorfeoDatabase {
 		return map;
 	}
 	
-	private static Map<String, Byte> checkMissingPagesFallback(String[] morphems) throws IOException {
+	private static Map<String, Byte> checkMissingPagesFallback(List<String> morphems) throws IOException {
 		boolean[] exist = wb.exists(morphems);
-		Map<String, Byte> map = new HashMap<>(morphems.length, 1);
+		Map<String, Byte> map = new HashMap<>(morphems.size(), 1);
 		
-		for (int i = 0; i < morphems.length; i++) {
+		for (int i = 0; i < morphems.size(); i++) {
 			if (exist[i]) {
-				map.put(morphems[i], null);
+				map.put(morphems.get(i), null);
 			} else {
-				map.put(morphems[i], MORPHEM_RED_LINK);
+				map.put(morphems.get(i), MORPHEM_RED_LINK);
 			}
 		}
 		
@@ -197,17 +197,17 @@ public final class MorfeoDatabase {
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 		
-		String[] _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", 0);
-		String[] _normal = wb.getCategoryMembers("Esperanto - morfemy", 0);
-		String[] _prefix = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe‎", 0);
-		String[] _suffix = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", 0);
-		String[] _grammatical = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", 0);
+		List<String> _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", Wiki.MAIN_NAMESPACE);
+		List<String> _normal = wb.getCategoryMembers("Esperanto - morfemy", Wiki.MAIN_NAMESPACE);
+		List<String> _prefix = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe‎", Wiki.MAIN_NAMESPACE);
+		List<String> _suffix = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", Wiki.MAIN_NAMESPACE);
+		List<String> _grammatical = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", Wiki.MAIN_NAMESPACE);
 		
-		Set<String> all = Set.of(_all);
-		Set<String> normal = Set.of(_normal);
-		Set<String> prefix = Set.of(_prefix);
-		Set<String> suffix = Set.of(_suffix);
-		Set<String> grammatical = Set.of(_grammatical);
+		Set<String> all = new HashSet<>(_all);
+		Set<String> normal = new HashSet<>(_normal);
+		Set<String> prefix = new HashSet<>(_prefix);
+		Set<String> suffix = new HashSet<>(_suffix);
+		Set<String> grammatical = new HashSet<>(_grammatical);
 		
 		for (String morphem : list) {
 			if (!all.contains(morphem)) {

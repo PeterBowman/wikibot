@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
+import org.wikipedia.Wiki;
 import org.wikipedia.Wiki.Revision;
 
 import com.github.plural4j.Plural;
@@ -92,20 +93,20 @@ public class PolishGerundsList implements Selectorizable {
 	}
 	
 	public static void foreignGerunds() throws IOException {
-		String[] all_gerunds = wb.whatTranscludesHere("Szablon:odczasownikowy od", 0);
-		List<String> list_gerunds = new ArrayList<>(Arrays.asList(all_gerunds));
+		List<String> all_gerunds = wb.whatTranscludesHere(List.of("Szablon:odczasownikowy od"), Wiki.MAIN_NAMESPACE).get(0);
 		
 		List<String> polish_gerunds = new ArrayList<>(Arrays.asList(org.wikipedia.ArrayUtils.intersection(
-			wb.getCategoryMembers("polski (indeks)", 0),
-			all_gerunds
+			wb.getCategoryMembers("polski (indeks)", Wiki.MAIN_NAMESPACE).toArray(String[]::new),
+			all_gerunds.toArray(String[]::new)
 		)));
 		
-		list_gerunds.removeAll(polish_gerunds);
+		int all_gerunds_size = all_gerunds.size();
+		all_gerunds.removeAll(polish_gerunds);
 		
-		System.out.println("Total de gerundios: " + all_gerunds.length + ", en polaco: " + polish_gerunds.size() + ", otros: " + list_gerunds.size());
+		System.out.println("Total de gerundios: " + all_gerunds_size + ", en polaco: " + polish_gerunds.size() + ", otros: " + all_gerunds.size());
 		
 		int c = 0;
-		for (String gerund : list_gerunds) {
+		for (String gerund : all_gerunds) {
 			System.out.println(++c + ". " + gerund);
 		}
 	}
@@ -214,7 +215,7 @@ public class PolishGerundsList implements Selectorizable {
 			Revision rev = wb.getTopRevision(page);
 			OffsetDateTime timestamp = rev.getTimestamp();
 			
-			String content = wb.getPageText(page);
+			String content = wb.getPageText(List.of(page)).get(0);
 			
 			if (content == null) {
 				throw new FileNotFoundException("Page not found: " + page);
@@ -234,8 +235,8 @@ public class PolishGerundsList implements Selectorizable {
 	
 	public static void makeLists() throws IOException, InterruptedException, ExecutionException, ClassNotFoundException {
 		String[] intersection = org.wikipedia.ArrayUtils.intersection(
-			wb.getCategoryMembers("Język polski - rzeczowniki rodzaju nijakiego", 0),
-			wb.whatTranscludesHere("Szablon:odczasownikowy od", 0)
+			wb.getCategoryMembers("Język polski - rzeczowniki rodzaju nijakiego", Wiki.MAIN_NAMESPACE).toArray(String[]::new),
+			wb.whatTranscludesHere(List.of("Szablon:odczasownikowy od"), Wiki.MAIN_NAMESPACE).get(0).toArray(String[]::new)
 		);
 		
 		System.out.printf("Gerundios detectados por transclusión: %d\n", intersection.length);
@@ -408,7 +409,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		page.appendSections(onlyDefinitionSection, onlyTemplateSection, noDictEntrySection, possibleErrors, reflexiveVerbs);
 		
-		String pageContent = wb.getPageText(wikipage);
+		String pageContent = wb.getPageText(List.of(wikipage)).get(0);
 		pageContent = pageContent.substring(0, pageContent.indexOf("-->") + 3);
 		page.setIntro(pageContent + "\n" + page.getIntro());
 		

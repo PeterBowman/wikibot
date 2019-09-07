@@ -128,7 +128,7 @@ public class Wikibot extends WMFWiki {
 	private <T> List<T> getListedContent(Map<String, String> getparams, String[] titles, String caller,
 			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
-		List<String> chunks = constructTitleString(titles);
+		List<String> chunks = constructTitleString(List.of(titles));
 		List<T> list = new ArrayList<>(titles.length);
 		Map<String, Object> postparams = new HashMap<>();
 		
@@ -404,8 +404,8 @@ public class Wikibot extends WMFWiki {
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, String>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
-        String[] pages2 = Arrays.copyOf(pages, pages.length);
-        List<String> chunks = constructTitleString(pages);
+        List<String> pages2 = Arrays.asList(pages);
+        List<String> chunks = constructTitleString(List.of(pages));
         for (int i = 0; i < chunks.size(); i++)
         {
         	String temp = chunks.get(i);
@@ -453,9 +453,9 @@ public class Wikibot extends WMFWiki {
         @SuppressWarnings("unchecked")
 		Map<String, String>[] props = new HashMap[pages.length];
         // Reorder. Make a new HashMap so that inputpagename remains unique.
-        for (int i = 0; i < pages2.length; i++)
+        for (int i = 0; i < pages2.size(); i++)
         {
-            Map<String, String> tempmap = metamap.get(normalize(pages2[i]));
+            Map<String, String> tempmap = metamap.get(normalize(pages2.get(i)));
             if (tempmap != null)
             {
                 props[i] = new HashMap<>(tempmap);

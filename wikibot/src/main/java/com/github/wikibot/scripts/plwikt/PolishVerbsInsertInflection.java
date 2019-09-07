@@ -59,17 +59,17 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	
 	public static void getLists() throws IOException {
 		Map<String, String> model = models.get("IV");
-		String[] verbs = wb.getCategoryMembers("Język polski - czasowniki", 0);
-		String[] phrases = wb.getCategoryMembers("Język polski - frazy czasownikowe", 0);
-		String[] targets = ArrayUtils.relativeComplement(verbs, phrases);
+		List<String> verbs = wb.getCategoryMembers("Język polski - czasowniki", Wiki.MAIN_NAMESPACE);
+		List<String> phrases = wb.getCategoryMembers("Język polski - frazy czasownikowe", Wiki.MAIN_NAMESPACE);
+		String[] targets = ArrayUtils.relativeComplement(verbs.toArray(String[]::new), phrases.toArray(String[]::new));
 		
 		targets = Stream.of(targets)
 			.filter(verb -> !verb.contains(" ") || verb.endsWith(" się"))
 			.filter(verb -> verb.endsWith(model.get("robić")))
 			.toArray(size -> new String[size]);
 		
-		String[] inflections = wb.whatTranscludesHere("Szablon:odmiana-czasownik-polski", 0);
-		targets = ArrayUtils.relativeComplement(targets, inflections);
+		List<String> inflections = wb.whatTranscludesHere(List.of("Szablon:odmiana-czasownik-polski"), Wiki.MAIN_NAMESPACE).get(0);
+		targets = ArrayUtils.relativeComplement(targets, inflections.toArray(String[]::new));
 		
 		PageContainer[] pages = wb.getContentOfPages(targets);
 		List<PageContainer> serialized = new ArrayList<>();

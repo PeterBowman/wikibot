@@ -2,6 +2,7 @@ package com.github.wikibot.tasks;
 
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.List;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -28,12 +29,12 @@ public final class Purge {
 			break;
 		case 3:
 			for (String title : titles) {
-				wb.purge(true, wb.whatTranscludesHere(title));
+				wb.purge(true, wb.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
 			}
 			break;
 		case 4:
 			for (String title : titles) {
-				wb.purge(false, wb.whatTranscludesHere(title));
+				wb.purge(false, wb.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
 			}
 			break;
 		default:

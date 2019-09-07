@@ -95,9 +95,9 @@ public class PrettyRefServlet extends HttpServlet {
 					title = title.trim();
 					
 					synchronized (wiki) {
-						String resolved = wiki.resolveRedirect(title);
+						String resolved = wiki.resolveRedirects(List.of(title)).get(0);
 						title = resolved != null ? resolved : title;
-						text = wiki.getPageText(title);
+						text = wiki.getPageText(List.of(title)).get(0);
 					}
 				}
 				

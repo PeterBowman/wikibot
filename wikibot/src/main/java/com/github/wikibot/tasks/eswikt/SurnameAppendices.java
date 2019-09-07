@@ -37,8 +37,8 @@ public final class SurnameAppendices {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("es.wiktionary.org");
 		
-		String[] subPages = getSubPages();
-		String[] surnames = getSurnames();
+		List<String> subPages = getSubPages();
+		List<String> surnames = getSurnames();
 		
 		Set<Character> letters = filterTargetLetters(subPages);
 		Map<Character, List<String>> groupedSurnames = groupSurnames(surnames, letters);
@@ -73,18 +73,18 @@ public final class SurnameAppendices {
 		}
 	}
 
-	private static String[] getSubPages() throws IOException {
+	private static List<String> getSubPages() throws IOException {
 		int ns = wb.namespace(TARGET_PARENT_PAGE);
 		String prefix = wb.removeNamespace(TARGET_PARENT_PAGE, ns);
 		return wb.listPages(prefix, null, ns);
 	}
 	
-	private static String[] getSurnames() throws IOException {
-		return wb.whatTranscludesHere(SURNAME_TEMPLATE, Wiki.MAIN_NAMESPACE);
+	private static List<String> getSurnames() throws IOException {
+		return wb.whatTranscludesHere(List.of(SURNAME_TEMPLATE), Wiki.MAIN_NAMESPACE).get(0);
 	}
 	
-	private static Set<Character> filterTargetLetters(String[] subPages) {
-		return Stream.of(subPages)
+	private static Set<Character> filterTargetLetters(List<String> subPages) {
+		return subPages.stream()
 			.map(subPage -> subPage.substring(subPage.lastIndexOf("/") + 1))
 			.filter(suffix -> suffix.length() == 1)
 			.filter(StringUtils::isAllUpperCase)
@@ -92,8 +92,8 @@ public final class SurnameAppendices {
 			.collect(Collectors.toSet());
 	}
 	
-	private static Map<Character, List<String>> groupSurnames(String[] surnames, Set<Character> letters) {
-		return Stream.of(surnames)
+	private static Map<Character, List<String>> groupSurnames(List<String> surnames, Set<Character> letters) {
+		return surnames.stream()
 			.sorted(collator)
 			.collect(Collectors.groupingBy(getClassifier(letters)));
 	}
@@ -107,7 +107,7 @@ public final class SurnameAppendices {
 	}
 	
 	private static List<String> getLinksOnPage(String page) throws IOException {
-		return Stream.of(wb.getLinksOnPage(page))
+		return wb.getLinksOnPage(page).stream()
 			.filter(link -> wb.namespace(link) == Wiki.MAIN_NAMESPACE)
 			.collect(Collectors.toList());
 	}
