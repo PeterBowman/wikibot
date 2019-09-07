@@ -87,7 +87,7 @@ public final class MaintenanceScript {
 			.filter(title -> !StringUtils.containsAny(title, '/', ':'))
 			.collect(Collectors.toList());
 		
-		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(new String[titles.size()])))
+		PageContainer[] pages = Stream.of(wb.getContentOfPages(titles.toArray(String[]::new)))
 			// TODO: implement a Comparator in PageContainer so this is not necessary anymore
 			.sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.getTitle()), titles.indexOf(pc2.getTitle())))
 			.toArray(PageContainer[]::new);

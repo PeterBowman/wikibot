@@ -339,7 +339,7 @@ public class NKJPGenerator extends HttpServlet {
 			List<String> backTrace = buildExceptionBacktrace(e);
 			json.put("status", 500);
 			json.put("error", e.toString());
-			json.put("backtrace", backTrace.toArray(new String[backTrace.size()]));
+			json.put("backtrace", backTrace.toArray(String[]::new));
 		}
 		
 		@Override

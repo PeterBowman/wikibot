@@ -227,7 +227,7 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!fetchlist.isEmpty()) {
-				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(new String[fetchlist.size()]));
+				PageContainer[] temp = wb.getContentOfPages(fetchlist.toArray(String[]::new));
 				
 				for (PageContainer page : temp) {
 					try {
@@ -290,7 +290,7 @@ public final class LinkManager implements Selectorizable {
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
-					timestamps.putAll(wb.getTimestamps(tmp.keySet().toArray(new String[tmp.size()])));
+					timestamps.putAll(wb.getTimestamps(tmp.keySet().toArray(String[]::new)));
 				}
 			}
 		}
@@ -691,7 +691,7 @@ public final class LinkManager implements Selectorizable {
 						} else {
 							String[] forms = line.split("\\s*?,\\s*");
 							Set<String> set = Set.of(forms);
-							aux.forms = set.toArray(new String[set.size()]);
+							aux.forms = set.toArray(String[]::new);
 						}
 						break;
 					default:
@@ -881,7 +881,7 @@ public final class LinkManager implements Selectorizable {
 			}
 		}
 		
-		return forms.toArray(new String[forms.size()]);
+		return forms.toArray(String[]::new);
 	}
 	
 	private static List<LinkDiff> getMatches(LinkData entry, String text) {

@@ -295,7 +295,7 @@ public class Wikibot extends WMFWiki {
 		int size = pages.size();
 		log(Level.INFO, "allPages", "Successfully retrieved links list (" + size + " pages)");
 		
-		return pages.toArray(new String[size]);
+		return pages.toArray(String[]::new);
     }
     
     public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, String from, 
@@ -361,7 +361,7 @@ public class Wikibot extends WMFWiki {
         // tidy up
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
-        return pages.toArray(new String[size]);
+        return pages.toArray(String[]::new);
     }
     
     public synchronized void review(Revision rev, String comment) throws LoginException, IOException {

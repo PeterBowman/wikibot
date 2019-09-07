@@ -37,7 +37,7 @@ public class FrenchIpa {
 				title.contains("tr") ||
 				title.contains("vr")
 			))
-			.toArray(size -> new String[size]);
+			.toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.length);
 		Files.write(Paths.get("./test2.txt"), Arrays.asList(pages));

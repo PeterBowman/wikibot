@@ -58,42 +58,42 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	private DataSource dataSource;
 	
 	static {
-		Map<String, String[]> _databaseFamilyToPrefixes = new HashMap<>(40);
+		Map<String, List<String>> _databaseFamilyToPrefixes = new HashMap<>(40);
 		
 		// https://meta.wikimedia.org/wiki/Help:Interwiki_linking#Project_titles_and_shortcuts
 		// https://noc.wikimedia.org/conf/highlight.php?file=interwiki.php
 		
-		_databaseFamilyToPrefixes.put("wiki", new String[]{"wikipedia", "w"});
-		_databaseFamilyToPrefixes.put("wiktionary", new String[]{"wiktionary", "wikt"});
-		_databaseFamilyToPrefixes.put("wikinews", new String[]{"wikinews", "n"});
-		_databaseFamilyToPrefixes.put("wikibooks", new String[]{"wikibooks", "b"});
-		_databaseFamilyToPrefixes.put("wikiquote", new String[]{"wikiquote", "q"});
-		_databaseFamilyToPrefixes.put("wikisource", new String[]{"wikisource", "s"});
-		_databaseFamilyToPrefixes.put("specieswiki", new String[]{"wikispecies", "species"});
-		_databaseFamilyToPrefixes.put("wikiversity", new String[]{"wikiversity", "v"});
-		_databaseFamilyToPrefixes.put("wikivoyage", new String[]{"wikivoyage", "voy"});
-		_databaseFamilyToPrefixes.put("foundationwiki", new String[]{"wikimedia", "foundation", "wmf"});
-		_databaseFamilyToPrefixes.put("commonswiki", new String[]{"commons", "c"});
-		_databaseFamilyToPrefixes.put("metawiki", new String[]{"metawikipedia", "meta", "m"});
-		_databaseFamilyToPrefixes.put("incubatorwiki", new String[]{"incubator"});
-		_databaseFamilyToPrefixes.put("outreachwiki", new String[]{"outreachwiki", "outreach"});
-		_databaseFamilyToPrefixes.put("mediawikiwiki", new String[]{"mw"});
-		_databaseFamilyToPrefixes.put("testwiki", new String[]{"testwiki"});
-		_databaseFamilyToPrefixes.put("wikidatawiki", new String[]{"wikidata", "d"});
-		//_databaseToPrefixes.put("betawikiversity", new String[]{"betawikiversity"});
-		_databaseFamilyToPrefixes.put("qualitywiki", new String[]{"quality"});
-		_databaseFamilyToPrefixes.put("testwikidatawiki", new String[]{"testwikidata"});
-		_databaseFamilyToPrefixes.put("advisorywiki", new String[]{"advisory"});
-		_databaseFamilyToPrefixes.put("donatewiki", new String[]{"donate"});
-		_databaseFamilyToPrefixes.put("nostalgiawiki", new String[]{"nostalgia", "nost"});
-		_databaseFamilyToPrefixes.put("tenwiki", new String[]{"tenwiki"});
-		_databaseFamilyToPrefixes.put("test2wiki", new String[]{"test2wiki"});
-		_databaseFamilyToPrefixes.put("usabilitywiki", new String[]{"usability"});
-		_databaseFamilyToPrefixes.put("wikimedia", new String[]{"chapter"});
+		_databaseFamilyToPrefixes.put("wiki", List.of("wikipedia", "w"));
+		_databaseFamilyToPrefixes.put("wiktionary", List.of("wiktionary", "wikt"));
+		_databaseFamilyToPrefixes.put("wikinews", List.of("wikinews", "n"));
+		_databaseFamilyToPrefixes.put("wikibooks", List.of("wikibooks", "b"));
+		_databaseFamilyToPrefixes.put("wikiquote", List.of("wikiquote", "q"));
+		_databaseFamilyToPrefixes.put("wikisource", List.of("wikisource", "s"));
+		_databaseFamilyToPrefixes.put("specieswiki", List.of("wikispecies", "species"));
+		_databaseFamilyToPrefixes.put("wikiversity", List.of("wikiversity", "v"));
+		_databaseFamilyToPrefixes.put("wikivoyage", List.of("wikivoyage", "voy"));
+		_databaseFamilyToPrefixes.put("foundationwiki", List.of("wikimedia", "foundation", "wmf"));
+		_databaseFamilyToPrefixes.put("commonswiki", List.of("commons", "c"));
+		_databaseFamilyToPrefixes.put("metawiki", List.of("metawikipedia", "meta", "m"));
+		_databaseFamilyToPrefixes.put("incubatorwiki", List.of("incubator"));
+		_databaseFamilyToPrefixes.put("outreachwiki", List.of("outreachwiki", "outreach"));
+		_databaseFamilyToPrefixes.put("mediawikiwiki", List.of("mw"));
+		_databaseFamilyToPrefixes.put("testwiki", List.of("testwiki"));
+		_databaseFamilyToPrefixes.put("wikidatawiki", List.of("wikidata", "d"));
+		//_databaseToPrefixes.put("betawikiversity", List.of("betawikiversity"));
+		_databaseFamilyToPrefixes.put("qualitywiki", List.of("quality"));
+		_databaseFamilyToPrefixes.put("testwikidatawiki", List.of("testwikidata"));
+		_databaseFamilyToPrefixes.put("advisorywiki", List.of("advisory"));
+		_databaseFamilyToPrefixes.put("donatewiki", List.of("donate"));
+		_databaseFamilyToPrefixes.put("nostalgiawiki", List.of("nostalgia", "nost"));
+		_databaseFamilyToPrefixes.put("tenwiki", List.of("tenwiki"));
+		_databaseFamilyToPrefixes.put("test2wiki", List.of("test2wiki"));
+		_databaseFamilyToPrefixes.put("usabilitywiki", List.of("usability"));
+		_databaseFamilyToPrefixes.put("wikimedia", List.of("chapter"));
 		
 		Map<String, String> _prefixToDatabase = new HashMap<>(60);
 		
-		for (Map.Entry<String, String[]> entry : _databaseFamilyToPrefixes.entrySet()) {
+		for (var entry : _databaseFamilyToPrefixes.entrySet()) {
 			for (String prefix : entry.getValue()) {
 				_prefixToDatabase.put(prefix, entry.getKey());
 			}

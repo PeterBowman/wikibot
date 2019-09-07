@@ -68,7 +68,7 @@ public final class MissingPolishEtymOnWikidata {
 			));
 
 		Wikibot plwikt = Login.createSession("pl.wiktionary.org");
-		String[] wiktTitles = wiktToLexemes.keySet().toArray(new String[wiktToLexemes.size()]);
+		String[] wiktTitles = wiktToLexemes.keySet().toArray(String[]::new);
 		PageContainer[] wiktContent = plwikt.getContentOfPages(wiktTitles);
 
 		Map<String, String> map = Stream.of(wiktContent)

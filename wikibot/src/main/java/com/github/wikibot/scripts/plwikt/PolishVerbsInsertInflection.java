@@ -66,7 +66,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		targets = Stream.of(targets)
 			.filter(verb -> !verb.contains(" ") || verb.endsWith(" się"))
 			.filter(verb -> verb.endsWith(model.get("robić")))
-			.toArray(size -> new String[size]);
+			.toArray(String[]::new);
 		
 		List<String> inflections = wb.whatTranscludesHere(List.of("Szablon:odmiana-czasownik-polski"), Wiki.MAIN_NAMESPACE).get(0);
 		targets = ArrayUtils.relativeComplement(targets, inflections.toArray(String[]::new));

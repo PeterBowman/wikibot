@@ -218,7 +218,7 @@ public class MissingRefsOnPlwiki {
 			list.add(pagename);
 		}
 
-		return list.toArray(new String[list.size()]);
+		return list.toArray(String[]::new);
 	}
 
 	private static Map<String, Set<String>> retrievePlwiktBacklinks(PageContainer[] pages) {

@@ -117,7 +117,7 @@ public final class CitationTypography {
 		Map<String, Integer> titleToPageId = new HashMap<>(titles.size() * 2);
 		
 		if (!titles.isEmpty()) {
-			String[] combinedTitles = titles.toArray(new String[titles.size()]);
+			String[] combinedTitles = titles.toArray(String[]::new);
 			PageContainer[] pages = wb.getContentOfPages(combinedTitles);
 			
 			entries = Stream.of(pages).parallel()
@@ -666,7 +666,7 @@ public final class CitationTypography {
 			titles.removeAll(contentCache.keySet());
 			
 			if (!titles.isEmpty()) {
-				String[] arr = titles.toArray(new String[titles.size()]);
+				String[] arr = titles.toArray(String[]::new);
 				
 				try {
 					Stream.of(wb.getContentOfPages(arr)).forEach(pc ->

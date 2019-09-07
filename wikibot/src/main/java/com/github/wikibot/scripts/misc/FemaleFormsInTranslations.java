@@ -268,8 +268,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		Set<String> masc_set = masc_list.keySet();
 		Set<String> fem_set = fem_list.keySet();
 		
-		PageContainer[] masc_pages = wb.getContentOfPages(masc_set.toArray(new String[masc_set.size()]));
-		PageContainer[] fem_pages = wb.getContentOfPages(fem_set.toArray(new String[fem_set.size()]));
+		PageContainer[] masc_pages = wb.getContentOfPages(masc_set.toArray(String[]::new));
+		PageContainer[] fem_pages = wb.getContentOfPages(fem_set.toArray(String[]::new));
 		
 		for (PageContainer page : masc_pages) {
 			String translationsText = Optional.of(Page.wrap(page))

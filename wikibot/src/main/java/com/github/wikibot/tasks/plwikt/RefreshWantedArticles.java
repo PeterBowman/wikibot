@@ -175,7 +175,7 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static List<String> filterDoneArticles(List<String> titles) throws IOException {
-		PageContainer[] pages = wb.getContentOfPages(titles.toArray(new String[titles.size()]));
+		PageContainer[] pages = wb.getContentOfPages(titles.toArray(String[]::new));
 		
 		// Missing pages have been already filtered out
 		List<String> nonMissingTitles = Stream.of(pages)

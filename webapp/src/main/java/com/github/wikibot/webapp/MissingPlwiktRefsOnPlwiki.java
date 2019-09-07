@@ -121,7 +121,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 			request.setAttribute("results", results);
 			request.setAttribute("total", localEntries.size());
 			request.setAttribute("stats", localStats);
-			request.setAttribute("templates", localTemplates.toArray(new String[localTemplates.size()]));
+			request.setAttribute("templates", localTemplates.toArray(String[]::new));
 			request.setAttribute("timestamp", timestamp);
 			dispatcher.forward(request, response);
 		}
