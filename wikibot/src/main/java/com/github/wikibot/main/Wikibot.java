@@ -129,7 +129,7 @@ public class Wikibot extends WMFWiki {
 		for (int i = 0; i < chunks.size(); i++) {
 			postparams.put(postParamName, chunks.get(i));
 			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.size());
-			String line = makeApiCall(getparams, postparams, localCaller);
+			String line = makeApiCall(new HashMap<>(getparams), postparams, localCaller);
 			biCons.accept(line, list);
 		}
 		
@@ -138,7 +138,7 @@ public class Wikibot extends WMFWiki {
 	}
 
 	private List<PageContainer> getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
-		return makeListQuery(queryPrefix, getparams, null, "getGeneratedContent", -1, this::parseContentLine);
+		return makeListQuery(queryPrefix, new HashMap<>(getparams), null, "getGeneratedContent", -1, this::parseContentLine);
 	}
 	
 	private void parseContentLine(String line, List<PageContainer> list) {
