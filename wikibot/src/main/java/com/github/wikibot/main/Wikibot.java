@@ -173,8 +173,8 @@ public class Wikibot extends WMFWiki {
 		getparams.put("prop", "wikitext");
 		if (title != null)
 			getparams.put("title", normalize(title));
-		Map<String, Object> postparams = Map.of("text", text);
-		
+		Map<String, Object> postparams = new HashMap<>();
+		postparams.put("text", text);
 		String line = makeApiCall(getparams, postparams, "expandTemplates");
 		
 		int a = line.indexOf("<wikitext ");

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,7 +76,7 @@ public final class NewPageTagger {
 		try {
 			Map<String, String> getparams = Map.of("action", "tag", "rcid", Long.toString(rev.getRcid()), "add", TAG);
 			Map<String, Object> postparams = Map.of("token", wb.getToken("csrf"));
-			wb.makeApiCall(getparams, postparams, "tag");
+			wb.makeApiCall(new HashMap<>(getparams), new HashMap<>(postparams), "tag");
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
