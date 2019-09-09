@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -437,18 +438,19 @@ public class Wikibot extends WMFWiki {
             }
         }
 
-		List<Map<String, String>> props = new ArrayList<>(pages.size());
+		@SuppressWarnings("unchecked")
+		Map<String, String>[] props = new HashMap[pages.size()];
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.size(); i++)
         {
             Map<String, String> tempmap = metamap.get(normalize(pages2.get(i)));
             if (tempmap != null)
             {
-                props.add(i, new HashMap<>(tempmap));
-                props.get(i).put("inputpagename", pages.get(i));
+                props[i] = new HashMap<>(tempmap);
+                props[i].put("inputpagename", pages.get(i));
             }
         }
         log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.size() + " titles)");
-        return props;
+        return Arrays.asList(props);
     }
 }
