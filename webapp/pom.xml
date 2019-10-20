@@ -91,7 +91,7 @@
     <dependency>
     	<groupId>org.json</groupId>
     	<artifactId>json</artifactId>
-    	<version>20180813</version>
+    	<version>20190722</version>
     </dependency>
     <dependency>
     	<groupId>javax.servlet</groupId>
@@ -111,7 +111,7 @@
     <dependency>
     	<groupId>mysql</groupId>
     	<artifactId>mysql-connector-java</artifactId>
-    	<version>8.0.16</version>
+    	<version>8.0.18</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.commons</groupId>
