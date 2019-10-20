@@ -70,7 +70,7 @@ public final class MisusedRegTemplates {
 		// Korean
 		"korpłd", "korpłn",
 		// German
-		"szwajcniem",
+		"płdniem", "płnniem", "szwajcniem",
 		// Portuguese
 		"brazport",
 		// Italian
