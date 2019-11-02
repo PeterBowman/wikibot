@@ -54,6 +54,7 @@ cinegética = Cinegética
 cinología = Cinología
 cirugía = Cirugía
 ciudades = Ciudades, Topónimos
+cnidarios = Cnidarios
 colores = Colores
 comercio = Comercio
 comunicación = Comunicación
