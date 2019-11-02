@@ -231,6 +231,7 @@ sentimientos = Sentimientos
 serpientes = Serpientes
 sexualidad = Sexualidad
 signos = Signos
+signos ortográficos = Signos ortográficos
 silvicultura = Silvicultura
 sociología = Sociología
 tauromaquia = Tauromaquia
