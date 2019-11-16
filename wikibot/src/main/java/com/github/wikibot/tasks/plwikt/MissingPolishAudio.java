@@ -124,10 +124,14 @@ public final class MissingPolishAudio {
 	}
 	
 	private static void writeLists(Map<String, Set<String>> map, String timestamp) throws IOException {
+		File[] files = new File(LOCATION).listFiles();
+		
 		for (var entry : map.entrySet()) {
 			String filename = String.format("%s-%s.txt", entry.getKey(), timestamp);
 			String output = entry.getValue().stream().map(s -> String.format("#%s", s)).collect(Collectors.joining(" "));
 			Files.write(Paths.get(LOCATION + filename), Arrays.asList(output));
 		}
+		
+		Stream.of(files).forEach(File::delete);
 	}
 }
