@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,14 +38,12 @@ public final class MissingPolishAudio {
 	private static Wikibot wb;
 	
 	public static void main(String[] args) throws Exception {
-		final String domain = "pl.wiktionary.org";
-		wb = Login.createSession(domain);
-		
-		int stats = wb.getSiteStatistics().get("pages");
-		XMLDumpReader reader = new XMLDumpReader(domain);
+		wb = Login.createSession("pl.wiktionary.org");
+		XMLDumpReader reader = getDumpReader(args);
 		
 		Map<String, List<String>> regMap = categorizeRegWords();
 		ConcurrentMap<String, Set<String>> targetMap = new ConcurrentHashMap<>();
+		int stats = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			stream.parallel()
@@ -59,6 +58,14 @@ public final class MissingPolishAudio {
 		}
 		
 		writeLists(targetMap, extractTimestamp(reader.getFile()));
+	}
+	
+	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
+		if (args.length == 0) {
+			return new XMLDumpReader("pl.wiktionary.org");
+		} else {
+			return new XMLDumpReader(new File(args[0].trim()));
+		}
 	}
 	
 	private static String normalize(String category) {
