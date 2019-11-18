@@ -1,13 +1,18 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
@@ -22,32 +27,20 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public final class MissingPolishExamples {
 	private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
 	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishExamples/";
-	private static final String TARGET_PAGE = "Wikipedysta:PBbot/brakujące polskie przykłady";
-	private static final String PAGE_INTRO;
 	
 	private static Wikibot wb;
-
-	static {
-		PAGE_INTRO =
-			"{{język linków|polski}}\n" +
-			"Spis haseł polskich, które:\n" +
-			"* nie mają żadnych przykładów w polu '''przykłady'''\n" +
-			"* do strony linkują inne hasła z pola '''przykłady''' (włączając w to inne języki)\n" +
-			"Treść przykładów można wygodnie wyszukać i wstawić w haśle docelowym za pomocą gadżetu „{{int:gadget-edit-form-launcher}}”.\n\n" +
-			"Wygenerowano ~~~~~ na podstawie zrzutu z bazy danych z dnia %s.\n" +
-			"----\n";
-	}
 	
 	public static void main(String[] args) throws Exception {
-		final String domain = "pl.wiktionary.org";
-		wb = Login.createSession(domain);
+		wb = Login.createSession("pl.wiktionary.org");
 
-		XMLDumpReader reader = new XMLDumpReader(domain);
+		XMLDumpReader reader = getDumpReader(args);
+		String timestamp = extractTimestamp(reader.getFile());
 		int stats = wb.getSiteStatistics().get("pages");
 		
 		final Set<String> titles;
@@ -65,8 +58,7 @@ public final class MissingPolishExamples {
 		}
 		
 		System.out.printf("%d titles retrieved\n", titles.size());
-		
-		ConcurrentMap<String, Set<String>> titlesToBacklinks = new ConcurrentSkipListMap<>();
+		Map<String, Set<String>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			stream.parallel()
@@ -88,37 +80,24 @@ public final class MissingPolishExamples {
 		}
 		
 		System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
-		
-		File fHash = new File(LOCATION + "hash.ser");
-		
-		if (fHash.exists() && (int)Misc.deserialize(fHash) == titlesToBacklinks.hashCode()) {
-			System.out.println("No changes detected, aborting.");
-			return;
-		}
-		
-		Misc.serialize(titlesToBacklinks.hashCode(), fHash);
-		
-		String out = String.format(PAGE_INTRO, extractTimestamp(reader.getFile())) + titlesToBacklinks.entrySet().stream()
-			.map(e -> String.format("# [[%s]]: %s", e.getKey(), e.getValue().stream()
-				.map(v -> String.format("[[%s]]", v)).collect(Collectors.joining(", "))
-			))
-			.collect(Collectors.joining("\n"));
-		
-		wb.setMarkBot(true);
-		wb.setMarkMinor(false);
-		
-		wb.edit(TARGET_PAGE, out, "aktualizacja");
+		storeData(titlesToBacklinks, timestamp);
 	}
 	
-	private static String extractTimestamp(File f) {
+	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
+		if (args.length == 0) {
+			return new XMLDumpReader("pl.wiktionary.org");
+		} else {
+			return new XMLDumpReader(new File(args[0].trim()));
+		}
+	}
+	
+	private static String extractTimestamp(File f) throws ParseException {
 		String fileName = f.getName();
-		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-		String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
-		
+		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
 		Matcher m = patt.matcher(fileName);
 		
 		if (!m.matches()) {
-			return errorString;
+			throw new RuntimeException();
 		}
 		
 		String canonicalTimestamp = m.group(1);
@@ -128,8 +107,26 @@ public final class MissingPolishExamples {
 			Date date = originalDateFormat.parse(canonicalTimestamp);
 			SimpleDateFormat desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
 			return desiredDateFormat.format(date);
-		} catch (java.text.ParseException e) {
-			return errorString;
+		} catch (ParseException e) {
+			throw e;
 		}
+	}
+	
+	private static void storeData(Map<String, Set<String>> map, String timestamp) throws IOException {
+		File fMap = new File(LOCATION + "map.xml");
+		File fDumpTimestamp = new File(LOCATION + "dump-timestamp.xml");
+		File fBotTimestamp = new File(LOCATION + "bot-timestamp.xml");
+		File fCtrl = new File(LOCATION + "UPDATED");
+
+		XStream xstream = new XStream(new StaxDriver());
+
+		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fMap))) {
+			xstream.toXML(map, bos);
+		}
+
+		Files.write(fDumpTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
+		Files.write(fBotTimestamp.toPath(), List.of(xstream.toXML(timestamp)));
+		
+		fCtrl.delete();
 	}
 }
