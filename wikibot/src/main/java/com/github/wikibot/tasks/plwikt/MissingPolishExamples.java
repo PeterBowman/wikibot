@@ -8,11 +8,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
@@ -26,8 +30,10 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
+import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public final class MissingPolishExamples {
@@ -40,7 +46,7 @@ public final class MissingPolishExamples {
 		wb = Login.createSession("pl.wiktionary.org");
 
 		XMLDumpReader reader = getDumpReader(args);
-		String timestamp = extractTimestamp(reader.getFile());
+		LocalDate timestamp = extractTimestamp(reader.getFile());
 		int stats = wb.getSiteStatistics().get("pages");
 		
 		final Set<String> titles;
@@ -58,7 +64,7 @@ public final class MissingPolishExamples {
 		}
 		
 		System.out.printf("%d titles retrieved\n", titles.size());
-		Map<String, Set<String>> titlesToBacklinks = new ConcurrentSkipListMap<>();
+		Map<String, Set<Entry>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			stream.parallel()
@@ -72,15 +78,26 @@ public final class MissingPolishExamples {
 					.map(m -> m.group(1))
 					.filter(titles::contains)
 					.forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
-						.add(String.format("%s#%s",
+						.add(Entry.makeEntry(
 							f.getContainingSection().get().getContainingPage().get().getTitle(),
-							f.getContainingSection().get().getLang()))
+							f.getContainingSection().get()
+						))
 					)
 				);
 		}
 		
 		System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
-		storeData(titlesToBacklinks, timestamp);
+		
+		// XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
+		Map<String, Set<Entry>> map = titlesToBacklinks.entrySet().stream()
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				e -> new TreeSet<>(e.getValue()),
+				(a, b) -> a,
+				TreeMap::new
+			));
+		
+		storeData(map, timestamp);
 	}
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
@@ -91,7 +108,7 @@ public final class MissingPolishExamples {
 		}
 	}
 	
-	private static String extractTimestamp(File f) throws ParseException {
+	private static LocalDate extractTimestamp(File f) throws ParseException {
 		String fileName = f.getName();
 		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
 		Matcher m = patt.matcher(fileName);
@@ -105,20 +122,20 @@ public final class MissingPolishExamples {
 		try {
 			SimpleDateFormat originalDateFormat = new SimpleDateFormat("yyyyMMdd");
 			Date date = originalDateFormat.parse(canonicalTimestamp);
-			SimpleDateFormat desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
-			return desiredDateFormat.format(date);
+			return LocalDate.ofInstant(date.toInstant(), ZoneOffset.UTC);
 		} catch (ParseException e) {
 			throw e;
 		}
 	}
 	
-	private static void storeData(Map<String, Set<String>> map, String timestamp) throws IOException {
+	private static void storeData(Map<String, Set<Entry>> map, LocalDate timestamp) throws IOException {
 		File fMap = new File(LOCATION + "map.xml");
 		File fDumpTimestamp = new File(LOCATION + "dump-timestamp.xml");
 		File fBotTimestamp = new File(LOCATION + "bot-timestamp.xml");
 		File fCtrl = new File(LOCATION + "UPDATED");
 
 		XStream xstream = new XStream(new StaxDriver());
+		xstream.processAnnotations(Entry.class);
 
 		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fMap))) {
 			xstream.toXML(map, bos);
@@ -128,5 +145,34 @@ public final class MissingPolishExamples {
 		Files.write(fBotTimestamp.toPath(), List.of(xstream.toXML(timestamp)));
 		
 		fCtrl.delete();
+	}
+	
+	@XStreamAlias("entry")
+	private static class Entry implements Comparable<Entry> {
+		String title;
+		String langShort;
+		@SuppressWarnings("unused")
+		String langLong;
+		
+		public static Entry makeEntry(String title, Section section) {
+			Entry entry = new Entry();
+			entry.title = title;
+			entry.langShort = section.getLangShort();
+			entry.langLong = section.getLang();
+			return entry;
+		} 
+		
+		@Override
+		public int compareTo(Entry o) {
+			if (!title.equals(o.title)) {
+				return title.compareTo(o.title);
+			}
+			
+			if (!langShort.equals(o.langShort)) {
+				return langShort.compareTo(o.langShort);
+			}
+			
+			return 0;
+		}
 	}
 }
