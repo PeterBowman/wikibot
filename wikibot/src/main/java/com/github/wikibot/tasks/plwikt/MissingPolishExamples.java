@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +75,7 @@ public final class MissingPolishExamples {
 				.flatMap(p -> p.getAllSections().stream())
 				.flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
 				.filter(f -> !f.isEmpty())
-				.forEach(f -> P_LINKER.matcher(f.getContent()).results()
+				.forEach(f -> P_LINKER.matcher(stripTranslation(f)).results()
 					.map(m -> m.group(1))
 					.filter(titles::contains)
 					.forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
@@ -126,6 +127,12 @@ public final class MissingPolishExamples {
 		} catch (ParseException e) {
 			throw e;
 		}
+	}
+	
+	private static String stripTranslation(Field f) {
+		return Arrays.stream(f.getContent().split("\n"))
+			.map(line -> line.substring(line.indexOf('→') + 1))
+			.collect(Collectors.joining("\n"));
 	}
 	
 	private static void storeData(Map<String, Set<Entry>> map, LocalDate timestamp) throws IOException {
