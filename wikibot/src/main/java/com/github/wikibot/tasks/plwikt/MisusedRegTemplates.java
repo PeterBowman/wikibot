@@ -60,7 +60,7 @@ public final class MisusedRegTemplates {
 		// English
 		"szkocang",
 		// Arabic
-		"algierarab", "egiparab", "lewantarab", "libijarab", "marokarab", "tunezarab",
+		"algierarab", "egiparab", "hasarab", "lewantarab", "libijarab", "marokarab", "tunezarab",
 		// French
 		"akadfranc", "belgfranc", "kanadfranc", "szwajcfranc",
 		// Spanish
