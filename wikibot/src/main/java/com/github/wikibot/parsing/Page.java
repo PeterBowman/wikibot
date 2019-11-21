@@ -2,6 +2,7 @@ package com.github.wikibot.parsing;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -73,7 +74,7 @@ public class Page extends AbstractPage<Section> implements Serializable {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws IOException {
 		Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-		String text = wb.getPageText("Wikisłownik:Zasady tworzenia haseł");
+		String text = wb.getPageText(List.of("Wikisłownik:Zasady tworzenia haseł")).get(0);
 		Page page = Page.store("Wikisłownik:Zasady tworzenia haseł", text);
 		System.out.println("");
 	}

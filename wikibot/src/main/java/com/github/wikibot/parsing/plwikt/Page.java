@@ -2,6 +2,7 @@ package com.github.wikibot.parsing.plwikt;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -71,13 +72,7 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 	}
 	
 	public Optional<Section> getPolishSection() {
-		Optional<Section> out = getSection("język polski");
-		
-		if (!out.isPresent()) {
-			out = getSection("termin obcy w języku polskim");
-		}
-		
-		return out;
+		return getSection("język polski").or(() -> getSection("termin obcy w języku polskim"));
 	}
 	
 	public Section addSection(String lang) {
@@ -132,13 +127,13 @@ public final class Page extends AbstractPage<Section> implements Serializable {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 		Wikibot wiki = Login.createSession("pl.wiktionary.org");
-		String text = wiki.getPageText("rescate");
+		String text = wiki.getPageText(List.of("rescate")).get(0);
 		Page page = Page.store("rescate", text);
 		Section esp = page.getSection("język hiszpański").get();
 		Field esp_ex = esp.getField(FieldTypes.EXAMPLES).get();
 		DefinitionsField esp_def = (DefinitionsField) esp.getField(FieldTypes.DEFINITIONS).get();
 		page.addSection("język polski");
-		String text2 = wiki.getPageText("boks");
+		String text2 = wiki.getPageText(List.of("boks")).get(0);
 		Page page2 = Page.store("boks", text2);
 		page2.sortSections();
 		System.out.println(page);

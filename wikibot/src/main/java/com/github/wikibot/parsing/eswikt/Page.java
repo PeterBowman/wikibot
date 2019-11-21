@@ -274,7 +274,7 @@ public final class Page extends AbstractPage<Section> {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 		Wikibot wiki = Login.createSession("es.wiktionary.org");
-		String text = wiki.getPageText("tamén");
+		String text = wiki.getPageText(List.of("tamén")).get(0);
 		Page page = Page.store("tamén", text);
 		System.out.println("");
 	}
