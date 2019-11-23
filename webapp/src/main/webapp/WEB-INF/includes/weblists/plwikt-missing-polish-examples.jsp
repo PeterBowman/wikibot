@@ -64,10 +64,11 @@
                         <c:forEach var="item" items="${results}">
                             <li>
                                 <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${item.title}" sectionName="polski" />
-                                (<span class="plwikt-missing-polish-examples-item"
+                                ${' '} <%-- enforce space between elements --%>
+                                <span class="plwikt-missing-polish-examples-item"
                                     data-titles="${utils:join(item.backlinkTitles, '|')}"
                                     data-sections="${utils:join(item.backlinkSections, '|')}"
-                                 >${item.backlinks}</span>)
+                                 >(${item.backlinks})</span>
                             </li>
                         </c:forEach>
                     </ol>

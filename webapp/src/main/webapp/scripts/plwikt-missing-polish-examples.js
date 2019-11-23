@@ -103,8 +103,8 @@ $( function () {
 				'" data-target="' + item.title + '" data-href="https://pl.wiktionary.org/"' +
 				' data-section="polski">' + item.title + '</a>';
 			
-			out += ' (<span class="plwikt-missing-polish-examples-item" data-titles="' + item.backlinkTitles.join( '|' ) +
-				'" data-sections="' + item.backlinkSections.join( '|' ) + '">' + item.backlinks + '</span>)';
+			out += ' <span class="plwikt-missing-polish-examples-item" data-titles="' + item.backlinkTitles.join( '|' ) +
+				'" data-sections="' + item.backlinkSections.join( '|' ) + '">(' + item.backlinks + ')</span>';
 			
 			return '<li>' + out + '</li>';
 		} ).join( '' ) ).attr( 'start', currentOffset + 1 );
