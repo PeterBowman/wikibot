@@ -20,6 +20,11 @@
                 (plwiktionary) brak linku zwrotnego do Wikisłownika w artykułach polskojęzycznej Wikipedii
             </a>
         </li>
+        <li>
+            <a href="${pageContext.request.contextPath}/weblists/plwikt-missing-polish-examples">
+                (plwiktionary) brak przykładu w polskim haśle, lecz istnieją linkujące
+            </a>
+        </li>
 		<li>
 			<a href="${pageContext.request.contextPath}/weblists/plwiki-sandbox-redirects">
 				(plwiki) strony przeniesione do brudnopisu

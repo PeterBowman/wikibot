@@ -11,13 +11,12 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
@@ -65,7 +64,7 @@ public final class MissingPolishExamples {
 		}
 		
 		System.out.printf("%d titles retrieved\n", titles.size());
-		Map<String, Set<Entry>> titlesToBacklinks = new ConcurrentSkipListMap<>();
+		Map<String, Set<Backlink>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			stream.parallel()
@@ -75,11 +74,11 @@ public final class MissingPolishExamples {
 				.flatMap(p -> p.getAllSections().stream())
 				.flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
 				.filter(f -> !f.isEmpty())
-				.forEach(f -> P_LINKER.matcher(stripTranslation(f)).results()
+				.forEach(f -> P_LINKER.matcher(stripTranslations(f)).results()
 					.map(m -> m.group(1))
 					.filter(titles::contains)
 					.forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
-						.add(Entry.makeEntry(
+						.add(Backlink.makeBacklink(
 							f.getContainingSection().get().getContainingPage().get().getTitle(),
 							f.getContainingSection().get()
 						))
@@ -90,15 +89,11 @@ public final class MissingPolishExamples {
 		System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
 		
 		// XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
-		Map<String, Set<Entry>> map = titlesToBacklinks.entrySet().stream()
-			.collect(Collectors.toMap(
-				Map.Entry::getKey,
-				e -> new TreeSet<>(e.getValue()),
-				(a, b) -> a,
-				TreeMap::new
-			));
+		List<Entry> list = titlesToBacklinks.entrySet().stream()
+			.map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
+			.collect(Collectors.toList());
 		
-		storeData(map, timestamp);
+		storeData(list, timestamp);
 	}
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
@@ -129,14 +124,14 @@ public final class MissingPolishExamples {
 		}
 	}
 	
-	private static String stripTranslation(Field f) {
+	private static String stripTranslations(Field f) {
 		return Arrays.stream(f.getContent().split("\n"))
 			.map(line -> line.substring(line.indexOf('→') + 1))
 			.collect(Collectors.joining("\n"));
 	}
 	
-	private static void storeData(Map<String, Set<Entry>> map, LocalDate timestamp) throws IOException {
-		File fMap = new File(LOCATION + "map.xml");
+	private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
+		File fEntries = new File(LOCATION + "entries.xml");
 		File fDumpTimestamp = new File(LOCATION + "dump-timestamp.xml");
 		File fBotTimestamp = new File(LOCATION + "bot-timestamp.xml");
 		File fCtrl = new File(LOCATION + "UPDATED");
@@ -144,8 +139,8 @@ public final class MissingPolishExamples {
 		XStream xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fMap))) {
-			xstream.toXML(map, bos);
+		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries))) {
+			xstream.toXML(list, bos);
 		}
 
 		Files.write(fDumpTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
@@ -154,23 +149,53 @@ public final class MissingPolishExamples {
 		fCtrl.delete();
 	}
 	
+	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples
 	@XStreamAlias("entry")
-	private static class Entry implements Comparable<Entry> {
+	static class Entry {
+		@XStreamAlias("t")
 		String title;
-		String langShort;
-		@SuppressWarnings("unused")
-		String langLong;
 		
-		public static Entry makeEntry(String title, Section section) {
+		@XStreamAlias("blt")
+		List<String> backlinkTitles = new ArrayList<>();
+		
+		@XStreamAlias("bls")
+		List<String> backlinkSections = new ArrayList<>();
+		
+		public static Entry makeEntry(String title, List<Backlink> backlinks) {
 			Entry entry = new Entry();
 			entry.title = title;
-			entry.langShort = section.getLangShort();
-			entry.langLong = section.getLang();
+			
+			backlinks.forEach(bl -> {
+				entry.backlinkTitles.add(bl.title);
+				entry.backlinkSections.add(bl.langLong);
+			});
+			
 			return entry;
+		} 
+	}
+	
+	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples
+	@XStreamAlias("bl")
+	static class Backlink implements Comparable<Backlink> {
+		@XStreamAlias("t")
+		String title;
+		
+		@XStreamAlias("ls")
+		String langShort;
+		
+		@XStreamAlias("ll")
+		String langLong;
+		
+		public static Backlink makeBacklink(String title, Section section) {
+			Backlink bl = new Backlink();
+			bl.title = title;
+			bl.langShort = section.getLangShort();
+			bl.langLong = section.getLang();
+			return bl;
 		} 
 		
 		@Override
-		public int compareTo(Entry o) {
+		public int compareTo(Backlink o) {
 			if (!title.equals(o.title)) {
 				return title.compareTo(o.title);
 			}

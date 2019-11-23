@@ -101,4 +101,25 @@ public final class Utils {
 	public static String encodeParam(String str) {
 		return URLEncoder.encode(str, StandardCharsets.UTF_8);
 	}
+	
+	// https://stackoverflow.com/a/296752
+	public static String join(Iterable<?> elements, CharSequence separator) {
+		StringBuilder buf = new StringBuilder();
+		
+		if (elements != null) {
+			if (separator == null) {
+				separator = " ";
+			}
+			
+			for (Object o : elements) {
+				if (buf.length() > 0) {
+					buf.append(separator);
+				}
+				
+				buf.append(o);
+			}
+		}
+		
+		return buf.toString();
+	}
 }

@@ -5,7 +5,7 @@
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
-<c:set var="title" value="Brak Wikisłownika w Wikipedii " />
+<c:set var="title" value="Brak Wikisłownika w Wikipedii" />
 <c:set var="defaultLimit" value="500" />
 
 <c:set var="limit" value="${not empty param.limit ? utils:max(param.limit, 0) : defaultLimit}" />

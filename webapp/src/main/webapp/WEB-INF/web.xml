@@ -48,6 +48,18 @@
     </init-param>
   </servlet>
   <servlet>
+  	<servlet-name>MissingPolishExamples</servlet-name>
+  	<servlet-class>com.github.wikibot.webapp.MissingPolishExamples</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>MissingPolishExamplesAPI</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingPolishExamples</servlet-class>
+    <init-param>
+        <param-name>API</param-name>
+        <param-value>yes</param-value>
+    </init-param>
+  </servlet>
+  <servlet>
     <servlet-name>SandboxRedirects</servlet-name>
     <servlet-class>com.github.wikibot.webapp.SandboxRedirects</servlet-class>
   </servlet>
@@ -113,6 +125,14 @@
   <servlet-mapping>
     <servlet-name>MissingPlwiktRefsOnPlwikiAPI</servlet-name>
     <url-pattern>/weblists/plwikt-missing-plwiki-backlinks/api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>MissingPolishExamples</servlet-name>
+  	<url-pattern>/weblists/plwikt-missing-polish-examples</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MissingPolishExamplesAPI</servlet-name>
+    <url-pattern>/weblists/plwikt-missing-polish-examples/api</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>SandboxRedirects</servlet-name>
