@@ -143,8 +143,8 @@ public final class MissingPolishExamples {
 			xstream.toXML(list, bos);
 		}
 
-		Files.write(fDumpTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
-		Files.write(fBotTimestamp.toPath(), List.of(xstream.toXML(timestamp)));
+		Files.write(fDumpTimestamp.toPath(), List.of(xstream.toXML(timestamp)));
+		Files.write(fBotTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
 		
 		fCtrl.delete();
 	}

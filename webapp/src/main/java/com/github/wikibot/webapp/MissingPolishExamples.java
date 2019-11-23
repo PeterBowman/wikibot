@@ -151,11 +151,11 @@ public class MissingPolishExamples extends HttpServlet {
 				entries.clear();
 				entries.addAll(localEntries);
 				
-				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fDumpTimestamp);
-				calDump.setTime(Date.from(odt.toInstant()));
+				LocalDate ld = (LocalDate) xstream.fromXML(fDumpTimestamp);
+				calDump.setTime(Date.from(ld.atStartOfDay().atZone(ZoneOffset.UTC).toInstant()));
 				
-				LocalDate ld = (LocalDate) xstream.fromXML(fBotTimestamp);
-				calBot.setTime(Date.from(ld.atStartOfDay().atZone(ZoneOffset.UTC).toInstant()));
+				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fBotTimestamp);
+				calBot.setTime(Date.from(odt.toInstant()));
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
