@@ -32,7 +32,7 @@
     </jsp:attribute>
     <jsp:body>
         <p>
-            Spis polskich haseł w Wikisłowniku z niewypełnionym polem <strong>przykłady</strong> linkujące do
+            Spis polskich haseł w Wikisłowniku z niewypełnionym polem <strong>przykłady</strong> linkujących do
             istniejących przykładów w innych hasłach, które można prosto przekleić za pomocą formularza edycji (tzw. 
             <a href="https://pl.wiktionary.org/wiki/Wikis%C5%82ownik:Projekt_formularza" target="_blank"> skrypt ToStera</a>,
             gadżet dostępny w Preferencjach).
