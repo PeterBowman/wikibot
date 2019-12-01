@@ -19,7 +19,7 @@ else
 fi
 
 echo "fetching directory list from $SITE..."
-wget --quiet $WGETOPTS $SITE || return 1
+wget --quiet $WGETOPTS $SITE
 
 LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 2 | head -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
 
