@@ -45,7 +45,7 @@ public class MissingPolishEntries {
 		PAGE_INTRO =
 			"{{TOCright}}{{język linków|polski}}\n\n" + 
 			"Spis brakujących haseł polskich na podstawie bazy danych Morfeusz SGJP " +
-			"([http://sgjp.pl/morfeusz/dopobrania.html <tt>%1$s</tt>]). Poniższe strony istnieją, " +
+			"([http://morfeusz.sgjp.pl/download/ <tt>%1$s</tt>]). Poniższe strony istnieją, " +
 			"lecz brak sekcji polskiej.\n" + 
 			"* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$s\n" + 
 			"* haseł polskich: %3$s (podstawowe), %4$s (formy fleksyjne), %5$s (przekierowania), %6$s (łącznie)\n" + 

@@ -1,11 +1,11 @@
 #!/bin/sh
 
-SITE=http://sgjp.pl/morfeusz/download
+SITE=http://download.sgjp.pl/morfeusz/
 TEMPDIR=~tmp
 LOGFILE=.sgjp_last_timestamp
 LASTTS=
 RET=0
-WGETOPTS="--spider --recursive --level=1 --no-host-directories --cut-dirs=2 --directory-prefix=$TEMPDIR"
+WGETOPTS="--spider --recursive --level=1 --no-host-directories --cut-dirs=1 --directory-prefix=$TEMPDIR"
 
 date
 
@@ -21,7 +21,7 @@ fi
 echo "fetching directory list from $SITE..."
 wget --quiet $WGETOPTS $SITE || return 1
 
-LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
+LASTDUMP=`ls -d $TEMPDIR/*/ | tail -n 2 | head -n 1 | perl -pe 's|.+/(\d+)/$|\1|'`
 
 if [ -n "$LASTDUMP" ]; then
   echo "last dump folder: $LASTDUMP"
