@@ -49,7 +49,9 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Biogram infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Element elektroniczny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Grafem infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Gwiazda infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Imię infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Jezioro infobox", Arrays.asList("wikisłownik"));
 		//_sorted_map.put("Język infobox", Arrays.asList("wikisłownik")); // links back to categories only
 		TARGET_TEMPLATES.put("Klucz infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Kraina historyczna infobox", Arrays.asList("wikisłownik"));
@@ -60,6 +62,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Pismo infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Polska miejscowość infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Polskie miasto infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Postać fikcyjna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Postać religijna infobox", Arrays.asList("wikisłownik"));
