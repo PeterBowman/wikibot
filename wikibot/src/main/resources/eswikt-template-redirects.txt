@@ -120,6 +120,7 @@ srp = sr
 ssw = ss
 tsz = pua
 yue = zh-yue
+zac = zad
 zh-cn = zh
 zh-min-nan = nan
 zh-wuu = wuu
