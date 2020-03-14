@@ -338,6 +338,7 @@ Ornitología = ornitología
 Paleontología = paleontología
 Periodismo = periodismo
 Pesca = pesca
+pesos y medidas = metrología
 Pintura = pintura
 planeta = planetas
 planta = plantas
