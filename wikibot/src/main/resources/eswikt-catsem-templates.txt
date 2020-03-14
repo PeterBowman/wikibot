@@ -145,6 +145,7 @@ informática = Informática
 ingeniería = Ingeniería
 inmunología = Inmunología
 insectos = Insectos
+instrumentos de medición = Instrumentos de medición
 instrumentos musicales = Instrumentos musicales
 internet = Internet
 invertebrados = Invertebrados
