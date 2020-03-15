@@ -277,7 +277,7 @@ public final class MaintenanceScript {
 	
 		@Override
 		public BiConsumer<Map<String, Wiki.LogEntry>, Wiki.LogEntry> accumulator() {
-			return (accum, log) -> accum.putIfAbsent((String) log.getDetails(), log);
+			return (accum, log) -> accum.putIfAbsent(log.getDetails().get("target_title"), log);
 		}
 	
 		@Override
@@ -290,7 +290,7 @@ public final class MaintenanceScript {
 			return accum -> accum.values().stream()
 				.filter(log -> log.getTimestamp().isBefore(dateTime))
 				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
-				.map(log -> (String) log.getDetails())
+				.map(log -> log.getDetails().get("target_title"))
 				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
 				.collect(Collectors.toList());
 		}
