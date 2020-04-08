@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -235,13 +236,16 @@ public class Wikibot extends WMFWiki {
         }
 
         if (starttimestamp != null) {
-        	getparams.put("rcstart", starttimestamp.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        	var odt = starttimestamp.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
+        	getparams.put("rcstart", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         
         if (endtimestamp == null) {
-        	getparams.put("rcend", OffsetDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        	var odt = OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
+        	getparams.put("rcend", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         } else {
-        	getparams.put("rcend", endtimestamp.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        	var odt = endtimestamp.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
+        	getparams.put("rcend", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         
         List<Wiki.Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", -1, (line, results) -> {
