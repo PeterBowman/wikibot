@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +43,7 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
-		return getListedContent(getparams, pages, "getContents", "titles", biCons);
+		return getListedContent(getparams, pages, "getContents", "titles", this::parseContentLine);
 	}
     
     public List<PageContainer> getContentOfPageIds(List<Long> pageids) throws IOException {
@@ -53,9 +53,8 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		List<String> stringified = pageids.stream().map(Object::toString).collect(Collectors.toList());
-		return getListedContent(getparams, stringified, "getContents", "pageids", biCons);
+		return getListedContent(getparams, stringified, "getContents", "pageids", this::parseContentLine);
 	}
     
     public List<PageContainer> getContentOfRevIds(List<Long> revids) throws IOException {
@@ -65,9 +64,8 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		BiConsumer<String, List<PageContainer>> biCons = this::parseContentLine;
 		List<String> stringified = revids.stream().map(Object::toString).collect(Collectors.toList());
-		return getListedContent(getparams, stringified, "getContents", "revids", biCons);
+		return getListedContent(getparams, stringified, "getContents", "revids", this::parseContentLine);
     }
 	
 	/**
@@ -126,7 +124,7 @@ public class Wikibot extends WMFWiki {
 	throws IOException {
 		List<String> chunks = constructTitleString(titles);
 		List<T> list = new ArrayList<>(titles.size());
-		Map<String, Object> postparams = new HashMap<>();
+		Map<String, Object> postparams = Collections.emptyMap();
 		
 		for (int i = 0; i < chunks.size(); i++) {
 			postparams.put(postParamName, chunks.get(i));
@@ -156,13 +154,6 @@ public class Wikibot extends WMFWiki {
 				))
 			)
 			.forEach(list::add);
-	}
-	
-	public Map<String, OffsetDateTime> getTimestamps(List<String> pages) throws IOException {
-		return getTopRevision(pages).stream().collect(Collectors.toMap(
-				Wiki.Revision::getTitle,
-				Wiki.Revision::getTimestamp
-			));
 	}
 	
 	public String expandTemplates(String text) throws IOException {

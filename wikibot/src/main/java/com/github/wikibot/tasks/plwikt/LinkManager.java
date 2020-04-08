@@ -290,7 +290,8 @@ public final class LinkManager implements Selectorizable {
 				tmp.keySet().removeAll(timestamps.keySet());
 				
 				if (!tmp.isEmpty()) {
-					timestamps.putAll(wb.getTimestamps(new ArrayList<>(tmp.keySet())));
+					wb.getTopRevision(new ArrayList<>(tmp.keySet())).stream()
+						.forEach(rev -> timestamps.put(rev.getTitle(), rev.getTimestamp()));
 				}
 			}
 		}
