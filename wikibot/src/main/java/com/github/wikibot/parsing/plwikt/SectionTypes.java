@@ -1,6 +1,5 @@
 package com.github.wikibot.parsing.plwikt;
 
-
 public enum SectionTypes {
 	POLISH (new FieldTypes[]{
 		FieldTypes.PRONUNCIATION,

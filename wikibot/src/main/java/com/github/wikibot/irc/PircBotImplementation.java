@@ -1,9 +1,8 @@
 package com.github.wikibot.irc;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
-import org.apache.commons.io.FileUtils;
 import org.jibble.pircbot.PircBot;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -128,13 +127,9 @@ public class PircBotImplementation extends PircBot {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		File fIrc = new File(LOCATION + "irc.txt");
-		File fTelegramToken = new File(LOCATION + "telegram_token.txt");
-		File fTelegramChatid = new File(LOCATION + "telegram_chatid.txt");
-
-		String password = FileUtils.readFileToString(fIrc, StandardCharsets.UTF_8).trim();
-		String telegramToken = FileUtils.readFileToString(fTelegramToken, StandardCharsets.UTF_8).trim();
-		String telegramChatid = FileUtils.readFileToString(fTelegramChatid, StandardCharsets.UTF_8).trim();
+		String password = Files.readString(Paths.get(LOCATION + "irc.txt")).trim();
+		String telegramToken =  Files.readString(Paths.get(LOCATION + "telegram_token.txt")).trim();;
+		String telegramChatid =  Files.readString(Paths.get(LOCATION + "telegram_chatid.txt")).trim();
 		
 		ApiContextInitializer.init();
 		TelegramBotsApi botsApi = new TelegramBotsApi();

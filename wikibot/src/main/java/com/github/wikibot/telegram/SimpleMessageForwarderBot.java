@@ -24,8 +24,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import com.google.common.base.Strings;
-
 public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 
 	private String botUsername;
@@ -65,7 +63,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 		
 		try {
 			if (message.isReply() && message.getReplyToMessage().getFrom().getUserName().equals(botUsername) && message.hasText()) {
-				if (!Strings.isNullOrEmpty(lastSender) && message.getReplyToMessage().getMessageId() == lastPromptId) {
+				if (lastSender != null && !lastSender.isBlank() && message.getReplyToMessage().getMessageId() == lastPromptId) {
 					replyCallback.accept(lastSender, message.getText());
 					lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
 				} else {
@@ -73,7 +71,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					lastPromptId = 0;
 				}
 			} else if (message.hasText() && message.getText().startsWith("/replylast")) {
-				if (!Strings.isNullOrEmpty(lastSender)) {
+				if (lastSender != null && !lastSender.isBlank()) {
 					lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();
 				} else {
 					execute(new SendMessage(chatId, "No last recipient found, start a new conversation."));
@@ -88,7 +86,7 @@ public class SimpleMessageForwarderBot extends TelegramLongPollingBot {
 					
 					updateSenderHistory(sender);
 					
-					if (!Strings.isNullOrEmpty(text)) {
+					if (text != null && !text.isBlank()) {
 						replyCallback.accept(sender, text);
 					} else {
 						lastPromptId = execute(new SendMessage(chatId, replyPrompt).setReplyMarkup(new ForceReplyKeyboard())).getMessageId();

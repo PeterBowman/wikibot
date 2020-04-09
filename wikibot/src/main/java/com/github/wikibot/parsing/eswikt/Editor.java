@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.containsAny;
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import static org.apache.commons.lang3.StringUtils.countMatches;
-import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.commons.lang3.StringUtils.startsWithAny;
 import static org.apache.commons.lang3.StringUtils.strip;
 import static org.apache.commons.lang3.StringUtils.uncapitalize;
@@ -578,7 +577,7 @@ public class Editor extends AbstractEditor {
 		
 		while (m.find()) {
 			ranges.add(Range.between(m.start(), m.end()));
-			String replacement = repeat('-', m.group().length());
+			String replacement = "-".repeat(m.group().length());
 			m.appendReplacement(sb, replacement);
 		}
 		
