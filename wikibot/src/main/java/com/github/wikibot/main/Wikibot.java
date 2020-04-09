@@ -7,7 +7,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +123,7 @@ public class Wikibot extends WMFWiki {
 	throws IOException {
 		List<String> chunks = constructTitleString(titles);
 		List<T> list = new ArrayList<>(titles.size());
-		Map<String, Object> postparams = Collections.emptyMap();
+		Map<String, Object> postparams = new HashMap<>();
 		
 		for (int i = 0; i < chunks.size(); i++) {
 			postparams.put(postParamName, chunks.get(i));
