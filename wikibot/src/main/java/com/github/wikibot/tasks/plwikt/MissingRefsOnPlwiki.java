@@ -51,6 +51,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Grafem infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Gwiazda infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Imię infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Jednostka administracyjna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Jezioro infobox", Arrays.asList("wikisłownik"));
 		//_sorted_map.put("Język infobox", Arrays.asList("wikisłownik")); // links back to categories only
 		TARGET_TEMPLATES.put("Klucz infobox", Arrays.asList("wikisłownik"));
@@ -60,6 +61,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Minerał infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Narzędzie infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Pasmo górskie infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Pismo infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Polska miejscowość infobox", Arrays.asList("wikisłownik"));
@@ -73,6 +75,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Wielkość fizyczna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wielokąt infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wieś infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Wirus infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Wojna infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Złącze infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Związek chemiczny infobox", Arrays.asList("wikisłownik"));
