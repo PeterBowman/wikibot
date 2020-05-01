@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public final class MissingPolishExamples {
 	private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
+	private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
 	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishExamples/";
 	
 	private static Wikibot wb;
@@ -74,7 +74,11 @@ public final class MissingPolishExamples {
 				.flatMap(p -> p.getAllSections().stream())
 				.flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
 				.filter(f -> !f.isEmpty())
-				.forEach(f -> P_LINKER.matcher(stripTranslations(f)).results()
+				.forEach(f -> Pattern.compile("\n").splitAsStream(f.getContent())
+					.filter(line -> f.getContainingSection().get().isPolishSection()
+						|| (line.contains("→") && !P_REF.matcher(line).find()))
+					.map(line -> line.substring(line.indexOf('→') + 1))
+					.flatMap(line -> P_LINKER.matcher(line).results())
 					.map(m -> m.group(1))
 					.filter(titles::contains)
 					.forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
@@ -122,12 +126,6 @@ public final class MissingPolishExamples {
 		} catch (ParseException e) {
 			throw e;
 		}
-	}
-	
-	private static String stripTranslations(Field f) {
-		return Arrays.stream(f.getContent().split("\n"))
-			.map(line -> line.substring(line.indexOf('→') + 1))
-			.collect(Collectors.joining("\n"));
 	}
 	
 	private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
