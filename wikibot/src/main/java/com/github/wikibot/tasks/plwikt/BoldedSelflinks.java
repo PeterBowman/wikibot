@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.text.Collator;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -194,9 +192,8 @@ public final class BoldedSelflinks {
 		xstream.processAnnotations(Item.class);
 		
 		if (storedHashCode != newHashCode) {
-			OpenOption[] options = new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
-			Files.writeString(fHash.toPath(), Integer.toString(newHashCode), options);
-			Files.writeString(fList.toPath(), xstream.toXML(list), options);
+			Files.writeString(fHash.toPath(), Integer.toString(newHashCode));
+			Files.writeString(fList.toPath(), xstream.toXML(list));
 			return true;
 		} else {
 			return false;
