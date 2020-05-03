@@ -120,8 +120,8 @@ public final class AssistedEdit {
 			
 			try {
 				wb.edit(title, text, summary, minor, true, -2, timestamps.get(title));
-			} catch (Exception e) {
-    			e.printStackTrace();
+			} catch (Throwable t) {
+    			t.printStackTrace();
     			errors.add(title);
     		}
 		}
