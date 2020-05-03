@@ -11,6 +11,7 @@ module org.github.wikibot {
 	requires com.google.common;
 	requires com.ibm.icu;
 	requires commons.cli;
+	requires commons.exec;
 	requires java.logging;
 	requires java.sql;
 	requires java.xml;

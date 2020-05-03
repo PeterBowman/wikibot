@@ -41,15 +41,13 @@ public final class AssistedEdit {
 		options.addOption("m", "minor", false, "mark edits as minor");
 		options.addOption("t", "throttle", true, "set edit throttle [ms]");
 		
-		CommandLineParser parser = new DefaultParser();
-		final CommandLine line;
-		
-		if (args.length != 0) {
-			line = parser.parse(options, args);
-		} else {
+		if (args.length == 0) {
 			System.out.print("Options: ");
-			line = parser.parse(options, Misc.readLine().split(" "));
+			args = Misc.readArgs();
 		}
+		
+		CommandLineParser parser = new DefaultParser();
+		CommandLine line = parser.parse(options, args);
 		
 		wb = Login.createSession(line.getOptionValue("domain"));
 		xstream = new XStream();

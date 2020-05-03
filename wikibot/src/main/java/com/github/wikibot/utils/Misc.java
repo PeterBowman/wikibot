@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.exec.CommandLine;
+
 import com.github.wikibot.main.Selectorizable;
 
 public final class Misc {
@@ -224,6 +226,11 @@ public final class Misc {
 			Scanner scanner = new Scanner(System.in);
 			return scanner.nextLine();
 		}
+	}
+	
+	public static String[] readArgs() {
+		// first parsed element becomes the executable
+		return CommandLine.parse("dummy " + readLine()).getArguments();
 	}
 	
 	public static char[] readPassword() {
