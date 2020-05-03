@@ -748,6 +748,7 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				templateName.startsWith("inflect.") ||
+				templateName.startsWith("mutacion.") || templateName.startsWith("mutación.") ||
 				LS_SPLITTER_LIST.contains(templateName) ||
 				BS_SPLITTER_LIST.contains(templateName)
 			) {
