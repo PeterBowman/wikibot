@@ -158,7 +158,11 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
-		return replaceWithIgnoredranges(text, regex, replacement, getStandardIgnoredRanges(text));
+		return replaceWithIgnoredranges(text, Pattern.compile(regex), replacement, getStandardIgnoredRanges(text));
+	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt, String replacement) {
+		return replaceWithIgnoredranges(text, patt, replacement, getStandardIgnoredRanges(text));
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
@@ -172,9 +176,8 @@ public final class Utils {
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
-	public static String replaceWithIgnoredranges(String text, String regex, String replacement,
+	public static String replaceWithIgnoredranges(String text, Pattern patt, String replacement,
 			List<Range<Integer>> ignoredRanges) {
-		Pattern patt = Pattern.compile(regex);
 		ToIntFunction<Matcher> func = Matcher::start;
 		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
 		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);

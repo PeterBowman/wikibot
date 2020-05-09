@@ -3,9 +3,9 @@ package com.github.wikibot.scripts;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,6 +21,7 @@ import org.wikipedia.Wiki;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -29,7 +30,7 @@ public final class ProcessLanguageLinks {
 	private static final String LOCATION = "./data/scripts/ProcessLanguageLinks/";
 	private static final String LANG_LIST = LOCATION + "interwiki.txt";
 	private static final String TODO_LIST = LOCATION + "worklist.txt";
-	private static final List<Integer> IGNORED_NAMESPACES = Arrays.asList(Wiki.USER_NAMESPACE);
+	
 	private static List<String> interwikis;
 	private static Wikibot wb;
 	
@@ -73,42 +74,22 @@ public final class ProcessLanguageLinks {
 	}
 	
 	private static void findLanguageLinks(XMLDumpReader reader) throws IOException {
+		final Pattern patt = Pattern.compile("\\[\\[\\s*(?:" + interwikis.stream().collect(Collectors.joining("|")) + ")\\s*:[^\\]]*?\\]\\]");
+		
 		int stats = wb.getSiteStatistics().get("pages");
 		List<String> list;
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
 			list = stream.parallel()
-				.filter(ProcessLanguageLinks::hasInterwikis)
+				.filter(rev -> rev.getNamespace() != Wiki.USER_NAMESPACE) // https://www.wikidata.org/wiki/Help:Sitelinks#Namespaces
+				.filter(rev -> rev.getNamespace() % 2 == 0) // https://www.mediawiki.org/wiki/Manual:$wgInterwikiMagic
+				.filter(rev -> !rev.getText().equals(Utils.replaceWithStandardIgnoredRanges(rev.getText(), patt, "")))
 				.sorted(new XMLRevisionComparator())
 				.map(XMLRevision::getTitle)
 				.collect(Collectors.toList());
 		}
 		
 		Files.write(Paths.get(TODO_LIST), list);
-	}
-	
-	private static boolean hasInterwikis(XMLRevision rev) {
-		// https://www.wikidata.org/wiki/Help:Sitelinks#Namespaces
-		// https://www.mediawiki.org/wiki/Manual:$wgInterwikiMagic
-		if (IGNORED_NAMESPACES.contains(rev.getNamespace()) || rev.getNamespace() % 2 != 0) {
-			return false;
-		}
-		
-		for (String interwiki : interwikis) {
-			String target;
-			
-			if (rev.isMainNamespace()) {
-				target = String.format("[[%s:%s]]", interwiki, rev.getTitle());
-			} else {
-				target = String.format("[[%s:", interwiki);
-			}
-			
-			if (rev.getText().contains(target)) {
-				return true;
-			}
-		}
-		
-		return false;
 	}
 	
 	private static void removeLanguageLinks() throws IOException, LoginException {
