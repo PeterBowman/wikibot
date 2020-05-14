@@ -49,6 +49,7 @@ public final class BoldedSelflinks {
 	
 	// from Linker::formatLinksInComment in Linker.php
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)");
+	private static final Pattern P_BOLD = Pattern.compile("'{3}([^\\[\\]\\{\\}]+?)'{3}");
 	private static final Pattern P_TRANSL = Pattern.compile("→[^•;]+");
 	
 	private static final Collator COLL_PL = Collator.getInstance(new Locale("pl"));
@@ -83,11 +84,14 @@ public final class BoldedSelflinks {
 		
 		PAGE_INTRO =
 			"Zestawienie wystąpień pogrubionych selflinków, czyli linków prowadzących do strony, w której " +
-			"się znajdują. Pogrubienie jest zazwyczaj wyłączone za sprawą [[MediaWiki:Gadget-section-links.js|skryptu JS]], " +
-			"o ile link prowadzi do innej sekcji językowej. Wykluczenia:\n" +
+			"się znajdują. Automatyczne pogrubianie takich linków, wymuszone przez oprogramowanie MediaWiki, " +
+			"jest zazwyczaj tłumione za sprawą lokalnego [[MediaWiki:Gadget-section-links.js|skryptu JS]], " +
+			"o ile dany link nie prowadzi do tej samej sekcji językowej. Wykluczenia:\n" +
 			"* języki z wyłączoną obsługą selflinków przez JS – " + excludedSelflinks + ";\n" +
 			"* języki źle współpracujące z mechanizmem selflinków – " + excludedLangs + ";\n" +
 			"* pola – " + excludedFields + ".\n" +
+			"Lista uwzględnia równieź zwykłe pogrubienia (tekst owinięty znakami <code><nowiki>'''</nowiki></code>, " +
+			"niezawierający <code><nowiki>[]{}</nowiki></code>) na powyższych zasadach.\n" +
 			"\n" +
 			"Dane na podstawie zrzutu z bazy danych z dnia $1. Aktualizacja: ~~~~~.";;
 	}
@@ -140,7 +144,6 @@ public final class BoldedSelflinks {
 				.filter(XMLRevision::isMainNamespace)
 				.map(rev -> Page.store(rev.getTitle(), rev.getText()))
 				.flatMap(p -> p.getAllSections().stream()
-					.filter(s -> !IGNORED_SELFLINKS.contains(s.getLangShort()))
 					.filter(s -> !IGNORED_LANGS.contains(s.getLangShort()))
 					.flatMap(s -> s.getAllFields().stream()
 						.filter(f -> !f.isEmpty())
@@ -148,7 +151,7 @@ public final class BoldedSelflinks {
 							.allMatch(e -> f.getFieldType() != e.getKey() || e.getValue().contains(s.getLangShort()))
 						)
 						.flatMap(f -> pNewline.splitAsStream(f.getContent())
-							.filter(line -> filterLines(line, p.getTitle()))
+							.filter(line -> filterLines(line, p.getTitle(), s.getLangShort()))
 							.map(line ->
 								new Item(p.getTitle(), s.getLangShort(), f.getFieldType().localised(), line)
 							)
@@ -160,15 +163,27 @@ public final class BoldedSelflinks {
 		}
 	}
 	
-	private static boolean filterLines(String line, String title) {
+	private static boolean filterLines(String line, String title, String lang) {
 		if (line.contains("→")) {
 			line = P_TRANSL.matcher(line).replaceAll("");
 		}
 		
-		Matcher m = P_LINK.matcher(line);
+		if (!IGNORED_SELFLINKS.contains(lang)) {
+			Matcher m = P_LINK.matcher(line);
+			
+			while (m.find()) {
+				String target = m.group(1).trim().replaceFirst("#.*", ""); // ignore URL fragments
+				
+				if (target.equals(title)) {
+					return true;
+				}
+			}
+		}
+		
+		Matcher m = P_BOLD.matcher(line);
 		
 		while (m.find()) {
-			String target = m.group(1).trim().replaceFirst("#.*", ""); // ignore URL fragments
+			String target = m.group(1).trim();
 			
 			if (target.equals(title)) {
 				return true;
