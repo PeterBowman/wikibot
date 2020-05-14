@@ -8,6 +8,7 @@ import java.text.Collator;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,14 +45,7 @@ public final class BoldedSelflinks {
 	
 	private static final List<String> IGNORED_LANGS = List.of("jidysz", "niemiecki");
 	
-	private static final Map<FieldTypes, List<String>> IGNORED_FIELDS = Map.of(
-		FieldTypes.EXAMPLES, Collections.emptyList(),
-		FieldTypes.TRANSLATIONS, Collections.emptyList(),
-		FieldTypes.ETYMOLOGY, Collections.emptyList(),
-		FieldTypes.DERIVED_TERMS, Collections.emptyList(),
-		FieldTypes.NOTES, Collections.emptyList(),
-		FieldTypes.DEFINITIONS, List.of("polski")
-	);
+	private static final Map<FieldTypes, List<String>> IGNORED_FIELDS;
 	
 	// from Linker::formatLinksInComment in Linker.php
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)");
@@ -64,6 +58,16 @@ public final class BoldedSelflinks {
 	private static Wikibot wb;
 	
 	static {
+		Map<FieldTypes, List<String>> ignoredFields = new LinkedHashMap<>();
+		ignoredFields.put(FieldTypes.EXAMPLES, Collections.emptyList());
+		ignoredFields.put(FieldTypes.TRANSLATIONS, Collections.emptyList());
+		ignoredFields.put(FieldTypes.ETYMOLOGY, Collections.emptyList());
+		ignoredFields.put(FieldTypes.DERIVED_TERMS, Collections.emptyList());
+		ignoredFields.put(FieldTypes.NOTES, Collections.emptyList());
+		ignoredFields.put(FieldTypes.DEFINITIONS, List.of("polski"));
+		
+		IGNORED_FIELDS = Collections.unmodifiableMap(ignoredFields);
+		
 		String excludedSelflinks = IGNORED_SELFLINKS.stream().collect(Collectors.joining(", "));
 		String excludedLangs = IGNORED_LANGS.stream().collect(Collectors.joining(", "));
 		
