@@ -62,7 +62,8 @@ public class NKJPGenerator extends HttpServlet {
 			responseWrapper.send();
 			return;
 		} else {
-			address = address.replace("&amp;", "&");
+			// sanitize a bit
+			address = "http://" + address.replace("&amp;", "&").replaceFirst("^https?://", "");
 		}
 		
 		Map<String, String> resultMap = new TreeMap<>((s1, s2) -> Integer.compare(templateParams.indexOf(s1), templateParams.indexOf(s2)));
