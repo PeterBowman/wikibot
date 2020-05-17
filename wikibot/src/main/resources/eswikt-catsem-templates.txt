@@ -41,6 +41,7 @@ biología = Biología
 bioquímica = Bioquímica
 bolos = Bolos
 botánica = Botánica
+cactos = Cactos
 cardiología = Cardiología
 carpintería = Carpintería
 cereales = Cereales
