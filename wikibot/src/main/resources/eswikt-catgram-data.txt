@@ -7,6 +7,15 @@ f sg = de abreviatura
 m pl = de abreviaturas
 f pl = de abreviaturas
 
+ACRONYM
+type = MASCULINE_NOUN
+sing = acrónimo
+plur = acrónimos
+m sg = de acrónimo
+f sg = de acrónimo
+m pl = de acrónimos
+f pl = de acrónimos
+
 ADJECTIVE
 type = MASCULINE_NOUN
 sing = adjetivo
@@ -307,6 +316,15 @@ f sg = infija
 m pl = infijos
 f pl = infijas
 
+INITIALISM
+type = FEMININE_NOUN
+sing = sigla
+plur = siglas
+m sg = de sigla
+f sg = de sigla
+m pl = de siglas
+f pl = de siglas
+
 INTERJECTION
 type = FEMININE_NOUN
 sing = interjección
@@ -480,15 +498,6 @@ m sg = relativo
 f sg = relativa
 m pl = relativos
 f pl = relativas
-
-ACRONYM
-type = FEMININE_NOUN
-sing = sigla
-plur = siglas
-m sg = de sigla
-f sg = de sigla
-m pl = de siglas
-f pl = de siglas
 
 SINGULAR
 type = QUALIFIER

@@ -107,6 +107,7 @@ public final class Catgram {
 	
 	public enum Data {
 		ABBREVIATION,
+		ACRONYM,
 		ADJECTIVE,
 		NUMERAL_ADJECTIVE,
 		POSSESSIVE_ADJECTIVE,
@@ -151,6 +152,7 @@ public final class Catgram {
 		INDEFINITE,
 		INDETERMINATE,
 		INFIX,
+		INITIALISM,
 		INTERJECTION,
 		INTERROGATIVE,
 		INTRANSITIVE,
@@ -173,7 +175,6 @@ public final class Catgram {
 		PROPER,
 		PROVERB,
 		RELATIVE,
-		ACRONYM,
 		SINGULAR,
 		SUFFIX,
 		FLEXIVE_SUFFIX,
