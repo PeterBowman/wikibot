@@ -1,7 +1,7 @@
 <%@ tag description="Sidebar template" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <div id="p-logo" class="portlet" role="banner">
-	<a title="Strona główna" class="mw-wiki-logo" href="/" target="_blank"></a>
+	<a title="Strona główna" class="mw-wiki-logo" href="//toolforge.org" target="_blank"></a>
 </div>
 
 <div id="p-labs" class="portlet" role="navigation">
