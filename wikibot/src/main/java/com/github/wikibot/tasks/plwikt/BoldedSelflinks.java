@@ -90,7 +90,7 @@ public final class BoldedSelflinks {
 			"* języki z wyłączoną obsługą selflinków przez JS – " + excludedSelflinks + ";\n" +
 			"* języki źle współpracujące z mechanizmem selflinków – " + excludedLangs + ";\n" +
 			"* pola – " + excludedFields + ".\n" +
-			"Lista uwzględnia równieź zwykłe pogrubienia (tekst owinięty znakami <code><nowiki>'''</nowiki></code>, " +
+			"Lista uwzględnia również zwykłe pogrubienia (tekst owinięty znakami <code><nowiki>'''</nowiki></code>, " +
 			"niezawierający <code><nowiki>[]{}</nowiki></code>) na powyższych zasadach.\n" +
 			"\n" +
 			"Dane na podstawie zrzutu z bazy danych z dnia $1. Aktualizacja: ~~~~~.";;
