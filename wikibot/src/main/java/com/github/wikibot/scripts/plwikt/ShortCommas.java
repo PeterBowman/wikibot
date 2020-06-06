@@ -1,10 +1,11 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,11 +33,11 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class ShortCommas implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/ShortCommas/";
-	private static final String locationser = location + "ser/";
-	private static final String worklist = location + "worklist.txt";
-	private static final String shorts = location + "shorts.txt";
-	private static final String info = locationser + "info.ser";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ShortCommas/");
+	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Path SHORTS = LOCATION.resolve("shorts.txt");
+	private static final Path INFO = LOCATION_SER.resolve("info.ser");
 	private static Pattern patt;
 	
 	static {
@@ -49,11 +50,9 @@ public final class ShortCommas implements Selectorizable {
 			"skrócenie od", "odczasownikowy od", "zob", "hiszp-pis", "niem-pis", "dokonany od", "niedokonany od"
 		);
 		
-		File f = new File(ShortCommas.shorts);
-		
 		try {
 			Set<String> tempSet = new HashSet<>(shorts);
-			tempSet.addAll(Files.readAllLines(Paths.get(f.getPath())));
+			tempSet.addAll(Files.readAllLines(SHORTS));
 			shorts = new ArrayList<>(tempSet);
 		} catch (IOException e) {
 			System.out.printf("No se ha encontrado el archivo shorts.txt");
@@ -91,7 +90,7 @@ public final class ShortCommas implements Selectorizable {
 			.map(template -> template.replace("Szablon:", ""))
 			.collect(Collectors.toList());
 		
-		Files.write(Paths.get(shorts), templates);
+		Files.write(SHORTS, templates);
 	}
 	
 	public static void getList() throws IOException {
@@ -111,11 +110,11 @@ public final class ShortCommas implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
-		Misc.serialize(pages, info);
+		Misc.serialize(pages, INFO);
 	}
 	
 	public static void stripCommas() throws FileNotFoundException, ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(info);
+		List<PageContainer> pages = Misc.deserialize(INFO);
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
 		
@@ -173,13 +172,13 @@ public final class ShortCommas implements Selectorizable {
 			System.out.printf("%d errores: %s%n", errors.length, errors.toString());
 		}
 		
-		Files.write(Paths.get(worklist), List.of(Misc.makeMultiList(map, "\n\n")));
-		Misc.serialize(pages, info);
+		Files.write(WORKLIST, List.of(Misc.makeMultiList(map, "\n\n")));
+		Misc.serialize(pages, INFO);
 	}
 	
 	public static void edit() throws FileNotFoundException, ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(info);
-		String[] lines = Files.lines(Paths.get(worklist)).toArray(String[]::new);
+		List<PageContainer> pages = Misc.deserialize(INFO);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n\n");
 		List<String> errors = new ArrayList<>();
 		
@@ -209,9 +208,7 @@ public final class ShortCommas implements Selectorizable {
 			System.out.printf("%d errores en: \"%s\"%n", errors.toString());
 		}
 		
-		File f = new File(location + "worklist - done.txt");
-		f.delete();
-		new File(worklist).renameTo(f);
+		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, ClassNotFoundException, IOException {

@@ -3,6 +3,7 @@ package com.github.wikibot.scripts.plwikt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,7 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class ReflexiveVerbRedirects implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/ReflexiveVerbRedirects/";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReflexiveVerbRedirects/");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -85,8 +86,8 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista de faltantes: %d%n", missing.size());
 		
-		Files.write(Paths.get(location + "worklist.txt"), missing);
-		Misc.serialize(missing, location + "missing.ser");
+		Files.write(LOCATION.resolve("worklist.txt"), missing);
+		Misc.serialize(missing, LOCATION.resolve("missing.ser"));
 	}
 	
 	public static void getDuplicates() throws IOException {
@@ -98,11 +99,11 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 			.collect(Collectors.toList());
 		
 		System.out.printf("Tamaño de la lista de duplicados: %d%n", duplicates.size());
-		Files.write(Paths.get(location + "duplicates.txt"), duplicates);
+		Files.write(LOCATION.resolve("duplicates.txt"), duplicates);
 	}
 	
 	public static void edit() throws LoginException, IOException, ClassNotFoundException {
-		File f = new File(location + "missing.ser");
+		File f = LOCATION.resolve("missing.ser").toFile();
 		List<String> list = Misc.deserialize(f);
 		
 		System.out.printf("Tamaño de la lista extraída: %d%n", list.size());

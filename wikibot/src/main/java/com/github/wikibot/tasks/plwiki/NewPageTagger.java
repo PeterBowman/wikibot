@@ -1,9 +1,9 @@
 package com.github.wikibot.tasks.plwiki;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,9 +17,9 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 
 public final class NewPageTagger {
-	private static final String LOCATION = "./data/tasks.plwiki/NewPageTagger/";
-	private static final String LAST_DATE = LOCATION + "last_date.txt";
-	private static final String PICK_DATE = LOCATION + "pick_date.txt";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwiki/NewPageTagger/");
+	private static final Path LAST_DATE = LOCATION.resolve("last_date.txt");
+	private static final Path PICK_DATE = LOCATION.resolve("pick_date.txt");
 	private static final String TAG = "page-recreation";
 	
 	private static Wikibot wb;
@@ -43,15 +43,12 @@ public final class NewPageTagger {
 	}
 	
 	private static String extractTimestamp() throws IOException {
-		File f_last_date = new File(LAST_DATE);
-		File f_pick_date = new File(PICK_DATE);
-		
 		String startTimestamp;
 		
-		if (f_last_date.exists()) {
-			startTimestamp = Files.readAllLines(Paths.get(LAST_DATE)).get(0);
-		} else if (f_pick_date.exists()) {
-			startTimestamp = Files.readAllLines(Paths.get(PICK_DATE)).get(0);
+		if (LAST_DATE.toFile().exists()) {
+			startTimestamp = Files.readAllLines(LAST_DATE).get(0);
+		} else if (PICK_DATE.toFile().exists()) {
+			startTimestamp = Files.readAllLines(PICK_DATE).get(0);
 		} else {
 			throw new UnsupportedOperationException("No timestamp file found.");
 		}
@@ -84,7 +81,7 @@ public final class NewPageTagger {
 	
 	private static void storeTimestamp(OffsetDateTime timestamp) {
 		try {
-			Files.write(Paths.get(LAST_DATE), List.of(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+			Files.write(LAST_DATE, List.of(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		} catch (IOException e) {}
 	}
 }

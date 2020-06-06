@@ -1,9 +1,10 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,10 +26,10 @@ import com.github.wikibot.utils.Misc;
 
 public final class ReplaceEnDash implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/ReplaceEnDash/";
-	private static final String renameList = location + "rename.txt";
-	private static final String editList = location + "edit.txt";
-	private static final String reviewedList = location + "reviewed.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReplaceEnDash/");
+	private static final Path RENAME_LIST = LOCATION.resolve("rename.txt");
+	private static final Path EDIT_LIST = LOCATION.resolve("edit.txt");
+	private static final Path REVIEWED_LIST = LOCATION.resolve("reviewed.txt");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -67,7 +68,7 @@ public final class ReplaceEnDash implements Selectorizable {
 		String[] targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Páginas existentes detectadas: %d%n", targets.length);
-		Files.write(Paths.get(renameList), Arrays.asList(targets));
+		Files.write(RENAME_LIST, Arrays.asList(targets));
 		
 		titles = new ArrayList<>();
 		
@@ -79,11 +80,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		targets = titles.stream().filter(title -> title.contains(" – ")).toArray(String[]::new);
 		
 		System.out.printf("Enlaces encontrados: %d%n", targets.length);
-		Files.write(Paths.get(editList), Arrays.asList(targets));
+		Files.write(EDIT_LIST, Arrays.asList(targets));
 	}
 	
 	public static void getEditTargets() throws IOException {
-		String[] titles = Files.lines(Paths.get(editList)).toArray(String[]::new);
+		String[] titles = Files.lines(EDIT_LIST).toArray(String[]::new);
 		Map<String, Collection<String>> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
@@ -107,11 +108,11 @@ public final class ReplaceEnDash implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
-		Files.write(Paths.get(reviewedList), List.of(Misc.makeMultiList(map, "\n")));
+		Files.write(REVIEWED_LIST, List.of(Misc.makeMultiList(map, "\n")));
 	}
 	
 	public static void rename() throws LoginException, IOException {
-		String[] titles = Files.lines(Paths.get(renameList)).toArray(String[]::new);
+		String[] titles = Files.lines(RENAME_LIST).toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -121,17 +122,11 @@ public final class ReplaceEnDash implements Selectorizable {
 			wb.move(title, newTitle, reason);
 		}
 		
-		File f = new File(location + "rename - done.txt");
-		
-		if (f.exists()) {
-			f.delete();
-		}
-		
-		new File(renameList).renameTo(f);
+		Files.move(RENAME_LIST, RENAME_LIST.resolveSibling("rename_done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
 	public static void edit() throws IOException, LoginException {
-		String[] lines = Files.lines(Paths.get(reviewedList)).toArray(String[]::new);
+		String[] lines = Files.lines(REVIEWED_LIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
 		List<String> errors = new ArrayList<>();
 		
@@ -173,9 +168,7 @@ public final class ReplaceEnDash implements Selectorizable {
 			System.out.printf("%d errores: %s%n", errors.size(), errors.toString());
 		}
 		
-		File f = new File(location + "edit - done.txt");
-		f.delete();
-		new File(editList).renameTo(f);
+		Files.move(EDIT_LIST, EDIT_LIST.resolveSibling("edit_done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public static void main(String[] args) {

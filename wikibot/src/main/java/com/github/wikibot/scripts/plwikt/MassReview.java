@@ -1,7 +1,6 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -11,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +25,10 @@ import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public final class MassReview {
-	private static final String LOCATION = "./data/scripts.plwikt/MassReview/";
-	private static final String F_DATA = LOCATION + "data.tsv";
-	private static final String F_LAST = LOCATION + "last.txt";
-	private static final String F_ERRORS = LOCATION + "errors.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/MassReview/");
+	private static final Path DATA = LOCATION.resolve("data.tsv");
+	private static final Path LAST = LOCATION.resolve("last.txt");
+	private static final Path ERRORS = LOCATION.resolve("errors.txt");
 	
 	public static void main(String[] args) throws Exception {
 		System.out.print("Username: ");
@@ -78,8 +78,8 @@ public final class MassReview {
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
 		System.out.printf("Last reviewed: %s%n", lastReviewed);
 		
-		Files.write(Paths.get(F_ERRORS), errors);
-		Files.write(Paths.get(F_LAST), List.of(lastReviewed));
+		Files.write(ERRORS, errors);
+		Files.write(LAST, List.of(lastReviewed));
 		
 		wb.logout();
 	}
@@ -91,7 +91,7 @@ public final class MassReview {
 		
 		List<String[]> list;
 		
-		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(F_DATA), StandardCharsets.UTF_8))) {
+		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DATA.toFile()), StandardCharsets.UTF_8))) {
 			list = parser.parseAll(reader);
 		}
 		
@@ -100,11 +100,10 @@ public final class MassReview {
 	}
 
 	private static String findLastModifiedEntry(List<String[]> list) throws IOException {
-		File f = new File(F_LAST);
 		String lastReviewed = "";
 		
-		if (f.exists()) {
-			List<String> lines = Files.readAllLines(Paths.get(F_LAST));
+		if (LAST.toFile().exists()) {
+			List<String> lines = Files.readAllLines(LAST);
 			
 			if (!lines.isEmpty()) {
 				String lastEntry = lines.get(0);

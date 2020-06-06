@@ -1,12 +1,12 @@
 package com.github.wikibot.scripts.misc;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,7 +29,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 class RussianAdjectivesInflection implements Selectorizable {
-	private static final String location = "./data/scripts.misc/RussianAdjectivesInflection/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/RussianAdjectivesInflection/");
 	private static final String RU_CATEGORY = "Język rosyjski - przymiotniki";
 	private static final String RU_LANG = "język rosyjski";
 	private static Wikibot wb;
@@ -78,7 +78,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d\n", list.size());
-		Files.write(Paths.get(location + "adjetivos.txt"), list);
+		Files.write(LOCATION.resolve("adjetivos.txt"), list);
 	}
 	
 	public static void analyze_adj(boolean edit) throws IOException, LoginException {
@@ -86,7 +86,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		
 		// open files
 		try {
-			pw_analized = new PrintWriter(new File(location + "analizados.txt"));
+			pw_analized = new PrintWriter(LOCATION.resolve("analizados.txt").toFile());
 		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
 			throw e;
@@ -99,7 +99,7 @@ class RussianAdjectivesInflection implements Selectorizable {
 		int counter = 0;
 		boolean first = true;
 		
-	    try (pw_analized; BufferedReader br = new BufferedReader(new FileReader(location + "adjetivos.txt"));) {
+	    try (pw_analized; BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("adjetivos.txt").toFile()));) {
 	        String line = null;
 
 	        while ((line = br.readLine()) != null) {

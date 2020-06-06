@@ -1,9 +1,10 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -33,7 +34,7 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
 public final class MorfeoDatabase {
-	private static final String LOCATION = "./data/tasks.plwikt/MorfeoDatabase/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MorfeoDatabase/");
 	private static final Properties defaultSQLProperties = new Properties();
 	
 	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.eqiad.wmflabs:3306/plwiktionary_p";
@@ -242,13 +243,13 @@ public final class MorfeoDatabase {
 	private static Properties prepareSQLProperties() throws IOException {
 		Properties properties = new Properties(defaultSQLProperties);
 		Pattern patt = Pattern.compile("(.+)='(.+)'");
-		File f = new File("./replica.my.cnf");
+		Path cnf = Paths.get("./replica.my.cnf");
 		
-		if (!f.exists()) {
-			f = new File(LOCATION + ".my.cnf");
+		if (!cnf.toFile().exists()) {
+			cnf = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(f.toPath())
+		Files.lines(cnf)
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));

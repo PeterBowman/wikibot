@@ -3,6 +3,7 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -45,9 +46,9 @@ public class PolishGerundsList implements Selectorizable {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
-	private static final String location = "./data/tasks.plwikt/PolishGerundsList/";
-	private static final String locationser = location + "ser/";
-	private static final String location_old = MissingPolishGerunds.location;
+	private static final Path location = Paths.get("./data/tasks.plwikt/PolishGerundsList/");
+	private static final Path locationser = location.resolve("ser/");
+	private static final Path location_old = MissingPolishGerunds.LOCATION;
 	private static final String wikipage = "Wikipedysta:PBbot/rzeczowniki odczasownikowe";
 	
 	static {
@@ -193,15 +194,15 @@ public class PolishGerundsList implements Selectorizable {
 		});
 		
 		System.out.printf("Gerundios: %d, sustantivos: %d%n", gers.size(), substs.size());
-		Misc.serialize(gers, locationser + "gers.ser");
-		Misc.serialize(substs, locationser + "substs.ser");
+		Misc.serialize(gers, locationser.resolve("gers.ser"));
+		Misc.serialize(substs, locationser.resolve("substs.ser"));
 	}
 	
 	public static void writeFormat() throws IOException, LoginException {
 		List<String[]> list;
 		
 		try {
-			list = Misc.deserialize(locationser + "sin formato.ser");
+			list = Misc.deserialize(locationser.resolve("sin formato.ser"));
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 			return;
@@ -241,12 +242,12 @@ public class PolishGerundsList implements Selectorizable {
 		
 		System.out.printf("Gerundios detectados por transclusión: %d\n", intersection.length);
 		
-		Map<String, String> list = Misc.deserialize(location_old + "list.ser");
+		Map<String, String> list = Misc.deserialize(location_old.resolve("list.ser"));
 		
 		System.out.printf("Gerundios extraídos de plantillas de conjugación: %d\n", list.size());
 		
-		Set<String> gers = Misc.deserialize(locationser + "gers.ser");
-		Set<String> substs = Misc.deserialize(locationser + "substs.ser");
+		Set<String> gers = Misc.deserialize(locationser.resolve("gers.ser"));
+		Set<String> substs = Misc.deserialize(locationser.resolve("substs.ser"));
 		Set<String> gerunds = new HashSet<>(list.keySet());
 		Collections.addAll(gerunds, intersection);
 		
@@ -311,36 +312,36 @@ public class PolishGerundsList implements Selectorizable {
 			gerunds.size() - pages.size(), listOnlyDefinitions.size(), listOnlyTemplates.size(), listErrors.size(), listNoDictEntry.size()
 		);
 		
-		Misc.serialize(listOnlyDefinitions, locationser + "sin plantilla.ser");
-		Misc.serialize(listOnlyTemplates, locationser + "sin definición.ser");
-		Misc.serialize(listNoDictEntry, locationser + "sin entrada.ser");
+		Misc.serialize(listOnlyDefinitions, locationser.resolve("sin plantilla.ser"));
+		Misc.serialize(listOnlyTemplates, locationser.resolve("sin definición.ser"));
+		Misc.serialize(listNoDictEntry, locationser.resolve("sin entrada.ser"));
 		
 		List<String> listOnlyDefinitions2 = new ArrayList<>(listOnlyDefinitions.stream()
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
 			.collect(Collectors.toList()));
 		
-		Files.write(Paths.get(location + "sin plantilla.txt"), listOnlyDefinitions2);
-		Files.write(Paths.get(location + "sin definición.txt"), listOnlyTemplates);
-		Files.write(Paths.get(location + "errores.txt"), listErrors);
-		Files.write(Paths.get(location + "sin entrada.txt"), listNoDictEntry);
+		Files.write(location.resolve("sin plantilla.txt"), listOnlyDefinitions2);
+		Files.write(location.resolve("sin definición.txt"), listOnlyTemplates);
+		Files.write(location.resolve("errores.txt"), listErrors);
+		Files.write(location.resolve("sin entrada.txt"), listNoDictEntry);
 		
 		Misc.serialize(String.format(
 			"Analizowano %s %s z tabelką odmiany oraz %s %s.",
 			numberFormatPL.format(list.size()), pluralPL.pl(list.size(), "czasownik"),
 			numberFormatPL.format(gerunds.size()), pluralPL.pl(gerunds.size(), "rzeczownik odczasownikowy")
-		), locationser + "stats.ser");
+		), locationser.resolve("stats.ser"));
 	}
 	
 	public static void writeLists() throws IOException, LoginException, ClassNotFoundException {
-		Map<String, String> list = Misc.deserialize(location_old + "list.ser");
-		List<String> listOnlyDefinitions = Misc.deserialize(locationser + "sin plantilla.ser");
-		List<String> listOnlyTemplates = Misc.deserialize(locationser + "sin definición.ser");
-		List<String> listNoDictEntry = Misc.deserialize(locationser + "sin entrada.ser");
+		Map<String, String> list = Misc.deserialize(location_old.resolve("list.ser"));
+		List<String> listOnlyDefinitions = Misc.deserialize(locationser.resolve("sin plantilla.ser"));
+		List<String> listOnlyTemplates = Misc.deserialize(locationser.resolve("sin definición.ser"));
+		List<String> listNoDictEntry = Misc.deserialize(locationser.resolve("sin entrada.ser"));
 		
 		// Page creation
 		
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(wikipage);
-		String stats = Misc.deserialize(locationser + "stats.ser");
+		String stats = Misc.deserialize(locationser.resolve("stats.ser"));
 		page.setIntro(stats + " Aktualizacja: ~~~~~.");
 		
 		// Only definition
@@ -384,8 +385,8 @@ public class PolishGerundsList implements Selectorizable {
 		com.github.wikibot.parsing.Section possibleErrors = com.github.wikibot.parsing.Section.create("możliwe błędy", 3);
 		
 		tempList = Stream.of(
-				Files.readAllLines(Paths.get(location_old + "errores.txt")),
-				Files.readAllLines(Paths.get(location + "errores.txt"))
+				Files.readAllLines(location_old.resolve("errores.txt")),
+				Files.readAllLines(location.resolve("errores.txt"))
 			)
 			.flatMap(Collection::stream)
 			.map(line -> String.format("# [[%s]] – %s", (Object[])line.split(" - ")))
@@ -398,7 +399,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		com.github.wikibot.parsing.Section reflexiveVerbs = com.github.wikibot.parsing.Section.create("czasowniki zwrotne", 3);
 		
-		tempList = Files.lines(Paths.get(location_old + "reflexivos.txt"))
+		tempList = Files.lines(location_old.resolve("reflexivos.txt"))
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
 			.collect(Collectors.toList());
 		

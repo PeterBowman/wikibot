@@ -1,9 +1,9 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class KurdishTranslations implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/KurdishTranslations/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/KurdishTranslations/");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -45,7 +45,7 @@ public final class KurdishTranslations implements Selectorizable {
 	public static void getList() throws IOException {
 		List<PageContainer> pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
 		Pattern patt = Pattern.compile("\\* ?kurdyjski:? ?[^\\n]*");
-		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("worklist.txt").toFile());
 		int found = 0;
 		int errors = 0;
 		
@@ -76,7 +76,7 @@ public final class KurdishTranslations implements Selectorizable {
 	
 	public static void edit() throws IOException, LoginException {
 		final String page = "Wikipedysta:PBbot/tłumaczenia na kurdyjski";
-		List<String> lines = Files.readAllLines(Paths.get(location + "worklist.txt"));
+		List<String> lines = Files.readAllLines(LOCATION.resolve("worklist.txt"));
 		String text = String.join("\n", lines);
 		
 		wb.edit(page, text, "tworzenie listy", false, false, -2, null);

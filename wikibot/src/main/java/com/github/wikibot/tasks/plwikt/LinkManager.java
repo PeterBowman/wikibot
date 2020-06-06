@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -50,7 +52,7 @@ public final class LinkManager implements Selectorizable {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
-	private static final String location = "./data/tasks.plwikt/LinkManager/";
+	private static final Path location = Paths.get("./data/tasks.plwikt/LinkManager/");
 	private static final String mainpage = "Wikipedysta:PBbot/linkowanie";
 	private static final int requestsectionnumber = 2;
 	private static final int worklistsectionnumber = 3;
@@ -60,11 +62,11 @@ public final class LinkManager implements Selectorizable {
 	private static final String worklistintro = "* Zatwierdzone: \n";
 	private static final String reportheader = "== Raport ==\n";
 	
-	private static final File f_data = new File(location + "data.ser");
-	private static final File f_codes = new File(location + "codes.ser");
-	private static final File f_timestamps = new File(location + "timestamps.ser");
-	private static final File f_stats = new File(location + "stats.ser");
-	private static final File f_request = new File(location + "request.ser");
+	private static final File f_data = location.resolve("data.ser").toFile();
+	private static final File f_codes = location.resolve("codes.ser").toFile();
+	private static final File f_timestamps = location.resolve("timestamps.ser").toFile();
+	private static final File f_stats = location.resolve("stats.ser").toFile();
+	private static final File f_request = location.resolve("request.ser").toFile();
 	
 	private static final int assertbatch = 5;
 	private static final int pagecap = 100;

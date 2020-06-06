@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.OffsetDateTime;
@@ -49,7 +50,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class InconsistentHeaderTitles {
-	private static final String LOCATION = "./data/tasks.plwikt/InconsistentHeaderTitles/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/InconsistentHeaderTitles/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nagłówki";
 	private static final String PAGE_INTRO;
 	
@@ -121,13 +122,13 @@ public final class InconsistentHeaderTitles {
 			return;
 		}
 		
-		File fHash = new File(LOCATION + "hash.ser");
+		Path hash = LOCATION.resolve("hash.ser");
 		
-		if (fHash.exists() && (int) Misc.deserialize(fHash) == map.hashCode()) {
+		if (hash.toFile().exists() && (int) Misc.deserialize(hash) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
-			Misc.serialize(map.hashCode(), fHash);
+			Misc.serialize(map.hashCode(), hash);
 			
 			String[] arr = map.values().stream()
 				.flatMap(Collection::stream)
@@ -135,12 +136,12 @@ public final class InconsistentHeaderTitles {
 				.distinct()
 				.toArray(String[]::new);
 			
-			Misc.serialize(arr, LOCATION + "stored_titles.ser");
+			Misc.serialize(arr, LOCATION.resolve("stored_titles.ser"));
 			System.out.printf("%d titles stored.%n", arr.length);
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage();
-		Files.write(Paths.get(LOCATION + "page.txt"), List.of(page.toString()));
+		Files.write(LOCATION.resolve("page.txt"), List.of(page.toString()));
 		
 		wb.setMarkBot(false);
 		wb.edit(page.getTitle(), page.toString(), "aktualizacja");
@@ -214,7 +215,7 @@ public final class InconsistentHeaderTitles {
 		OffsetDateTime earliest;
 		
 		try {
-			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
+			String timestamp = Files.readAllLines(LOCATION.resolve("timestamp.txt")).get(0);
 			earliest = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
@@ -235,7 +236,7 @@ public final class InconsistentHeaderTitles {
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+		Files.write(LOCATION.resolve("timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
 			revs.stream().map(Wiki.Revision::getTitle),
@@ -249,7 +250,7 @@ public final class InconsistentHeaderTitles {
 		String[] titles;
 		
 		try {
-			titles = Misc.deserialize(LOCATION + "stored_titles.ser");
+			titles = Misc.deserialize(LOCATION.resolve("stored_titles.ser"));
 			System.out.printf("%d titles extracted.%n", titles.length);
 		} catch (ClassNotFoundException | IOException e) {
 			titles = new String[]{};

@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -30,8 +32,8 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/BeXoldMissingIntroTemplates/";
-	private static final String locationser = location + "ser/";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/BeXoldMissingIntroTemplates/");
+	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -58,7 +60,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 				PageContainer::getTitle,
 				PageContainer::getTimestamp
 			));
-		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("worklist.txt").toFile());
 		
 		for (PageContainer page : pages) {
 			String content = Optional.of(Page.wrap(page))
@@ -80,11 +82,11 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		}
 		
 		pw.close();
-		Misc.serialize(info, locationser + "info.ser");
+		Misc.serialize(info, LOCATION_SER.resolve("info.ser"));
 	}
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
 		Map<String, String> pages = new LinkedHashMap<>();
 		String line = null;
 		String title = null;
@@ -111,14 +113,14 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		if (pages.size() == 0)
 			return;
 		
-		Misc.serialize(pages, locationser + "preview.ser");
+		Misc.serialize(pages, LOCATION_SER + "preview.ser");
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		Map<String, String> pages = new LinkedHashMap<>();
 		Map<String, OffsetDateTime> info = null;
-		File f1 = new File(locationser + "preview.ser");
-		File f2 = new File(locationser + "info.ser");
+		File f1 = LOCATION_SER.resolve("preview.ser").toFile();
+		File f2 = LOCATION_SER.resolve("info.ser").toFile();
 		
 		pages = Misc.deserialize(f1);
 		info = Misc.deserialize(f2);

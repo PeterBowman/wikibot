@@ -2,6 +2,8 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +33,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class RefreshWantedArticles {
-	private static final String LOCATION = "./data/tasks.plwikt/RefreshWantedArticles/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/RefreshWantedArticles/");
 	private static final String TARGET_PAGE = "Szablon:Potrzebne";
 	private static final String REFILL_PAGE = "Wikipedysta:AlkamidBot/listy/Najbardziej potrzebne";
 	
@@ -160,7 +162,7 @@ public final class RefreshWantedArticles {
 		Set<String> storeSet;
 		
 		try {
-			storeSet = Misc.deserialize(LOCATION + fileName);
+			storeSet = Misc.deserialize(LOCATION.resolve(fileName));
 		} catch (ClassNotFoundException | FileNotFoundException e) {
 			storeSet = new HashSet<>();
 		}
@@ -168,7 +170,7 @@ public final class RefreshWantedArticles {
 		storeSet.addAll(visible);
 		storeSet.addAll(hidden);
 		
-		Misc.serialize(storeSet, LOCATION + fileName);
+		Misc.serialize(storeSet, LOCATION.resolve(fileName));
 		
 		return storeSet;
 	}

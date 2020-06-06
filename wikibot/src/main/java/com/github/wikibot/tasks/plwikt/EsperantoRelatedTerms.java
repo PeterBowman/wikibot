@@ -1,9 +1,9 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class EsperantoRelatedTerms {
-	private static final String LOCATION = "./data/tasks.plwikt/EsperantoRelatedTerms/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/EsperantoRelatedTerms/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto";
 	private static final String TARGET_PAGE_EXCLUDED = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto/wykluczenia";
 	
@@ -67,7 +67,7 @@ public final class EsperantoRelatedTerms {
 			return;
 		}
 		
-		Files.write(Paths.get(LOCATION + "output.txt"), List.of(sb.toString()));
+		Files.write(LOCATION.resolve("output.txt"), List.of(sb.toString()));
 		editPage(sb.toString());
 	}
 	
@@ -214,16 +214,16 @@ public final class EsperantoRelatedTerms {
 		int newHashCode = items.hashCode();
 		int storedHashCode;
 		
-		File fHash = new File(LOCATION + "hash.ser");
+		Path hash = LOCATION.resolve("hash.ser");
 		
 		try {
-			storedHashCode = Misc.deserialize(fHash);
+			storedHashCode = Misc.deserialize(hash);
 		} catch (ClassNotFoundException | IOException e) {
 			storedHashCode = 0;
 		}
 		
 		if (storedHashCode != newHashCode) {
-			Misc.serialize(newHashCode, fHash);
+			Misc.serialize(newHashCode, hash);
 			return true;
 		} else {
 			return false;

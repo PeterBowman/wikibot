@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -57,7 +58,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class CitationTypography {
-	private static final String LOCATION = "./data/tasks.plwikt/CitationTypography/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/CitationTypography/");
 	
 	private static final Pattern P_REFERENCE;
 	private static final Pattern P_OCCURENCE;
@@ -211,7 +212,7 @@ public final class CitationTypography {
 		OffsetDateTime earliest;
 		
 		try {
-			String timestamp = Files.readAllLines(Paths.get(LOCATION + "timestamp.txt")).get(0);
+			String timestamp = Files.readAllLines(LOCATION.resolve("timestamp.txt")).get(0);
 			earliest = OffsetDateTime.parse(timestamp);
 		} catch (Exception e) {
 			System.out.println("Setting new timestamp reference (-24h).");
@@ -232,7 +233,7 @@ public final class CitationTypography {
 		List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 		
 		// store current timestamp for the next iteration
-		Files.write(Paths.get(LOCATION + "timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
+		Files.write(LOCATION.resolve("timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
 		
 		return Stream.concat(
 			revs.stream().map(Wiki.Revision::getTitle),
@@ -363,7 +364,7 @@ public final class CitationTypography {
 			throws IOException {
 		if (dbg) {
 			try {
-				Map<String, Integer> stored = Misc.deserialize(LOCATION + "title_to_page_id.ser");
+				Map<String, Integer> stored = Misc.deserialize(LOCATION.resolve("title_to_page_id.ser"));
 				titleToPageId.putAll(stored);
 				titles.removeIf(title -> stored.containsKey(title));
 			} catch (ClassNotFoundException | IOException e) {
@@ -392,8 +393,8 @@ public final class CitationTypography {
 	
 	private static void serializeResults(List<Entry> entries, Map<String, Integer> titleToPageId)
 			throws FileNotFoundException, IOException {
-		Misc.serialize(entries, LOCATION + "entries.ser");
-		Misc.serialize(titleToPageId, LOCATION + "title_to_page_id.ser");
+		Misc.serialize(entries, LOCATION.resolve("entries.ser"));
+		Misc.serialize(titleToPageId, LOCATION.resolve("title_to_page_id.ser"));
 		
 		Map<String, String> map = entries.stream()
 			.collect(Collectors.toMap(
@@ -403,19 +404,19 @@ public final class CitationTypography {
 				TreeMap::new
 			));
 		
-		Files.write(Paths.get(LOCATION + "diffs.txt"), List.of(Misc.makeList(map)));
+		Files.write(LOCATION.resolve("diffs.txt"), List.of(Misc.makeList(map)));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
 		Properties properties = new Properties(defaultSQLProperties);
 		Pattern patt = Pattern.compile("(.+)='(.+)'");
-		File f = new File("./replica.my.cnf");
+		Path cnf = Paths.get("./replica.my.cnf");
 		
-		if (!f.exists()) {
-			f = new File(LOCATION + ".my.cnf");
+		if (!cnf.toFile().exists()) {
+			cnf = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(f.toPath())
+		Files.lines(cnf)
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));

@@ -1,10 +1,11 @@
 package com.github.wikibot.scripts;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,31 +25,31 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class Replace implements Selectorizable {
 	private static Wikibot wb;
-	private static final String domain = "pl.wiktionary.org";
-	private static final String location = "./data/scripts/replace/";
-	private static final String f_titles = location + "titles.txt";
-	private static final String f_worklist = location + "worklist.txt";
-	private static final String f_target = location + "target.ser";
-	private static final String f_replacement = location + "replacement.ser";
-	private static final String f_info = location + "info.ser";
-	private static final String summaryFormat;
+	private static final String DOMAIN = "pl.wiktionary.org";
+	private static final Path LOCATION = Paths.get("./data/scripts/replace/");
+	private static final Path TITLES = LOCATION.resolve("titles.txt");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Path TARGET = LOCATION.resolve("target.ser");
+	private static final Path REPLACEMENT = LOCATION.resolve("replacement.ser");
+	private static final Path INFO = LOCATION.resolve("info.ser");
+	private static final String SUMMARY_FORMAT;
 	
 	static {
-		if (domain.startsWith("pl.")) {
-			summaryFormat = "„%s” → „%s”"; 
+		if (DOMAIN.startsWith("pl.")) {
+			SUMMARY_FORMAT = "„%s” → „%s”"; 
 		} else {
-			summaryFormat = "«%s» → «%s»";
+			SUMMARY_FORMAT = "«%s» → «%s»";
 		}
 	}
 
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
-				wb = Login.createSession(domain);
+				wb = Login.createSession(DOMAIN);
 				getDiffs();
 				break;
 			case 'e':
-				wb = Login.createSession(domain);
+				wb = Login.createSession(DOMAIN);
 				edit();
 				break;
 			default:
@@ -59,7 +60,7 @@ public final class Replace implements Selectorizable {
 	public void getDiffs() throws FileNotFoundException, IOException, ClassNotFoundException {
 		String target = "prettytable";
 		String replacement = "wikitable";
-		List<String> titles = Files.lines(Paths.get(f_titles)).collect(Collectors.toList());
+		List<String> titles = Files.lines(TITLES).collect(Collectors.toList());
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
@@ -78,7 +79,7 @@ public final class Replace implements Selectorizable {
 				page -> replace(page.getText(), target, replacement)
 			));
 		
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(map)));
+		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 		
 		System.out.printf("Tamaño final: %d%n", map.size());
 		
@@ -90,8 +91,8 @@ public final class Replace implements Selectorizable {
 			System.out.printf("No se ha encontrado la secuencia deseada en %d entradas: %s%n", found.size(), found.toString());
 		}
 		
-		Misc.serialize(target, f_target);
-		Misc.serialize(replacement, f_replacement);
+		Misc.serialize(target, TARGET);
+		Misc.serialize(replacement, REPLACEMENT);
 		
 		Map<String, OffsetDateTime> timestamps = pages.stream()
 			.collect(Collectors.toMap(
@@ -99,14 +100,14 @@ public final class Replace implements Selectorizable {
 				PageContainer::getTimestamp
 			));
 		
-		Misc.serialize(timestamps, f_info);
+		Misc.serialize(timestamps, INFO);
 	}
 	
 	public void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String target = Misc.deserialize(f_target);
-		String replacement = Misc.deserialize(f_replacement);
-		Map<String, String> map = Misc.readList(Files.lines(Paths.get(f_worklist)).toArray(String[]::new));
-		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_info);
+		String target = Misc.deserialize(TARGET);
+		String replacement = Misc.deserialize(REPLACEMENT);
+		Map<String, String> map = Misc.readList(Files.lines(WORKLIST).toArray(String[]::new));
+		Map<String, OffsetDateTime> timestamps = Misc.deserialize(INFO);
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
@@ -115,7 +116,7 @@ public final class Replace implements Selectorizable {
 		wb.setThrottle(3000);
 		List<String> errors = new ArrayList<>();
 		
-		String summary = String.format(summaryFormat, target, replacement);
+		String summary = String.format(SUMMARY_FORMAT, target, replacement);
 		//String summary = "usunięcie znaków soft hyphen";
 		
 		for (Entry<String, String> entry : map.entrySet()) {
@@ -135,9 +136,7 @@ public final class Replace implements Selectorizable {
 			System.out.printf("%d errores en: %s%n", errors.size(), errors.toString());
 		}
 		
-		File f = new File(location + "worklist - done.txt");
-		f.delete();
-		(new File(f_worklist)).renameTo(f);
+		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
 	private String replace(String s, String oldstring, String newstring) {

@@ -1,10 +1,11 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public class MissingRefsOnPlwiki {
-	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingRefsOnPlwiki/");
 	private static final Map<String, List<String>> TARGET_TEMPLATES = new LinkedHashMap<String, List<String>>();
 
 	private static Wikibot plwikt;
@@ -377,24 +378,24 @@ public class MissingRefsOnPlwiki {
 	}
 
 	private static void storeData(List<Entry> entries, Map<String, Integer> stats) throws IOException {
-		File fEntries = new File(LOCATION + "entries.xml");
-		File fStats = new File(LOCATION + "stats.xml");
-		File fTemplates = new File(LOCATION + "templates.xml");
-		File fTimestamp = new File(LOCATION + "timestamp.xml");
-		File fCtrl = new File(LOCATION + "UPDATED");
+		Path fEntries = LOCATION.resolve("entries.xml");
+		Path fStats = LOCATION.resolve("stats.xml");
+		Path fTemplates = LOCATION.resolve("templates.xml");
+		Path fTimestamp = LOCATION.resolve("timestamp.xml");
+		Path fCtrl = LOCATION.resolve("UPDATED");
 
 		XStream xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries))) {
+		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries.toFile()))) {
 			xstream.toXML(entries, bos);
 		}
 
-		Files.write(fStats.toPath(), List.of(xstream.toXML(stats)));
-		Files.write(fTemplates.toPath(), List.of(xstream.toXML(TARGET_TEMPLATES)));
-		Files.write(fTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
+		Files.write(fStats, List.of(xstream.toXML(stats)));
+		Files.write(fTemplates, List.of(xstream.toXML(TARGET_TEMPLATES)));
+		Files.write(fTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
 
-		fCtrl.delete();
+		fCtrl.toFile().delete();
 	}
 
 	// keep in sync with com.github.wikibot.webapp.MissingPlwiktRefsOnPlwiki

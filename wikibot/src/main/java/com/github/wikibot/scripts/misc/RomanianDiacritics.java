@@ -1,10 +1,10 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class RomanianDiacritics implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/RomanianDiacritics/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/RomanianDiacritics/");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -46,8 +46,8 @@ public final class RomanianDiacritics implements Selectorizable {
 		List<String> list = new ArrayList<>(300);
 		
 		try {
-			pw_a = new PrintWriter(new File(location + "list_a.txt"));
-			pw_b = new PrintWriter(new File(location + "list_b.txt"));
+			pw_a = new PrintWriter(LOCATION.resolve("list_a.txt").toFile());
+			pw_b = new PrintWriter(LOCATION.resolve("list_b.txt").toFile());
 		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
 			return;
@@ -104,7 +104,7 @@ public final class RomanianDiacritics implements Selectorizable {
 			}
 		}
 		
-		Files.write(Paths.get(location + "work_list.txt"), out);
+		Files.write(LOCATION.resolve("work_list.txt"), out);
 		
 		System.out.println("Analizados: " + testcount);
 	}

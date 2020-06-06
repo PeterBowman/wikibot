@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -38,7 +40,7 @@ import com.thoughtworks.xstream.io.xml.StaxDriver;
 public final class MissingPolishExamples {
 	private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
 	private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
-	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishExamples/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 	
 	private static Wikibot wb;
 	
@@ -129,22 +131,22 @@ public final class MissingPolishExamples {
 	}
 	
 	private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
-		File fEntries = new File(LOCATION + "entries.xml");
-		File fDumpTimestamp = new File(LOCATION + "dump-timestamp.xml");
-		File fBotTimestamp = new File(LOCATION + "bot-timestamp.xml");
-		File fCtrl = new File(LOCATION + "UPDATED");
+		Path fEntries = LOCATION.resolve("entries.xml");
+		Path fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
+		Path fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
+		Path fCtrl = LOCATION.resolve("UPDATED");
 
 		XStream xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries))) {
+		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries.toFile()))) {
 			xstream.toXML(list, bos);
 		}
 
-		Files.write(fDumpTimestamp.toPath(), List.of(xstream.toXML(timestamp)));
-		Files.write(fBotTimestamp.toPath(), List.of(xstream.toXML(OffsetDateTime.now())));
+		Files.write(fDumpTimestamp, List.of(xstream.toXML(timestamp)));
+		Files.write(fBotTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
 		
-		fCtrl.delete();
+		fCtrl.toFile().delete();
 	}
 	
 	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples

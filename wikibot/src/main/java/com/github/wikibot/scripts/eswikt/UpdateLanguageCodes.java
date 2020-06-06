@@ -13,6 +13,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,9 +41,9 @@ import com.univocity.parsers.tsv.TsvWriter;
 import com.univocity.parsers.tsv.TsvWriterSettings;
 
 public final class UpdateLanguageCodes {
-	private static final String LOCATION = "./data/scripts.eswikt/UpdateLanguageCodes/";
-	private static final String F_LANGS = LOCATION + "eswikt.langs.txt";
-	private static final String F_INTRO = LOCATION + "intro.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.eswikt/UpdateLanguageCodes/");
+	private static final Path LANGS = LOCATION.resolve("eswikt.langs.txt");
+	private static final Path INTRO = LOCATION.resolve("intro.txt");
 	private static final String CATEGORY = "Categoría:Plantillas de idiomas";
 	private static final String TARGET_PAGE = "Apéndice:Códigos de idioma";
 
@@ -84,7 +85,7 @@ public final class UpdateLanguageCodes {
 	}
 
 	private static Map<String, String> extractStoredLangs() throws FileNotFoundException, IOException {
-		File f_langs = new File(F_LANGS);
+		File f_langs = LANGS.toFile();
 		List<String[]> list;
 		TsvParserSettings settings = new TsvParserSettings();
 		TsvParser parser = new TsvParser(settings);
@@ -179,7 +180,7 @@ public final class UpdateLanguageCodes {
 		int index = text.indexOf("<!--");
 		
 		if (index == -1) {
-			text = Files.lines(Paths.get(F_INTRO)).collect(Collectors.joining("\n"));
+			text = Files.lines(INTRO).collect(Collectors.joining("\n"));
 			return text + "\n" + table;
 		}
 		
@@ -190,7 +191,7 @@ public final class UpdateLanguageCodes {
 		Matcher m = Pattern.compile("<span class=\"update-timestamp\">(.+?)</span>").matcher(intro);
 		
 		if (!m.find()) {
-			text = Files.lines(Paths.get(F_INTRO)).collect(Collectors.joining("\n"));
+			text = Files.lines(INTRO).collect(Collectors.joining("\n"));
 			return text + "\n" + table;
 		}
 		
@@ -228,7 +229,7 @@ public final class UpdateLanguageCodes {
 	
 	private static void storeLangs(Map<String, String> map) throws FileNotFoundException, UnsupportedEncodingException {
 		TsvWriterSettings settings = new TsvWriterSettings();
-		Writer outputWriter = new OutputStreamWriter(new FileOutputStream(new File(F_LANGS)), StandardCharsets.UTF_8);
+		Writer outputWriter = new OutputStreamWriter(new FileOutputStream(LANGS.toFile()), StandardCharsets.UTF_8);
 		TsvWriter writer = new TsvWriter(outputWriter, settings);
 		String[][] rows = map.keySet().stream().map(key -> new String[]{key, map.get(key)}).toArray(String[][]::new);
 		writer.writeRowsAndClose(rows);

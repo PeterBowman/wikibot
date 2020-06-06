@@ -2,6 +2,7 @@ package com.github.wikibot.scripts;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +13,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import com.github.wikibot.main.Wikibot;
 
 public final class UpdateInterwikiPrefixes {
-	private static final String DATA = "./data/interwiki.txt";
+	private static final Path DATA = Paths.get("./data/interwiki.txt");
 	
 	public static void main(String[] args) throws IOException {
 		Wikibot wb = Wikibot.newSession("meta.wikimedia.org");
@@ -23,7 +24,7 @@ public final class UpdateInterwikiPrefixes {
 			return;
 		}
 		
-		List<String> lines = Files.readAllLines(Paths.get(DATA));
+		List<String> lines = Files.readAllLines(DATA);
 		
 		if (String.join("\n", lines).trim().equals(text)) {
 			return;
@@ -35,6 +36,6 @@ public final class UpdateInterwikiPrefixes {
 			System.out.printf("Differences: %s%n", coll);
 		}
 		
-		Files.write(Paths.get(DATA), List.of(text));
+		Files.write(DATA, List.of(text));
 	}
 }

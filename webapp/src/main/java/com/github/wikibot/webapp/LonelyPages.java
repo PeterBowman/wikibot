@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -32,13 +34,13 @@ import org.json.JSONObject;
 public class LonelyPages extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
+	private static final Path LOCATION = Paths.get("./data/tasks.eswikt/LonelyPages/");
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/eswikt-lonely-pages.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
-	private static final File fData = new File(LOCATION + "data.ser");
-	private static final File fCtrl = new File(LOCATION + "UPDATED");
-	private static final File fCal = new File(LOCATION + "timestamp.ser");
+	private static final File fData = LOCATION.resolve("data.ser").toFile();
+	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
+	private static final File fCal = LOCATION.resolve("timestamp.ser").toFile();
 	
 	private static final List<String> storage = new ArrayList<>(0);
 	private static final Calendar calendar = Calendar.getInstance();

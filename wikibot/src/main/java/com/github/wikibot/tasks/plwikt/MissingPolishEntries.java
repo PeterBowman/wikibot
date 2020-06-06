@@ -2,6 +2,7 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -27,8 +28,8 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class MissingPolishEntries {
-	private static final String DUMPS_PATH = "./data/dumps/";
-	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishEntries/";
+	private static final Path DUMPS_PATH = Paths.get("./data/dumps/");
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEntries/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/brakujące polskie";
 	
 	private static final String PAGE_INTRO;
@@ -69,9 +70,9 @@ public class MissingPolishEntries {
 		Collections.sort(titles, COLLATOR_PL);
 		
 		int hash = titles.hashCode();
-		File fHash = new File(LOCATION + "hash.ser");
+		Path fHash = LOCATION.resolve("hash.ser");
 		
-		if (fHash.exists() && (int) Misc.deserialize(fHash) == hash) {
+		if (fHash.toFile().exists() && (int) Misc.deserialize(fHash) == hash) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
@@ -133,7 +134,7 @@ public class MissingPolishEntries {
 		Set<String> database = new HashSet<>(350000);
 		String dumpFile = getLatestDumpFile();
 		
-		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(DUMPS_PATH + dumpFile);
+		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(DUMPS_PATH.resolve(dumpFile));
 		morfeuszLookup.setCompression(ALLOW_COMPRESSION);
 		
 		MutableInt count = new MutableInt();
@@ -160,7 +161,7 @@ public class MissingPolishEntries {
 			regex += "\\.gz";
 		}
 		
-		File[] files = Paths.get(DUMPS_PATH).toFile().listFiles(file -> file.isFile() && file.getName().matches(regex));
+		File[] files = DUMPS_PATH.toFile().listFiles(file -> file.isFile() && file.getName().matches(regex));
 		
 		if (files.length == 0) {
 			return null;

@@ -1,8 +1,9 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +23,7 @@ public final class SJPTemplates {
 	private static Wikibot wb;
 	
 	private static final int SLEEP_MS = 2500;
-	private static final String LOCATION = "./data/tasks.plwikt/SJPTemplates/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/SJPTemplates/");
 	private static final String WIKI_PAGE = "Wikipedysta:PBbot/sjp.pl";
 	
 	public static void main(String[] args) throws Exception {
@@ -75,23 +76,23 @@ public final class SJPTemplates {
 		
 		if (!errors.isEmpty()) {
 			System.out.printf("%d errors: %s%n", errors.size(), errors);
-			Misc.serialize(errors, LOCATION + "errors.ser");
+			Misc.serialize(errors, LOCATION.resolve("errors.ser"));
 		}
 	}
 	
 	private static boolean checkStoredData(List<Wiki.Revision> targetRevs)
 			throws FileNotFoundException, IOException {
-		File f = new File(LOCATION + "hashcode.ser");
+		Path hash = LOCATION.resolve("hashcode.ser");
 		int targetHash = targetRevs.hashCode();
 		
 		try {
-			int storedHash = Misc.deserialize(f);
+			int storedHash = Misc.deserialize(hash);
 			return targetHash != storedHash;
 		} catch (Exception e) {
 			System.out.printf("Exception: " + e.getMessage());
 			return true;
 		} finally {
-			Misc.serialize(targetHash, f);
+			Misc.serialize(targetHash, hash);
 		}
 	}
 	

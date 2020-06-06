@@ -2,6 +2,7 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,9 +31,9 @@ import com.github.wikibot.utils.PageContainer;
 public final class PolishVerbsInsertInflection implements Selectorizable {
 	private static Wikibot wb;
 	private static Map<String, Map<String, String>> models = new HashMap<>();
-	private static final String location = "./data/scripts.plwikt/PolishVerbsInsertInflection/";
-	private static final String f_serialized = location + "/targets.ser";
-	private static final String f_worklist = location + "/worklist.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsInsertInflection/");
+	private static final Path SERIALIZED = LOCATION.resolve("targets.ser");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -106,8 +107,8 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Misc.serialize(serialized, f_serialized);
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
+		Misc.serialize(serialized, SERIALIZED);
+		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void analyzeConjugationTemplate() throws IOException {
@@ -162,8 +163,8 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Misc.serialize(serialized, f_serialized);
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
+		Misc.serialize(serialized, SERIALIZED);
+		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void getModelVc() throws IOException {
@@ -202,12 +203,12 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Files.write(Paths.get(location + "Vc.txt"), List.of(Misc.makeList(map)));
+		Files.write(Paths.get(LOCATION + "Vc.txt"), List.of(Misc.makeList(map)));
 	}
 
 	public static void edit() throws ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(f_serialized);
-		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
+		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		List<String> errors = new ArrayList<>();
 		

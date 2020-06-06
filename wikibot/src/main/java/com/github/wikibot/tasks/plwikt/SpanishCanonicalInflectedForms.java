@@ -1,8 +1,9 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +33,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public final class SpanishCanonicalInflectedForms {
-	private static final String LOCATION = "./data/tasks.plwikt/SpanishCanonicalInflectedForms/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/SpanishCanonicalInflectedForms/");
 	private static final String TARGET_PAGE = "Indeks:Hiszpańskie formy czasownikowe";
 	private static final String CATEGORY_NAME = "Formy czasowników hiszpańskich";
 	
@@ -106,7 +107,7 @@ public final class SpanishCanonicalInflectedForms {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		File fHash = new File(LOCATION + "hash.ser");
+		Path fHash = LOCATION.resolve("hash.ser");
 		
 		try {
 			storedHashCode = Misc.deserialize(fHash);

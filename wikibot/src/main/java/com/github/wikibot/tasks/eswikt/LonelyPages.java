@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,7 +22,7 @@ import java.util.regex.Pattern;
 import com.github.wikibot.utils.Misc;
 
 public final class LonelyPages {
-	private static final String LOCATION = "./data/tasks.eswikt/LonelyPages/";
+	private static final Path LOCATION = Paths.get("./data/tasks.eswikt/LonelyPages/");
 	private static final Properties defaultSQLProperties = new Properties();	
 	private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.analytics.db.svc.eqiad.wmflabs:3306/eswiktionary_p";
 	
@@ -87,14 +89,14 @@ public final class LonelyPages {
 	}
 	
 	private static void storeData(List<String> list) throws FileNotFoundException, IOException, ClassNotFoundException {
-		File fData = new File(LOCATION + "data.ser");
-		File fCtrl = new File(LOCATION + "UPDATED");
-		File fCal = new File(LOCATION + "timestamp.ser");
+		var data = LOCATION.resolve("data.ser");
+		var ctrl = LOCATION.resolve("UPDATED");
+		var cal = LOCATION.resolve("timestamp.ser");
 		
-		if (!fData.exists() || list.hashCode() != (int) Misc.deserialize(fData).hashCode()) {
-			Misc.serialize(list, fData);
-			Misc.serialize(OffsetDateTime.now(), fCal);
-			fCtrl.delete();
+		if (!data.toFile().exists() || list.hashCode() != (int) Misc.deserialize(data).hashCode()) {
+			Misc.serialize(list, data);
+			Misc.serialize(OffsetDateTime.now(), cal);
+			ctrl.toFile().delete();
 		}
 	}
 }

@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -40,15 +42,15 @@ import com.thoughtworks.xstream.io.xml.StaxDriver;
 public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String LOCATION = "./data/tasks.plwikt/MissingRefsOnPlwiki/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingRefsOnPlwiki/");
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/plwikt-missing-plwiki-backlinks.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
-	private static final File fEntries = new File(LOCATION + "entries.xml");
-	private static final File fStats = new File(LOCATION + "stats.xml");
-	private static final File fTemplates = new File(LOCATION + "templates.xml");
-	private static final File fTimestamp = new File(LOCATION + "timestamp.xml");
-	private static final File fCtrl = new File(LOCATION + "UPDATED");
+	private static final File fEntries = LOCATION.resolve("entries.xml").toFile();
+	private static final File fStats = LOCATION.resolve("stats.xml").toFile();
+	private static final File fTemplates = LOCATION.resolve("templates.xml").toFile();
+	private static final File fTimestamp = LOCATION.resolve("timestamp.xml").toFile();
+	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
 	
 	private static final List<Entry> entries = new ArrayList<>(0);
 	private static final Map<String, Integer> stats = new HashMap<>(0);

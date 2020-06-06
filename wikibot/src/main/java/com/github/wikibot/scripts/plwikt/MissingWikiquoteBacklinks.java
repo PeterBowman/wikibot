@@ -1,9 +1,9 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -33,10 +33,10 @@ import com.univocity.parsers.tsv.TsvParserSettings;
 public final class MissingWikiquoteBacklinks implements Selectorizable {
 	private static Wikibot wb;
 	private static Wikibot quote;
-	private static final String location = "./data/scripts.plwikt/MissingWikiquoteBacklinks/";
-	private static final String data = location + "data.tsv";
-	private static final String worklist = location + "worklist.txt";
-	private static final String ser_pages = location + "pages.ser";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingWikiquoteBacklinks/");
+	private static final Path DATA = LOCATION.resolve("data.tsv");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Path PAGES_SER = LOCATION.resolve("pages.ser");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -58,7 +58,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		TsvParserSettings settings = new TsvParserSettings();
 		settings.setHeaderExtractionEnabled(true);
 		TsvParser parser = new TsvParser(settings);
-		List<String[]> list = parser.parseAll(new FileReader(new File(data)));
+		List<String[]> list = parser.parseAll(new FileReader(DATA.toFile()));
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
 		
@@ -105,14 +105,14 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			map.put(wiktpage.getTitle(), Arrays.asList(data));
 		}
 		
-		Misc.serialize(wiktpages, ser_pages);
-		Files.write(Paths.get(worklist), List.of(Misc.makeMultiList(map)));
+		Misc.serialize(wiktpages, PAGES_SER);
+		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		String[] lines = Files.lines(Paths.get(worklist)).toArray(String[]::new);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
-		PageContainer[] pages = Misc.deserialize(ser_pages);
+		PageContainer[] pages = Misc.deserialize(PAGES_SER);
 		List<String> errors = new ArrayList<>();
 		
 		for (Entry<String, String[]> entry : map.entrySet()) {
@@ -143,7 +143,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			System.out.printf("%d errores en: %s%n", errors.size(), errors.toString());
 		}
 		
-		(new File(data)).delete();
+		DATA.toFile().delete();
 	}
 	
 	public static void main(String[] args) {

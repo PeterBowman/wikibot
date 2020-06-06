@@ -2,6 +2,7 @@ package com.github.wikibot.scripts;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
@@ -27,9 +28,9 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class ProcessLanguageLinks {
-	private static final String LOCATION = "./data/scripts/ProcessLanguageLinks/";
-	private static final String LANG_LIST = LOCATION + "interwiki.txt";
-	private static final String TODO_LIST = LOCATION + "worklist.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts/ProcessLanguageLinks/");
+	private static final Path LANG_LIST = LOCATION.resolve("interwiki.txt");
+	private static final Path TODO_LIST = LOCATION.resolve("worklist.txt");
 	
 	private static List<String> interwikis;
 	private static Wikibot wb;
@@ -52,7 +53,7 @@ public final class ProcessLanguageLinks {
 		}
 		
 		String domain = line.getOptionValue("domain");
-		interwikis = Files.readAllLines(Paths.get(LANG_LIST));
+		interwikis = Files.readAllLines(LANG_LIST);
 		wb = Login.createSession(domain);
 		
 		if (line.hasOption("find")) {
@@ -89,11 +90,11 @@ public final class ProcessLanguageLinks {
 				.collect(Collectors.toList());
 		}
 		
-		Files.write(Paths.get(TODO_LIST), list);
+		Files.write(TODO_LIST, list);
 	}
 	
 	private static void removeLanguageLinks() throws IOException, LoginException {
-		List<String> titles = Files.readAllLines(Paths.get(TODO_LIST));
+		List<String> titles = Files.readAllLines(TODO_LIST);
 		List<PageContainer> pages = wb.getContentOfPages(titles);
 		
 		wb.setMarkBot(true);

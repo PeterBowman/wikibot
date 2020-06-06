@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 
 public final class MissingPolishAudio {
-	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishAudio/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishAudio/");
 	private static final List<String> REG_CATEGORIES = List.of("Regionalizmy polskie", "Dialektyzmy polskie");
 	
 	private static Wikibot wb;
@@ -124,12 +125,12 @@ public final class MissingPolishAudio {
 	}
 	
 	private static void writeLists(Map<String, Set<String>> map, String timestamp) throws IOException {
-		File[] files = new File(LOCATION).listFiles();
+		File[] files = LOCATION.toFile().listFiles();
 		
 		for (var entry : map.entrySet()) {
 			String filename = String.format("%s-%s.txt", entry.getKey(), timestamp);
 			String output = entry.getValue().stream().map(s -> String.format("#%s", s)).collect(Collectors.joining(" "));
-			Files.write(Paths.get(LOCATION + filename), Arrays.asList(output));
+			Files.write(LOCATION.resolve(filename), Arrays.asList(output));
 		}
 		
 		Stream.of(files).forEach(File::delete);

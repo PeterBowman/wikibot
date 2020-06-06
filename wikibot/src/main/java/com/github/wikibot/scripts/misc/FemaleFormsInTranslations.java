@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
@@ -35,8 +37,8 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class FemaleFormsInTranslations implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/FemaleFormsInTranslations/";
-	private static final String location_ser = location + "ser/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/FemaleFormsInTranslations/");
+	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -94,8 +96,8 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		PrintWriter pw = null, pw_errs = null;
 		
 		try {
-			pw = new PrintWriter(new File(location + "worklist.txt"));
-			pw_errs = new PrintWriter(new File(location + "errors.txt"));
+			pw = new PrintWriter(LOCATION.resolve("worklist.txt").toFile());
+			pw_errs = new PrintWriter(LOCATION.resolve("errors.txt").toFile());
 		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
 			return;
@@ -161,7 +163,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	public static void mascWorklist() throws IOException {
 		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
-		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
 		String line, header = null;
 		List<String> aux = null;
 		boolean isHeader = true;
@@ -191,7 +193,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		
 		br.close();
 		
-		PrintWriter pw_fem = new PrintWriter(new File(location + "fem_worklist.txt"));
+		PrintWriter pw_fem = new PrintWriter(LOCATION.resolve("fem_worklist.txt").toFile());
 		
 		for (Entry<String, List<String>> entry : list.entrySet()) {
 			List<String> transls = entry.getValue();
@@ -212,13 +214,13 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		}
 		
 		pw_fem.close();
-		Misc.serialize(list, location_ser + "worklist");
+		Misc.serialize(list, LOCATION_SER.resolve("worklist"));
 	}
 	
 	public static void femWorklist() throws IOException {
 		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
-		BufferedReader br = new BufferedReader(new FileReader(location + "fem_worklist.txt"));
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("fem_worklist.txt").toFile()));
 		String line, header = null;
 		List<String> aux = null;
 		boolean isHeader = true;
@@ -245,19 +247,19 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		}
 		
 		br.close();
-		Misc.serialize(list, location_ser + "fem_worklist");
+		Misc.serialize(list, LOCATION_SER.resolve("fem_worklist"));
 		
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	
 	public static void getChanges() throws IOException, ClassNotFoundException {
-		Map<String, List<String>> masc_list = Misc.deserialize(location_ser + "worklist");
-		Map<String, List<String>> fem_list = Misc.deserialize(location_ser + "fem_worklist");
+		Map<String, List<String>> masc_list = Misc.deserialize(LOCATION_SER.resolve("worklist"));
+		Map<String, List<String>> fem_list = Misc.deserialize(LOCATION_SER.resolve("fem_worklist"));
 		
 		System.out.printf("Tamaño de las listas: masc - %d, fem - %d\n", masc_list.size(), fem_list.size());
 		
-		PrintWriter pw_masc = new PrintWriter(new File(location + "masc_output.txt"));
-		PrintWriter pw_fem = new PrintWriter(new File(location + "fem_output.txt"));
+		PrintWriter pw_masc = new PrintWriter(LOCATION.resolve("masc_output.txt").toFile());
+		PrintWriter pw_fem = new PrintWriter(LOCATION.resolve("fem_output.txt").toFile());
 		
 		Map<String, String> masc_ready = new LinkedHashMap<>(masc_list.size());
 		Map<String, String> fem_ready = new LinkedHashMap<>(fem_list.size());
@@ -324,12 +326,12 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 		
 		pw_fem.close();
 		
-		Misc.serialize(masc_ready, location_ser + "masc_output");
-		Misc.serialize(fem_ready, location_ser + "fem_output");
+		Misc.serialize(masc_ready, LOCATION_SER.resolve("masc_output"));
+		Misc.serialize(fem_ready, LOCATION_SER.resolve("fem_output"));
 	}
 	
 	public static void editMasc() throws IOException, LoginException, ClassNotFoundException {
-		File f = new File(location_ser + "masc_output");
+		File f = LOCATION_SER.resolve("masc_output").toFile();
 		Map<String, String> list = Misc.deserialize(f);
 		
 		wb.setThrottle(5000);
@@ -356,7 +358,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void editFem() throws IOException, LoginException, ClassNotFoundException {
-		File f = new File(location_ser + "fem_output");
+		File f = LOCATION_SER.resolve("fem_output").toFile();
 		Map<String, String> list = Misc.deserialize(f);
 		
 		wb.setMarkMinor(false);

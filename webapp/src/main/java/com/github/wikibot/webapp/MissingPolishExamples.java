@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -38,15 +40,15 @@ import com.thoughtworks.xstream.io.xml.StaxDriver;
 public class MissingPolishExamples extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishExamples/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/plwikt-missing-polish-examples.jsp";
 	private static final String DATE_TIME_FORMAT = "HH:mm, d MMM yyyy (z)";
 	private static final String DATE_FORMAT = "d MMM yyyy";
 	
-	private static final File fEntries = new File(LOCATION + "entries.xml");
-	private static final File fDumpTimestamp = new File(LOCATION + "dump-timestamp.xml");
-	private static final File fBotTimestamp = new File(LOCATION + "bot-timestamp.xml");
-	private static final File fCtrl = new File(LOCATION + "UPDATED");
+	private static final File fEntries = LOCATION.resolve("entries.xml").toFile();
+	private static final File fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml").toFile();
+	private static final File fBotTimestamp = LOCATION.resolve("bot-timestamp.xml").toFile();
+	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
 	
 	private static final List<Entry> entries = new ArrayList<>(0);
 	private static final Calendar calDump = Calendar.getInstance();

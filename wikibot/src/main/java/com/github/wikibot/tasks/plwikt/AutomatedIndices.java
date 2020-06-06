@@ -3,6 +3,8 @@ package com.github.wikibot.tasks.plwikt;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,7 +39,7 @@ import com.ibm.icu.text.Transliterator;
 import com.ibm.icu.util.ULocale;
 
 public final class AutomatedIndices {
-	private static final String LOCATION = "./data/tasks.plwikt/AutomatedIndices/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/AutomatedIndices/");
 	private static final String WORKLIST = "Wikisłownikarz:Beau.bot/indeksy/lista";
 	private static final String TEMPLATE = "Wikisłownikarz:Beau.bot/indeksy/szablon";
 	
@@ -116,11 +118,11 @@ public final class AutomatedIndices {
 				Collator.getInstance(langToLocale.get(indexToLang.get(e.getKey())))
 			));
 		
-		File fHash = new File(LOCATION + "hash.ser");
+		Path hash = LOCATION.resolve("hash.ser");
 		Map<String, Integer> indexToHash;
 		
 		try {
-			indexToHash = Misc.deserialize(fHash);
+			indexToHash = Misc.deserialize(hash);
 		} catch (Exception e1) {
 			indexToHash = new HashMap<>();
 		}
@@ -144,7 +146,7 @@ public final class AutomatedIndices {
 			}
 		}
 		
-		Misc.serialize(indexToHash, fHash);
+		Misc.serialize(indexToHash, hash);
 		
 		if (!errors.isEmpty()) {
 			String talkPage = wb.getTalkPage(WORKLIST);

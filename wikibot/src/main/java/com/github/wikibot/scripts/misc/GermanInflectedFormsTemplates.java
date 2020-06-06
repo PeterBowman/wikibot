@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class GermanInflectedFormsTemplates implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/GermanInflectedFormsTemplates/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/GermanInflectedFormsTemplates/");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -59,7 +60,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		PrintWriter pw = null;
 		
 		try {
-			pw = new PrintWriter(new File(location + "work_list.txt"));
+			pw = new PrintWriter(LOCATION.resolve("work_list.txt").toFile());
 		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
 			return;
@@ -92,8 +93,8 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	}
 	
 	public static void makeLists() throws IOException {				
-		PrintWriter pw = new PrintWriter(new File(location + "write_list.txt"));
-		BufferedReader br = new BufferedReader(new FileReader(location + "work_list.txt"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("write_list.txt").toFile());
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("work_list.txt").toFile()));
 		//BufferedReader br = new BufferedReader(new FileReader(location + "work_list_headers.txt"));
 		String line = null;
 		
@@ -141,7 +142,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		pw.close();
 		
 		
-		Misc.serialize(list, location + "write_list.ser");
+		Misc.serialize(list, LOCATION.resolve("write_list.ser"));
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	
@@ -166,12 +167,12 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 			}
 		}
 		
-		Files.write(Paths.get(location + "work_list_headers.txt"), List.of(String.join("\n\n", list)));
+		Files.write(LOCATION.resolve("work_list_headers.txt"), List.of(String.join("\n\n", list)));
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, LoginException, ClassNotFoundException {
-		File f = new File(location + "write_list.ser");
+		File f = LOCATION.resolve("write_list.ser").toFile();
 		List<String[]> list = Misc.deserialize(f);
 		
 		if (list.size() == 0) {

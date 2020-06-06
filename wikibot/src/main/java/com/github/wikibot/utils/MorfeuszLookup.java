@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,7 +29,7 @@ import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public class MorfeuszLookup {
-	private static final String dumpsPath = "./data/dumps/";
+	private static final Path DUMPS = Paths.get("./data/dumps/");
 	private static final int SKIPPED_ROWS = 29;
 	
 	private File file;
@@ -35,12 +37,14 @@ public class MorfeuszLookup {
 	private boolean isCompressed;
 	
 	public MorfeuszLookup(String pathToFile) throws FileNotFoundException {
-		Objects.requireNonNull(pathToFile);
+		this(Paths.get(pathToFile));
+	}
+	
+	public MorfeuszLookup(Path path) throws FileNotFoundException {
+		Objects.requireNonNull(path);
 		
-		file = new File(pathToFile);
-		
-		if (!file.exists()) {
-			throw new FileNotFoundException(pathToFile);
+		if (!path.toFile().exists()) {
+			throw new FileNotFoundException(path.toString());
 		}
 		
 		settings = new TsvParserSettings();
@@ -142,7 +146,7 @@ public class MorfeuszLookup {
 		MorfeuszLookup morfeuszLookup;
 		
 		try {
-			morfeuszLookup = new MorfeuszLookup(dumpsPath + "sgjp-20171029.tab");
+			morfeuszLookup = new MorfeuszLookup(DUMPS.resolve("sgjp-20171029.tab"));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			return;

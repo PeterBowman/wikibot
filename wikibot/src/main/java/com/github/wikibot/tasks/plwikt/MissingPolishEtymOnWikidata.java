@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class MissingPolishEtymOnWikidata {
-	private static final String LOCATION = "./data/tasks.plwikt/MissingPolishEtymOnWikidata/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEtymOnWikidata/");
 	private static final String TARGET_PAGE = "Wikisłownikarz:PBbot/brak polskiej etymologii na Wikidanych";
 
 	// https://www.wikidata.org/wiki/Q809
@@ -83,13 +84,13 @@ public final class MissingPolishEtymOnWikidata {
 				(a, b) -> a,
 				() -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
 
-		File fHash = new File(LOCATION + "hash.ser");
+		Path hash = LOCATION.resolve("hash.ser");
 
-		if (fHash.exists() && (int) Misc.deserialize(fHash) == map.hashCode()) {
+		if (hash.toFile().exists() && (int) Misc.deserialize(hash) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
-			Misc.serialize(map.hashCode(), fHash);
+			Misc.serialize(map.hashCode(), hash);
 			System.out.printf("%d results stored.%n", map.size());
 		}
 

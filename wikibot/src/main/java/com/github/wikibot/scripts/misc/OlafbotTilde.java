@@ -7,6 +7,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,8 +23,8 @@ import com.github.wikibot.utils.Misc;
 
 public final class OlafbotTilde implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/OlafbotTilde/";
-	private static final String locationser = location + "ser/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/OlafbotTilde/");
+	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
 	private static final int LIMIT = 100;
 	private static final boolean ignoreLang = false;
 	private static final List<String> langs;
@@ -46,19 +48,19 @@ public final class OlafbotTilde implements Selectorizable {
 				makePreview();
 				break;
 			case '4':
-				int stats = Misc.deserialize(locationser + "stats.ser");
+				int stats = Misc.deserialize(LOCATION_SER.resolve("stats.ser"));
 				System.out.println("Total editado: " + stats);
 				break;
 			case '5':
-				LinkedHashMap<String, String> all = Misc.deserialize(locationser + "all.ser");
+				LinkedHashMap<String, String> all = Misc.deserialize(LOCATION_SER.resolve("all.ser"));
 				System.out.println(all.remove("koszyczki-opałeczki~polski"));
 				System.out.println(all.remove("carte blanche~polski"));
 				System.out.println(all.remove("odpieprzać‎~polski"));
 				System.out.println(all.remove("fotograficzny~polski"));
-				Misc.serialize(all, locationser + "all.ser");
+				Misc.serialize(all, LOCATION_SER.resolve("all.ser"));
 				break;
 			case '6':
-				Misc.serialize(471, locationser + "stats.ser");
+				Misc.serialize(471, LOCATION_SER.resolve("stats.ser"));
 				break;
 			case 'e':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -72,7 +74,7 @@ public final class OlafbotTilde implements Selectorizable {
 	public static void getList() throws IOException {
 		String cnt = wb.getPageText(List.of("Wikipedysta:Olafbot/SK/tyldy")).get(0);
 		LinkedHashMap<String, String> pages = new LinkedHashMap<>(1200);
-		PrintWriter pw = new PrintWriter(new File(location + "all.txt"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("all.txt").toFile());
 		
 		for (int i = cnt.indexOf("\n# "); i != -1; i = cnt.indexOf("\n# ", ++i)) {
 			int end = cnt.indexOf("\n# ", i + 1);
@@ -104,15 +106,15 @@ public final class OlafbotTilde implements Selectorizable {
 		System.out.println("Lista escrita con éxito en \"all.txt\", tamaño: " + pages.size());
 		pw.close();
 		
-		Misc.serialize(pages, locationser + "all.ser");
+		Misc.serialize(pages, LOCATION_SER.resolve("all.ser"));
 	}
 	
 	public static void getEntries() throws UnsupportedEncodingException, IOException, ClassNotFoundException {
 		LinkedHashMap<String, String> pages = new LinkedHashMap<>();
 		LinkedHashMap<String, String[]> worklist = new LinkedHashMap<>();
 		
-		pages = Misc.deserialize(locationser + "all.ser");
-		PrintWriter pw = new PrintWriter(new File(location + "worklist.txt"));
+		pages = Misc.deserialize(LOCATION_SER.resolve("all.ser"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("worklist.txt").toFile());
 		
 		for (Entry<String, String> entry : pages.entrySet()) {
 			String key = entry.getKey();
@@ -135,15 +137,15 @@ public final class OlafbotTilde implements Selectorizable {
 		pw.close();
 		System.out.println("Tamaño de la lista: " + worklist.size());
 		
-		Misc.serialize(worklist, locationser + "preview.ser");
+		Misc.serialize(worklist, LOCATION_SER.resolve("preview.ser"));
 	}
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(location + "worklist.txt"));
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
 		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
 		String line = null;
 		
-		pages = Misc.deserialize(locationser + "preview.ser");
+		pages = Misc.deserialize(LOCATION_SER.resolve("preview.ser"));
 		
 		while ((line = br.readLine()) != null) {
 			boolean omit = false;
@@ -179,8 +181,8 @@ public final class OlafbotTilde implements Selectorizable {
 		if (pages.size() == 0)
 			return;
 		
-		Misc.serialize(pages, locationser + "preview.ser");
-		PrintWriter pw = new PrintWriter(new File(location + "preview.txt"));
+		Misc.serialize(pages, LOCATION_SER.resolve("preview.ser"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("preview.txt").toFile());
 		
 		for (Entry<String, String[]> entry : pages.entrySet()) {
 			String key = entry.getKey();
@@ -199,9 +201,9 @@ public final class OlafbotTilde implements Selectorizable {
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
 		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
-		File f1 = new File(locationser + "preview.ser");
-		File f2 = new File(locationser + "stats.ser");
-		File f3 = new File(locationser + "all.ser");
+		File f1 = LOCATION_SER.resolve("preview.ser").toFile();
+		File f2 = LOCATION_SER.resolve("stats.ser").toFile();
+		File f3 = LOCATION_SER.resolve("all.ser").toFile();
 		
 		pages = Misc.deserialize(f1);
 		
@@ -286,7 +288,7 @@ public final class OlafbotTilde implements Selectorizable {
 		if (edited.size() == 0 && excluded.size() == 0)
 			return;
 		
-		BufferedReader br = new BufferedReader(new FileReader(location + "all.txt"));
+		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("all.txt").toFile()));
 		StringBuilder sb = new StringBuilder(25000000);
 		String line = null;
 		
@@ -313,7 +315,7 @@ public final class OlafbotTilde implements Selectorizable {
 		
 		br.close();
 		
-		PrintWriter pw = new PrintWriter(new File(location + "all.txt"));
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("all.txt").toFile());
 		pw.print(sb.toString());
 		pw.close();
 		

@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +31,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public class JyddishIpa implements Selectorizable {
-	private static final String location = "./data/scripts.misc/JyddishIpa/";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/JyddishIpa/");
 	private static Wikibot wb;
 	
 	public void selector(char op) throws Exception {
@@ -54,7 +56,7 @@ public class JyddishIpa implements Selectorizable {
 	public static void getList(boolean getPagesList, boolean edit) throws IOException, LoginException {
 		String chars = new String(new char[]{ 'ŋ' });
 		
-		File f = new File(location + "full_list.ser");
+		File f = LOCATION.resolve("full_list.ser").toFile();
 		String[] int_list = null;
 		
 		if (f.exists()) {
@@ -102,8 +104,8 @@ public class JyddishIpa implements Selectorizable {
 		
 		// open files
 		try {
-			pw_list = new PrintWriter(new File(location + "list.txt"));
-			pw_errors = new PrintWriter(new File(location + "errors.txt"));
+			pw_list = new PrintWriter(LOCATION.resolve("list.txt").toFile());
+			pw_errors = new PrintWriter(LOCATION.resolve("errors.txt").toFile());
 		} catch (FileNotFoundException e) {
 			System.out.println("Fallo al crear los ficheros de destino.");
 		}

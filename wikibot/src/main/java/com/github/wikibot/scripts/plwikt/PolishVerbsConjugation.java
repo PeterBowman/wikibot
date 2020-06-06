@@ -2,6 +2,7 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,9 +27,9 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class PolishVerbsConjugation implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/PolishVerbsConjugation/";
-	private static final String f_serialized = location + "/targets.ser";
-	private static final String f_worklist = location + "/worklist.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsConjugation/");
+	private static final Path SERIALIZED = LOCATION.resolve("targets.ser");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -72,13 +73,13 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		}
 		
 		System.out.printf("Encontrados: %d%n", targets.size());
-		Misc.serialize(targets, f_serialized);
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(map)));
+		Misc.serialize(targets, SERIALIZED);
+		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException, LoginException {
-		List<PageContainer> pages = Misc.deserialize(f_serialized);
-		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
+		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String> map = Misc.readList(lines);
 		List<String> errors = new ArrayList<>();
 		

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,9 +32,9 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class ScheduledEditor {
-	private static final String LOCATION = "./data/scripts.eswikt/ScheduledEditor/";
-	private static final String LAST_ENTRY = LOCATION + "last.ser";
-	private static final String ERROR_LOG = LOCATION + "errors.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.eswikt/ScheduledEditor/");
+	private static final Path LAST_ENTRY = LOCATION.resolve("last.ser");
+	private static final Path ERROR_LOG = LOCATION.resolve("errors.txt");
 	
 	private static final int BATCH = 500;
 	private static final int SLEEP_MINS = 5;
@@ -262,7 +263,7 @@ public final class ScheduledEditor {
 		String[] lines;
 		
 		try {
-			lines = Files.lines(Paths.get(ERROR_LOG)).toArray(String[]::new);
+			lines = Files.lines(ERROR_LOG).toArray(String[]::new);
 		} catch (IOException e) {
 			lines = new String[]{};
 		}
@@ -271,7 +272,7 @@ public final class ScheduledEditor {
 		list.add(log);
 		
 		try {
-			Files.write(Paths.get(ERROR_LOG), list);
+			Files.write(ERROR_LOG, list);
 		} catch (IOException e) {}
 	}
 	

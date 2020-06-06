@@ -1,6 +1,7 @@
 package com.github.wikibot.irc;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.jibble.pircbot.PircBot;
@@ -12,7 +13,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import com.github.wikibot.telegram.SimpleMessageForwarderBot;
 
 public class PircBotImplementation extends PircBot {
-	private static final String LOCATION = "./data/sessions/";
+	private static final Path LOCATION = Paths.get("./data/sessions/");
 	private static final int PORT_NUMBER = 6666;
 	private static final String SERVER = "irc.freenode.net";
 	private static final String PLWIKT_CHANNEL = "#wiktionary-pl";
@@ -127,9 +128,9 @@ public class PircBotImplementation extends PircBot {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		String password = Files.readString(Paths.get(LOCATION + "irc.txt")).trim();
-		String telegramToken =  Files.readString(Paths.get(LOCATION + "telegram_token.txt")).trim();;
-		String telegramChatid =  Files.readString(Paths.get(LOCATION + "telegram_chatid.txt")).trim();
+		String password = Files.readString(LOCATION.resolve("irc.txt")).trim();
+		String telegramToken =  Files.readString(LOCATION.resolve("telegram_token.txt")).trim();;
+		String telegramChatid =  Files.readString(LOCATION.resolve("telegram_chatid.txt")).trim();
 		
 		ApiContextInitializer.init();
 		TelegramBotsApi botsApi = new TelegramBotsApi();

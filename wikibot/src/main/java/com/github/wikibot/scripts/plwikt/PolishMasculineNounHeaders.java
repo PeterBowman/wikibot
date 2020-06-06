@@ -1,11 +1,12 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,11 +36,11 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class PolishMasculineNounHeaders implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/PolishMasculineNounHeaders/";
-	private static final String f_allpages = location + "allpages.txt";
-	private static final String f_worklist = location + "worklist.txt";
-	private static final String f_serialized = location + "info.ser";
-	private static final String f_stats = location + "stats.ser";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishMasculineNounHeaders/");
+	private static final Path ALL_PAGES = LOCATION.resolve("allpages.txt");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Path SERIALIZED = LOCATION.resolve("info.ser");
+	private static final Path STATS = LOCATION.resolve("stats.ser");
 	private static final int LIMIT = 5;
 
 	public void selector(char op) throws Exception {
@@ -53,7 +54,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				getContents();
 				break;
 			case 's':
-				int stats = Misc.deserialize(f_stats);
+				int stats = Misc.deserialize(STATS);
 				System.out.printf("Total editado: %d%n", stats);
 				break;
 			case 'u':
@@ -95,11 +96,11 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		System.out.printf("Acrónimos: %d%n", acronyms.size());
 		System.out.printf("Tamaño final de la lista: %d%n", masc.size());
 		
-		Files.write(Paths.get(f_allpages), masc);
+		Files.write(ALL_PAGES, masc);
 	}
 	
 	public static void getContents() throws UnsupportedEncodingException, IOException {
-		List<String> lines = Files.lines(Paths.get(f_allpages)).collect(Collectors.toList());
+		List<String> lines = Files.lines(ALL_PAGES).collect(Collectors.toList());
 		List<String> selection = lines.subList(0, Math.min(LIMIT, lines.size() - 1));
 		
 		System.out.printf("Tamaño de la lista: %d%n", selection.size());
@@ -125,14 +126,14 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				LinkedHashMap::new
 			));
 		
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeMultiList(map)));
-		Misc.serialize(pages, f_serialized);
+		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
+		Misc.serialize(pages, SERIALIZED);
 	}
 	
 	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
-		PageContainer[] pages = Misc.deserialize(f_serialized);
+		PageContainer[] pages = Misc.deserialize(SERIALIZED);
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
@@ -189,24 +190,22 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			return;
 		}
 		
-		List<String> temp = new ArrayList<>(Files.readAllLines(Paths.get(f_allpages)));
+		List<String> temp = new ArrayList<>(Files.readAllLines(ALL_PAGES));
 		temp.removeAll(edited);
 		temp.removeAll(omitted);
-		Files.write(Paths.get(f_allpages), temp);
+		Files.write(ALL_PAGES, temp);
 		
 		System.out.println("Lista actualizada");
 		
 		int stats = 0;
 		
-		stats = Misc.deserialize(f_stats);
+		stats = Misc.deserialize(STATS);
 		stats += edited.size();
 		
-		Misc.serialize(stats, f_stats);
+		Misc.serialize(stats, STATS);
 		System.out.printf("Estadísticas actualizadas (editados en total: %d)%n", stats);
 		
-		File f = new File(location + "worklist - done.txt");
-		f.delete();
-		(new File(f_worklist)).renameTo(f);
+		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
 	public static void main(String[] args) {

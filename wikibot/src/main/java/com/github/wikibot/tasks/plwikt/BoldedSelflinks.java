@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -35,7 +37,7 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class BoldedSelflinks {
-	private static final String LOCATION = "./data/tasks.plwikt/BoldedSelflinks/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/BoldedSelflinks/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/pogrubione selflinki";
 	
 	// https://pl.wiktionary.org/wiki/MediaWiki:Gadget-section-links.js
@@ -197,11 +199,11 @@ public final class BoldedSelflinks {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		File fHash = new File(LOCATION + "hash.txt");
-		File fList = new File(LOCATION + "list.xml");
+		Path fHash = LOCATION.resolve("hash.txt");
+		Path fList = LOCATION.resolve("list.xml");
 		
 		try {
-			storedHashCode = Integer.parseInt(Files.readString(fHash.toPath()));
+			storedHashCode = Integer.parseInt(Files.readString(fHash));
 		} catch (IOException | NumberFormatException e) {
 			e.printStackTrace();
 			storedHashCode = 0;
@@ -211,8 +213,8 @@ public final class BoldedSelflinks {
 		xstream.processAnnotations(Item.class);
 		
 		if (storedHashCode != newHashCode) {
-			Files.writeString(fHash.toPath(), Integer.toString(newHashCode));
-			Files.writeString(fList.toPath(), xstream.toXML(list));
+			Files.writeString(fHash, Integer.toString(newHashCode));
+			Files.writeString(fList, xstream.toXML(list));
 			return true;
 		} else {
 			return false;

@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import org.wikiutils.LoginUtils;
 import com.github.wikibot.main.Wikibot;
 
 public class Login {
-	private static final String LOCATION = "./data/sessions/";
+	private static final Path LOCATION = Paths.get("./data/sessions/");
 	private static final String LOGIN_FORMAT = "%s@%s";
 	private static final String USER_AGENT_FILENAME = "useragent.txt";
 	private static final String BOT_PASSWORD_SUFFIX = "wikibot";
@@ -36,7 +37,7 @@ public class Login {
 		String userAgent;
 		
 		try {
-			userAgent = Files.readAllLines(Paths.get(LOCATION + USER_AGENT_FILENAME)).get(0);
+			userAgent = Files.readAllLines(LOCATION.resolve(USER_AGENT_FILENAME)).get(0);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Setting basic user agent, please edit " + USER_AGENT_FILENAME);
@@ -79,9 +80,9 @@ public class Login {
 	}
 	
 	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
-		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		String filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		System.out.println("Reading from: " + filename);
-		return Files.lines(Paths.get(filename)).findFirst().orElse("").trim().toCharArray();
+		return Files.lines(LOCATION.resolve(filename)).findFirst().orElse("").trim().toCharArray();
 	}
 	
 	private static void promptAndStoreCredentials() throws FileNotFoundException, IOException {
@@ -91,10 +92,10 @@ public class Login {
 		System.out.print("Password: ");
 		char[] password = Misc.readPassword();
 		
-		String filename = LOCATION + String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		String filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		
 		try {
-			Files.write(Paths.get(filename), List.of(new String(password)), StandardOpenOption.CREATE_NEW);
+			Files.write(LOCATION.resolve(filename), List.of(new String(password)), StandardOpenOption.CREATE_NEW);
 		} catch (FileAlreadyExistsException e) {
 			System.out.println(String.format("File %s already exists!", filename));
 		}

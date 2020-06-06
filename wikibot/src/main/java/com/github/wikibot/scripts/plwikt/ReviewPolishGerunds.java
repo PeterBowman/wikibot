@@ -1,9 +1,10 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,11 +30,11 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class ReviewPolishGerunds implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.plwikt/ReviewPolishGerunds/";
-	private static final String f_pages = location + "pages.txt";
-	private static final String f_info = location + "info.ser";
-	private static final String f_worklist = location + "worklist.txt";
-	private static final Pattern p_relatedTerms = Pattern.compile(": \\{\\{czas\\}\\} \\[\\[.+?\\]\\] \\{\\{n?dk\\}\\}");
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReviewPolishGerunds/");
+	private static final Path PAGES = LOCATION.resolve("pages.txt");
+	private static final Path INFO = LOCATION.resolve("info.ser");
+	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Pattern P_RELATED_TERMS = Pattern.compile(": \\{\\{czas\\}\\} \\[\\[.+?\\]\\] \\{\\{n?dk\\}\\}");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -51,7 +52,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		List<String> titles = Files.lines(Paths.get(f_pages)).collect(Collectors.toList());
+		List<String> titles = Files.lines(PAGES).collect(Collectors.toList());
 		List<PageContainer> pages = wb.getContentOfPages(titles);
 		Map<String, String> worklist = new LinkedHashMap<>();
 		
@@ -80,7 +81,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 			String etymologyText = etymology.getContent();
 			
 			if (
-				!p_relatedTerms.matcher(relatedTermsText).matches() ||
+				!P_RELATED_TERMS.matcher(relatedTermsText).matches() ||
 				!p_etymology.matcher(etymologyText).matches()
 			) {
 				continue;
@@ -102,13 +103,13 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", worklist.size());
 		
-		Misc.serialize(pages, f_info);
-		Files.write(Paths.get(f_worklist), List.of(Misc.makeList(worklist)));
+		Misc.serialize(pages, INFO);
+		Files.write(WORKLIST, List.of(Misc.makeList(worklist)));
 	}
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {
-		PageContainer[] pages = Misc.deserialize(f_info);
-		String[] lines = Files.lines(Paths.get(f_worklist)).toArray(String[]::new);
+		PageContainer[] pages = Misc.deserialize(INFO);
+		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
 		Map<String, String> worklist = Misc.readList(lines);
 		Set<String> titles = worklist.keySet();
 		List<String> errors = new ArrayList<>();
@@ -133,10 +134,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		}
 		
 		System.out.printf("Detectados %d conflictos en: %s%n", errors.size(), errors.toString());
-		
-		File f = new File(location + "worklist - done.txt");
-		f.delete();
-		new File(f_worklist).renameTo(f);
+		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
 	public static void main(String[] args) {

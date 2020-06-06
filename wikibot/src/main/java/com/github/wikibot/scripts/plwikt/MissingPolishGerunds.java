@@ -1,8 +1,8 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,15 +30,15 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class MissingPolishGerunds implements Selectorizable {
 	private static Wikibot wb;
-	public static final String location = "./data/scripts.plwikt/MissingPolishGerunds/";
-	private static final String f_list = location + "lista.txt";
-	private static final String f_errors = location + "errores.txt";
-	private static final String f_refl = location + "reflexivos.txt";
-	private static final String f_miss_aff = location + "missing aff.txt";
-	private static final String f_miss_neg = location + "missing neg.txt";
-	private static final String f_list_ser = location + "list.ser";
-	private static final String f_miss_aff_ser = location + "aff_worklist.ser";
-	private static final String f_miss_neg_ser = location + "neg_worklist.ser";
+	public static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingPolishGerunds/");
+	private static final Path LIST = LOCATION.resolve("lista.txt");
+	private static final Path ERRORS = LOCATION.resolve("errores.txt");
+	private static final Path REFL = LOCATION.resolve("reflexivos.txt");
+	private static final Path MISSING_AFF = LOCATION.resolve("missing aff.txt");
+	private static final Path MISSING_NEG = LOCATION.resolve("missing neg.txt");
+	private static final Path LIST_SER = LOCATION.resolve("list.ser");
+	private static final Path MISSING_AFF_SER = LOCATION.resolve("aff_worklist.ser");
+	private static final Path MISSING_NEG_SER = LOCATION.resolve("neg_worklist.ser");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -120,11 +120,11 @@ public final class MissingPolishGerunds implements Selectorizable {
 			}
 		}
 		
-		Files.write(Paths.get(f_errors), errors);
-		Files.write(Paths.get(f_refl), refl);
-		Files.write(Paths.get(f_list), gerunds);
+		Files.write(ERRORS, errors);
+		Files.write(REFL, refl);
+		Files.write(LIST, gerunds);
 		
-		Misc.serialize(list, f_list_ser);
+		Misc.serialize(list, LIST_SER);
 		
 		System.out.printf("Verbos escaneados: %d\n", pages.size());
 		System.out.printf("Encontrados: %d\n", gerunds.size());
@@ -136,7 +136,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 		List<String> aff = new ArrayList<>(500);
 		List<String> neg = new ArrayList<>(500);
 		
-		Map<String, String> list = Misc.deserialize(f_list_ser);
+		Map<String, String> list = Misc.deserialize(LIST_SER);
 		
 		Set<String> set_aff = list.keySet();
 		Set<String> set_neg = set_aff.stream()
@@ -165,35 +165,34 @@ public final class MissingPolishGerunds implements Selectorizable {
 		Misc.sortList(aff, "pl");
 		Misc.sortList(neg, "pl");
 
-		Files.write(Paths.get(f_miss_aff), aff);
-		Files.write(Paths.get(f_miss_neg), neg);
+		Files.write(MISSING_AFF, aff);
+		Files.write(MISSING_NEG, neg);
 		
 		System.out.printf("Sustantivos faltantes: afirmativos - %d, negativos - %d%n", aff.size(), neg.size());
 	}
 	
 	public static void makeArrayLists() throws IOException {
-		List<String[]> list_aff = Files.lines(Paths.get(f_miss_aff)).map(line -> new String[]{
+		List<String[]> list_aff = Files.lines(MISSING_AFF).map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());
 		
-		List<String[]> list_neg = Files.lines(Paths.get(f_miss_neg)).map(line -> new String[]{
+		List<String[]> list_neg = Files.lines(MISSING_NEG).map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());
 		
-		Misc.serialize(list_aff, f_miss_aff_ser);
-		Misc.serialize(list_neg, f_miss_neg_ser);
+		Misc.serialize(list_aff, MISSING_AFF_SER);
+		Misc.serialize(list_neg, MISSING_NEG_SER);
 		
 		System.out.printf("Formas extraídas: %d (aff), %d (neg)\n", list_aff.size(), list_neg.size());
 	}
 	
 	public static void writeAff() throws LoginException, IOException {
 		List<String[]> list;
-		File f = new File(f_miss_aff_ser);
 		
 		try {
-			list = Misc.deserialize(f);
+			list = Misc.deserialize(MISSING_AFF_SER);
 		}
 		catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -208,15 +207,14 @@ public final class MissingPolishGerunds implements Selectorizable {
 			wb.edit(entry[1], content, summary, false, true, -2, null);
 		}
 		
-		f.delete();
+		MISSING_AFF_SER.toFile().delete();
 	}
 	
 	public static void writeNeg() throws LoginException, IOException {
 		List<String[]> list;
-		File f = new File(f_miss_neg_ser);
 		
 		try {
-			list = Misc.deserialize(f);
+			list = Misc.deserialize(MISSING_NEG_SER);
 		}
 		catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -231,7 +229,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 			wb.edit(entry[1], content, summary, false, true, -2, null);
 		}
 		
-		f.delete();
+		MISSING_NEG_SER.toFile().delete();
 	}
 	
 	public static String makePage(String verb, String gerund, boolean isNegate) {

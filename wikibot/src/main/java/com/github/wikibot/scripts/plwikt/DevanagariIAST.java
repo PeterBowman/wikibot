@@ -2,6 +2,7 @@ package com.github.wikibot.scripts.plwikt;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +32,8 @@ public class DevanagariIAST implements Selectorizable {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
-	private static final String location = "./data/scripts.plwikt/DevanagariIAST/";
-	private static final String fList = location + "lista.txt";
+	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/DevanagariIAST/");
+	private static final Path LIST = LOCATION.resolve("lista.txt");
 	private static final String wikipage = "Wikipedysta:PBbot/dewanagari bez transliteracji";
 
 	static {
@@ -78,7 +79,7 @@ public class DevanagariIAST implements Selectorizable {
 		System.out.printf("Total: %d, hindi: %d, non-hindi: %d%n", pages.size(), hindi.size(), nonHindi.size());
 		
 		String out = makePage(hindi, nonHindi);
-		Files.write(Paths.get(fList), List.of(out));
+		Files.write(LIST, List.of(out));
 		
 		if (edit) {
 			wb.edit(wikipage, out, "aktualizacja", false, false, -2, null);

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -42,7 +44,7 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class MisusedRegTemplates {
-	private static final String LOCATION = "./data/tasks.plwikt/MisusedRegTemplates/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MisusedRegTemplates/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/kategoryzacja regionalizmów";
 	private static final String PAGE_INTRO;
 	private static final Plural PLURAL_PL;
@@ -198,11 +200,11 @@ public final class MisusedRegTemplates {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		File fHash = new File(LOCATION + "hash.txt");
-		File fList = new File(LOCATION + "list.xml");
+		Path fHash = LOCATION.resolve("hash.txt");
+		Path fList = LOCATION.resolve("list.xml");
 		
 		try {
-			storedHashCode = Integer.parseInt(Files.readString(fHash.toPath()));
+			storedHashCode = Integer.parseInt(Files.readString(fHash));
 		} catch (IOException | NumberFormatException e) {
 			e.printStackTrace();
 			storedHashCode = 0;
@@ -212,8 +214,8 @@ public final class MisusedRegTemplates {
 		xstream.processAnnotations(Item.class);
 		
 		if (storedHashCode != newHashCode) {
-			Files.writeString(fHash.toPath(), Integer.toString(newHashCode));
-			Files.writeString(fList.toPath(), xstream.toXML(list));
+			Files.writeString(fHash, Integer.toString(newHashCode));
+			Files.writeString(fList, xstream.toXML(list));
 			return true;
 		} else {
 			return false;

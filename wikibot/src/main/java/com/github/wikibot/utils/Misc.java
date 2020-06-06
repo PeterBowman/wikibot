@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Path;
 import java.text.Collator;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +61,10 @@ public final class Misc {
 		serialize(target, new File(source));
 	}
 	
+	public static void serialize(Object target, Path path) throws FileNotFoundException, IOException {
+		serialize(target, path.toFile());
+	}
+	
 	public static void serialize(Object target, File f) throws FileNotFoundException, IOException {
 		try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
 			out.writeObject(target);
@@ -69,6 +74,10 @@ public final class Misc {
 	
 	public static <T> T deserialize(String source) throws FileNotFoundException, IOException, ClassNotFoundException {
 		return deserialize(new File(source));
+	}
+	
+	public static <T> T deserialize(Path source) throws FileNotFoundException, IOException, ClassNotFoundException {
+		return deserialize(source.toFile());
 	}
 	
 	@SuppressWarnings("unchecked")

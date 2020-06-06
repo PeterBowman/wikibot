@@ -1,10 +1,11 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +46,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class PolishSurnamesInflection {
-	private static final String LOCATION = "./data/tasks.plwikt/PolishSurnamesInflection/";
+	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/PolishSurnamesInflection/");
 	
 	private static final String SURNAME_CATEGORY = "Język polski - nazwiska";
 	
@@ -104,8 +105,8 @@ public final class PolishSurnamesInflection {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		File fStorage = new File(LOCATION + "storage.ser");
-		File fHistory = new File(LOCATION + "history.ser");
+		Path fStorage = LOCATION.resolve("storage.ser");
+		Path fHistory = LOCATION.resolve("history.ser");
 		
 		Set<Item> storage = deserializeSet(fStorage);
 		Set<Item> history = deserializeSet(fHistory);
@@ -131,9 +132,9 @@ public final class PolishSurnamesInflection {
 		storeLogs(logs);
 	}
 	
-	private static Set<Item> deserializeSet(File f) {
+	private static Set<Item> deserializeSet(Path path) {
 		try {
-			return Misc.deserialize(f);
+			return Misc.deserialize(path);
 		} catch (IOException | ClassNotFoundException | ClassCastException e) {
 			return new HashSet<>(5000);
 		}
@@ -473,8 +474,8 @@ public final class PolishSurnamesInflection {
 	}
 	
 	private static void storeLogs(List<LogEntry> logs) throws Exception {
-		File fLogsHash = new File(LOCATION + "logs-hash.ser");
-		File fErrorsHash = new File(LOCATION + "errors-hash.ser");
+		Path fLogsHash = LOCATION.resolve("logs-hash.ser");
+		Path fErrorsHash = LOCATION.resolve("errors-hash.ser");
 		
 		List<? extends LogEntry> errors = logs.stream()
 			.filter(log -> log instanceof ErrorLogEntry)
@@ -484,7 +485,7 @@ public final class PolishSurnamesInflection {
 		
 		final String timestamp = "Ostatnia aktualizacja: ~~~~~.";
 		
-		if (!fLogsHash.exists() || (int) Misc.deserialize(fLogsHash) != logs.hashCode()) {
+		if (!fLogsHash.toFile().exists() || (int) Misc.deserialize(fLogsHash) != logs.hashCode()) {
 			String text = LOG_INTRO + "\n\n" + timestamp + "\n----\n" + logs.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));
@@ -495,7 +496,7 @@ public final class PolishSurnamesInflection {
 			Misc.serialize(logs.hashCode(), fLogsHash);
 		}
 		
-		if (!fErrorsHash.exists() || (int) Misc.deserialize(fErrorsHash) != errors.hashCode()) {
+		if (!fErrorsHash.toFile().exists() || (int) Misc.deserialize(fErrorsHash) != errors.hashCode()) {
 			String text = timestamp + "\n\n" + errors.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));

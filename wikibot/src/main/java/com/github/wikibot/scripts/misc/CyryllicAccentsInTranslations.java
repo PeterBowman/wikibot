@@ -1,9 +1,10 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +27,12 @@ import com.github.wikibot.utils.PageContainer;
 
 public final class CyryllicAccentsInTranslations implements Selectorizable {
 	private static Wikibot wb;
-	private static final String location = "./data/scripts.misc/CyryllicAccentsInTranslations/";
-	private static final String locationser = location + "ser/";
-	private static final String contentlist = locationser + "contents.ser";
-	private static final String targetlist = locationser + "targetlist.ser";
-	private static final String analyzedlist = locationser + "analyzedlist.ser";
-	private static final String botpage = "Wikipedysta:PBbot/akcenty w tłumaczeniach";
+	private static final Path LOCATION = Paths.get("./data/scripts.misc/CyryllicAccentsInTranslations/");
+	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
+	private static final Path CONTENT_LIST = LOCATION_SER.resolve("contents.ser");
+	private static final Path TARGET_LIST = LOCATION_SER.resolve("targetlist.ser");
+	private static final Path ANALYZED_LIST = LOCATION_SER.resolve("analyzedlist.ser");
+	private static final String BOT_PAGE = "Wikipedysta:PBbot/akcenty w tłumaczeniach";
 
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -56,11 +57,11 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 	
 	public static void getContents() throws IOException {
 		List<PageContainer> pages = wb.getContentOfCategorymembers("polski (indeks)", Wiki.MAIN_NAMESPACE);
-		Misc.serialize(pages, contentlist);
+		Misc.serialize(pages, CONTENT_LIST);
 	}
 	
 	public static void getList() throws IOException, ClassNotFoundException {
-		PageContainer[] pages = Misc.deserialize(contentlist);
+		PageContainer[] pages = Misc.deserialize(CONTENT_LIST);
 		Map<String, String> querymap = new HashMap<>(500);
 		
 		//final String pattern = "\\[\\[[^\\|].*?́[^\\|].*?\\]\\]";
@@ -84,13 +85,13 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		
 		System.out.println("Tamaño de la lista: " + querymap.size());
 		
-		Misc.serialize(querymap, targetlist);
+		Misc.serialize(querymap, TARGET_LIST);
 	}
 	
 	public static void analyzeLists() throws FileNotFoundException, ClassNotFoundException, IOException {
 		//Map<String, String> listA = Misc.deserialize(locationser + "targetlist - 372.ser");
 		//Map<String, String> listB = Misc.deserialize(locationser + "targetlist - 321.ser");
-		Map<String, String> listX = Misc.deserialize(locationser + "targetlist.ser");
+		Map<String, String> listX = Misc.deserialize(LOCATION_SER.resolve("targetlist.ser"));
 		Map<String, String> listC = new HashMap<>(100);
 		
 		StringBuilder sb = new StringBuilder(5000);
@@ -123,15 +124,15 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		}
 		
 		System.out.println("Tamaño de la lista: " + listC.size());
-		Misc.serialize(sb.toString(), analyzedlist);
-		PrintWriter pw = new PrintWriter(new File(location + "output.txt"));
+		Misc.serialize(sb.toString(), ANALYZED_LIST);
+		PrintWriter pw = new PrintWriter(LOCATION.resolve("output.txt").toFile());
 		pw.print(sb.toString());
 		pw.close();
 	}
 	
 	public static void edit() throws FileNotFoundException, ClassNotFoundException, IOException, LoginException {
-		String text = Misc.deserialize(analyzedlist);
-		wb.edit(botpage, text, "lista");
+		String text = Misc.deserialize(ANALYZED_LIST);
+		wb.edit(BOT_PAGE, text, "lista");
 	}
 	
 	public static void main(String[] args) {
