@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -35,7 +36,7 @@ public class MissingPolishEntries {
 	private static final Collator COLLATOR_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
-	private static final boolean ALLOW_COMPRESSION = false;
+	private static final boolean ALLOW_COMPRESSION = true;
 	
 	private static Stats stats = new Stats();
 	
@@ -153,7 +154,8 @@ public class MissingPolishEntries {
 			regex += "\\.gz";
 		}
 		
-		File[] files = DUMPS_PATH.toFile().listFiles(file -> file.isFile() && file.getName().matches(regex));
+		final Pattern patt = Pattern.compile(regex); 
+		File[] files = DUMPS_PATH.toFile().listFiles(file -> file.isFile() && patt.matcher(file.getName()).matches());
 		
 		if (files.length == 0) {
 			return null;

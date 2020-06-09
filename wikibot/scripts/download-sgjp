@@ -29,15 +29,8 @@ if [ -n "$LASTDUMP" ]; then
     echo "downloading .tar.gz..."
     wget --no-verbose -P $DUMPSDIR ${SITE}/${LASTDUMP}/sgjp-${LASTDUMP}.tab.gz
 
-    echo "decompressing archive..."
-    gzip -df $DUMPSDIR/sgjp-${LASTDUMP}.tab.gz
-
-    echo "converting Windows line endings to Unix..."
-    # https://unix.stackexchange.com/a/208167
-    sed -i '/\r/ s///g' $DUMPSDIR/sgjp-${LASTDUMP}.tab
-
     echo "removing older files..."
-    find $DUMPSDIR/sgjp-*.tab -type f | head -n -1 | xargs rm -v -f --
+    find $DUMPSDIR/sgjp-*.tab.gz -type f | head -n -1 | xargs rm -v -f --
 
     echo "updating log file..."
     echo "$LASTDUMP" > $DUMPSDIR/$LOGFILE
