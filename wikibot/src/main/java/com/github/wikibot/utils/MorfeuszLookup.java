@@ -43,7 +43,9 @@ public class MorfeuszLookup {
 	public MorfeuszLookup(Path path) throws FileNotFoundException {
 		Objects.requireNonNull(path);
 		
-		if (!path.toFile().exists()) {
+		file = path.toFile();
+		
+		if (!file.exists()) {
 			throw new FileNotFoundException(path.toString());
 		}
 		
