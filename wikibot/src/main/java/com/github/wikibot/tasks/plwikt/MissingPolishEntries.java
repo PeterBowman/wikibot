@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -63,11 +62,10 @@ public class MissingPolishEntries {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		List<String> titles = retrieveNonPolishEntries();
+		var titles = retrieveNonPolishEntries();
 		retainSgjpEntries(titles);
 		
 		System.out.println(stats);
-		Collections.sort(titles, COLLATOR_PL);
 		
 		int hash = titles.hashCode();
 		Path fHash = LOCATION.resolve("hash.ser");
@@ -87,28 +85,23 @@ public class MissingPolishEntries {
 		wb.edit(TARGET_PAGE, out, "aktualizacja");
 	}
 	
-	private static List<String> retrieveNonPolishEntries() throws IOException {
-		List<String> titles = new ArrayList<>();
+	private static Set<String> retrieveNonPolishEntries() throws IOException {
+		var allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
+		var polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
+		var polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
+		var polishRedirs = findRedirects(polishTitles);
 		
-		List<String> allTitles = wb.listPages("", null, 0, null, null, null); // contains redirs
-		List<String> polishTitles = wb.getCategoryMembers("polski (indeks)", 0);
-		List<String> polishInflected = wb.getCategoryMembers("polski (formy fleksyjne)", 0);
-		List<String> polishRedirs = findRedirects(polishTitles);
-		
-		Set<String> set = new HashSet<>();
-		set.addAll(allTitles);
-		set.removeAll(polishTitles);
-		set.removeAll(polishInflected);
-		set.removeAll(polishRedirs);
-		
-		titles.addAll(set);
+		var filtered = new HashSet<>(allTitles);
+		filtered.removeAll(polishTitles);
+		filtered.removeAll(polishInflected);
+		filtered.removeAll(polishRedirs);
 		
 		stats.allEntries = allTitles.size();
 		stats.polishLemmas = polishTitles.size();
 		stats.polishInflected = polishInflected.size();
 		stats.polishRedirs = polishRedirs.size();
 		
-		return titles;
+		return filtered;
 	}
 	
 	private static List<String> findRedirects(List<String> polishTitles) throws IOException {
@@ -130,8 +123,8 @@ public class MissingPolishEntries {
 		return polishRedirs;
 	}
 	
-	private static void retainSgjpEntries(List<String> titles) throws IOException {
-		Set<String> database = new HashSet<>(350000);
+	private static void retainSgjpEntries(Set<String> titles) throws IOException {
+		var database = new HashSet<String>();
 		String dumpFile = getLatestDumpFile();
 		
 		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(DUMPS_PATH.resolve(dumpFile));
@@ -145,11 +138,10 @@ public class MissingPolishEntries {
 			count.increment();
 		});
 		
+		titles.retainAll(database);
+		
 		stats.databaseLemmas = database.size();
 		stats.databaseOverall = count.intValue();
-		
-		titles.retainAll(database); // slow, but could be worse
-		
 		stats.worklistSize = titles.size();
 		stats.dumpFile = morfeuszLookup.getFileName();
 	}
@@ -175,19 +167,20 @@ public class MissingPolishEntries {
 		return files[0].getName();
 	}
 	
-	private static String getOutput(List<String> titles) {
+	private static String getOutput(Set<String> titles) {
 		Map<String, List<String>> map = titles.stream()
 			.collect(Collectors.groupingBy(
 				title -> Character.toString(title.charAt(0)).toLowerCase(),
 				() -> new TreeMap<>(COLLATOR_PL),
 				Collectors.toList()
 			));
-
+		
 		String out = map.entrySet().stream()
 			.map(e -> String.format(
 					"== %s ==\n%s",
 					e.getKey(),
 					e.getValue().stream()
+						.sorted(COLLATOR_PL)
 						.map(v -> String.format("[[%s]]", v))
 						.collect(Collectors.joining(", ")))
 				)
