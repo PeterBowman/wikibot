@@ -1,169 +1,128 @@
 package com.github.wikibot.utils;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Iterator;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import com.univocity.parsers.common.ParsingContext;
-import com.univocity.parsers.common.processor.ObjectRowProcessor;
-import com.univocity.parsers.common.processor.RowProcessor;
+import com.univocity.parsers.common.ResultIterator;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public class MorfeuszLookup {
-	private static final Path DUMPS = Paths.get("./data/dumps/");
-	private static final int SKIPPED_ROWS = 29;
+	private Path pathToDump;
+	private boolean compressed;
+	final private TsvParserSettings settings;
 	
-	private File file;
-	private TsvParserSettings settings;
-	private boolean isCompressed;
-	
-	public MorfeuszLookup(String pathToFile) throws FileNotFoundException {
-		this(Paths.get(pathToFile));
+	public MorfeuszLookup(Path path) throws IOException {
+		this(path, checkExtension(path));
 	}
 	
-	public MorfeuszLookup(Path path) throws FileNotFoundException {
-		Objects.requireNonNull(path);
-		
-		file = path.toFile();
-		
-		if (!file.exists()) {
-			throw new FileNotFoundException(path.toString());
-		}
+	public MorfeuszLookup(Path path, boolean useCompression) {
+		pathToDump = Objects.requireNonNull(path);
+		compressed = useCompression;
 		
 		settings = new TsvParserSettings();
-		
 		// had some issues with copyright notice (uses Windows CRLF, main content is Unix LF)
-		settings.setNumberOfRowsToSkip(SKIPPED_ROWS);
+		settings.setNumberOfRowsToSkip(29);
 		settings.setLineSeparatorDetectionEnabled(false);
 		settings.setHeaderExtractionEnabled(false);
 		settings.getFormat().setLineSeparator("\n");
-				
-		isCompressed = true;
+		// process leaves dangling thread on exit if true (default on multi-core machines)
+		settings.setReadInputOnSeparateThread(false);
 	}
 	
-	public TsvParserSettings getSettings() {
-		return settings;
+	private static boolean checkExtension(Path path) throws IOException {
+		String contentType = Files.probeContentType(path);
+		return "application/x-gzip".equals(contentType);
 	}
 	
-	public void setCompression(boolean isCompressed) {
-		this.isCompressed = isCompressed;
+	public boolean isCompressed() {
+		return compressed;
 	}
 	
-	public String getFileName() {
-		return file.getName();
+	public Path getPath() {
+		return pathToDump;
 	}
 	
-	public Map<String, List<String>> getResults(String target) {
-		Map<String, List<String>> results = new HashMap<>();
+	public Stream<MorfeuszRecord> stream() throws IOException {
+		final InputStream is;
 		
-		// http://stackoverflow.com/a/27087060
-		RowProcessor rowProcessor = new ObjectRowProcessor() {
-		    @Override
-		    public void rowProcessed(Object[] row, ParsingContext context) {
-		    	String s = (String) row[0];
-		    	
-		        if (s.equals(target)) {
-		        	String canonical = (String) row[1];
-		        	String info = (String) row[2];
-		        	
-		        	if (results.containsKey(canonical)) {
-		        		List<String> list = results.get(canonical);
-		        		list.add(info);
-		        	} else {
-		        		List<String> list = new ArrayList<>();
-		        		list.add(info);
-		        		results.put(canonical, list);
-		        	}
-		        }
-		    }
-		};
-
-		settings.setProcessor(rowProcessor);
-		TsvParser parser = new TsvParser(settings);
-		wrapParser(parser::parse);
-		
-		return results;
-	}
-	
-	public void find(Predicate<Object[]> p) {
-		RowProcessor rowProcessor = new ObjectRowProcessor() {
-		    @Override
-		    public void rowProcessed(Object[] row, ParsingContext context) {
-		    	if (!p.test(row)) {
-		    		context.stop();
-		    	}
-		    }
-		};
-		
-		settings.setProcessor(rowProcessor);
-		TsvParser parser = new TsvParser(settings);
-		wrapParser(parser::parse);
-	}
-	
-	public void find(Consumer<Object[]> cons) {
-		RowProcessor rowProcessor = new ObjectRowProcessor() {
-		    @Override
-		    public void rowProcessed(Object[] row, ParsingContext context) {
-		    	cons.accept(row);
-		    }
-		};
-		
-		settings.setProcessor(rowProcessor);
-		TsvParser parser = new TsvParser(settings);
-		wrapParser(parser::parse);
-	}
-	
-	private void wrapParser(Consumer<Reader> cons) {
-		try (
-			InputStream bis = new BufferedInputStream(new FileInputStream(file));
-			InputStream is = isCompressed ? new GzipCompressorInputStream(bis) : bis;
-			Reader r = new InputStreamReader(is, StandardCharsets.UTF_8);
-		) {
-			cons.accept(r);
-		} catch (IOException e) {}
-	}
-	
-	public static void main(String[] args) {
-		//Map<String, List<String>> res = MorfeuszLookup.getResults("piksel");
-		List<String> res = new ArrayList<>();
-		MorfeuszLookup morfeuszLookup;
-		
-		try {
-			morfeuszLookup = new MorfeuszLookup(DUMPS.resolve("sgjp-20171029.tab"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return;
+		if (compressed) {
+			is = new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(pathToDump.toFile())));
+		} else {
+			is = new BufferedInputStream(new FileInputStream(pathToDump.toFile()));
 		}
 		
-		morfeuszLookup.setCompression(false);
+		// must create new parser instance on each stream run, otherwise returns nothing once stopped
+		TsvParser parser = new TsvParser(settings);
+		var iterable = parser.iterate(is, StandardCharsets.UTF_8);
+		var iterator = new MorfeuszIterator(iterable.iterator());
 		
-		System.out.println("Reading from file: " + morfeuszLookup.getFileName());
+		int characteristics = Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED
+				| Spliterator.NONNULL | Spliterator.IMMUTABLE;
 		
-		morfeuszLookup.find(arr -> {
-			if (arr[1].equals("test")) {
-				res.add(Arrays.asList(arr).toString());
+		var spliterator = Spliterators.spliteratorUnknownSize(iterator, characteristics);
+		var stream = StreamSupport.stream(spliterator, false);
+		
+		stream.onClose(() -> {
+			try {
+				is.close();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 		});
 		
-		System.out.println(String.join("\n", res));
+		return stream;
+	}
+	
+	private static class MorfeuszIterator implements Iterator<MorfeuszRecord> {
+		private ResultIterator<String[], ParsingContext> tsvIterator;
+		
+		public MorfeuszIterator(ResultIterator<String[], ParsingContext> tsvIterator) {
+			this.tsvIterator = tsvIterator;
+		}
+		
+		@Override
+		public boolean hasNext() {
+			return tsvIterator.hasNext();
+		}
+		
+		@Override
+		public MorfeuszRecord next() {
+			String[] fields = tsvIterator.next();
+			MorfeuszRecord record = MorfeuszRecord.fromArray(fields);
+			return record;
+		}
+	}
+	
+	public static void main(String[] args) throws Exception {
+		Path path = Paths.get("./data/dumps/");
+		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(path.resolve("sgjp-20200607.tab.gz"));
+		
+		System.out.println(morfeuszLookup.getPath());
+		System.out.println(morfeuszLookup.isCompressed());
+		
+		try (var stream = morfeuszLookup.stream()) {
+			stream.filter(record -> record.getLemma().equals("kotek")).forEach(System.out::println);
+		}
+		
+		try (var stream = morfeuszLookup.stream()) {
+			System.out.println(stream.count());
+		}
 	}
 }

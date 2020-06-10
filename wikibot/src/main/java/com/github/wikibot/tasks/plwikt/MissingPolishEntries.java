@@ -1,12 +1,11 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -17,12 +16,11 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
+import com.github.wikibot.utils.MorfeuszRecord;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
@@ -31,12 +29,11 @@ public class MissingPolishEntries {
 	private static final Path DUMPS_PATH = Paths.get("./data/dumps/");
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEntries/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/brakujące polskie";
+	private static final Pattern P_DUMP_FILE = Pattern.compile("^sgjp-\\d{8}\\.tab\\.gz$");
 	
 	private static final String PAGE_INTRO;
 	private static final Collator COLLATOR_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
-	
-	private static final boolean ALLOW_COMPRESSION = true;
 	
 	private static Stats stats = new Stats();
 	
@@ -125,48 +122,33 @@ public class MissingPolishEntries {
 	}
 	
 	private static void retainSgjpEntries(Set<String> titles) throws IOException {
-		var database = new HashSet<String>();
-		String dumpFile = getLatestDumpFile();
+		Path dumpFile = getLatestDumpFile();
+		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(dumpFile);
 		
-		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(DUMPS_PATH.resolve(dumpFile));
-		morfeuszLookup.setCompression(ALLOW_COMPRESSION);
+		final Set<String> database;
 		
-		MutableInt count = new MutableInt();
-		
-		morfeuszLookup.find(arr -> {
-			String entry = (String)arr[1];
-			database.add(entry);
-			count.increment();
-		});
+		try (var stream = morfeuszLookup.stream()) {
+			database = stream.map(MorfeuszRecord::getLemma).collect(Collectors.toSet());
+		}
 		
 		titles.retainAll(database);
 		
 		stats.databaseLemmas = database.size();
-		stats.databaseOverall = count.intValue();
 		stats.worklistSize = titles.size();
-		stats.dumpFile = morfeuszLookup.getFileName();
+		stats.dumpFile = morfeuszLookup.getPath().getFileName().toString();
+		
+		// cheap enough
+		try (var stream = morfeuszLookup.stream()) {
+			stats.databaseOverall = (int)stream.count();
+		}
 	}
 	
-	private static String getLatestDumpFile() throws IOException {
-		String regex = "sgjp-\\d{8}\\.tab";
-		
-		if (ALLOW_COMPRESSION) {
-			regex += "\\.gz";
-		}
-		
-		final Pattern patt = Pattern.compile(regex); 
-		File[] files = DUMPS_PATH.toFile().listFiles(file -> file.isFile() && patt.matcher(file.getName()).matches());
-		
-		if (files.length == 0) {
-			return null;
-		} else if (files.length == 1) {
-			return files[0].getName();
-		}
-		
-		Comparator<File> fileComparator = Comparator.comparing(File::getName);
-		Arrays.sort(files, fileComparator.reversed());
-		
-		return files[0].getName();
+	private static Path getLatestDumpFile() throws IOException {
+		return Files.list(DUMPS_PATH)
+			.sorted(Comparator.reverseOrder())
+			.filter(path -> P_DUMP_FILE.matcher(path.getFileName().toString()).matches())
+			.findFirst()
+			.orElseThrow();
 	}
 	
 	private static String getOutput(Set<String> titles) {

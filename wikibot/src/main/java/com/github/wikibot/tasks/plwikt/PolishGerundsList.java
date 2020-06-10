@@ -178,20 +178,19 @@ public class PolishGerundsList implements Selectorizable {
 		Set<String> gers = new HashSet<>(300000);
 		Set<String> substs = new HashSet<>(150000);
 		
-		MorfeuszLookup morfeuszLookup = new MorfeuszLookup("");
-		morfeuszLookup.setCompression(false);
+		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(Paths.get(""));
 		
-		morfeuszLookup.find(row -> {
-			String form = (String) row[0];
-			String canonical = (String) row[1];
-			String info = (String) row[2];
-			
-			if (info.startsWith("ger:")) {
-				gers.add(form);
-			} else if (info.startsWith("subst:") && !substs.contains(canonical)) {
-				substs.add(canonical);
-			}
-		});
+		try (var stream = morfeuszLookup.stream()) {
+			stream.forEach(record -> {
+				String firstTag = record.getTags()[0]; 
+				
+				if (firstTag.equals("ger")) {
+					gers.add(record.getForm());
+				} else if (firstTag.equals("subst") && !substs.contains(record.getLemma())) {
+					substs.add(record.getLemma());
+				}
+			});
+		}
 		
 		System.out.printf("Gerundios: %d, sustantivos: %d%n", gers.size(), substs.size());
 		Misc.serialize(gers, locationser.resolve("gers.ser"));
