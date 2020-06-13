@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.FilenameUtils;
 
 import com.univocity.parsers.common.ParsingContext;
 import com.univocity.parsers.common.ResultIterator;
@@ -48,7 +49,9 @@ public class MorfeuszLookup {
 	
 	private static boolean checkExtension(Path path) throws IOException {
 		String contentType = Files.probeContentType(path);
-		return "application/x-gzip".equals(contentType);
+		// there might be no FileTypeDetector installed
+		String extension = FilenameUtils.getExtension(path.toString());
+		return "application/x-gzip".equals(contentType) || extension.equals("gz");
 	}
 	
 	public boolean isCompressed() {
