@@ -1778,7 +1778,7 @@ public class Editor extends AbstractEditor {
 			}
 			
 			if (!isOldStructure) {
-				header = header.replaceFirst("(?i)^(?:<small *?> *?)?Referencias?\\b.*$", "Referencias y notas");
+				header = header.replaceFirst("(?i)^(?:<small *?> *?)?(?:Notas y )?Referencias?\\b.*$", "Referencias y notas");
 			}
 			
 			section.setHeader(header);
