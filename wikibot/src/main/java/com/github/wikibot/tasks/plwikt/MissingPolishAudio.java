@@ -47,7 +47,7 @@ public final class MissingPolishAudio {
 		int stats = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
-			stream.parallel()
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(Page::wrap)

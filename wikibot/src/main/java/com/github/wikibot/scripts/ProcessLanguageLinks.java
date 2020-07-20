@@ -81,7 +81,7 @@ public final class ProcessLanguageLinks {
 		List<String> list;
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
-			list = stream.parallel()
+			list = stream
 				.filter(rev -> rev.getNamespace() != Wiki.USER_NAMESPACE) // https://www.wikidata.org/wiki/Help:Sitelinks#Namespaces
 				.filter(rev -> rev.getNamespace() % 2 == 0) // https://www.mediawiki.org/wiki/Manual:$wgInterwikiMagic
 				.filter(rev -> !rev.getText().equals(Utils.replaceWithStandardIgnoredRanges(rev.getText(), patt, "")))

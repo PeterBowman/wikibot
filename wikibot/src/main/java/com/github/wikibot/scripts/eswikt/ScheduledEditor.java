@@ -128,8 +128,8 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processDumpFile(XMLDumpReader dumpReader) throws IOException {
-		try (Stream<XMLRevision> r = dumpReader.getStAXReader(wb.getSiteStatistics().get("pages")).stream()) {
-			r.parallel()
+		try (var stream = dumpReader.getStAXReader(wb.getSiteStatistics().get("pages")).stream()) {
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(XMLRevision::toPageContainer)

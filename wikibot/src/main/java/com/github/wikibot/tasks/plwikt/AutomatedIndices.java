@@ -101,7 +101,7 @@ public final class AutomatedIndices {
 		ConcurrentMap<String, String> indexToLang = new ConcurrentHashMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
-			stream.parallel()
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(Page::wrap)

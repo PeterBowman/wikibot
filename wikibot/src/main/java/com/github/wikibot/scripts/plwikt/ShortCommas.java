@@ -100,7 +100,7 @@ public final class ShortCommas implements Selectorizable {
 		int size = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = dumpReader.getStAXReader(size).stream()) {
-			stream.parallel()
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.filter(rev -> wlh.contains(rev.getTitle()))

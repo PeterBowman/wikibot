@@ -54,7 +54,7 @@ public final class MissingPolishExamples {
 		final Set<String> titles;
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
-			titles = stream.parallel()
+			titles = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(Page::wrap)
@@ -69,7 +69,7 @@ public final class MissingPolishExamples {
 		Map<String, Set<Backlink>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
-			stream.parallel()
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(Page::wrap)

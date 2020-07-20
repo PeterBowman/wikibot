@@ -255,7 +255,7 @@ public final class CitationTypography {
 		int size = wb.getSiteStatistics().get("pages");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
-			return stream.parallel()
+			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.filter(xml -> P_OCCURENCE.matcher(xml.getText()).find())

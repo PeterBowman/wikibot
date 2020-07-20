@@ -151,7 +151,7 @@ public final class MisusedRegTemplates {
 		List<Item> list;
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
-			list = stream.parallel()
+			list = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.filter(MisusedRegTemplates::containsTemplates)

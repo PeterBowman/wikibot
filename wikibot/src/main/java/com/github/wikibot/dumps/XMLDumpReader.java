@@ -169,7 +169,7 @@ public final class XMLDumpReader {
 		List<String> list = Collections.synchronizedList(new ArrayList<>(5000));
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(900000).stream()) {
-			stream.parallel()
+			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.map(XMLRevision::getTitle)

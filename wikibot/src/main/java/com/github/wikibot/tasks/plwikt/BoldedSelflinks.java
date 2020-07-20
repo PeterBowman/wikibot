@@ -141,7 +141,7 @@ public final class BoldedSelflinks {
 		final Pattern pNewline = Pattern.compile("\n");
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
-			return stream.parallel()
+			return stream
 				.filter(XMLRevision::nonRedirect)
 				.filter(XMLRevision::isMainNamespace)
 				.map(rev -> Page.store(rev.getTitle(), rev.getText()))
