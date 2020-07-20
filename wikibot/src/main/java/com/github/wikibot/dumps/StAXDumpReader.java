@@ -1,7 +1,7 @@
 package com.github.wikibot.dumps;
 
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -11,7 +11,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseable {
-	private static final List<String> RECOGNIZED_TAGS = List.of(
+	private static final Set<String> RECOGNIZED_TAGS = Set.of(
 		"title", "ns", "id", "redirect", "parentid", "timestamp", "username", "minor", "comment", "text"
 	);
 	
@@ -43,7 +43,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	}
 	
 	public Stream<XMLRevision> stream() {
-		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL;
+		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED;
 		Spliterator<XMLRevision> spliterator;
 		
 		if (estimateSize == 0) {
@@ -109,8 +109,6 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	}
 	
 	private class StAXIterator implements Iterator<XMLRevision> {
-		private XMLRevision revision;
-		
 		@Override
 		public boolean hasNext() {
 			try {
@@ -119,11 +117,11 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 						streamReader.next() == XMLStreamReader.START_ELEMENT &&
 						streamReader.getLocalName().equals("page")
 					) {
-						revision = new XMLRevision();
 						return true;
 					}
 				}
 			} catch (XMLStreamException e) {
+				e.printStackTrace();
 				return false;
 			}
 			
@@ -133,15 +131,16 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		@Override
 		public XMLRevision next() {
 			try {
-				buildNextRevision();
+				return buildNextRevision();
 			} catch (XMLStreamException e) {
+				e.printStackTrace();
 				return null;
 			}
-			
-			return revision.clone();
 		}
 		
-		private void buildNextRevision() throws XMLStreamException {
+		private XMLRevision buildNextRevision() throws XMLStreamException {
+			XMLRevision revision = new XMLRevision();
+			
 			while (streamReader.hasNext()) {
 				int next = streamReader.next();
 				
@@ -157,6 +156,8 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 					break;
 				}
 			}
+			
+			return revision;
 		}
 	}
 }

@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,8 +21,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.commons.compress.archivers.ArchiveException;
-import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
@@ -40,7 +37,6 @@ public final class XMLDumpReader {
 	public static final File LOCAL_DUMPS_PATH = new File("./data/dumps");
 	
 	private File file;
-	private Extension extension;
 	
 	public XMLDumpReader(File file) throws FileNotFoundException {
 		Objects.requireNonNull(file);
@@ -51,14 +47,12 @@ public final class XMLDumpReader {
 		}
 		
 		System.out.printf("Reading from file: %s%n", file);
-		checkExtension();
 	}
 	
 	public XMLDumpReader(String domain) throws FileNotFoundException {
 		Objects.requireNonNull(domain);
 		file = getLocalFile(domain);
 		System.out.printf("Reading from file: %s%n", file);
-		checkExtension();
 	}
 	
 	public XMLDumpReader(Path pathToFile) throws FileNotFoundException {
@@ -70,7 +64,6 @@ public final class XMLDumpReader {
 		}
 		
 		System.out.printf("Reading from file: %s%n", file);
-		checkExtension();
 	}
 	
 	public File getFile() {
@@ -88,51 +81,15 @@ public final class XMLDumpReader {
 		return matching[0];
 	}
 	
-	private InputStream getInputStream() throws IOException, CompressorException, ArchiveException {
+	private InputStream getInputStream() throws CompressorException, FileNotFoundException {
+		String extension = FilenameUtils.getExtension(file.getName());
 		InputStream bis = new BufferedInputStream(new FileInputStream(file));
 		
-		switch (extension) {
-			case ZIP_BZ2:
-			case ZIP_GZ:
-				return new CompressorStreamFactory().createCompressorInputStream(bis);
-			case ZIP_7Z:
-				return new ArchiveStreamFactory(StandardCharsets.UTF_8.name()).createArchiveInputStream(bis);
-			case XML:
-				return bis;
-			default:
-				bis.close();
-				throw new UnsupportedOperationException("Unsupported extension: " + extension);
+		if (extension.equals("xml")) {
+			return bis;
+		} else {
+			return new CompressorStreamFactory().createCompressorInputStream(bis);
 		}
-	}
-	
-	private void checkExtension() {
-		String ext = FilenameUtils.getExtension(file.getName());
-		
-		switch (ext) {
-			case "bz2":
-				extension = Extension.ZIP_BZ2;
-				break;
-			case "gz":
-				extension = Extension.ZIP_GZ;
-				break;
-			case "7z":
-				extension = Extension.ZIP_7Z;
-				break;
-			case "xml":
-				extension = Extension.XML;
-				break;
-			case "":
-				throw new UnsupportedOperationException("Unsupported extension: no extension");
-			default:
-				throw new UnsupportedOperationException("Unsupported extension: " + ext);
-		}
-	}
-	
-	private enum Extension {
-		ZIP_BZ2,
-		ZIP_GZ,
-		ZIP_7Z,
-		XML // uncompressed
 	}
 	
 	private static String resolveDomainName(String domain) {
@@ -161,7 +118,7 @@ public final class XMLDumpReader {
 		
 		try (InputStream is = getInputStream()) {
 			xmlReader.parse(new InputSource(is));
-		} catch (CompressorException | ArchiveException | SAXException e) {
+		} catch (CompressorException | SAXException e) {
 			throw new IOException(e);
 		}
 	}
@@ -187,7 +144,7 @@ public final class XMLDumpReader {
 			InputStream is = getInputStream();
 			XMLInputFactory factory = XMLInputFactory.newInstance();
 			streamReader = factory.createXMLStreamReader(is);
-		} catch (CompressorException | ArchiveException | XMLStreamException e) {
+		} catch (CompressorException | XMLStreamException e) {
 			throw new IOException(e);
 		}
 		
@@ -199,7 +156,7 @@ public final class XMLDumpReader {
 		
 		try (InputStream is = getInputStream()) {
 			doc = Jsoup.parse(is, null, "", Parser.xmlParser());
-		} catch (CompressorException | ArchiveException e) {
+		} catch (CompressorException e) {
 			throw new IOException(e);
 		}
 		
