@@ -62,7 +62,7 @@ public final class ProcessLanguageLinks {
 			if (line.hasOption("path")) {
 				reader = new XMLDumpReader(Paths.get(line.getOptionValue("path")));
 			} else {
-				reader = new XMLDumpReader(domain);
+				reader = new XMLDumpReader((String)wb.getSiteInfo().get("dbname"));
 			}
 			
 			findLanguageLinks(reader);

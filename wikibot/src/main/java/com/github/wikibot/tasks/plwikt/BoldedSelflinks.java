@@ -132,7 +132,7 @@ public final class BoldedSelflinks {
 				throw new IllegalArgumentException();
 			}
 		} else {
-			return new XMLDumpReader("pl.wiktionary.org");
+			return new XMLDumpReader("plwiktionary");
 		}
 	}
 	

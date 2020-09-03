@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -49,9 +50,9 @@ public final class XMLDumpReader {
 		System.out.printf("Reading from file: %s%n", file);
 	}
 	
-	public XMLDumpReader(String domain) throws FileNotFoundException {
-		Objects.requireNonNull(domain);
-		file = getLocalFile(domain);
+	public XMLDumpReader(String database) throws FileNotFoundException {
+		Objects.requireNonNull(database);
+		file = getLocalFile(database);
 		System.out.printf("Reading from file: %s%n", file);
 	}
 	
@@ -70,12 +71,12 @@ public final class XMLDumpReader {
 		return file;
 	}
 
-	private static File getLocalFile(String domain) throws FileNotFoundException {
-		String domainPrefix = resolveDomainName(domain);
-		File[] matching = LOCAL_DUMPS_PATH.listFiles((dir, name) -> name.startsWith(domainPrefix));
+	private static File getLocalFile(String database) throws FileNotFoundException {
+		Pattern dbPatt = Pattern.compile("^" + database + "\\b.+");
+		File[] matching = LOCAL_DUMPS_PATH.listFiles((dir, name) -> dbPatt.matcher(name).matches());
 		
 		if (matching.length == 0) {
-			throw new FileNotFoundException("Dump file not found: " + domain.toString());
+			throw new FileNotFoundException("Dump file not found: " + database.toString());
 		}
 		
 		return matching[0];
@@ -89,17 +90,6 @@ public final class XMLDumpReader {
 			return bis;
 		} else {
 			return new CompressorStreamFactory().createCompressorInputStream(bis);
-		}
-	}
-	
-	private static String resolveDomainName(String domain) {
-		switch (domain) {
-			case "pl.wiktionary.org":
-				return "plwiktionary";
-			case "es.wiktionary.org":
-				return "eswiktionary";
-			default:
-				throw new UnsupportedOperationException("unknown domain name: " + domain);
 		}
 	}
 	
@@ -165,7 +155,7 @@ public final class XMLDumpReader {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		XMLDumpReader reader = new XMLDumpReader("es.wiktionary.org");
+		XMLDumpReader reader = new XMLDumpReader("eswiktionary");
 		List<String> list = Collections.synchronizedList(new ArrayList<>(5000));
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader(900000).stream()) {

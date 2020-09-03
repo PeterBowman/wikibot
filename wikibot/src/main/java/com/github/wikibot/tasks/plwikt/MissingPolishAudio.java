@@ -63,7 +63,7 @@ public final class MissingPolishAudio {
 	
 	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
 		if (args.length == 0) {
-			return new XMLDumpReader("pl.wiktionary.org");
+			return new XMLDumpReader("plwiktionary");
 		} else {
 			return new XMLDumpReader(new File(args[0].trim()));
 		}

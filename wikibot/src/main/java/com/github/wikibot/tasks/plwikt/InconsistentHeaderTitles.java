@@ -190,7 +190,7 @@ public final class InconsistentHeaderTitles {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
-			reader = new XMLDumpReader("pl.wiktionary.org");
+			reader = new XMLDumpReader("plwiktionary");
 		} else {
 			reader = new XMLDumpReader(new File(path));
 		}

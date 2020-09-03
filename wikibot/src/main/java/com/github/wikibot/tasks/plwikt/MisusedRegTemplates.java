@@ -142,7 +142,7 @@ public final class MisusedRegTemplates {
 				throw new IllegalArgumentException();
 			}
 		} else {
-			return new XMLDumpReader("pl.wiktionary.org");
+			return new XMLDumpReader("plwiktionary");
 		}
 	}
 	
