@@ -29,6 +29,7 @@ public final class AssistedEdit {
 	private static final Path TITLES = LOCATION.resolve("titles.txt");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Path TIMESTAMPS = LOCATION.resolve("timestamps.xml");
+	private static final Path HASHCODES = LOCATION.resolve("hash.xml");
 	
 	private static Wikibot wb;
 	private static XStream xstream;
@@ -100,15 +101,35 @@ public final class AssistedEdit {
 			));
 		
 		Files.writeString(TIMESTAMPS, xstream.toXML(timestamps));
+		
+		Map<String, Integer> hashcodes = pages.stream()
+			.collect(Collectors.toMap(
+				PageContainer::getTitle,
+				pc -> pc.getText().hashCode()
+			));
+		
+		Files.writeString(HASHCODES, xstream.toXML(hashcodes));
 	}
 	
 	public static void applyChanges(String summary, boolean minor) throws IOException {
 		Map<String, String> map = Misc.readList(Files.lines(WORKLIST).toArray(String[]::new));
+		final var initialSize = map.size();
+		System.out.printf("Size: %d%n", initialSize);
 		
 		@SuppressWarnings("unchecked")
 		var timestamps = (Map<String, OffsetDateTime>) xstream.fromXML(Files.readString(TIMESTAMPS));
 		
-		System.out.printf("Size: %d%n", map.size());
+		@SuppressWarnings("unchecked")
+		var hashcodes = (Map<String, Integer>) xstream.fromXML(Files.readString(HASHCODES));
+		map.entrySet().removeIf(e -> e.getValue().hashCode() == hashcodes.get(e.getKey()));
+		
+		if (map.size() != initialSize) {
+			System.out.printf("Revised size: %d%n", map.size());
+		}
+		
+		if (map.isEmpty()) {
+			return;
+		}
 		
 		List<String> errors = new ArrayList<>();
 		

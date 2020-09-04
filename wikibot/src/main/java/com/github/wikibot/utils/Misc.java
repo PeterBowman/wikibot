@@ -152,12 +152,12 @@ public final class Misc {
 	
 	public static Map<String, String> readList(String data) {
 		Map<String, String> map = new LinkedHashMap<>();
-		String[] drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
+		String[] drafts = Pattern.compile("\\*{40}").split(data);
 		
 		for (String draft : drafts) {
 			draft = draft.trim();
-			String title = draft.substring(0, draft.indexOf("\n"));
-			String content = draft.substring(draft.indexOf("\n")).trim();
+			String title = draft.substring(0, draft.indexOf("\n\n"));
+			String content = draft.substring(draft.indexOf("\n\n") + 2);
 			map.put(title, content);
 		}
 		
