@@ -1,20 +1,16 @@
 package com.github.wikibot.dumps;
 
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseable {
-	private static final Set<String> RECOGNIZED_TAGS = Set.of(
-		"title", "ns", "id", "redirect", "parentid", "timestamp", "username", "minor", "comment", "text"
-	);
-	
 	private XMLStreamReader streamReader;
 	private final int estimateSize;
 	
@@ -58,7 +54,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	private static void initializeMember(String name, String text, XMLRevision revision) {
 		switch (name) {
 			case "title":
-				revision.title = decode(text);
+				revision.title = text;
 				break;
 			case "ns":
 				revision.ns = Integer.parseInt(text);
@@ -80,52 +76,47 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 				revision.timestamp = text;
 				break;
 			case "username":
-				revision.contributor = decode(text);
+				revision.contributor = text;
 				break;
 			case "ip": // either this or "username"
-				revision.contributor = decode(text);
+				revision.contributor = text;
 				revision.isAnonymousContributor = true;
 				break;
 			case "minor":
 				revision.isMinor = true;
 				break;
 			case "comment":
-				revision.comment = decode(text);
+				revision.comment = text;
 				break;
 			case "text":
-				revision.text = decode(text);
+				revision.text = text;
 				break;
 		}
 	}
 	
-	private static String decode(String in) {
-		// TODO: review? http://stackoverflow.com/a/1091953
-		in = in.replace("&lt;", "<").replace("&gt;", ">");
-		in = in.replace("&quot;", "\"");
-		in = in.replace("&apos;", "'");
-		in = in.replace("&#039;", "'");
-		in = in.replace("&amp;", "&");
-		return in;
-	}
-	
 	private class StAXIterator implements Iterator<XMLRevision> {
+		private final StringBuilder buffer;
+		
+		public StAXIterator() {
+			buffer = new StringBuilder(100000);
+		}
+		
 		@Override
 		public boolean hasNext() {
 			try {
 				while (streamReader.hasNext()) {
 					if (
-						streamReader.next() == XMLStreamReader.START_ELEMENT &&
+						streamReader.next() == XMLStreamConstants.START_ELEMENT &&
 						streamReader.getLocalName().equals("page")
 					) {
 						return true;
 					}
 				}
-			} catch (XMLStreamException e) {
-				e.printStackTrace();
+				
 				return false;
+			} catch (XMLStreamException e) {
+				throw new RuntimeException(e);
 			}
-			
-			return false;
 		}
 		
 		@Override
@@ -133,27 +124,36 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 			try {
 				return buildNextRevision();
 			} catch (XMLStreamException e) {
-				e.printStackTrace();
-				return null;
+				throw new RuntimeException(e);
 			}
 		}
 		
 		private XMLRevision buildNextRevision() throws XMLStreamException {
 			XMLRevision revision = new XMLRevision();
+			boolean appendable = false;
 			
-			while (streamReader.hasNext()) {
-				int next = streamReader.next();
-				
-				if (
-					next == XMLStreamReader.START_ELEMENT &&
-					RECOGNIZED_TAGS.contains(streamReader.getLocalName())
-				) {
-					initializeMember(streamReader.getLocalName(), streamReader.getElementText(), revision);
-				} else if (
-					next == XMLStreamReader.END_ELEMENT &&
-					streamReader.getLocalName().equals("page")
-				) {
-					break;
+			outer:
+			while (streamReader.next() != XMLStreamConstants.END_DOCUMENT) {
+				switch (streamReader.getEventType()) {
+					case XMLStreamConstants.START_ELEMENT:
+						buffer.setLength(0);
+						appendable = true;
+						break;
+					case XMLStreamConstants.CHARACTERS:
+						if (appendable) {
+							buffer.append(streamReader.getTextCharacters(), streamReader.getTextStart(), streamReader.getTextLength());
+						}
+						
+						break;
+					case XMLStreamConstants.END_ELEMENT:
+						if (streamReader.getLocalName().equals("page")) {
+							break outer;
+						} else if (appendable) {
+							initializeMember(streamReader.getLocalName(), buffer.toString(), revision);
+							appendable = false;
+						}
+						
+						break;
 				}
 			}
 			
