@@ -16,9 +16,6 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.parser.Parser;
 import org.wikipedia.WMFWiki;
 import org.wikipedia.Wiki;
 
@@ -141,18 +138,36 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private void parseContentLine(String line, List<PageContainer> list) {
-		Document doc = Jsoup.parse(line, "", Parser.xmlParser());
-		doc.outputSettings().prettyPrint(false);
+		int pageIndex = 0;
 		
-		doc.getElementsByTag("page").stream()
-			.flatMap(page -> page.getElementsByTag("rev").stream()
-				.map(rev -> new PageContainer(
-					decode(page.attr("title")),
-					decode(rev.select("slot[role=main]").html()),
-					OffsetDateTime.parse(rev.attr("timestamp"))
-				))
-			)
-			.forEach(list::add);
+		while ((pageIndex = line.indexOf("<page ", pageIndex + 1)) != -1) {
+			var page = line.substring(pageIndex, line.indexOf("</page>", pageIndex));
+			var title = decode(parseAttribute(page, "title", 0));
+			int revIndex = 0;
+			
+			while ((revIndex = page.indexOf("<rev ", revIndex + 1)) != -1) {
+				var rev = page.substring(revIndex, page.indexOf("</rev>", revIndex));
+				var timestamp = OffsetDateTime.parse(parseAttribute(rev, "timestamp", 0));
+				int slotIndex = 0;
+				
+				while ((slotIndex = rev.indexOf("<slot ", slotIndex + 1)) != -1) {
+					var role = parseAttribute(rev, "role", slotIndex);
+					
+					if ("main".equals(role)) {
+						var closeTag = rev.indexOf(" />", slotIndex);
+						
+						if (closeTag == -1 || closeTag > rev.indexOf('>', slotIndex)) {
+							var start = rev.indexOf('>', slotIndex) + 1;
+							var end = rev.indexOf("</slot>", start);
+							var text = decode(rev.substring(start, end));
+							list.add(new PageContainer(title, text, timestamp));
+						}
+						
+						break;
+					}
+				}
+			}
+		}
 	}
 	
 	public String expandTemplates(String text) throws IOException {
