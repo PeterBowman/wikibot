@@ -138,14 +138,27 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	private void parseContentLine(String line, List<PageContainer> list) {
+		int closeTag = 0;
 		int pageIndex = 0;
 		
 		while ((pageIndex = line.indexOf("<page ", pageIndex + 1)) != -1) {
+			closeTag = line.indexOf("/>", pageIndex);
+			
+			if (closeTag != -1 && closeTag < line.indexOf(">", pageIndex)) {
+				continue;
+			}
+			
 			var page = line.substring(pageIndex, line.indexOf("</page>", pageIndex));
 			var title = decode(parseAttribute(page, "title", 0));
 			int revIndex = 0;
 			
 			while ((revIndex = page.indexOf("<rev ", revIndex + 1)) != -1) {
+				closeTag = page.indexOf("/>", revIndex);
+				
+				if (closeTag != -1 && closeTag < page.indexOf(">", revIndex)) {
+					continue;
+				}
+				
 				var rev = page.substring(revIndex, page.indexOf("</rev>", revIndex));
 				var timestamp = OffsetDateTime.parse(parseAttribute(rev, "timestamp", 0));
 				int slotIndex = 0;
@@ -153,18 +166,20 @@ public class Wikibot extends WMFWiki {
 				while ((slotIndex = rev.indexOf("<slot ", slotIndex + 1)) != -1) {
 					var role = parseAttribute(rev, "role", slotIndex);
 					
-					if ("main".equals(role)) {
-						var closeTag = rev.indexOf(" />", slotIndex);
-						
-						if (closeTag == -1 || closeTag > rev.indexOf('>', slotIndex)) {
-							var start = rev.indexOf('>', slotIndex) + 1;
-							var end = rev.indexOf("</slot>", start);
-							var text = decode(rev.substring(start, end));
-							list.add(new PageContainer(title, text, timestamp));
-						}
-						
-						break;
+					if (!"main".equals(role)) {
+						continue;
 					}
+					
+					closeTag = rev.indexOf("/>", slotIndex);
+					
+					if (closeTag == -1 || closeTag > rev.indexOf('>', slotIndex)) {
+						var start = rev.indexOf('>', slotIndex) + 1;
+						var end = rev.indexOf("</slot>", start);
+						var text = decode(rev.substring(start, end));
+						list.add(new PageContainer(title, text, timestamp));
+					}
+					
+					break;
 				}
 			}
 		}
