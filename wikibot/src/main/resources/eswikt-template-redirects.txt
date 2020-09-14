@@ -240,6 +240,7 @@ Edafología = edafología
 Educación = educación
 Electricidad = electricidad
 Electrónica = electrónica
+emoji = emojis
 enfermedad = enfermedades
 Enología = enología
 Entomología = entomología
