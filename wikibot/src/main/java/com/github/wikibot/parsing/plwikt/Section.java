@@ -87,7 +87,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	public boolean isPolishSection() {
-		return lang == "język polski" || lang == "termin obcy w języku polskim";
+		return "język polski".equals(lang) || "termin obcy w języku polskim".equals(lang);
 	}
 	
 	public String getHeaderTitle() {
