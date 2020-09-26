@@ -65,12 +65,12 @@ public final class GreetNewEditors {
 			.map(username -> String.format("%s:%s", wb.namespaceIdentifier(Wiki.USER_TALK_NAMESPACE), username))
 			.collect(Collectors.toList());
 		
-		var redirs = wb.resolveRedirects(talkPages);
+		var infos = wb.getPageInfo(talkPages);
 		
 		for (int i = 0; i < talkPages.size(); i++) {
 			var talkPage = talkPages.get(i);
 			
-			if (!redirs.get(i).equals(talkPage)) {
+			if ((Boolean)infos.get(i).get("redirect")) {
 				System.out.printf("%s is a redirect.%n", talkPage);
 				continue;
 			}
