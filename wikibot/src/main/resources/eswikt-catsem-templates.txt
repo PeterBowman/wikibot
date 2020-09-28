@@ -238,6 +238,7 @@ signos ortográficos = Signos ortográficos
 silvicultura = Silvicultura
 sociología = Sociología
 tauromaquia = Tauromaquia
+taxonomía = Taxonomía
 teatro = Teatro
 tecnología = Tecnología
 telecomunicación = Telecomunicación
