@@ -5,7 +5,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class Field implements Comparable<Field> {
+	private static final String[] NEWLINE_MARKERS = new String[] { ":", "*", "#", ";" };
+	
 	private FieldTypes fieldType;
 	protected String content;
 	private boolean isNewLine;
@@ -98,7 +102,7 @@ public class Field implements Comparable<Field> {
 		trailingNewlines = 0;
 		content = content.trim();
 		
-		if (!isNewLine && content.startsWith(":")) {
+		if (!isNewLine && StringUtils.startsWithAny(content, NEWLINE_MARKERS)) {
 			isNewLine = true;
 		}
 		
@@ -106,7 +110,7 @@ public class Field implements Comparable<Field> {
 			return;
 		}
 		
-		if (isNewLine && !content.isEmpty() && content.charAt(0) != ':') {
+		if (isNewLine && !content.isEmpty() && !StringUtils.startsWithAny(content, NEWLINE_MARKERS)) {
 			content = ": " + content.replaceAll("^ +", "");
 		}
 	}
