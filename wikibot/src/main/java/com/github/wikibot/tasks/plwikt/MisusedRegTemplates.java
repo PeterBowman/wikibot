@@ -72,7 +72,7 @@ public final class MisusedRegTemplates {
 		// German
 		"austr", "płdniem", "płnniem", "szwajcniem",
 		// Portuguese
-		"brazport",
+		"brazport", "eurport",
 		// Italian
 		"szwajcwł", "tosk"
 	);
