@@ -9,7 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
@@ -19,6 +21,10 @@ import com.github.wikibot.utils.Misc;
 public final class ResolveRedirs {
 	// from Linker::formatLinksInComment in Linker.php
 	private static final String PATT_TEMPLATE = "\\[{2} *?:?(%s) *?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
+	
+	private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
+		"Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
+	);
 	
 	private static final int[] TARGET_NAMESPACES;
 	private static Wikibot wb;
@@ -68,10 +74,15 @@ public final class ResolveRedirs {
 			var link = m.group(1);
 			var text = Optional.ofNullable(m.group(2)).orElse(link);
 			var trail = Optional.ofNullable(m.group(3)).orElse("");
-			m.appendReplacement(sb, String.format("[[%s|%s]]", target, text + trail));
+			
+			if (redirs.contains(text + trail)) {
+				m.appendReplacement(sb, String.format("[[%s]]", target));
+			} else {
+				m.appendReplacement(sb, String.format("[[%s|%s]]", target, text + trail));
+			}
 		};
 		
-		final var summary = String.format("podmiana przekierowań do \"%s\"", target);
+		final var summary = String.format("podmiana przekierowań do „[[%s]]”", target);
 		
 		var edited = new ArrayList<String>();
 		var errors = new ArrayList<String>();
@@ -83,6 +94,7 @@ public final class ResolveRedirs {
 			
 			for (var pattern : patterns) {
 				newText = Utils.replaceWithStandardIgnoredRanges(newText, pattern, replaceFunc);
+				newText = replaceAdditionalOccurrences(newText, target, redirs);
 			}
 			
 			if (!newText.equals(page.getText())) {
@@ -98,5 +110,24 @@ public final class ResolveRedirs {
 		
 		System.out.printf("%d edited pages: %s%n", edited.size(), edited);
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
+	}
+	
+	private static String replaceAdditionalOccurrences(String text, String target, List<String> redirs) {
+		for (var templateName : SOFT_REDIR_TEMPLATES) {
+			for (var template : ParseUtils.getTemplatesIgnoreCase(templateName, text)) {
+				var params = ParseUtils.getTemplateParametersWithValue(template);
+				
+				params.entrySet().stream()
+					.filter(e -> StringUtils.equalsAny(template, "Zobacz też", "Seealso")
+						? e.getKey().equals("ParamWithoutName1")
+						: e.getKey().startsWith("ParamWithoutName"))
+					.filter(e -> redirs.contains(e.getValue()))
+					.forEach(e -> e.setValue(target));
+				
+				text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
+			}
+		}
+		
+		return text;
 	}
 }
