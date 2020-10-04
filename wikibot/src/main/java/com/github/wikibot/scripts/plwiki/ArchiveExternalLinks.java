@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,39 +14,35 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.Range;
 import org.nibor.autolink.LinkExtractor;
 import org.nibor.autolink.LinkType;
 import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.WebArchiveLookup;
 
 public final class ArchiveExternalLinks {
+	private static final List<String> CITE_TEMPLATES = List.of("Cytuj", "Cytuj pismo", "Cytuj stronę");
+	
 	private static Wikibot wb;
 	private static WebArchiveLookup webArchive;
 	
 	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-		options.addRequiredOption("l", "link", true, "link URL");
-		options.addOption("p", "protocol", true, "protocol (defaults to 'http')");
+		CommandLine line = parseArguments(args);
 		
-		if (args.length == 0) {
-			System.out.print("Options: ");
-			args = Misc.readArgs();
-		}
-		
-		CommandLineParser parser = new DefaultParser();
-		CommandLine line = parser.parse(options, args);
-		
-		var url = line.getOptionValue("link");
-		var protocol = line.getOptionValue("protocol", "http");
+		final var url = line.getOptionValue("link");
+		final var protocol = line.getOptionValue("protocol", "http");
 		
 		wb = Login.createSession("pl.wikipedia.org");
 		webArchive = new WebArchiveLookup();
 		
-		var list = wb.linksearch(url, protocol, Wiki.MAIN_NAMESPACE);
+		var list = wb.linksearch(url, protocol, Wiki.MAIN_NAMESPACE, Wiki.CATEGORY_NAMESPACE);
 		var titles = list.stream().map(item -> item[0]).distinct().collect(Collectors.toList());
 		var urls = list.stream().map(item -> item[1]).collect(Collectors.toSet());
 		var pages = wb.getContentOfPages(titles);
@@ -55,7 +52,7 @@ public final class ArchiveExternalLinks {
 		
 		final var summary = String.format("archiwizacja „%s”", url);
 		var edited = new ArrayList<String>();
-		var errors = new ArrayList<>();
+		var errors = new ArrayList<String>();
 		
 		for (var page : pages) {
 			var links = extractLinks(page.getText());
@@ -66,7 +63,9 @@ public final class ArchiveExternalLinks {
 			var newText = page.getText();
 			
 			for (var entry : storage.entrySet()) {
-				newText = replaceOccurrences(newText, entry.getKey(), entry.getValue());
+				var ignoredCiteTemplateRanges = getIgnoredCiteTemplateRanges(newText);
+				var ignoredRanges = Utils.getCombinedRanges(ignoredCiteTemplateRanges, Utils.getStandardIgnoredRanges(newText));
+				newText = replaceOccurrences(newText, entry.getKey(), entry.getValue(), ignoredRanges);
 			}
 			
 			if (!newText.equals(page.getText())) {
@@ -84,8 +83,22 @@ public final class ArchiveExternalLinks {
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
 	}
 	
+	private static CommandLine parseArguments(String[] args) throws ParseException {
+		Options options = new Options();
+		options.addRequiredOption("l", "link", true, "link URL");
+		options.addOption("p", "protocol", true, "protocol (defaults to 'http')");
+		
+		if (args.length == 0) {
+			System.out.print("Options: ");
+			args = Misc.readArgs();
+		}
+		
+		CommandLineParser parser = new DefaultParser();
+		return parser.parse(options, args);
+	}
+	
 	private static Set<String> extractLinks(String text) {
-		var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
+		var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL, LinkType.WWW)).build();
 		var iterator = linkExtractor.extractLinks(text).iterator();
 		var links = new HashSet<String>();
 		
@@ -108,7 +121,29 @@ public final class ArchiveExternalLinks {
 		}
 	}
 	
-	private static String replaceOccurrences(String text, String target, String replacement) {
+	private static List<Range<Integer>> getIgnoredCiteTemplateRanges(String text) {
+		var ignoredTemplates = CITE_TEMPLATES.stream()
+			.flatMap(templateName -> ParseUtils.getTemplatesIgnoreCase(templateName, text).stream())
+			.filter(template -> !ParseUtils.getTemplateParametersWithValue(template).getOrDefault("archiwum", "").isBlank())
+			.distinct()
+			.collect(Collectors.toList());
+		
+		var ranges = new ArrayList<Range<Integer>>();
+		
+		for (var template : ignoredTemplates) {
+			var index = 0;
+			
+			while ((index = text.indexOf(template, index)) != -1) {
+				var range = Range.between(index, index + template.length() - 1); // inclusive-inclusive
+				ranges.add(range);
+				index += template.length();
+			}
+		}
+		
+		return ranges;
+	}
+	
+	private static String replaceOccurrences(String text, String target, String replacement, List<Range<Integer>> ignoredRanges) {
 		var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
 		var iterator = linkExtractor.extractLinks(text).iterator();
 		var sb = new StringBuilder(text.length());
@@ -116,6 +151,11 @@ public final class ArchiveExternalLinks {
 		
 		while (iterator.hasNext()) {
 			var linkSpan = iterator.next();
+			
+			if (Utils.containedInRanges(ignoredRanges, linkSpan.getBeginIndex())) {
+				continue;
+			}
+			
 			var link = text.substring(linkSpan.getBeginIndex(), linkSpan.getEndIndex());
 			
 			sb.append(text.substring(index, linkSpan.getBeginIndex()));
