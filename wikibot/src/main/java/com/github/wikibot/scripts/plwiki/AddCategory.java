@@ -1,4 +1,4 @@
-package com.github.wikibot.tasks.plwiki;
+package com.github.wikibot.scripts.plwiki;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
