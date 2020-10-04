@@ -597,13 +597,13 @@ public class Editor extends AbstractEditor {
 	}
 
 	public void removeComments() {
-		@SuppressWarnings("unchecked")
-		Range<Integer>[][] tempArray = COMMENT_PATT_LIST.stream()
+		var tempArray = COMMENT_PATT_LIST.stream()
 			.map(patt -> Utils.findRanges(text, patt))
-			.toArray(Range[][]::new);
+			.toArray(ArrayList[]::new);
 		
+		@SuppressWarnings("unchecked")
 		List<Range<Integer>> selectedRanges = Utils.getCombinedRanges(tempArray);
-		List<Range<Integer>> ignoredRanges = Arrays.asList(Utils.findRanges(text, "<!--", "-->"));
+		List<Range<Integer>> ignoredRanges = Utils.findRanges(text, "<!--", "-->");
 		Iterator<Range<Integer>> iterator = selectedRanges.iterator();
 		
 		while (iterator.hasNext()) {
@@ -898,10 +898,10 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void joinLines() {
-		Range<Integer>[] tags = Utils.findRanges(text, P_TAGS);
-		Range<Integer>[] refs = Utils.findRanges(text, P_REFS);
-		Range<Integer>[] templates = Utils.findRanges(text, "{{", "}}");
-		Range<Integer>[] wikitables = Utils.findRanges(text, "{|", "|}");
+		var tags = Utils.findRanges(text, P_TAGS);
+		var refs = Utils.findRanges(text, P_REFS);
+		var templates = Utils.findRanges(text, "{{", "}}");
+		var wikitables = Utils.findRanges(text, "{|", "|}");
 		
 		List<Range<Integer>> tagRanges = Utils.getCombinedRanges(tags);
 		List<Range<Integer>> refRanges = Utils.getCombinedRanges(refs);

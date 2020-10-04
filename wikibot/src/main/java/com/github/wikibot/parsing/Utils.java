@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -37,19 +36,18 @@ public final class Utils {
 		return text;
 	}
 	
-	public static Range<Integer>[] findRanges(String text, String start, String end) {
+	public static List<Range<Integer>> findRanges(String text, String start, String end) {
 		return findRanges(text, start, end, false);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static Range<Integer>[] findRanges(String text, String start, String end, boolean lazyClosingTag) {
+	public static List<Range<Integer>> findRanges(String text, String start, String end, boolean lazyClosingTag) {
 		int startPos = text.indexOf(start);
 		
 		if (startPos == -1) {
-			return new Range[]{};
+			return new ArrayList<Range<Integer>>();
 		}
 		
-		List<Range<Integer>> list = new ArrayList<>();
+		var list = new ArrayList<Range<Integer>>();
 		
 		while (startPos != -1) {
 			int endPos = text.indexOf(end, startPos);
@@ -63,51 +61,50 @@ public final class Utils {
 				list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
 				break;
 			} else {
-				return list.toArray(new Range[list.size()]); 
+				return list; 
 			}
 		}
 		
-		return list.toArray(new Range[list.size()]);
+		return list;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static Range<Integer>[] findRanges(String text, Pattern patt) {
-		List<Range<Integer>> list = new ArrayList<>();
-		Matcher m = patt.matcher(text);
+	public static List<Range<Integer>> findRanges(String text, Pattern patt) {
+		var list = new ArrayList<Range<Integer>>();
+		var m = patt.matcher(text);
 		
 		while (m.find()) {
 			list.add(Range.between(m.start(), m.end() - 1)); // inclusive/inclusive
 		}
 		
-		return list.toArray(new Range[list.size()]);
+		return list;
 	}
 	
 	public static List<Range<Integer>> getStandardIgnoredRanges(String text) {
 		// TODO: use DOM parsing?
-		Range<Integer>[] comments = findRanges(text, "<!--", "-->", true);
+		var comments = findRanges(text, "<!--", "-->", true);
 		// FIXME: process stray open tags (see findRanges(String, String, String, boolean))
-		Range<Integer>[] nowikis = findRanges(text, P_NOWIKI);
-		Range<Integer>[] pres = findRanges(text, P_PRE);
-		Range<Integer>[] codes = findRanges(text, P_CODE);
+		var nowikis = findRanges(text, P_NOWIKI);
+		var pres = findRanges(text, P_PRE);
+		var codes = findRanges(text, P_CODE);
 		
 		return getCombinedRanges(comments, nowikis, pres, codes);
 	}
 	
 	@SafeVarargs
-	public static List<Range<Integer>> getCombinedRanges(Range<Integer>[]... ranges) {
+	public static List<Range<Integer>> getCombinedRanges(List<Range<Integer>>... ranges) {
 		if (ranges.length == 0) {
 			return new ArrayList<>();
 		}
 		
-		List<Range<Integer>[]> filtered = Stream.of(ranges)
+		List<List<Range<Integer>>> filtered = Stream.of(ranges)
 			.filter(Objects::nonNull)
-			.filter(arr -> arr.length != 0)
+			.filter(l -> !l.isEmpty())
 			.collect(Collectors.toList());
 		
 		if (filtered.isEmpty()) {
 			return new ArrayList<>();
 		} else if (filtered.size() == 1) {
-			List<Range<Integer>> temp = Arrays.asList(filtered.get(0));
+			List<Range<Integer>> temp = filtered.get(0);
 			return new ArrayList<>(temp);
 		} else {
 			List<Range<Integer>> list = sortIgnoredRanges(filtered);
@@ -116,10 +113,10 @@ public final class Utils {
 		}
 	}
 
-	private static List<Range<Integer>> sortIgnoredRanges(List<Range<Integer>[]> ranges) {
+	private static List<Range<Integer>> sortIgnoredRanges(List<List<Range<Integer>>> ranges) {
 		List<Range<Integer>> list = ranges.stream()
 			.filter(Objects::nonNull)
-			.flatMap(Stream::of)
+			.flatMap(List::stream)
 			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
 			.collect(Collectors.toList());
 					
