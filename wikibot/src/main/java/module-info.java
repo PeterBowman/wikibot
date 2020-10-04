@@ -13,6 +13,7 @@ module org.github.wikibot {
 	requires commons.cli;
 	requires commons.exec;
 	requires java.logging;
+	requires java.net.http;
 	requires java.sql;
 	requires java.xml;
 	requires org.apache.commons.collections4;
