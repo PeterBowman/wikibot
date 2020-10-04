@@ -30,7 +30,7 @@ public final class ResolveRedirs {
 	private static Wikibot wb;
 	
 	static {
-		TARGET_NAMESPACES = new int[] { Wiki.MAIN_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */ };
+		TARGET_NAMESPACES = new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */ };
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -57,6 +57,8 @@ public final class ResolveRedirs {
 			.flatMap(Collection::stream)
 			.sorted()
 			.distinct()
+			// retain user sandboxes
+			.filter(title -> wb.namespace(title) != Wiki.USER_NAMESPACE || !wb.getRootPage(title).equals(title))
 			.collect(Collectors.toList());
 		
 		System.out.printf("%d unique backlinks found.%n", backlinks.size());
