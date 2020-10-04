@@ -30,6 +30,7 @@ module org.github.wikibot {
 	requires univocity.parsers;
 	requires org.wikipedia;
 	requires xstream;
+	requires org.nibor.autolink;
 	
 	// https://stackoverflow.com/a/41265267
 	opens com.github.wikibot.tasks.eswikt;

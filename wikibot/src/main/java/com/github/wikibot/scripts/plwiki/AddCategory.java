@@ -66,6 +66,7 @@ public final class AddCategory {
 			try {
 				wb.edit(page.getTitle(), text, summary, page.getTimestamp());
 			} catch (Throwable t) {
+				t.printStackTrace();
 				errors.add(page.getTitle());
 			}
 		}
