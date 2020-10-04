@@ -16,6 +16,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.Range;
+import org.apache.commons.lang3.StringUtils;
 import org.nibor.autolink.LinkExtractor;
 import org.nibor.autolink.LinkType;
 import org.wikipedia.Wiki;
@@ -97,6 +98,16 @@ public final class ArchiveExternalLinks {
 		return parser.parse(options, args);
 	}
 	
+	private static String normalizeLink(String link) {
+		final var specialChars = new char[]{ '#', '|' };
+		
+		if (StringUtils.containsAny(link, specialChars)) {
+			link = link.substring(0, StringUtils.indexOfAny(link, specialChars));
+		}
+		
+		return link;
+	}
+	
 	private static Set<String> extractLinks(String text) {
 		var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL, LinkType.WWW)).build();
 		var iterator = linkExtractor.extractLinks(text).iterator();
@@ -105,7 +116,7 @@ public final class ArchiveExternalLinks {
 		while (iterator.hasNext()) {
 			var linkSpan = iterator.next();
 			var link = text.substring(linkSpan.getBeginIndex(), linkSpan.getEndIndex());
-			links.add(link);
+			links.add(normalizeLink(link));
 		}
 		
 		return links;
@@ -157,6 +168,7 @@ public final class ArchiveExternalLinks {
 			}
 			
 			var link = text.substring(linkSpan.getBeginIndex(), linkSpan.getEndIndex());
+			link = normalizeLink(link);
 			
 			sb.append(text.substring(index, linkSpan.getBeginIndex()));
 			
@@ -166,7 +178,7 @@ public final class ArchiveExternalLinks {
 				sb.append(link);
 			}
 			
-			index = linkSpan.getEndIndex();
+			index = linkSpan.getBeginIndex() + link.length();
 		}
 		
 		sb.append(text.substring(index));
