@@ -109,10 +109,10 @@ public final class SJPTemplates {
 		sb.append("! hasło !! autor !! sygnatura czasowa !! opis edycji").append("\n");
 		
 		revs.stream()
-			.map(item -> String.format(
-				"| [[%s]] || %s || [[Specjalna:Diff/%d|%s]] || %s",
-				item.getTitle(), item.getUser(), item.getID(), item.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-				Optional.ofNullable(item.getComment()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
+			.map(rev -> String.format(
+				"| [[%s]] || [[%s]] || [[Specjalna:Diff/%d|%s]] || %s",
+				rev.getTitle(), rev.getUser(), rev.getID(), rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+				Optional.ofNullable(rev.getComment()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
 			))
 			.forEach(s -> sb.append("|-\n").append(s).append("\n"));
 		
