@@ -102,16 +102,18 @@ public class Field implements Comparable<Field> {
 		trailingNewlines = 0;
 		content = content.trim();
 		
-		if (!isNewLine && StringUtils.startsWithAny(content, NEWLINE_MARKERS)) {
-			isNewLine = true;
-		}
-		
-		if (fieldType == FieldTypes.DEFINITIONS || fieldType == FieldTypes.SOURCES) {
+		if (content.isEmpty()) {
 			return;
 		}
 		
-		if (isNewLine && !content.isEmpty() && !StringUtils.startsWithAny(content, NEWLINE_MARKERS)) {
-			content = ": " + content.replaceAll("^ +", "");
+		boolean suppressColon = StringUtils.startsWithAny(content, NEWLINE_MARKERS) || content.startsWith("{{współczesna}}"); 
+		
+		if (!isNewLine && suppressColon) {
+			isNewLine = true;
+		}
+		
+		if (isNewLine && !suppressColon && fieldType != FieldTypes.DEFINITIONS && fieldType != FieldTypes.SOURCES) {
+			content = ": " + content;
 		}
 	}
 	
