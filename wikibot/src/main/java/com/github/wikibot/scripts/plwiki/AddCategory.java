@@ -15,7 +15,7 @@ import com.github.wikibot.utils.Misc;
 
 public final class AddCategory {
 	private static final Path LOCATION = Paths.get("./data/scripts.plwiki/AddCategory/");
-	private static final Path TITLES = LOCATION.resolveSibling("titles.txt");
+	private static final Path TITLES = LOCATION.resolve("titles.txt");
 	
 	private static final List<String> DEFAULSORT_ALIASES = List.of(
 		"SORTUJ", "DEFAULTSORT", "DEFAULTSORTKEY", "DEFAULTCATEGORYSORT"
@@ -48,9 +48,14 @@ public final class AddCategory {
 		
 		if (titles.removeAll(catMembers)) {
 			System.out.printf("New list size: %d.%n", titles.size());
+			
+			if (titles.isEmpty()) {
+				return;
+			}
 		}
 		
 		final var summary = String.format("dodanie [[Kategoria:%s]]", category);
+		var edited = new ArrayList<String>();
 		var errors = new ArrayList<String>();
 		
 		for (var page : wb.getContentOfPages(titles)) {
@@ -65,14 +70,14 @@ public final class AddCategory {
 			
 			try {
 				wb.edit(page.getTitle(), text, summary, page.getTimestamp());
+				edited.add(page.getTitle());
 			} catch (Throwable t) {
 				t.printStackTrace();
 				errors.add(page.getTitle());
 			}
 		}
 		
-		if (!errors.isEmpty()) {
-			System.out.printf("%d errors: %s%n", errors.size(), errors);
-		}
+		System.out.printf("%d edited pages: %s%n", edited.size(), edited);
+		System.out.printf("%d errors: %s%n", errors.size(), errors);
 	}
 }
