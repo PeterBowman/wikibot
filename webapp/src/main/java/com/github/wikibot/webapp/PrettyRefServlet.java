@@ -834,6 +834,12 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 		
 		private static String normalizeUri(String str) {
+			final var specialChars = new char[]{ '#', '|' };
+			
+			if (StringUtils.containsAny(str, specialChars)) {
+				str = str.substring(0, StringUtils.indexOfAny(str, specialChars));
+			}
+			
 			return str.replaceFirst("^https?://web.archive.org/web/(\\*|\\d+)/", "");
 		}
 		
