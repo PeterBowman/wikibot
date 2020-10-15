@@ -27,7 +27,7 @@ public final class AddCategory {
 	
 	static {
 		var aliases = String.join("|", DEFAULSORT_ALIASES);
-		PATT_CATEGORIES = Pattern.compile(".+\n\\{{2}(?:" + aliases + "):[^\\}\\n]+?\\}{2}(?:\n+\\[{2}Kategoria:[^\\]\\n]+?\\]{2})+$", Pattern.DOTALL);
+		PATT_CATEGORIES = Pattern.compile(".+\n\\{{2}(?:" + aliases + "):[^\\}\n]+?\\}{2}(?: *\n+\\[{2}Kategoria:[^\\]\n]+?\\]{2})+$", Pattern.DOTALL);
 	}
 	
 	public static void main(String[] args) throws Exception {
