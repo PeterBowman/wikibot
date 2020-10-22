@@ -111,6 +111,9 @@ public final class UnsourcedUkrainianEntries {
 	private static boolean elementHasAnyTemplateOrNamedGroup(Element el, List<String> templates, Set<String> namedRefs) {
 		var name = el.attr("name").trim();
 		
+		// <ref name=aa/> was being expanded to <ref name="aa/"></ref> instead of <ref name="aa"></ref>
+		name = name.replaceFirst("/$", "");
+		
 		if (!name.isEmpty()) {
 			return namedRefs.contains(name);
 		} else {
