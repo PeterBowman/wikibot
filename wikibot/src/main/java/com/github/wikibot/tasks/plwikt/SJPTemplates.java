@@ -8,7 +8,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.wikipedia.Wiki;
@@ -29,18 +31,28 @@ public final class SJPTemplates {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		List<String> titles = wb.whatTranscludesHere(List.of("Szablon:sjp.pl"), Wiki.MAIN_NAMESPACE).get(0);
-		List<Wiki.Revision> targetRevs = new ArrayList<>(titles.size());
+		var titles = wb.whatTranscludesHere(List.of("Szablon:sjp.pl"), Wiki.MAIN_NAMESPACE).get(0);
+		var targetRevs = new ArrayList<Wiki.Revision>(titles.size());
 		
 		extractRevisions(titles, targetRevs);
 		targetRevs.sort((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()));
+		
+		var usernames = targetRevs.stream()
+			.map(Wiki.Revision::getUser)
+			.distinct()
+			.collect(Collectors.toList());
+		
+		var registeredUsers = wb.getUsers(usernames).stream()
+			.filter(Objects::nonNull)
+			.map(Wiki.User::getUsername)
+			.collect(Collectors.toSet());
 		
 		if (!checkStoredData(targetRevs)) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		}
 		
-		String output = makeTable(targetRevs);
+		String output = makeTable(targetRevs, registeredUsers);
 		
 		wb.setMarkBot(false);
 		wb.edit(WIKI_PAGE, output, "aktualizacja");
@@ -96,7 +108,7 @@ public final class SJPTemplates {
 		}
 	}
 	
-	private static String makeTable(List<Wiki.Revision> revs) {
+	private static String makeTable(List<Wiki.Revision> revs, Set<String> registeredUsers) {
 		StringBuilder sb = new StringBuilder(revs.size() * 200);
 		
 		sb.append("Dyskusja w Barze:").append("\n");
@@ -110,8 +122,9 @@ public final class SJPTemplates {
 		
 		revs.stream()
 			.map(rev -> String.format(
-				"| [[%s]] || [[%s]] || [[Specjalna:Diff/%d|%s]] || %s",
-				rev.getTitle(), rev.getUser(), rev.getID(), rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+				"| [[%s]] || %s || [[Specjalna:Diff/%d|%s]] || %s",
+				rev.getTitle(), getUserLink(rev.getUser(), registeredUsers.contains(rev.getUser())), rev.getID(),
+				rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
 				Optional.ofNullable(rev.getComment()).map(s -> String.format("<nowiki>%s</nowiki>", s)).orElse("")
 			))
 			.forEach(s -> sb.append("|-\n").append(s).append("\n"));
@@ -119,5 +132,13 @@ public final class SJPTemplates {
 		sb.append("|}");
 		
 		return sb.toString();
+	}
+	
+	private static String getUserLink(String username, boolean isRegistered) {
+		if (isRegistered) {
+			return String.format("[[User:%1$s|%1$s]]", username);
+		} else {
+			return String.format("[[Special:Contribs/%1$s|%1$s]]", username);
+		}
 	}
 }
