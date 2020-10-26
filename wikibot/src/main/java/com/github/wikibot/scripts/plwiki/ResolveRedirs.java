@@ -8,6 +8,7 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
@@ -67,7 +68,11 @@ public final class ResolveRedirs {
 			return;
 		}
 		
-		var patterns = redirs.stream()
+		var redirsIgnoreCase = redirs.stream()
+			.flatMap(redir -> Stream.of(StringUtils.capitalize(redir), StringUtils.uncapitalize(redir)))
+			.collect(Collectors.toList());
+		
+		var patterns = redirsIgnoreCase.stream()
 			.map(redir -> String.format(PATT_TEMPLATE, Pattern.quote(redir)))
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
@@ -96,7 +101,7 @@ public final class ResolveRedirs {
 			
 			for (var pattern : patterns) {
 				newText = Utils.replaceWithStandardIgnoredRanges(newText, pattern, replaceFunc);
-				newText = replaceAdditionalOccurrences(newText, target, redirs);
+				newText = replaceAdditionalOccurrences(newText, target, redirsIgnoreCase);
 			}
 			
 			if (!newText.equals(page.getText())) {
