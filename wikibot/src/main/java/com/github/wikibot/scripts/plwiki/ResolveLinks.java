@@ -10,6 +10,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -19,42 +24,53 @@ import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
-public final class ResolveRedirs {
+public final class ResolveLinks {
 	// from Linker::formatLinksInComment in Linker.php
-	private static final String PATT_TEMPLATE = "\\[{2} *?:?(%s) *?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
+	private static final String PATT_LINK = "\\[{2} *?:?(%s) *?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
 	
 	private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
 		"Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
 	);
 	
-	private static final int[] TARGET_NAMESPACES;
+	private static final int[] TARGET_NAMESPACES = new int[] {
+		Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */
+	};
+
 	private static Wikibot wb;
 	
-	static {
-		TARGET_NAMESPACES = new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */ };
-	}
-	
 	public static void main(String[] args) throws Exception {
-		final String target;
-		
-		if (args.length == 0) {
-			System.out.print("Target page: ");
-			target = String.join(" ", Misc.readArgs());
-		} else {
-			target = args[1];
-		}
+		CommandLine line = parseArguments(args);
+		final var mode = line.getOptionValue("mode");
+		final var target = line.getOptionValue("target");
 		
 		wb = Login.createSession("pl.wikipedia.org");
-
-		var redirs = wb.whatLinksHere(List.of(target), true, false, Wiki.MAIN_NAMESPACE).get(0);
 		
-		System.out.printf("%d redirs: %s%n", redirs.size(), redirs);
+		final List<String> sources;
+		final String summary;
 		
-		if (redirs.isEmpty()) {
-			return;
+		if (mode.equals("redir")) {
+			sources = wb.whatLinksHere(List.of(target), true, false, Wiki.MAIN_NAMESPACE).get(0);
+			System.out.printf("%d redirs: %s%n", sources.size(), sources);
+			
+			if (sources.isEmpty()) {
+				return;
+			}
+			
+			summary = String.format("podmiana przekierowań do „[[%s]]”", target);
+		} else if (mode.equals("disamb")) {
+			var source = line.getOptionValue("source");
+			
+			if (source == null) {
+				throw new IllegalArgumentException("no source provided");
+			}
+			
+			sources = List.of(source);
+			summary = String.format("zamiana linków z „[[%s]]” na „[[%s]]”", source, target);
+		} else {
+			throw new IllegalArgumentException("illegal mode: " + mode);
 		}
 		
-		var backlinks = wb.whatLinksHere(redirs, false, false, TARGET_NAMESPACES).stream()
+		var backlinks = wb.whatLinksHere(sources, false, false, TARGET_NAMESPACES).stream()
 			.flatMap(Collection::stream)
 			.sorted()
 			.distinct()
@@ -68,12 +84,12 @@ public final class ResolveRedirs {
 			return;
 		}
 		
-		var redirsIgnoreCase = redirs.stream()
+		var sourcesIgnoreCase = sources.stream()
 			.flatMap(redir -> Stream.of(StringUtils.capitalize(redir), StringUtils.uncapitalize(redir)))
 			.collect(Collectors.toList());
 		
-		var patterns = redirsIgnoreCase.stream()
-			.map(redir -> String.format(PATT_TEMPLATE, Pattern.quote(redir)))
+		var patterns = sourcesIgnoreCase.stream()
+			.map(redir -> String.format(PATT_LINK, Pattern.quote(redir)))
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
 		
@@ -82,14 +98,12 @@ public final class ResolveRedirs {
 			var text = Optional.ofNullable(m.group(2)).orElse(link);
 			var trail = Optional.ofNullable(m.group(3)).orElse("");
 			
-			if (redirs.contains(text + trail)) {
+			if (mode.equals("redir") && sources.contains(text + trail)) {
 				m.appendReplacement(sb, String.format("[[%s]]", target));
 			} else {
 				m.appendReplacement(sb, String.format("[[%s|%s]]", target, text + trail));
 			}
 		};
-		
-		final var summary = String.format("podmiana przekierowań do „[[%s]]”", target);
 		
 		var edited = new ArrayList<String>();
 		var errors = new ArrayList<String>();
@@ -101,7 +115,7 @@ public final class ResolveRedirs {
 			
 			for (var pattern : patterns) {
 				newText = Utils.replaceWithStandardIgnoredRanges(newText, pattern, replaceFunc);
-				newText = replaceAdditionalOccurrences(newText, target, redirsIgnoreCase);
+				newText = replaceAdditionalOccurrences(newText, target, sourcesIgnoreCase);
 			}
 			
 			if (!newText.equals(page.getText())) {
@@ -119,7 +133,22 @@ public final class ResolveRedirs {
 		System.out.printf("%d errors: %s%n", errors.size(), errors);
 	}
 	
-	private static String replaceAdditionalOccurrences(String text, String target, List<String> redirs) {
+	private static CommandLine parseArguments(String[] args) throws ParseException {
+		Options options = new Options();
+		options.addRequiredOption("m", "mode", true, "script mode (redir, disamb)");
+		options.addOption("s", "source", true, "source page");
+		options.addRequiredOption("t", "target", true, "target page");
+		
+		if (args.length == 0) {
+			System.out.print("Options: ");
+			args = Misc.readArgs();
+		}
+		
+		CommandLineParser parser = new DefaultParser();
+		return parser.parse(options, args);
+	}
+	
+	private static String replaceAdditionalOccurrences(String text, String target, List<String> sources) {
 		for (var templateName : SOFT_REDIR_TEMPLATES) {
 			for (var template : ParseUtils.getTemplatesIgnoreCase(templateName, text)) {
 				var params = ParseUtils.getTemplateParametersWithValue(template);
@@ -128,7 +157,7 @@ public final class ResolveRedirs {
 					.filter(e -> StringUtils.equalsAny(template, "Zobacz też", "Seealso")
 						? e.getKey().equals("ParamWithoutName1")
 						: e.getKey().startsWith("ParamWithoutName"))
-					.filter(e -> redirs.contains(e.getValue()))
+					.filter(e -> sources.contains(e.getValue()))
 					.forEach(e -> e.setValue(target));
 				
 				text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
