@@ -2,3 +2,6 @@
 /data/
 /target/
 /dist/
+/.settings/
+.classpath
+.project
