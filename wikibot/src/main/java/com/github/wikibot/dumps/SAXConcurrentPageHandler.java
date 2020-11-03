@@ -23,6 +23,7 @@ public final class SAXConcurrentPageHandler extends SAXPageHandler {
 	
 	@Override
 	protected void processRevision() {
-		executor.execute(makeRunnable(cons, revision.clone()));
+		XMLRevision rev = revision;
+		executor.execute(() -> cons.accept(rev));
 	}
 }

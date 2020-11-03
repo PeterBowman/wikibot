@@ -1,6 +1,6 @@
 package com.github.wikibot.dumps;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.xml.sax.Attributes;
@@ -9,8 +9,8 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class SAXPageHandler extends DefaultHandler {
 
-	protected static final List<String> CONTENT_TAGS = List.of(
-		"title", "ns", "id", "parentid", "timestamp", "username", "comment", "text"
+	protected static final Set<String> CONTENT_TAGS = Set.of(
+		"title", "ns", "id", "redirect", "parentid", "timestamp", "username", "ip", "minor", "comment", "text"
 	);
 
 	protected Consumer<XMLRevision> cons;
@@ -29,9 +29,10 @@ public class SAXPageHandler extends DefaultHandler {
 			acceptContent = true;
 			
 			if (qName.equals("text")) {
-				sb = new StringBuilder(2000);
+				String bytes = atts.getValue("bytes");
+				sb = new StringBuilder(Integer.parseInt(bytes));
 			} else {
-				sb = new StringBuilder(50);
+				sb = new StringBuilder();
 			}
 		}
 	}
@@ -49,7 +50,7 @@ public class SAXPageHandler extends DefaultHandler {
 		
 		switch (qName) {
 			case "title":
-				revision.title = decode(sb.toString());
+				revision.title = sb.toString();
 				break;
 			case "ns":
 				revision.ns = Integer.parseInt(sb.toString());
@@ -71,20 +72,20 @@ public class SAXPageHandler extends DefaultHandler {
 				revision.timestamp = sb.toString();
 				break;
 			case "username":
-				revision.contributor = decode(sb.toString());
+				revision.contributor = sb.toString();
 				break;
 			case "ip": // either this or "username"
-				revision.contributor = decode(sb.toString());
+				revision.contributor = sb.toString();
 				revision.isAnonymousContributor = true;
 				break;
 			case "minor":
 				revision.isMinor = true;
 				break;
 			case "comment":
-				revision.comment = decode(sb.toString());
+				revision.comment = sb.toString();
 				break;
 			case "text":
-				revision.text = decode(sb.toString());
+				revision.text = sb.toString();
 				break;
 			case "page":
 				processRevision();
@@ -96,21 +97,6 @@ public class SAXPageHandler extends DefaultHandler {
 	}
 	
 	protected void processRevision() {
-		makeRunnable(cons, revision.clone());
+		cons.accept(revision);
 	}
-
-	protected static Runnable makeRunnable(Consumer<XMLRevision> cons, XMLRevision revision) {
-		return () -> cons.accept(revision);
-	}
-
-	protected static String decode(String in) {
-		// TODO: review? http://stackoverflow.com/a/1091953
-		in = in.replace("&lt;", "<").replace("&gt;", ">");
-		in = in.replace("&quot;", "\"");
-		//in = in.replace("&apos;", "'");
-		in = in.replace("&#039;", "'");
-		in = in.replace("&amp;", "&");
-		return in;
-	}
-
 }
