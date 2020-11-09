@@ -72,7 +72,7 @@ public final class UnsourcedUkrainianEntries {
 			.collect(Collectors.toList());
 		
 		// FIXME: https://pl.wiktionary.org/w/index.php?diff=7463681
-		templates.add("Szablon:USUM2005");
+		templates.add("USUM2005");
 		
 		System.out.printf("%d templates: %s%n", templates.size(), templates);
 		
