@@ -71,6 +71,9 @@ public final class UnsourcedUkrainianEntries {
 			.map(wb::removeNamespace)
 			.collect(Collectors.toList());
 		
+		// FIXME: https://pl.wiktionary.org/w/index.php?diff=7463681
+		templates.add("Szablon:USUM2005");
+		
 		System.out.printf("%d templates: %s%n", templates.size(), templates);
 		
 		var titles =  wb.getContentOfCategorymembers("ukraiński (indeks)", Wiki.MAIN_NAMESPACE).stream()
