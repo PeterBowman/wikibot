@@ -42,6 +42,7 @@ Formato = estructura
 formato = estructura
 revisar = revisión
 
+DRAE = DRAE2001
 DRAE1914 = DLC1914
 DUE = MaríaMoliner
 Moliner = MaríaMoliner
