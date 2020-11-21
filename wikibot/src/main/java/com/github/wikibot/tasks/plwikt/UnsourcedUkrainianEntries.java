@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -22,7 +23,6 @@ import org.wikiutils.ParseUtils;
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
@@ -37,6 +37,7 @@ public final class UnsourcedUkrainianEntries {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/UnsourcedUkrainianEntries/");
 	private static final String TARGET_PAGE = "Wikipedysta:PBbot/nieuźródłowione hasła ukraińskie";
 	private static final String SOURCES_CATEGORY = "Szablony źródeł (ukraiński)";
+	private static final String IGNORED_DEF_TEMPLATES_CATEGORY = "Szablony nagłówków form fleksyjnych";
 	private static final Pattern PATT_NEWLINE = Pattern.compile("\n");
 	private static final int RESULT_LIMIT = 1000;
 	private static final int BATCH_SIZE = 10;
@@ -67,19 +68,23 @@ public final class UnsourcedUkrainianEntries {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		var templates = wb.getCategoryMembers(SOURCES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
+		var sourceTmpls = wb.getCategoryMembers(SOURCES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(wb::removeNamespace)
 			.collect(Collectors.toList());
 		
 		// FIXME: https://pl.wiktionary.org/w/index.php?diff=7463681
-		templates.add("USUM2005");
+		sourceTmpls.add("USUM2005");
 		
-		System.out.printf("%d templates: %s%n", templates.size(), templates);
+		var ignoredHeaderTmpls = wb.getCategoryMembers(IGNORED_DEF_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
+			.map(wb::removeNamespace)
+			.collect(Collectors.toList());
+		
+		System.out.printf("%d templates: %s%n", sourceTmpls.size(), sourceTmpls);
 		
 		var titles =  wb.getContentOfCategorymembers("ukraiński (indeks)", Wiki.MAIN_NAMESPACE).stream()
 			.map(Page::wrap)
 			.flatMap(p -> p.getSection("ukraiński", true).stream())
-			.filter(s -> !hasAllDefinitionsSourced(s, s.getField(FieldTypes.DEFINITIONS).get(), templates))
+			.filter(s -> !hasAllDefinitionsSourced(s, sourceTmpls, ignoredHeaderTmpls))
 			.map(f -> f.getContainingPage().get().getTitle())
 			.sorted(Collator.getInstance(new Locale("uk")))
 			.collect(Collectors.toList());
@@ -95,20 +100,41 @@ public final class UnsourcedUkrainianEntries {
 		wb.edit(TARGET_PAGE, makePageText(sublist, titles.size()), "aktualizacja");
 	}
 	
-	private static boolean hasAllDefinitionsSourced(Section section, Field definitions, List<String> templates) {
+	private static boolean hasAllDefinitionsSourced(Section section, List<String> sourceTmpls, List<String> ignoredHeaderTmpls) {
 		var namedRefs = Jsoup.parseBodyFragment(section.toString()).select("ref[name]").stream()
-			.filter(el -> elementHasAnyTemplate(el, templates))
+			.filter(el -> elementHasAnyTemplate(el, sourceTmpls))
 			.map(el -> el.attr("name"))
 			.filter(attr -> !attr.isBlank())
 			.collect(Collectors.toSet());
 		
-		return PATT_NEWLINE.splitAsStream(definitions.getContent())
-			.filter(line -> line.startsWith(":"))
+		var defsContent = section.getField(FieldTypes.DEFINITIONS).get().getContent();
+		var stripped = stripIgnoredDefinitionLines(defsContent, ignoredHeaderTmpls);
+		
+		return PATT_NEWLINE.splitAsStream(stripped)
 			.allMatch(line -> !Optional.of(Jsoup.parseBodyFragment(line))
 				.map(doc -> doc.getElementsByTag("ref"))
-				.filter(els -> els.stream().anyMatch(el -> elementHasAnyTemplateOrNamedGroup(el, templates, namedRefs)))
+				.filter(els -> els.stream().anyMatch(el -> elementHasAnyTemplateOrNamedGroup(el, sourceTmpls, namedRefs)))
 				.isEmpty()
 			);
+	}
+	
+	private static String stripIgnoredDefinitionLines(String text, List<String> ignoredHeaderTmpls) {
+		var lines = new ArrayList<String>();
+		boolean ignoring = false;
+		
+		for (var line : PATT_NEWLINE.split(text)) {
+			if (line.startsWith(":")) {
+				if (!ignoring) {
+					lines.add(line);
+				}
+			} else if (ignoredHeaderTmpls.stream().anyMatch(tmpl -> !ParseUtils.getTemplates(tmpl, line).isEmpty())) {
+				ignoring = true;
+			} else {
+				ignoring = false;
+			}
+		}
+		
+		return String.join("\n", lines);
 	}
 	
 	private static boolean elementHasAnyTemplateOrNamedGroup(Element el, List<String> templates, Set<String> namedRefs) {
