@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -43,7 +44,10 @@ public final class MissingUkrainianAudio {
 				.collect(Collectors.toList());
 		}
 		
-		Files.write(LOCATION.resolve("titles.txt"), titles);
+		var path = LOCATION.resolve("titles.txt");
+		
+		Files.writeString(path, String.format("Generated from %s.%n%s%n", reader.getFile().getName(), "-".repeat(60)));
+		Files.write(LOCATION.resolve("titles.txt"), titles, StandardOpenOption.APPEND);
 	}
 	
 	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, FileNotFoundException {
