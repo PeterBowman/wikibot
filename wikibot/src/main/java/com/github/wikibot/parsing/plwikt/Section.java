@@ -25,7 +25,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	private String langShort;
 	private SectionTypes sectionType;
 	private String headerTitle;
-	private static final Pattern P_HEADER = Pattern.compile("^(.*?) *?\\(\\{\\{(.+?)(?:\\|[^\\}]+?)?\\}\\}\\)$");
+	private static final Pattern P_HEADER = Pattern.compile("^(.*?) *?\\(\\{\\{(.+?)(?:\\|[^\\}]*?)?\\}\\}\\)$");
 	
 	Section() {
 		super(null);
