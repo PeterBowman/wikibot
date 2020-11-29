@@ -117,7 +117,7 @@ public final class SpanishCanonicalInflectedForms {
 		
 		if (storedHashCode != newHashCode) {
 			Misc.serialize(newHashCode, fHash);
-			Misc.serialize(list, LOCATION + "list.ser");
+			Misc.serialize(list, LOCATION.resolve("list.ser"));
 			return true;
 		} else {
 			return false;

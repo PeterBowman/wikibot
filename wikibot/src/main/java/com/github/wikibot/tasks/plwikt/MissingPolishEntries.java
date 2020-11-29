@@ -73,7 +73,7 @@ public class MissingPolishEntries {
 			return;
 		} else {
 			Misc.serialize(hash, fHash);
-			Misc.serialize(titles, LOCATION + "titles.ser");
+			Misc.serialize(titles, LOCATION.resolve("titles.ser"));
 			System.out.printf("%d titles stored.%n", titles.size());
 		}
 
