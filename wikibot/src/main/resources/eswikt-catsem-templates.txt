@@ -156,6 +156,7 @@ islas = Islas, Topónimos
 judaísmo = Judaísmo
 juegos = Juegos
 lagos = Lagos, Topónimos
+lexicografía = Lexicografía
 lgbt = LGBT
 lingüística = Lingüística
 líquidos = Líquidos
