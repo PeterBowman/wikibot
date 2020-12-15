@@ -72,9 +72,6 @@ public final class UnsourcedUkrainianEntries {
 			.map(wb::removeNamespace)
 			.collect(Collectors.toList());
 		
-		// FIXME: https://pl.wiktionary.org/w/index.php?diff=7463681
-		sourceTmpls.add("USUM2005");
-		
 		var ignoredHeaderTmpls = wb.getCategoryMembers(IGNORED_DEF_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(wb::removeNamespace)
 			.collect(Collectors.toList());
