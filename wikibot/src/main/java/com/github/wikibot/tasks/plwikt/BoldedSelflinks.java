@@ -45,7 +45,7 @@ public final class BoldedSelflinks {
 		"znak chiński", "chiński standardowy", "minnan", "japoński", "gan", "ajnoski", "kantoński"
 	);
 	
-	private static final List<String> IGNORED_LANGS = List.of("jidysz", "niemiecki");
+	private static final List<String> IGNORED_LANGS = List.of("niemiecki");
 	
 	private static final Map<FieldTypes, List<String>> IGNORED_FIELDS;
 	
