@@ -35,7 +35,7 @@
 				<span class="mw-input-with-label">
 					<label for="targetdb">Projekt:</label>
 					<input id="targetdb" name="targetdb" size="20" value="${param.targetdb}">
-					(<a href="//tools.wmflabs.org/tools-info/?listmetap" target="_blank">pełna lista</a>)
+					(<a href="//tools-info.toolforge.org/?listmetap" target="_blank">pełna lista</a>)
 				</span>
 				<p>
 					Opcje:
