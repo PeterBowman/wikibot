@@ -13,15 +13,23 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	long pageid;
 	boolean isRedirect; // TODO: add target title
 	long revid;
-	long parentid = 0;
+	long parentid;
 	String timestamp;
 	String contributor;
 	boolean isAnonymousContributor;
 	boolean isMinor;
 	String comment;
 	String text;
+	int bytes;
+	boolean isRevDeleted;
+	boolean isCommentDeleted;
+	boolean isUserDeleted;
 	
-	XMLRevision() {}
+	XMLRevision() {
+		parentid = 0;
+		contributor = ""; // otherwise might be null if revdeleted
+		comment = ""; // empty comment
+	}
 	
 	public String getTitle() {
 		return title;
@@ -71,6 +79,10 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		return text;
 	}
 	
+	public int getBytes() {
+		return bytes;
+	}
+	
 	public boolean isMainNamespace() {
 		return ns == 0;
 	}
@@ -81,6 +93,18 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	public boolean isFirstRevision() {
 		return parentid == 0;
+	}
+	
+	public boolean isRevisionDeleted() {
+		return isRevDeleted;
+	}
+	
+	public boolean isCommentDeleted() {
+		return isCommentDeleted;
+	}
+	
+	public boolean isContributorDeleted() {
+		return isUserDeleted;
 	}
 	
 	public PageContainer toPageContainer() {
@@ -101,25 +125,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		XMLRevision rev = (XMLRevision) obj;
 		return rev.revid == revid;
 	};
-	
-	@Override
-	public XMLRevision clone() {
-		XMLRevision rev = new XMLRevision();
-		rev.title = title;
-		rev.ns = ns;
-		rev.pageid = pageid;
-		rev.isRedirect = isRedirect;
-		rev.revid = revid;
-		rev.parentid = parentid;
-		rev.timestamp = timestamp;
-		rev.contributor = contributor;
-		rev.isAnonymousContributor = isAnonymousContributor;
-		rev.isMinor = isMinor;
-		rev.comment = comment;
-		rev.text = text;
-		return rev;
-	}
-	
+		
 	@Override
 	public int compareTo(XMLRevision o) {
 		return Long.compare(revid, o.revid);
@@ -127,7 +133,6 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	@Override
 	public String toString() {
-		// contributor/comment/text may be null (revdeleted)
 		return
 			"[title=" + title +
 			",ns=" + ns +
@@ -137,9 +142,13 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 			",parentid=" + parentid +
 			",timestamp=" + timestamp +
 			",contributor=" + contributor +
-			",isAnonymousContributor=" + isAnonymousContributor +
+			",isAnon=" + isAnonymousContributor +
 			",isMinor=" + isMinor +
 			",comment=" + comment +
+			",bytes=" + bytes +
+			",isRevDeleted=" + isRevDeleted +
+			",isCommentDeleted=" + isCommentDeleted +
+			",isUserDeleted=" + isUserDeleted +
 			",text=" + text + "]";
 	}
 }

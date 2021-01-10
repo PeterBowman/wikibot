@@ -3,7 +3,6 @@ package com.github.wikibot.dumps;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -107,11 +106,12 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 			}
 		}
 		
-		private void parseCurrentElement(BiConsumer<XMLStreamReader, StringBuilder> consumer) {
+		private void parseCurrentElement(XmlConsumer consumer) {
 			switch (streamReader.getEventType()) {
 				case XMLStreamConstants.START_ELEMENT:
 					buffer.setLength(0);
 					appendable = true;
+					consumer.acceptStartElement(streamReader);
 					break;
 				case XMLStreamConstants.CHARACTERS:
 					if (appendable) {
@@ -121,7 +121,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 					break;
 				case XMLStreamConstants.END_ELEMENT:
 					if (appendable) {
-						consumer.accept(streamReader, buffer);
+						consumer.acceptEndElement(streamReader, buffer);
 						appendable = false;
 					}
 					
@@ -150,7 +150,12 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		}
 	}
 	
-	private static class PageConsumer implements BiConsumer<XMLStreamReader, StringBuilder> {
+	private static interface XmlConsumer {
+		void acceptStartElement(XMLStreamReader reader);
+		void acceptEndElement(XMLStreamReader reader, StringBuilder sb);
+	}
+	
+	private static class PageConsumer implements XmlConsumer {
 		private PageInfo page;
 		
 		PageConsumer(PageInfo pageInfo) {
@@ -158,7 +163,10 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		}
 		
 		@Override
-		public void accept(XMLStreamReader reader, StringBuilder sb) {
+		public void acceptStartElement(XMLStreamReader reader) {}
+		
+		@Override
+		public void acceptEndElement(XMLStreamReader reader, StringBuilder sb) {
 			switch (reader.getLocalName()) {
 				case "title":
 					page.title = sb.toString();
@@ -176,7 +184,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		}
 	}
 	
-	private static class RevisionConsumer implements BiConsumer<XMLStreamReader, StringBuilder> {
+	private static class RevisionConsumer implements XmlConsumer {
 		private XMLRevision revision;
 		
 		RevisionConsumer(XMLRevision revision) {
@@ -184,7 +192,35 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		}
 		
 		@Override
-		public void accept(XMLStreamReader reader, StringBuilder sb) {
+		public void acceptStartElement(XMLStreamReader reader) {
+			for (int i = 0; i < reader.getAttributeCount(); i++) {
+				switch (reader.getLocalName()) {
+					case "contributor":
+						if (reader.getAttributeLocalName(i).equals("deleted")) {
+							revision.isUserDeleted = true;
+						}
+						
+						break;
+					case "comment":
+						if (reader.getAttributeLocalName(i).equals("deleted")) {
+							revision.isCommentDeleted = true;
+						}
+						
+						break;
+					case "text":
+						if (reader.getAttributeLocalName(i).equals("bytes")) {
+							revision.bytes = Integer.parseInt(reader.getAttributeValue(i));
+						} else if (reader.getAttributeLocalName(i).equals("deleted")) {
+							revision.isRevDeleted = true;
+						}
+						
+						break;
+					}
+			}
+		}
+		
+		@Override
+		public void acceptEndElement(XMLStreamReader reader, StringBuilder sb) {
 			switch (reader.getLocalName()) {
 				case "id":
 					// ignore if already set, e.g. contributor's id
