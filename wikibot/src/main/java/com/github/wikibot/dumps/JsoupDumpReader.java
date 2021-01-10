@@ -29,15 +29,15 @@ public final class JsoupDumpReader {
 		rev.ns = Integer.parseInt(ns.text());
 		
 		Element pageid = siblings.stream().filter(el -> el.tagName().equals("id")).findAny().get();
-		rev.pageid = Integer.parseInt(pageid.text());
+		rev.pageid = Long.parseLong(pageid.text());
 		
 		rev.isRedirect = siblings.stream().anyMatch(el -> el.tagName().equals("redirect"));
 		
 		Element revid = revision.children().stream().filter(el -> el.tagName().equals("id")).findAny().get();
-		rev.revid = Integer.parseInt(revid.text());
+		rev.revid = Long.parseLong(revid.text());
 		
 		try {
-			rev.parentid = Integer.parseInt(revision.getElementsByTag("parentid").get(0).text());
+			rev.parentid = Long.parseLong(revision.getElementsByTag("parentid").get(0).text());
 		} catch (IndexOutOfBoundsException e) {}
 		
 		rev.timestamp = revision.getElementsByTag("timestamp").get(0).text();
