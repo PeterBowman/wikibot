@@ -57,16 +57,16 @@ public class SAXPageHandler extends DefaultHandler {
 				break;
 			case "id": // hacky
 				if (revision.pageid == 0) {
-					revision.pageid = Integer.parseInt(sb.toString());
+					revision.pageid = Long.parseLong(sb.toString());
 				} else if (revision.revid == 0) {
-					revision.revid = Integer.parseInt(sb.toString());
+					revision.revid = Long.parseLong(sb.toString());
 				}
 				break;
 			case "redirect":
 				revision.isRedirect = true;
 				break;
 			case "parentid":
-				revision.parentid = Integer.parseInt(sb.toString());
+				revision.parentid = Long.parseLong(sb.toString());
 				break;
 			case "timestamp":
 				revision.timestamp = sb.toString();

@@ -10,10 +10,10 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	String title;
 	int ns;
-	int pageid;
+	long pageid;
 	boolean isRedirect; // TODO: add target title
-	int revid;
-	int parentid = 0;
+	long revid;
+	long parentid = 0;
 	String timestamp;
 	String contributor;
 	boolean isAnonymousContributor;
@@ -31,7 +31,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		return ns;
 	}
 	
-	public int getPageid() {
+	public long getPageid() {
 		return pageid;
 	}
 	
@@ -39,11 +39,11 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		return isRedirect;
 	}
 	
-	public int getRevid() {
+	public long getRevid() {
 		return revid;
 	}
 	
-	public int getParentid() {
+	public long getParentid() {
 		return parentid;
 	}
 	
@@ -89,7 +89,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	@Override
 	public int hashCode() {
-		return revid;
+		return (int)revid;
 	};
 	
 	@Override
@@ -122,7 +122,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	@Override
 	public int compareTo(XMLRevision o) {
-		return Integer.compare(revid, o.revid);
+		return Long.compare(revid, o.revid);
 	}
 	
 	@Override
