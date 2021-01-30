@@ -21,7 +21,7 @@
 			na licencji
 			<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.pl" target="_blank">CC BY-SA 3.0</a>.
 		</p>
-		<form action="/pbbot/pretty-ref" method="POST"
+		<form action="/pretty-ref" method="POST"
 			onsubmit="if (this.text.value === '') this.method = 'get'; else this.method = 'post';">
 			<fieldset>
 				<legend>Konwerter przypisów</legend>
