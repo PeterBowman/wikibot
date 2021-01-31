@@ -671,7 +671,6 @@ public class PrettyRefServlet extends HttpServlet {
 				Map<String, String> params = tpl.getParamMap();
 				String templateName = tpl.getTemplateName();
 				
-				// keep this switch synced with the one in toString()
 				switch (templateName) {
 					case "Cytuj":
 					case "Cytuj grę komputerową":
@@ -679,6 +678,7 @@ public class PrettyRefServlet extends HttpServlet {
 					case "Cytuj odcinek":
 					case "Cytuj pismo":
 					case "Cytuj stronę":
+					{
 						String year, author, pages;
 						
 						if (params.containsKey("rok")) {
@@ -753,8 +753,10 @@ public class PrettyRefServlet extends HttpServlet {
 						}
 						
 						break;
+					}
 					case "Dziennik Ustaw":
 					case "Monitor Polski":
+					{
 						ident = templateName.equals("Dziennik Ustaw") ? "DzU" : "MP";
 						ident += " ";
 						
@@ -767,11 +769,15 @@ public class PrettyRefServlet extends HttpServlet {
 						
 						ident += String.join("-", list);
 						break;
+					}
 					case "Ludzie nauki":
+					{
 						String capture = str.replaceFirst(".*?(\\d+).*", "$1");
 						ident = String.format("ludzie-nauki-%s", capture);
 						break;
+					}
 					case "Simbad":
+					{
 						String id = params.get("ParamWithoutName1");
 						String description = params.get("ParamWithoutName2");
 						ident = templateName;
@@ -785,8 +791,13 @@ public class PrettyRefServlet extends HttpServlet {
 						}
 						
 						break;
+					}
 					default:
-						throw new RuntimeException("Unsupported cite template: " + templateName);
+					{
+						// use last six digits of the hash, see https://stackoverflow.com/q/33219638
+						int hash = str.hashCode() & 0xffffff;
+						ident = templateName.replace(" ", "-") + "-" + Integer.toString(hash);
+					}
 				}
 			} else {
 				LinkExtractor linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
@@ -932,28 +943,7 @@ public class PrettyRefServlet extends HttpServlet {
 			
 			if (isOneTemplateCall(content)) {
 				Template tpl = new Template(content);
-				String templateName = tpl.getTemplateName();
-				
-				// keep this switch synced with the one in extractName()
-				switch (templateName) {
-					case "Cytuj":
-					case "Cytuj grę komputerową":
-					case "Cytuj książkę":
-					case "Cytuj odcinek":
-					case "Cytuj pismo":
-					case "Cytuj stronę":
-					case "Dziennik Ustaw":
-					case "Monitor Polski":
-					case "Simbad":
-						cont = tpl.toString();
-						break;
-					case "Ludzie nauki":
-						// TODO: parse template
-						cont = content;
-						break;
-					default:
-						throw new RuntimeException("Invalid template: " + templateName);	
-				}
+				cont = tpl.toString();
 			} else {
 				cont = content;
 			}
