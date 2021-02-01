@@ -37,7 +37,7 @@ public final class MorfeoDatabase {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MorfeoDatabase/");
 	private static final Properties defaultSQLProperties = new Properties();
 	
-	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.eqiad.wmflabs:3306/plwiktionary_p";
+	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
 	private static final String SQL_EOM_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_eom_backlinks";
 	private static final String SQL_COMMON_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_common";
 	

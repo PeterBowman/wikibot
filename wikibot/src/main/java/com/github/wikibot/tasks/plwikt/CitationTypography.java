@@ -70,7 +70,7 @@ public final class CitationTypography {
 	
 	private static final int HOURS_GAP = 8;
 	
-	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.eqiad.wmflabs:3306/plwiktionary_p";
+	private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
 	private static final String SQL_VC_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_verify_citations";
 	private static final String SQL_COMMON_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_common";
 	private static final Properties defaultSQLProperties = new Properties();
