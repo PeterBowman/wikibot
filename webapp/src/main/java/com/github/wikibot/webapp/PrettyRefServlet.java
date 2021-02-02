@@ -221,7 +221,7 @@ public class PrettyRefServlet extends HttpServlet {
 			for (int j = 0; j < refs.size(); j++) {
 				Ref rj = refs.get(j);
 				
-				if (i == j) {
+				if (i == j || ri.content== null || rj.content == null) {
 					continue;
 				}
 				
@@ -229,7 +229,7 @@ public class PrettyRefServlet extends HttpServlet {
 				String temp2 = rj.toString().replace("\"" + rj.name + "\"", "");
 				
 				if (temp1.equals(temp2)) {
-					// convert the other to shorttag; this anso ensures it's not matched as a dupe again
+					// convert the other to shorttag; this also ensures it's not matched as a dupe again
 					rj.content = null;
 					rj.name = ri.name;
 				}
