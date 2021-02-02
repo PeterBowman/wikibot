@@ -48,6 +48,7 @@ public class MissingRefsOnPlwiki {
 		TARGET_TEMPLATES.put("Artefakt legendarny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Białko infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Biogram infobox", Arrays.asList("wikisłownik"));
+		TARGET_TEMPLATES.put("Cieśnina infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Element elektroniczny infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Grafem infobox", Arrays.asList("wikisłownik"));
 		TARGET_TEMPLATES.put("Gwiazda infobox", Arrays.asList("wikisłownik"));
