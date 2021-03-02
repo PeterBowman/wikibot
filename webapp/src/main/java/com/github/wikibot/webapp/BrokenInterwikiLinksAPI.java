@@ -32,7 +32,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 		
 		try {
 			Context context = (Context) new InitialContext().lookup("java:comp/env");
-			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-web");
+			dataSource = (DataSource) context.lookup("jdbc/meta");
 		} catch (NamingException e) {
 			e.printStackTrace();
 		}
@@ -66,7 +66,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 			String escaped = searchParam.trim().replaceFirst("^https?://([^/]+).*$", "$1").replace("'", "\\'");
 			
 			String query = "SELECT dbname, url"
-				+ " FROM meta_p.wiki"
+				+ " FROM wiki"
 				+ " WHERE url IS NOT NULL AND ("
 					+ " dbname LIKE '" + escaped + "%'"
 					+ " OR (lang = '" + escaped + "' AND family != 'special')"

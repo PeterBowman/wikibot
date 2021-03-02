@@ -7,6 +7,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -55,6 +57,10 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static final ConcurrentMap<Project, Map<String, Integer>> namespaces = new ConcurrentHashMap<>();
 	
+	private static final String URI_TMPL = "jdbc:mysql://%1$s.web.db.svc.wikimedia.cloud:3306/%1$s_p";
+	
+	private Properties sqlProperties = new Properties();
+	private Context context;
 	private DataSource dataSource;
 	
 	static {
@@ -115,15 +121,18 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	@Override
 	public void init() throws ServletException {
+		DataSource metaDS;
+		
 		try {
 			System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
-			Context context = (Context) new InitialContext().lookup("java:comp/env");
+			context = (Context) new InitialContext().lookup("java:comp/env");
 			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-web");
+			metaDS = (DataSource) context.lookup("jdbc/meta");
 		} catch (NamingException | SecurityException e) {
 			throw new UnavailableException(e.getMessage());
 		}
 		
-		try (Connection conn = dataSource.getConnection()) {
+		try (Connection conn = metaDS.getConnection()) {
 			String query = "SELECT dbname, lang, family, url, is_sensitive FROM meta_p.wiki;";
 			ResultSet rs = conn.createStatement().executeQuery(query);
 			
@@ -144,6 +153,18 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				projects.add(project);
 			}
 		} catch (SQLException e) {
+			throw new UnavailableException(e.getMessage());
+		}
+		
+		sqlProperties.put("user", getServletContext().getInitParameter("user"));
+		sqlProperties.put("password", getServletContext().getInitParameter("password"));
+		sqlProperties.put("useUnicode", getServletContext().getInitParameter("useUnicode"));
+		sqlProperties.put("characterEncoding", getServletContext().getInitParameter("characterEncoding"));
+		sqlProperties.put("sslMode", getServletContext().getInitParameter("sslMode"));
+		
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver");
+		} catch (ClassNotFoundException e) {
 			throw new UnavailableException(e.getMessage());
 		}
 	}
@@ -206,7 +227,11 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			final int totalFetched = items.size();
 			
 			if (!items.isEmpty()) {
-				filterMissingTargets(conn, targetProject, items, requestInfo);
+				var url = String.format(URI_TMPL, targetProject.database);
+				
+				try (Connection targetConn = DriverManager.getConnection(url, sqlProperties)) {
+					filterMissingTargets(targetConn, items, requestInfo);
+				}
 			}
 			
 			final long endTimer = System.currentTimeMillis();
@@ -394,8 +419,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		}
 	}
 	
-	private static void filterMissingTargets(Connection conn, Project targetProject, List<Item> items,
-			RequestInfo request) throws SQLException {
+	private static void filterMissingTargets(Connection conn, List<Item> items, RequestInfo request) throws SQLException {
 		Set<String> targets = new HashSet<>(items.size());
 		
 		for (Item item : items) {
@@ -407,21 +431,21 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		String values = String.join(",", targets);
 		
 		String query = "SELECT"
-			+ " CONVERT(tpage.page_title USING utf8mb4) AS page_title,"
-			+ " tpage.page_namespace,"
-			+ " tpage.page_is_redirect";
+			+ " CONVERT(page_title USING utf8mb4) AS page_title,"
+			+ " page_namespace,"
+			+ " page_is_redirect";
 		
 		if (request.includeCreated || request.showDisambigs) {
 			query += ", EXISTS("
 					+ "SELECT NULL"
-					+ " FROM " + targetProject.database + "_p.page_props AS tpage_props"
-					+ " WHERE tpage_props.pp_page = tpage.page_id"
-					+ " AND tpage_props.pp_propname = 'disambiguation'"
+					+ " FROM page_props"
+					+ " WHERE pp_page = page_id"
+					+ " AND pp_propname = 'disambiguation'"
 				+ ") AS is_disambig";
 		}
 		
-		query += " FROM " + targetProject.database + "_p.page AS tpage";
-		query += " WHERE tpage.page_title IN (" + values + ")";
+		query += " FROM page";
+		query += " WHERE page_title IN (" + values + ")";
 		
 		ResultSet rs = conn.createStatement().executeQuery(query);
 		
