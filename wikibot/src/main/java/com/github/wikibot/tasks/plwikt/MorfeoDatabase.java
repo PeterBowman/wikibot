@@ -199,7 +199,7 @@ public final class MorfeoDatabase {
 		
 		List<String> _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", Wiki.MAIN_NAMESPACE);
 		List<String> _normal = wb.getCategoryMembers("Esperanto - morfemy", Wiki.MAIN_NAMESPACE);
-		List<String> _prefix = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe‎", Wiki.MAIN_NAMESPACE);
+		List<String> _prefix = wb.getCategoryMembers("Esperanto - morfemy przedrostkowe", Wiki.MAIN_NAMESPACE);
 		List<String> _suffix = wb.getCategoryMembers("Esperanto - morfemy przyrostkowe", Wiki.MAIN_NAMESPACE);
 		List<String> _grammatical = wb.getCategoryMembers("Esperanto - końcówki gramatyczne", Wiki.MAIN_NAMESPACE);
 		
