@@ -1,15 +1,21 @@
 package com.github.wikibot.tasks.plwiki;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -19,14 +25,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
-import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.PageContainer;
 
 public final class AuthorityControl {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwiki/AuthorityControl/");
@@ -44,11 +48,19 @@ public final class AuthorityControl {
 			"P1421", "P3151", "P961", "P815", "P685", "P1070", "P3105", "P960", "P1772"
 		);
 	
+	private static final Properties defaultSQLProperties = new Properties();
+	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
+	
 	private static Wikibot wb;
 	
+	static {
+		defaultSQLProperties.setProperty("autoReconnect", "true");
+		defaultSQLProperties.setProperty("useUnicode", "yes");
+		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
+		defaultSQLProperties.setProperty("sslMode", "DISABLED");
+	}
+	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wikipedia.org");
-		
 		var cli = readOptions(args);
 		final List<String> articles;
 		
@@ -86,6 +98,7 @@ public final class AuthorityControl {
 		}
 		
 		if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
+			wb = Login.createSession("pl.wikipedia.org");
 			; // TODO
 		}
 	}
@@ -174,12 +187,48 @@ public final class AuthorityControl {
 		return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
 	}
 	
-	private static void filterArticles(List<String> titles) throws IOException {
-		var filtered = wb.getContentOfPages(titles).stream()
-			.filter(page -> TEMPLATES.stream().allMatch(template -> ParseUtils.getTemplates(template, page.getText()).isEmpty()))
-			.map(PageContainer::getTitle)
-			.collect(Collectors.toList());
+	private static Properties prepareSQLProperties() throws IOException {
+		var properties = new Properties(defaultSQLProperties);
+		var patt = Pattern.compile("(.+)='(.+)'");
+		var cnf = Paths.get("./replica.my.cnf");
 		
-		titles.retainAll(filtered);
+		if (!cnf.toFile().exists()) {
+			cnf = LOCATION.resolve(".my.cnf");
+		}
+		
+		Files.lines(cnf)
+			.map(patt::matcher)
+			.filter(Matcher::matches)
+			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));
+		
+		return properties;
+	}
+	
+	private static void filterArticles(List<String> titles) throws ClassNotFoundException, SQLException, IOException {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		
+		var transclusions = new HashSet<String>(500000);
+		
+		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+			var templates = TEMPLATES.stream()
+				.map(template -> String.format("'%s'", template.replace(' ', '_')))
+				.collect(Collectors.joining(","));
+			
+			var query = "SELECT page_title"
+					+ " FROM page INNER JOIN templatelinks on tl_from = page_id"
+					+ " WHERE tl_from_namespace = 0"
+					+ " AND tl_namespace = 10"
+					+ " AND tl_title in (" + templates + ");";
+			
+			var rs = connection.createStatement().executeQuery(query);
+			
+			while (rs.next()) {
+				var title = rs.getString("page_title").replace('_', ' ');
+				transclusions.add(title);
+			}
+		}
+		
+		System.out.printf("Got %d template transclusions.%n", transclusions.size());
+		titles.removeAll(transclusions);
 	}
 }
