@@ -19,15 +19,19 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.github.wikibot.utils.PageContainer;
 
 public final class AuthorityControl {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwiki/AuthorityControl/");
+	
+	private static final List<String> TEMPLATES = List.of("Kontrola autorytatywna", "Authority control", "Ka");
 	
 	// https://pl.wikipedia.org/wiki/Szablon:Kontrola_autorytatywna#Lista_wspieranych_baz
 	private static final List<String> PROPERTIES = List.of(
@@ -46,40 +50,43 @@ public final class AuthorityControl {
 		wb = Login.createSession("pl.wikipedia.org");
 		
 		var cli = readOptions(args);
-		
 		final List<String> articles;
 		
-		if (cli.hasOption("cron")) {
-			var cron = cli.getOptionValue("cron");
-			articles = null; // TODO
-		} else if (cli.hasOption("dump")) {
-			Set<Long> revids = Collections.emptySet();
-			
-			if (cli.hasOption("stub")) {
-				var stub = cli.getOptionValue("stub");
-				revids = retrieveRevids(Paths.get(stub));
-				System.out.printf("Retrieved %d revisions.%n", revids.size());
-			}
-			
-			var dump = cli.getOptionValue("dump");
-			articles = processDump(Paths.get(dump), revids);
-		} else if (cli.hasOption("file")) {
+		if (cli.hasOption("file")) {
 			var file = cli.getOptionValue("file");
 			articles = Files.readAllLines(LOCATION.resolve(file));
+			System.out.printf("Retrieved %d articles from list.%n", articles.size());
 		} else {
-			throw new RuntimeException("missing mandatory CLI parameters");
-		}
-		
-		System.out.printf("Got %d articles.%n", articles.size());
-		
-		if (!articles.isEmpty()) {
-			if (!cli.hasOption("file")) {
-				Files.write(LOCATION.resolve("latest.txt"), articles);
+			if (cli.hasOption("cron")) {
+				articles = null; // TODO
+			} else if (cli.hasOption("dump")) {
+				Set<Long> revids = Collections.emptySet();
+				
+				if (cli.hasOption("stub")) {
+					var stub = cli.getOptionValue("stub");
+					revids = retrieveRevids(Paths.get(stub));
+					System.out.printf("Retrieved %d revisions.%n", revids.size());
+				}
+				
+				var dump = cli.getOptionValue("dump");
+				articles = processDump(Paths.get(dump), revids);
+			} else {
+				throw new RuntimeException("missing mandatory CLI parameters");
 			}
 			
-			if (cli.hasOption("process") || cli.hasOption("file")) {
-				; // TODO
+			System.out.printf("Got %d unfiltered articles.%n", articles.size());
+			Files.write(LOCATION.resolve("latest-unfiltered.txt"), articles);
+			
+			filterArticles(articles);
+			System.out.printf("Got %d filtered articles", articles.size());
+			
+			if (!articles.isEmpty()) {
+				Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
 			}
+		}
+		
+		if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
+			; // TODO
 		}
 	}
 	
@@ -165,5 +172,14 @@ public final class AuthorityControl {
 		
 		// P214: VIAF, P1207: NUKAT
 		return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
+	}
+	
+	private static void filterArticles(List<String> titles) throws IOException {
+		var filtered = wb.getContentOfPages(titles).stream()
+			.filter(page -> TEMPLATES.stream().allMatch(template -> ParseUtils.getTemplates(template, page.getText()).isEmpty()))
+			.map(PageContainer::getTitle)
+			.collect(Collectors.toList());
+		
+		titles.retainAll(filtered);
 	}
 }
