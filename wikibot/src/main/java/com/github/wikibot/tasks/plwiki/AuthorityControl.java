@@ -5,8 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +27,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.json.JSONPointer;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -81,7 +84,10 @@ public final class AuthorityControl {
 				}
 				
 				var dump = cli.getOptionValue("dump");
-				articles = processDump(Paths.get(dump), revids);
+				articles = processDumpFile(Paths.get(dump), revids);
+			} else if (cli.hasOption("articles")) {
+				var status = cli.getOptionValue("articles");
+				articles = processDumpCollection(Paths.get(status));
 			} else {
 				throw new RuntimeException("missing mandatory CLI parameters");
 			}
@@ -108,7 +114,8 @@ public final class AuthorityControl {
 		
 		options.addOption("c", "cron", true, "inspect latest daily incr dump");
 		options.addOption("d", "dump", true, "inspect dump file");
-		options.addOption("s", "stub", true, "stub file to retrieve unique item identifiers from");
+		options.addOption("s", "stub", true, "retrieve unique item identifiers from provided stub file");
+		options.addOption("a", "articles", true, "process full articles dump from provided dumpstatus.json");
 		options.addOption("p", "process", false, "process articles on wiki");
 		options.addOption("f", "file", true, "process list of wiki articles saved on disk");
 		
@@ -145,7 +152,7 @@ public final class AuthorityControl {
 		return new HashSet<>(newestRevids.values());
 	}
 	
-	private static List<String> processDump(Path path, Set<Long> revids) throws IOException {
+	private static List<String> processDumpFile(Path path, Set<Long> revids) throws IOException {
 		var reader = new XMLDumpReader(path);
 		
 		try (var stream = reader.getStAXReader().stream()) {
@@ -162,7 +169,7 @@ public final class AuthorityControl {
 				.filter(json -> Optional.ofNullable(json.optJSONObject("claims")).filter(AuthorityControl::testClaims).isPresent())
 				.map(json -> json.getJSONObject("sitelinks").getJSONObject("plwiki").getString("title"))
 				.distinct() // hist-incr dumps may list several revisions per page
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 		}
 	}
 	
@@ -185,6 +192,45 @@ public final class AuthorityControl {
 		
 		// P214: VIAF, P1207: NUKAT
 		return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
+	}
+	
+	private static List<String> processDumpCollection(Path path) throws IOException {
+		var statusText = Files.readString(path);
+		var json = new JSONObject(statusText);
+		var pStatus = new JSONPointer("/jobs/articlesdump/status");
+		var pFiles = new JSONPointer("/jobs/articlesdump/files");
+		
+		if (!"done".equals(pStatus.queryFrom(json))) {
+			throw new RuntimeException("articlesdump not ready yet");
+		}
+		
+		var files = (JSONObject)pFiles.queryFrom(json);
+		var patt = Pattern.compile("\\bp(\\d+)p\\d+\\b");
+		
+		var filenames = files.names().toList().stream()
+			.map(obj -> (String)obj)
+			.sorted((a, b) -> {
+				var ma = patt.matcher(a);
+				ma.find();
+				
+				var mb = patt.matcher(b);
+				mb.find();
+				
+				return Integer.compare(Integer.parseInt(ma.group(1)), Integer.parseInt(mb.group(1)));
+			})
+			.collect(Collectors.toList());
+		
+		System.out.printf("Reading from %d dump files.%n", filenames.size());
+		
+		var temp = LOCATION.resolve("temp.txt");
+		Files.deleteIfExists(temp);
+		
+		for (var filename : filenames) {
+			var results = processDumpFile(path.resolveSibling(filename), Collections.emptySet());
+			Files.write(temp, results, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+		}
+		
+		return new ArrayList<>(Files.readAllLines(temp));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
