@@ -47,8 +47,8 @@ public final class AuthorityControl {
 			"P1695", "P1207", "P1415", "P949", "P1005", "P1273", "P1368", "P1375", "P3788", "P1280", "P1890", "P3348",
 			"P4619", "P5034", "P7699", "P3133", "P5504", "P7859",
 			// bonus
-			"P7305", "P2038", "P1053", "P3829", "P3124", "P2036", "P838", "P830", "P6177", "P1727", "P6094", "P846",
-			"P1421", "P3151", "P961", "P815", "P685", "P1070", "P3105", "P960", "P1772"
+			"P7305", "P2038", "P1053", "P3829", "P3124", "P2036", "P838", "P830", "P6177", "P1747", "P1727", "P6094",
+			"P846", "P1421", "P3151", "P961", "P815", "P685", "P6034", "P1070", "P5037", "P3105", "P960", "P1772"
 		);
 	
 	private static final Properties defaultSQLProperties = new Properties();
@@ -156,7 +156,7 @@ public final class AuthorityControl {
 		var reader = new XMLDumpReader(path);
 		
 		try (var stream = reader.getStAXReader().stream()) {
-			return stream.parallel()
+			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.filter(rev -> rev.getTitle().matches("^Q\\d+$"))
@@ -227,6 +227,7 @@ public final class AuthorityControl {
 		
 		for (var filename : filenames) {
 			var results = processDumpFile(path.resolveSibling(filename), Collections.emptySet());
+			System.out.printf("Adding %d results to temp list.%n", results.size());
 			Files.write(temp, results, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 		}
 		
@@ -261,10 +262,10 @@ public final class AuthorityControl {
 				.collect(Collectors.joining(","));
 			
 			var query = "SELECT page_title"
-					+ " FROM page INNER JOIN templatelinks on tl_from = page_id"
-					+ " WHERE tl_from_namespace = 0"
-					+ " AND tl_namespace = 10"
-					+ " AND tl_title in (" + templates + ");";
+				+ " FROM page INNER JOIN templatelinks on tl_from = page_id"
+				+ " WHERE tl_from_namespace = 0"
+				+ " AND tl_namespace = 10"
+				+ " AND tl_title in (" + templates + ");";
 			
 			var rs = connection.createStatement().executeQuery(query);
 			
