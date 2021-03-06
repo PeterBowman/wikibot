@@ -1,6 +1,10 @@
 package com.github.wikibot.tasks.plwiki;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,12 +14,18 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -26,6 +36,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.json.JSONObject;
 import org.json.JSONPointer;
 
@@ -42,16 +53,17 @@ public final class AuthorityControl {
 	
 	// https://pl.wikipedia.org/wiki/Szablon:Kontrola_autorytatywna#Lista_wspieranych_baz
 	private static final List<String> PROPERTIES = List.of(
-			"P213", "P496", "P214", "P245", "P727", "P244", "P227", "P349", "P5587", "P906", "P268", "P269", "P396",
-			"P409", "P508", "P691", "P723", "P947", "P950", "P1003", "P1006", "P1015", "P270", "P271", "P648", "P7293",
-			"P1695", "P1207", "P1415", "P949", "P1005", "P1273", "P1368", "P1375", "P3788", "P1280", "P1890", "P3348",
-			"P4619", "P5034", "P7699", "P3133", "P5504", "P7859",
-			// bonus
-			"P7305", "P2038", "P1053", "P3829", "P3124", "P2036", "P838", "P830", "P6177", "P1747", "P1727", "P6094",
-			"P846", "P1421", "P3151", "P961", "P815", "P685", "P6034", "P1070", "P5037", "P3105", "P960", "P1772"
-		);
+		"P213", "P496", "P214", "P245", "P727", "P244", "P227", "P349", "P5587", "P906", "P268", "P269", "P396",
+		"P409", "P508", "P691", "P723", "P947", "P950", "P1003", "P1006", "P1015", "P270", "P271", "P648", "P7293",
+		"P1695", "P1207", "P1415", "P949", "P1005", "P1273", "P1368", "P1375", "P3788", "P1280", "P1890", "P3348",
+		"P4619", "P5034", "P7699", "P3133", "P5504", "P7859",
+		// bonus
+		"P7305", "P2038", "P1053", "P3829", "P3124", "P2036", "P838", "P830", "P6177", "P1747", "P1727", "P6094",
+		"P846", "P1421", "P3151", "P961", "P815", "P685", "P6034", "P1070", "P5037", "P3105", "P960", "P1772"
+	);
 	
 	private static final Properties defaultSQLProperties = new Properties();
+	private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static Wikibot wb;
@@ -71,23 +83,23 @@ public final class AuthorityControl {
 			var file = cli.getOptionValue("file");
 			articles = Files.readAllLines(LOCATION.resolve(file));
 			System.out.printf("Retrieved %d articles from list.%n", articles.size());
+		} else if (cli.hasOption("articles")) {
+			var status = cli.getOptionValue("articles");
+			articles = processDumpCollection(Paths.get(status));
 		} else {
 			if (cli.hasOption("cron")) {
 				articles = null; // TODO
 			} else if (cli.hasOption("dump")) {
-				Set<Long> revids = Collections.emptySet();
+				var dump = cli.getOptionValue("dump");
+				var reader = new XMLDumpReader(dump);
 				
 				if (cli.hasOption("stub")) {
 					var stub = cli.getOptionValue("stub");
-					revids = retrieveRevids(Paths.get(stub));
-					System.out.printf("Retrieved %d revisions.%n", revids.size());
+					var revids = retrieveRevids(Paths.get(stub));
+					articles = processDumpFile(reader, rev -> revids.contains(rev.getRevid()));
+				} else {
+					articles = processDumpFile(reader);
 				}
-				
-				var dump = cli.getOptionValue("dump");
-				articles = processDumpFile(Paths.get(dump), revids);
-			} else if (cli.hasOption("articles")) {
-				var status = cli.getOptionValue("articles");
-				articles = processDumpCollection(Paths.get(status));
 			} else {
 				throw new RuntimeException("missing mandatory CLI parameters");
 			}
@@ -95,7 +107,8 @@ public final class AuthorityControl {
 			System.out.printf("Got %d unfiltered articles.%n", articles.size());
 			Files.write(LOCATION.resolve("latest-unfiltered.txt"), articles);
 			
-			filterArticles(articles);
+			var transclusions = retrieveTemplateTransclusions();
+			articles.removeAll(transclusions);
 			System.out.printf("Got %d filtered articles", articles.size());
 			
 			if (!articles.isEmpty()) {
@@ -149,18 +162,28 @@ public final class AuthorityControl {
 				));
 		}
 		
-		return new HashSet<>(newestRevids.values());
+		var revids = new HashSet<>(newestRevids.values());
+		System.out.printf("Retrieved %d revisions.%n", revids.size());
+		return revids;
 	}
 	
-	private static List<String> processDumpFile(Path path, Set<Long> revids) throws IOException {
-		var reader = new XMLDumpReader(path);
+	private static List<String> processDumpFile(XMLDumpReader reader) {
+		return processDumpFile(reader, 0, rev -> true);
+	}
+	
+	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) {
+		return processDumpFile(reader, 0, pred);
+	}
+	
+	private static List<String> processDumpFile(XMLDumpReader reader, long offset, Predicate<XMLRevision> pred) {
+		final var qPatt = Pattern.compile("^Q\\d+$");
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.setPosition(offset).getStAXReader().stream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
-				.filter(rev -> rev.getTitle().matches("^Q\\d+$"))
-				.filter(rev -> revids.isEmpty() || revids.contains(rev.getRevid()))
+				.filter(rev -> qPatt.matcher(rev.getTitle()).matches())
+				.filter(pred)
 				.filter(rev -> !rev.isRevisionDeleted())
 				.map(rev -> new JSONObject(rev.getText()))
 				// https://doc.wikimedia.org/Wikibase/master/php/md_docs_topics_json.html
@@ -170,6 +193,8 @@ public final class AuthorityControl {
 				.map(json -> json.getJSONObject("sitelinks").getJSONObject("plwiki").getString("title"))
 				.distinct() // hist-incr dumps may list several revisions per page
 				.collect(Collectors.toCollection(ArrayList::new));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 	
@@ -194,44 +219,132 @@ public final class AuthorityControl {
 		return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
 	}
 	
+	private static Map<Long, String> retrievePropertyBacklinks() throws ClassNotFoundException, SQLException, IOException {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		
+		var backlinks = new HashMap<Long, String>(600000);
+		
+		try (var connection = DriverManager.getConnection(SQL_WDWIKI_URI, prepareSQLProperties())) {
+			var properties = PROPERTIES.stream()
+				.map(template -> String.format("'%s'", template))
+				.collect(Collectors.joining(","));
+			
+			var query = "SELECT DISTINCT(page_id), ips_site_page"
+				+ " FROM page"
+				+ " INNER JOIN pagelinks on tl_from = page_id"
+				+ " INNER JOIN wb_items_per_site on page_namespace = 0 AND CONCAT('Q', ips_item_id) = page_title"
+				+ " WHERE pl_from_namespace = 0"
+				+ " AND ips_site_id = 'plwiki'"
+				+ " AND pl_namespace = 120" // Property
+				+ " AND pl_title in (" + properties + ");";
+			
+			var rs = connection.createStatement().executeQuery(query);
+			
+			while (rs.next()) {
+				var id = rs.getLong("page_id");
+				var sitePage = rs.getString("ips_site_page").replace('_', ' ');
+				backlinks.put(id, sitePage);
+			}
+		}
+		
+		System.out.printf("Got %d property backlinks with plwiki usage.%n", backlinks.size());
+		return backlinks;
+	}
+	
+	private static Map<Path, Map.Entry<List<Long>, SortedSet<Long>>> prepareWorklist(Path base, JSONObject files) throws IOException {
+		SortedSet<Long> pageids;
+		
+		try {
+			var backlinks = retrievePropertyBacklinks();
+			var transclusions = retrieveTemplateTransclusions();
+			backlinks.values().removeAll(transclusions);
+			pageids = new TreeSet<>(backlinks.keySet());
+		} catch (ClassNotFoundException | SQLException | IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		System.out.printf("Got %d backlink candidates with no transclusions on plwiki.%n", pageids.size());
+		
+		var patt = Pattern.compile("\\bindex\\d+\\.txt-p(\\d+)p(\\d+)\\b");
+		var worklist = new TreeMap<Path, Map.Entry<List<Long>, SortedSet<Long>>>(new ArticlesDumpComparator());
+		var dismissed = 0;
+		
+		for (var filename : files.keySet()) {
+			var m = patt.matcher(filename);
+			
+			if (!m.find()) {
+				continue;
+			}
+			
+			var subset = pageids.subSet(Long.parseLong(m.group(1)), Long.parseLong(m.group(2)) + 1);
+			
+			if (subset.isEmpty()) {
+				dismissed++;
+				continue;
+			}
+			
+			var offsets = retrieveOffsets(base.resolve(filename), subset);
+			var dump = filename.replaceFirst("-index(\\d+)\\.txt", "$1.xml");
+			worklist.put(base.resolve(dump), Map.entry(offsets, subset));
+		}
+		
+		System.out.printf("Dismissed %d dump chunks.%n", dismissed);
+		return worklist;
+	}
+	
+	private static List<Long> retrieveOffsets(Path path, Set<Long> pageids) throws IOException {
+		var offsets = new HashSet<Long>(5000);
+		var file = path.toFile();
+		
+		try (var reader = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(file))))) {
+			reader.lines()
+				.map(line -> Map.entry(
+					Long.parseLong(line.substring(0, line.indexOf(':'))),
+					Long.parseLong(line.substring(line.indexOf(':') + 1, line.indexOf(':', line.indexOf(':') + 1)))
+				))
+				.filter(e -> !offsets.contains(e.getKey()))
+				.filter(e -> pageids.contains(e.getValue()))
+				.map(Map.Entry::getKey)
+				.forEach(offsets::add);
+		}
+		
+		System.out.printf("Got %d offsets (%d pageids) from %s.%n", offsets.size(), pageids.size(), path.getFileName());
+		return offsets.stream().sorted(Comparator.naturalOrder()).collect(Collectors.toList());
+	}
+	
 	private static List<String> processDumpCollection(Path path) throws IOException {
 		var statusText = Files.readString(path);
 		var json = new JSONObject(statusText);
-		var pStatus = new JSONPointer("/jobs/articlesdump/status");
-		var pFiles = new JSONPointer("/jobs/articlesdump/files");
+		var pStatus = new JSONPointer("/jobs/articlesmultistreamdump/status");
+		var pFiles = new JSONPointer("/jobs/articlesmultistreamdump/files");
 		
 		if (!"done".equals(pStatus.queryFrom(json))) {
-			throw new RuntimeException("articlesdump not ready yet");
+			throw new RuntimeException("articlesmultistreamdump not ready yet");
 		}
 		
 		var files = (JSONObject)pFiles.queryFrom(json);
-		var patt = Pattern.compile("\\bp(\\d+)p\\d+\\b");
+		var worklist = prepareWorklist(path.getParent(), files);
 		
-		var filenames = files.names().toList().stream()
-			.map(obj -> (String)obj)
-			.sorted((a, b) -> {
-				var ma = patt.matcher(a);
-				ma.find();
-				
-				var mb = patt.matcher(b);
-				mb.find();
-				
-				return Integer.compare(Integer.parseInt(ma.group(1)), Integer.parseInt(mb.group(1)));
-			})
-			.collect(Collectors.toList());
+		System.out.printf("Reading from %d dump files.%n", worklist.size());
 		
-		System.out.printf("Reading from %d dump files.%n", filenames.size());
+		var out = LOCATION.resolve("articlesdump.txt");
+		Files.deleteIfExists(out);
 		
-		var temp = LOCATION.resolve("temp.txt");
-		Files.deleteIfExists(temp);
-		
-		for (var filename : filenames) {
-			var results = processDumpFile(path.resolveSibling(filename), Collections.emptySet());
-			System.out.printf("Adding %d results to temp list.%n", results.size());
-			Files.write(temp, results, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+		for (var dumpEntry : worklist.entrySet()) {
+			var offsets = dumpEntry.getValue().getKey();
+			var pageids = dumpEntry.getValue().getValue();
+			var reader = new XMLDumpReader(dumpEntry.getKey());
+			var results = Collections.synchronizedList(new ArrayList<String>(pageids.size()));
+			
+			offsets.parallelStream().forEach(offset -> {
+				var batch = processDumpFile(reader, offset, rev -> pageids.contains(rev.getPageid()));
+				results.addAll(batch);
+			});
+			
+			Files.write(out, results, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 		}
 		
-		return new ArrayList<>(Files.readAllLines(temp));
+		return new ArrayList<>(Files.readAllLines(out));
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
@@ -251,7 +364,7 @@ public final class AuthorityControl {
 		return properties;
 	}
 	
-	private static void filterArticles(List<String> titles) throws ClassNotFoundException, SQLException, IOException {
+	private static Set<String> retrieveTemplateTransclusions() throws ClassNotFoundException, SQLException, IOException {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		
 		var transclusions = new HashSet<String>(500000);
@@ -275,7 +388,22 @@ public final class AuthorityControl {
 			}
 		}
 		
-		System.out.printf("Got %d template transclusions.%n", transclusions.size());
-		titles.removeAll(transclusions);
+		System.out.printf("Got %d template transclusions on plwiki.%n", transclusions.size());
+		return transclusions;
+	}
+	
+	private static class ArticlesDumpComparator implements Comparator<Path> {
+		private static final Pattern P_DUMP = Pattern.compile("\\bp(\\d+)p\\d+\\b");
+		
+		@Override
+		public int compare(Path p1, Path p2) {
+			var m1 = P_DUMP.matcher(p1.getFileName().toString());
+			m1.find();
+			
+			var m2 = P_DUMP.matcher(p2.getFileName().toString());
+			m2.find();
+			
+			return Long.compare(Long.parseLong(m1.group(1)), Long.parseLong(m2.group(1)));
+		}
 	}
 }
