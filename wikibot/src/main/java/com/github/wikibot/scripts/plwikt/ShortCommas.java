@@ -97,9 +97,8 @@ public final class ShortCommas implements Selectorizable {
 		Set<String> wlh = new HashSet<>(wb.whatTranscludesHere(List.of("Szablon:skrót"), Wiki.MAIN_NAMESPACE).get(0));
 		List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
 		XMLDumpReader dumpReader = new XMLDumpReader("plwiktionary");
-		int size = wb.getSiteStatistics().get("pages");
 		
-		try (Stream<XMLRevision> stream = dumpReader.getStAXReader(size).stream()) {
+		try (Stream<XMLRevision> stream = dumpReader.getStAXReader().stream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

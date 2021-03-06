@@ -49,11 +49,10 @@ public final class MissingPolishExamples {
 
 		XMLDumpReader reader = getDumpReader(args);
 		LocalDate timestamp = extractTimestamp(reader.getFile());
-		int stats = wb.getSiteStatistics().get("pages");
 		
 		final Set<String> titles;
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
 			titles = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -68,7 +67,7 @@ public final class MissingPolishExamples {
 		System.out.printf("%d titles retrieved\n", titles.size());
 		Map<String, Set<Backlink>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

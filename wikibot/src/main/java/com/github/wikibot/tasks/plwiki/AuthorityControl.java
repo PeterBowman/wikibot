@@ -168,17 +168,17 @@ public final class AuthorityControl {
 	}
 	
 	private static List<String> processDumpFile(XMLDumpReader reader) {
-		return processDumpFile(reader, 0, rev -> true);
+		return processDumpFile(reader, 0, 0, rev -> true);
 	}
 	
 	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) {
-		return processDumpFile(reader, 0, pred);
+		return processDumpFile(reader, 0, 0, pred);
 	}
 	
-	private static List<String> processDumpFile(XMLDumpReader reader, long offset, Predicate<XMLRevision> pred) {
+	private static List<String> processDumpFile(XMLDumpReader reader, long offset, int size, Predicate<XMLRevision> pred) {
 		final var qPatt = Pattern.compile("^Q\\d+$");
 		
-		try (var stream = reader.setPosition(offset).getStAXReader().stream()) {
+		try (var stream = reader.getStAXReader(offset, size).stream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -337,7 +337,7 @@ public final class AuthorityControl {
 			var results = Collections.synchronizedList(new ArrayList<String>(pageids.size()));
 			
 			offsets.parallelStream().forEach(offset -> {
-				var batch = processDumpFile(reader, offset, rev -> pageids.contains(rev.getPageid()));
+				var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
 				results.addAll(batch);
 			});
 			

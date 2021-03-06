@@ -77,10 +77,9 @@ public final class ProcessLanguageLinks {
 	private static void findLanguageLinks(XMLDumpReader reader) throws IOException {
 		final Pattern patt = Pattern.compile("\\[\\[\\s*(?:" + interwikis.stream().collect(Collectors.joining("|")) + ")\\s*:[^\\]]*?\\]\\]");
 		
-		int stats = wb.getSiteStatistics().get("pages");
 		List<String> list;
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
 			list = stream
 				.filter(rev -> rev.getNamespace() != Wiki.USER_NAMESPACE) // https://www.wikidata.org/wiki/Help:Sitelinks#Namespaces
 				.filter(rev -> rev.getNamespace() % 2 == 0) // https://www.mediawiki.org/wiki/Manual:$wgInterwikiMagic

@@ -96,11 +96,10 @@ public final class AutomatedIndices {
 		System.out.println(langToLocale);
 		
 		XMLDumpReader reader = getDumpReader(args);
-		int stats = wb.getSiteStatistics().get("pages");
 		ConcurrentMap<String, List<String>> indexToTitles = new ConcurrentHashMap<>();
 		ConcurrentMap<String, String> indexToLang = new ConcurrentHashMap<>();
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader(stats).stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
