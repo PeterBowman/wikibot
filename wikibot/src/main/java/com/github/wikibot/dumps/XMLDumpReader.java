@@ -35,6 +35,8 @@ public final class XMLDumpReader {
 	public static final File LOCAL_DUMPS_PATH = new File("./data/dumps");
 	
 	private File file;
+	private String extension;
+	private long position = 0;
 	
 	public XMLDumpReader(File file) throws FileNotFoundException {
 		Objects.requireNonNull(file);
@@ -45,12 +47,14 @@ public final class XMLDumpReader {
 		}
 		
 		System.out.printf("Reading from file: %s%n", file);
+		extension = FilenameUtils.getExtension(file.getName());
 	}
 	
 	public XMLDumpReader(String database) throws FileNotFoundException {
 		Objects.requireNonNull(database);
 		file = getLocalFile(database);
 		System.out.printf("Reading from file: %s%n", file);
+		extension = FilenameUtils.getExtension(file.getName());
 	}
 	
 	public XMLDumpReader(Path pathToFile) throws FileNotFoundException {
@@ -62,10 +66,15 @@ public final class XMLDumpReader {
 		}
 		
 		System.out.printf("Reading from file: %s%n", file);
+		extension = FilenameUtils.getExtension(file.getName());
 	}
 	
 	public File getFile() {
 		return file;
+	}
+	
+	public String getExtension() {
+		return extension;
 	}
 
 	private static File getLocalFile(String database) throws FileNotFoundException {
@@ -79,15 +88,31 @@ public final class XMLDumpReader {
 		return matching[0];
 	}
 	
-	private InputStream getInputStream() throws CompressorException, FileNotFoundException {
-		String extension = FilenameUtils.getExtension(file.getName());
-		InputStream bis = new BufferedInputStream(new FileInputStream(file));
-		
-		if (extension.equals("xml")) {
-			return bis;
-		} else {
-			return new CompressorStreamFactory().createCompressorInputStream(bis);
+	public XMLDumpReader setPosition(long newPosition) {
+		if (!extension.equals("bz2")) {
+			throw new UnsupportedOperationException("position mark only supported in .bz2 files");
 		}
+		
+		position = newPosition;
+		return this;
+	}
+	
+	private InputStream getInputStream() throws IOException, CompressorException {
+		FileInputStream fis = new FileInputStream(file);
+		InputStream is = new BufferedInputStream(fis);
+		
+		if (!extension.equals("xml")) {
+			if (position != 0) {
+				// must be placed before the bzip compressor instantiation
+				fis.getChannel().position(position);
+				// workaround to allow multiple XML root elements (only .bz2)
+				is = new XMLFragmentBZip2CompressorInputStream(is);
+			} else {
+				is = new CompressorStreamFactory().createCompressorInputStream(is);
+			}
+		}
+		
+		return is;
 	}
 	
 	private void runSAXReaderTemplate(SAXPageHandler sph) throws IOException {
