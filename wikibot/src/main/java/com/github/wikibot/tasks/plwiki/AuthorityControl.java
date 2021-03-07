@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -86,7 +88,8 @@ public final class AuthorityControl {
 			articles = processDumpCollection(Paths.get(status));
 		} else {
 			if (cli.hasOption("cron")) {
-				articles = null; // TODO
+				var cron = cli.getOptionValue("cron");
+				articles = processCronDumps(Paths.get(cron));
 			} else if (cli.hasOption("dump")) {
 				var dump = cli.getOptionValue("dump");
 				var reader = new XMLDumpReader(dump);
@@ -142,6 +145,24 @@ public final class AuthorityControl {
 			new HelpFormatter().printHelp(AuthorityControl.class.getName(), options);
 			throw e;
 		}
+	}
+	
+	private static List<String> processCronDumps(Path base) throws IOException {
+		var date = LocalDate.now().minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
+		var dir = base.resolve(date);
+		var status = dir.resolve("status.txt");
+		
+		if (!Files.readString(status).equals("done:all")) {
+			throw new RuntimeException("daily incr dumps not ready yet");
+		}
+		
+		var stubs = dir.resolve(String.format("wikidatawiki-%s-stubs-meta-hist-incr.xml.gz", date));
+		var pages = dir.resolve(String.format("wikidatawiki-%s-pages-meta-hist-incr.xml.bz2", date));
+		
+		var revids = retrieveRevids(stubs);
+		var reader = new XMLDumpReader(pages);
+		
+		return processDumpFile(reader, rev -> revids.contains(rev.getRevid()));
 	}
 	
 	private static Set<Long> retrieveRevids(Path path) throws IOException {
