@@ -38,10 +38,10 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.json.JSONObject;
 import org.json.JSONPointer;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
@@ -65,7 +65,9 @@ public final class AuthorityControl {
 	private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
-	private static Wikibot wb;
+	private static final Pattern P_TEXT = Pattern.compile(
+		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*(\\s*+\\[{2} *+[\\w-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*$"
+	);
 	
 	static {
 		defaultSQLProperties.setProperty("autoReconnect", "true");
@@ -109,7 +111,7 @@ public final class AuthorityControl {
 			
 			var transclusions = retrieveTemplateTransclusions();
 			articles.removeAll(transclusions);
-			System.out.printf("Got %d filtered articles", articles.size());
+			System.out.printf("Got %d filtered articles.", articles.size());
 			
 			if (!articles.isEmpty()) {
 				Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
@@ -117,8 +119,27 @@ public final class AuthorityControl {
 		}
 		
 		if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
-			wb = Login.createSession("pl.wikipedia.org");
-			; // TODO
+			var wb = Login.createSession("pl.wikipedia.org");
+			var errors = new ArrayList<String>();
+			
+			for (var article : articles) {
+				try {
+					var rev = wb.getTopRevision(article);
+					var optText = prepareText(rev.getText());
+					
+					if (optText.isPresent()) {
+						wb.edit(article, optText.get(), "wstawienie {{Kontrola autorytatywna}}", rev.getTimestamp());
+					}
+				} catch (Throwable t) {
+					errors.add(article);
+					t.printStackTrace();
+				}
+			}
+			
+			if (!errors.isEmpty()) {
+				System.out.println(errors);
+				throw new RuntimeException("Errors: " + errors.size());
+			}
 		}
 	}
 	
@@ -404,5 +425,25 @@ public final class AuthorityControl {
 		
 		System.out.printf("Got %d template transclusions on plwiki.%n", transclusions.size());
 		return transclusions;
+	}
+	
+	private static Optional<String> prepareText(String text) {
+		if (TEMPLATES.stream().anyMatch(template -> !ParseUtils.getTemplatesIgnoreCase(template, text).isEmpty())) {
+			return Optional.empty();
+		}
+		
+		var m = P_TEXT.matcher(text);
+		
+		if (!m.find()) {
+			throw new Error("no match found");
+		}
+		
+		var sb = new StringBuilder(text.length());
+		var body = text.substring(0, m.start()).stripTrailing();
+		var footer = text.substring(m.start()).stripLeading();
+		
+		sb.append(body).append("\n\n").append("{{Kontrola autorytatywna}}").append("\n\n").append(footer);
+		
+		return Optional.of(sb.toString().stripTrailing());
 	}
 }
