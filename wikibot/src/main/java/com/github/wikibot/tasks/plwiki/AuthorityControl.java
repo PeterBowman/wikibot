@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -324,27 +323,24 @@ public final class AuthorityControl {
 		
 		var files = (JSONObject)pFiles.queryFrom(json);
 		var worklist = prepareWorklist(path.getParent(), files);
+		var results = Collections.synchronizedList(new ArrayList<String>(100000));
 		
 		System.out.printf("Reading from %d dump files.%n", worklist.size());
 		
-		var out = LOCATION.resolve("articlesdump.txt");
-		Files.deleteIfExists(out);
-		
 		for (var dumpEntry : worklist.entrySet()) {
+			var reader = new XMLDumpReader(dumpEntry.getKey());
 			var offsets = dumpEntry.getValue().getKey();
 			var pageids = dumpEntry.getValue().getValue();
-			var reader = new XMLDumpReader(dumpEntry.getKey());
-			var results = Collections.synchronizedList(new ArrayList<String>(pageids.size()));
 			
 			offsets.parallelStream().forEach(offset -> {
 				var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
 				results.addAll(batch);
 			});
-			
-			Files.write(out, results, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 		}
-		
-		return new ArrayList<>(Files.readAllLines(out));
+
+		System.out.printf("Got %d filtered articles.%n", results.size());
+		Files.write(LOCATION.resolve("articlesdump.txt"), results);
+		return new ArrayList<>(results);
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
