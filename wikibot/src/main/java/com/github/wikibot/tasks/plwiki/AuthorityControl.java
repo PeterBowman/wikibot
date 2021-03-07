@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -186,15 +185,15 @@ public final class AuthorityControl {
 		return revids;
 	}
 	
-	private static List<String> processDumpFile(XMLDumpReader reader) {
+	private static List<String> processDumpFile(XMLDumpReader reader) throws IOException {
 		return processDumpFile(reader, 0, 0, rev -> true);
 	}
 	
-	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) {
+	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
 		return processDumpFile(reader, 0, 0, pred);
 	}
 	
-	private static List<String> processDumpFile(XMLDumpReader reader, long offset, int size, Predicate<XMLRevision> pred) {
+	private static List<String> processDumpFile(XMLDumpReader reader, long offset, int size, Predicate<XMLRevision> pred) throws IOException {
 		final var qPatt = Pattern.compile("^Q\\d+$");
 		
 		try (var stream = reader.getStAXReader(offset, size).stream()) {
@@ -212,8 +211,6 @@ public final class AuthorityControl {
 				.map(json -> json.getJSONObject("sitelinks").getJSONObject("plwiki").getString("title"))
 				.distinct() // hist-incr dumps may list several revisions per page
 				.collect(Collectors.toCollection(ArrayList::new));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 	}
 	
@@ -350,8 +347,12 @@ public final class AuthorityControl {
 			var pageids = dumpEntry.getValue().getValue();
 			
 			for (var offset : offsets) {
-				var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
-				results.addAll(batch);
+				try {
+					var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
+					results.addAll(batch);
+				} catch (IOException e) {
+					System.out.printf("IOException at offset %d: %s.%n", offset, e.getMessage());
+				}
 			}
 		}
 
