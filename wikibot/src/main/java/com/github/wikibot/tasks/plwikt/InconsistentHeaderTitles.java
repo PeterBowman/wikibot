@@ -195,9 +195,7 @@ public final class InconsistentHeaderTitles {
 			reader = new XMLDumpReader(new File(path));
 		}
 		
-		int size = wb.getSiteStatistics().get("pages");
-		
-		try (Stream<XMLRevision> stream = reader.getStAXReader(size).stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
