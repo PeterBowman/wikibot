@@ -12,17 +12,16 @@ import java.nio.file.Paths;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -230,7 +229,7 @@ public final class AuthorityControl {
 			
 			var query = "SELECT DISTINCT(page_id), ips_site_page"
 				+ " FROM page"
-				+ " INNER JOIN pagelinks on tl_from = page_id"
+				+ " INNER JOIN pagelinks on pl_from = page_id"
 				+ " INNER JOIN wb_items_per_site on page_namespace = 0 AND CONCAT('Q', ips_item_id) = page_title"
 				+ " WHERE pl_from_namespace = 0"
 				+ " AND ips_site_id = 'plwiki'"
@@ -264,30 +263,27 @@ public final class AuthorityControl {
 		
 		System.out.printf("Got %d backlink candidates with no transclusions on plwiki.%n", pageids.size());
 		
-		var patt = Pattern.compile("\\bindex\\d+\\.txt-p(\\d+)p(\\d+)\\b");
-		var worklist = new TreeMap<Path, Map.Entry<List<Long>, SortedSet<Long>>>(new ArticlesDumpComparator());
-		var dismissed = 0;
+		final var patt = Pattern.compile("^.+?\\bindex\\d+\\.txt-p(\\d+)p(\\d+)\\b.+?$");
 		
-		for (var filename : files.keySet()) {
-			var m = patt.matcher(filename);
+		var indexes = files.keySet().stream()
+			.map(patt::matcher)
+			.flatMap(Matcher::results)
+			.sorted((mr1, mr2) -> Long.compare(Long.parseLong(mr1.group(1)), Long.parseLong(mr2.group(1))))
+			.collect(Collectors.toList());
+		
+		var worklist = new LinkedHashMap<Path, Map.Entry<List<Long>, SortedSet<Long>>>(indexes.size(), 1.0f);
+		
+		for (var mr : indexes) {
+			var subset = pageids.subSet(Long.parseLong(mr.group(1)), Long.parseLong(mr.group(2)) + 1);
 			
-			if (!m.find()) {
-				continue;
+			if (!subset.isEmpty()) {
+				var filename = mr.group();
+				var offsets = retrieveOffsets(base.resolve(filename), subset);
+				var dump = filename.replaceFirst("-index(\\d+)\\.txt", "$1.xml");
+				worklist.put(base.resolve(dump), Map.entry(offsets, subset));
 			}
-			
-			var subset = pageids.subSet(Long.parseLong(m.group(1)), Long.parseLong(m.group(2)) + 1);
-			
-			if (subset.isEmpty()) {
-				dismissed++;
-				continue;
-			}
-			
-			var offsets = retrieveOffsets(base.resolve(filename), subset);
-			var dump = filename.replaceFirst("-index(\\d+)\\.txt", "$1.xml");
-			worklist.put(base.resolve(dump), Map.entry(offsets, subset));
 		}
 		
-		System.out.printf("Dismissed %d dump chunks.%n", dismissed);
 		return worklist;
 	}
 	
@@ -307,7 +303,7 @@ public final class AuthorityControl {
 				.forEach(offsets::add);
 		}
 		
-		System.out.printf("Got %d offsets (%d pageids) from %s.%n", offsets.size(), pageids.size(), path.getFileName());
+		System.out.printf("Inspected %s: %d offsets (%d pageids).%n", path.getFileName(), offsets.size(), pageids.size());
 		return offsets.stream().sorted(Comparator.naturalOrder()).collect(Collectors.toList());
 	}
 	
@@ -323,7 +319,7 @@ public final class AuthorityControl {
 		
 		var files = (JSONObject)pFiles.queryFrom(json);
 		var worklist = prepareWorklist(path.getParent(), files);
-		var results = Collections.synchronizedList(new ArrayList<String>(100000));
+		var results = new ArrayList<String>();
 		
 		System.out.printf("Reading from %d dump files.%n", worklist.size());
 		
@@ -332,15 +328,15 @@ public final class AuthorityControl {
 			var offsets = dumpEntry.getValue().getKey();
 			var pageids = dumpEntry.getValue().getValue();
 			
-			offsets.parallelStream().forEach(offset -> {
+			for (var offset : offsets) {
 				var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
 				results.addAll(batch);
-			});
+			}
 		}
 
 		System.out.printf("Got %d filtered articles.%n", results.size());
 		Files.write(LOCATION.resolve("articlesdump.txt"), results);
-		return new ArrayList<>(results);
+		return results;
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
@@ -386,20 +382,5 @@ public final class AuthorityControl {
 		
 		System.out.printf("Got %d template transclusions on plwiki.%n", transclusions.size());
 		return transclusions;
-	}
-	
-	private static class ArticlesDumpComparator implements Comparator<Path> {
-		private static final Pattern P_DUMP = Pattern.compile("\\bp(\\d+)p\\d+\\b");
-		
-		@Override
-		public int compare(Path p1, Path p2) {
-			var m1 = P_DUMP.matcher(p1.getFileName().toString());
-			m1.find();
-			
-			var m2 = P_DUMP.matcher(p2.getFileName().toString());
-			m2.find();
-			
-			return Long.compare(Long.parseLong(m1.group(1)), Long.parseLong(m2.group(1)));
-		}
 	}
 }
