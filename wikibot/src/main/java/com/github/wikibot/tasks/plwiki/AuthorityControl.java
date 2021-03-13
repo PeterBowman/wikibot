@@ -66,7 +66,7 @@ public final class AuthorityControl {
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static final Pattern P_TEXT = Pattern.compile(
-		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*(\\s*+\\[{2} *+[\\w-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*$"
+		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*(?:\\s*+(?:__NOINDEX__|__BEZSPISU__))?(\\s*+\\[{2} *+[\\w-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*$"
 	);
 	
 	static {
@@ -120,6 +120,7 @@ public final class AuthorityControl {
 		
 		if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
 			var wb = Login.createSession("pl.wikipedia.org");
+			var warnings = new ArrayList<String>();
 			var errors = new ArrayList<String>();
 			
 			for (var article : articles) {
@@ -130,14 +131,30 @@ public final class AuthorityControl {
 					if (optText.isPresent()) {
 						wb.edit(article, optText.get(), "wstawienie {{Kontrola autorytatywna}}", rev.getTimestamp());
 					}
+				} catch (UnsupportedOperationException e) {
+					warnings.add(article);
+					System.out.printf("Parse exception in %s: %s%n", article, e.getMessage());
 				} catch (Throwable t) {
 					errors.add(article);
 					t.printStackTrace();
 				}
 			}
 			
+			if (!warnings.isEmpty()) {
+				System.out.printf("%d warnings: %s", warnings.size(), warnings);
+				
+				var log = LOCATION.resolve("warnings.txt");
+				var set = new TreeSet<>(warnings);
+				
+				if (Files.exists(log)) {
+					set.addAll(Files.readAllLines(log));
+				}
+				
+				Files.write(LOCATION.resolve("warnings.txt"), set);
+			}
+			
 			if (!errors.isEmpty()) {
-				System.out.println(errors);
+				System.out.printf("%d errors: %s", errors.size(), errors);
 				throw new RuntimeException("Errors: " + errors.size());
 			}
 		}
@@ -435,15 +452,23 @@ public final class AuthorityControl {
 		var m = P_TEXT.matcher(text);
 		
 		if (!m.find()) {
-			throw new Error("no match found");
+			throw new UnsupportedOperationException("no match found");
 		}
 		
 		var sb = new StringBuilder(text.length());
 		var body = text.substring(0, m.start()).stripTrailing();
 		var footer = text.substring(m.start()).stripLeading();
 		
-		sb.append(body).append("\n\n").append("{{Kontrola autorytatywna}}").append("\n\n").append(footer);
+		if (body.matches("(?s).*?(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT).*")) {
+			throw new UnsupportedOperationException("sort magic word found in article body");
+		}
 		
+		if (body.matches("(?s).*?\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2}.*")) {
+			throw new UnsupportedOperationException("category found in article body");
+		}
+		
+		var pre = body.endsWith("-->") ? "\n" : "\n\n";
+		sb.append(body).append(pre).append("{{Kontrola autorytatywna}}").append("\n\n").append(footer);
 		return Optional.of(sb.toString().stripTrailing());
 	}
 }
