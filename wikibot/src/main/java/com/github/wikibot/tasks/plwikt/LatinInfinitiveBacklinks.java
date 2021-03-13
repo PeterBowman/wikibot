@@ -1,5 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,6 +13,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
@@ -40,7 +45,7 @@ public class LatinInfinitiveBacklinks {
 	
 	public static void main(String[] args) throws Exception {
 		var wb = Wikibot.newSession("pl.wiktionary.org");
-		var reader = new XMLDumpReader("plwiktionary");
+		var reader = getXMLReader(args);
 		var occurrences = new TreeMap<String, Set<String>>();
 		
 		try (var stream = reader.getStAXReader().stream()) {
@@ -73,6 +78,26 @@ public class LatinInfinitiveBacklinks {
 			Files.writeString(hash, Integer.toString(occurrences.hashCode()));
 		} else {
 			System.out.println("No changes detected.");
+		}
+	}
+	
+	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, FileNotFoundException {
+		if (args.length != 0) {
+			var options = new Options();
+			options.addOption("d", "dump", true, "read from dump file");
+			
+			var parser = new DefaultParser();
+			var line = parser.parse(options, args);
+			
+			if (line.hasOption("dump")) {
+				var pathToFile = line.getOptionValue("dump");
+				return new XMLDumpReader(Paths.get(pathToFile));
+			} else {
+				new HelpFormatter().printHelp(LatinInfinitiveBacklinks.class.getName(), options);
+				throw new IllegalArgumentException();
+			}
+		} else {
+			return new XMLDumpReader("plwiktionary");
 		}
 	}
 	
