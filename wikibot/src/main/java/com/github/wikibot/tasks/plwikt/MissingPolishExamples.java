@@ -27,12 +27,10 @@ import java.util.stream.Stream;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
-import com.github.wikibot.utils.Login;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
@@ -42,11 +40,7 @@ public final class MissingPolishExamples {
 	private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 	
-	private static Wikibot wb;
-	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
-
 		XMLDumpReader reader = getDumpReader(args);
 		LocalDate timestamp = extractTimestamp(reader.getFile());
 		
