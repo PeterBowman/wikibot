@@ -26,7 +26,7 @@ import com.github.wikibot.utils.Misc;
 
 public final class ResolveLinks {
 	// from Linker::formatLinksInComment in Linker.php
-	private static final String PATT_LINK = "\\[{2} *?:?(%s) *?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
+	private static final String PATT_LINK = "\\[{2} *?:?(%s) *?(#[^\\|\\]]*?)?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
 	
 	private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
 		"Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
@@ -95,13 +95,14 @@ public final class ResolveLinks {
 		
 		BiConsumer<Matcher, StringBuffer> replaceFunc = (m, sb) -> {
 			var link = m.group(1);
-			var text = Optional.ofNullable(m.group(2)).orElse(link);
-			var trail = Optional.ofNullable(m.group(3)).orElse("");
+			var fragment = Optional.ofNullable(m.group(2)).orElse("");
+			var text = Optional.ofNullable(m.group(3)).orElse(link);
+			var trail = Optional.ofNullable(m.group(4)).orElse("");
 			
 			if (mode.equals("redir") && sources.contains(text + trail)) {
-				m.appendReplacement(sb, String.format("[[%s]]", target));
+				m.appendReplacement(sb, String.format("[[%s%s]]", target, fragment));
 			} else {
-				m.appendReplacement(sb, String.format("[[%s|%s]]", target, text + trail));
+				m.appendReplacement(sb, String.format("[[%s%s|%s]]", target, fragment, text + trail));
 			}
 		};
 		
