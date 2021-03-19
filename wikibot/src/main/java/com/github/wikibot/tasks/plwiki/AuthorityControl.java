@@ -123,19 +123,18 @@ public final class AuthorityControl {
 			var warnings = new ArrayList<String>();
 			var errors = new ArrayList<String>();
 			
-			for (var article : articles) {
+			for (var page : wb.getContentOfPages(articles)) {
 				try {
-					var rev = wb.getTopRevision(article);
-					var optText = prepareText(rev.getText());
+					var optText = prepareText(page.getText());
 					
 					if (optText.isPresent()) {
-						wb.edit(article, optText.get(), "wstawienie {{Kontrola autorytatywna}}", rev.getTimestamp());
+						wb.edit(page.getTitle(), optText.get(), "wstawienie {{Kontrola autorytatywna}}", page.getTimestamp());
 					}
 				} catch (UnsupportedOperationException e) {
-					warnings.add(article);
-					System.out.printf("Parse exception in %s: %s%n", article, e.getMessage());
+					warnings.add(page.getTitle());
+					System.out.printf("Parse exception in %s: %s%n", page.getTitle(), e.getMessage());
 				} catch (Throwable t) {
-					errors.add(article);
+					errors.add(page.getTitle());
 					t.printStackTrace();
 				}
 			}
