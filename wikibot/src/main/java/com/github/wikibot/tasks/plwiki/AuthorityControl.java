@@ -36,6 +36,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.json.JSONPointer;
 import org.wikiutils.ParseUtils;
@@ -109,8 +110,8 @@ public final class AuthorityControl {
 			System.out.printf("Got %d unfiltered articles.%n", articles.size());
 			Files.write(LOCATION.resolve("latest-unfiltered.txt"), articles);
 			
-			var transclusions = retrieveTemplateTransclusions();
-			articles.removeAll(transclusions);
+			articles.removeAll(retrieveTemplateTransclusions());
+			articles.removeAll(retrieveRedirects());
 			System.out.printf("Got %d filtered articles.", articles.size());
 			
 			if (!articles.isEmpty()) {
@@ -309,8 +310,8 @@ public final class AuthorityControl {
 		
 		try {
 			var backlinks = retrievePropertyBacklinks();
-			var transclusions = retrieveTemplateTransclusions();
-			backlinks.values().removeAll(transclusions);
+			backlinks.values().removeAll(retrieveTemplateTransclusions());
+			backlinks.values().removeAll(retrieveRedirects());
 			pageids = new TreeSet<>(backlinks.keySet());
 		} catch (ClassNotFoundException | SQLException | IOException e) {
 			throw new RuntimeException(e);
@@ -443,6 +444,28 @@ public final class AuthorityControl {
 		return transclusions;
 	}
 	
+	private static Set<String> retrieveRedirects() throws ClassNotFoundException, SQLException, IOException {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		
+		var redirects = new HashSet<String>(600000);
+		
+		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+			var query = "SELECT page_title"
+				+ " FROM page"
+				+ " WHERE page_namespace = 0"
+				+ " AND page_is_redirect = 1;";
+			
+			var rs = connection.createStatement().executeQuery(query);
+			
+			while (rs.next()) {
+				var title = rs.getString("page_title").replace('_', ' ');
+				redirects.add(title);
+			}
+		}
+		
+		return redirects;
+	}
+	
 	private static Optional<String> prepareText(String text) {
 		if (TEMPLATES.stream().anyMatch(template -> !ParseUtils.getTemplatesIgnoreCase(template, text).isEmpty())) {
 			return Optional.empty();
@@ -457,6 +480,10 @@ public final class AuthorityControl {
 		var sb = new StringBuilder(text.length());
 		var body = text.substring(0, m.start()).stripTrailing();
 		var footer = text.substring(m.start()).stripLeading();
+		
+		if (StringUtils.containsAny(body, "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
+			throw new UnsupportedOperationException("article is a redirection");
+		}
 		
 		if (body.matches("(?s).*?(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT).*")) {
 			throw new UnsupportedOperationException("sort magic word found in article body");
