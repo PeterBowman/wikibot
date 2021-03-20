@@ -67,7 +67,7 @@ public final class AuthorityControl {
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static final Pattern P_TEXT = Pattern.compile(
-		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*(?:\\s*+(?:__NOINDEX__|__BEZSPISU__))?(\\s*+\\[{2} *+[\\w-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*$"
+		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?:__NOINDEX__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
 	);
 	
 	static {
@@ -491,6 +491,10 @@ public final class AuthorityControl {
 		
 		if (body.matches("(?s).*?\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2}.*")) {
 			throw new UnsupportedOperationException("category found in article body");
+		}
+		
+		if (footer.matches("(?s).*?\\[{2} *+(?:[Pp]lik|[Ff]ile|[Ii]mage) *+:.+")) {
+			throw new UnsupportedOperationException("file found in article footer");
 		}
 		
 		var pre = body.endsWith("-->") ? "\n" : "\n\n";
