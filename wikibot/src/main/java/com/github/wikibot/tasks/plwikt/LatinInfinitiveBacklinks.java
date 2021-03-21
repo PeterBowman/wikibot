@@ -37,7 +37,7 @@ public class LatinInfinitiveBacklinks {
 		INTRO =
 			"Prawdopodobne wystąpienia łacińskich bezokoliczników w wywołaniach szablonów etymologii " + 
 			"({{s|etym}}, {{s|etym2}}, {{s|etymn}} oraz {{s|etymn2}}): " + 
-			"[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]])." +
+			"[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]]." +
 			"\n\n" +
 			"Dane na podstawie %s. Aktualizacja: ~~~~~." +
 			"\n----\n";
