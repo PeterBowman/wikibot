@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -66,7 +67,7 @@ public class NKJPGenerator extends HttpServlet {
 			address = "http://" + address.replace("&amp;", "&").replaceFirst("^https?://", "").replaceFirst("[#\\|].*$", "");
 		}
 		
-		Map<String, String> resultMap = new TreeMap<>((s1, s2) -> Integer.compare(templateParams.indexOf(s1), templateParams.indexOf(s2)));
+		Map<String, String> resultMap = new TreeMap<>(Comparator.comparingInt(templateParams::indexOf));
 		
 		try {
 			generateTemplateData(address, resultMap);

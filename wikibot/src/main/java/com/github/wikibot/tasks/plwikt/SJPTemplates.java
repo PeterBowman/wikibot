@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,7 +36,7 @@ public final class SJPTemplates {
 		var targetRevs = new ArrayList<Wiki.Revision>(titles.size());
 		
 		extractRevisions(titles, targetRevs);
-		targetRevs.sort((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()));
+		targetRevs.sort(Comparator.comparing(Wiki.Revision::getTimestamp));
 		
 		var usernames = targetRevs.stream()
 			.map(Wiki.Revision::getUser)
@@ -68,7 +69,7 @@ public final class SJPTemplates {
 			List<PageContainer> pcs = wb.getContentOfRevIds(revids);
 			
 			PageContainer page = pcs.stream()
-				.sorted((pc1, pc2) -> pc1.getTimestamp().compareTo(pc2.getTimestamp()))
+				.sorted(Comparator.comparing(PageContainer::getTimestamp))
 				.filter(pc -> !ParseUtils.getTemplates("sjp.pl", pc.getText()).isEmpty())
 				.findFirst()
 				.orElse(null);

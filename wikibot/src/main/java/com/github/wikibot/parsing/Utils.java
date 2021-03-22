@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -117,7 +118,7 @@ public final class Utils {
 		List<Range<Integer>> list = ranges.stream()
 			.filter(Objects::nonNull)
 			.flatMap(List::stream)
-			.sorted((r1, r2) -> Integer.compare(r1.getMinimum(), r2.getMinimum()))
+			.sorted(Comparator.comparingInt(Range::getMinimum))
 			.collect(Collectors.toList());
 					
 		return list;

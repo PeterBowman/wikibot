@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
@@ -246,7 +247,7 @@ public final class MaintenanceScript {
 		public Function<Map<String, Wiki.Revision>, List<String>> finisher() {
 			return accum -> accum.values().stream()
 				.filter(rev -> rev.getTimestamp().isBefore(dateTime))
-				.sorted((rev1, rev2) -> rev1.getTimestamp().compareTo(rev2.getTimestamp()))
+				.sorted(Comparator.comparing(Wiki.Revision::getTimestamp))
 				.map(Wiki.Revision::getTitle)
 				.collect(Collectors.toList());
 		}
@@ -286,7 +287,7 @@ public final class MaintenanceScript {
 		public Function<Map<String, Wiki.LogEntry>, List<String>> finisher() {
 			return accum -> accum.values().stream()
 				.filter(log -> log.getTimestamp().isBefore(dateTime))
-				.sorted((log1, log2) -> log1.getTimestamp().compareTo(log2.getTimestamp()))
+				.sorted(Comparator.comparing(Wiki.LogEntry::getTimestamp))
 				.map(log -> log.getDetails().get("target_title"))
 				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
 				.collect(Collectors.toList());
