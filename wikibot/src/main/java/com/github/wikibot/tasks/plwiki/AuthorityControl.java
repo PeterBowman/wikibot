@@ -134,6 +134,16 @@ public final class AuthorityControl {
 				} catch (UnsupportedOperationException e) {
 					warnings.add(page.getTitle());
 					System.out.printf("Parse exception in %s: %s%n", page.getTitle(), e.getMessage());
+				} catch (AssertionError e) {
+					e.printStackTrace();
+					
+					try {
+						wb = Login.createSession("pl.wikipedia.org");
+					} catch (Throwable t) {
+						errors.add(page.getTitle());
+						t.printStackTrace();
+						break;
+					}
 				} catch (Throwable t) {
 					errors.add(page.getTitle());
 					t.printStackTrace();
@@ -141,7 +151,7 @@ public final class AuthorityControl {
 			}
 			
 			if (!warnings.isEmpty()) {
-				System.out.printf("%d warnings: %s", warnings.size(), warnings);
+				System.out.printf("%d warnings: %s%n", warnings.size(), warnings);
 				
 				var log = LOCATION.resolve("warnings.txt");
 				var set = new TreeSet<>(warnings);
@@ -154,7 +164,7 @@ public final class AuthorityControl {
 			}
 			
 			if (!errors.isEmpty()) {
-				System.out.printf("%d errors: %s", errors.size(), errors);
+				System.out.printf("%d errors: %s%n", errors.size(), errors);
 				throw new RuntimeException("Errors: " + errors.size());
 			}
 		}
