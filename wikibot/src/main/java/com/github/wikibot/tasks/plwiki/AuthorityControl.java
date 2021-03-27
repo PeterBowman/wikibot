@@ -149,15 +149,7 @@ public final class AuthorityControl {
 			
 			if (!warnings.isEmpty()) {
 				System.out.printf("%d warnings: %s%n", warnings.size(), warnings);
-				
-				var log = LOCATION.resolve("warnings.txt");
-				var set = new TreeSet<>(warnings);
-				
-				if (Files.exists(log)) {
-					set.addAll(Files.readAllLines(log));
-				}
-				
-				Files.write(LOCATION.resolve("warnings.txt"), set);
+				updateWarningsList(warnings);
 			}
 			
 			if (!errors.isEmpty()) {
@@ -511,5 +503,17 @@ public final class AuthorityControl {
 		var pre = body.endsWith("-->") ? "\n" : "\n\n";
 		sb.append(body).append(pre).append("{{Kontrola autorytatywna}}").append("\n\n").append(footer);
 		return Optional.of(sb.toString().stripTrailing());
+	}
+	
+	private static void updateWarningsList(List<String> titles) throws ClassNotFoundException, SQLException, IOException {
+		var log = LOCATION.resolve("warnings.txt");
+		var set = new TreeSet<>(titles);
+		
+		if (Files.exists(log)) {
+			set.addAll(Files.readAllLines(log));
+		}
+		
+		set.removeAll(retrieveTemplateTransclusions());
+		Files.write(log, set);
 	}
 }
