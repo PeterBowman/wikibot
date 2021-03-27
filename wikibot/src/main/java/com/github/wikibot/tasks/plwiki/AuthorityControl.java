@@ -39,6 +39,7 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.json.JSONPointer;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
@@ -67,7 +68,7 @@ public final class AuthorityControl {
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static final Pattern P_TEXT = Pattern.compile(
-		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?:__NOINDEX__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
+		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?i:Kategoria|Category) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?:__NOINDEX__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
 	);
 	
 	static {
@@ -110,8 +111,10 @@ public final class AuthorityControl {
 			System.out.printf("Got %d unfiltered articles.%n", articles.size());
 			Files.write(LOCATION.resolve("latest-unfiltered.txt"), articles);
 			
+			var wiki = Wiki.newSession("pl.wikipedia.org");
 			articles.removeAll(retrieveTemplateTransclusions());
 			articles.removeAll(retrieveRedirects());
+			articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
 			System.out.printf("Got %d filtered articles.", articles.size());
 			
 			if (!articles.isEmpty()) {
@@ -134,19 +137,13 @@ public final class AuthorityControl {
 				} catch (UnsupportedOperationException e) {
 					warnings.add(page.getTitle());
 					System.out.printf("Parse exception in %s: %s%n", page.getTitle(), e.getMessage());
-				} catch (AssertionError e) {
-					e.printStackTrace();
-					
-					try {
-						wb = Login.createSession("pl.wikipedia.org");
-					} catch (Throwable t) {
-						errors.add(page.getTitle());
-						t.printStackTrace();
-						break;
-					}
 				} catch (Throwable t) {
 					errors.add(page.getTitle());
 					t.printStackTrace();
+					
+					if (t instanceof AssertionError) {
+						break;
+					}
 				}
 			}
 			
@@ -286,6 +283,7 @@ public final class AuthorityControl {
 	private static Map<Long, String> retrievePropertyBacklinks() throws ClassNotFoundException, SQLException, IOException {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		
+		var wiki = Wiki.newSession("pl.wikipedia.org");
 		var backlinks = new HashMap<Long, String>(600000);
 		
 		try (var connection = DriverManager.getConnection(SQL_WDWIKI_URI, prepareSQLProperties())) {
@@ -307,7 +305,10 @@ public final class AuthorityControl {
 			while (rs.next()) {
 				var id = rs.getLong("page_id");
 				var sitePage = rs.getString("ips_site_page").replace('_', ' ');
-				backlinks.put(id, sitePage);
+				
+				if (wiki.namespace(sitePage) == Wiki.MAIN_NAMESPACE) {
+					backlinks.put(id, sitePage);
+				}
 			}
 		}
 		
@@ -492,18 +493,18 @@ public final class AuthorityControl {
 		var footer = text.substring(m.start()).stripLeading();
 		
 		if (StringUtils.containsAny(body, "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
-			throw new UnsupportedOperationException("article is a redirection");
+			return Optional.empty(); // ignore redirss, there's nothing we can do
 		}
 		
 		if (body.matches("(?s).*?(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT).*")) {
 			throw new UnsupportedOperationException("sort magic word found in article body");
 		}
 		
-		if (body.matches("(?s).*?\\[{2} *+(?:[Kk]ategoria|[Cc]ategory) *+:[^\\]\\{\\}\n]*+\\]{2}.*")) {
+		if (body.matches("(?s).*?\\[{2} *+(?i:Kategoria|Category) *+:[^\\]\\{\\}\n]*+\\]{2}.*")) {
 			throw new UnsupportedOperationException("category found in article body");
 		}
 		
-		if (footer.matches("(?s).*?\\[{2} *+(?:[Pp]lik|[Ff]ile|[Ii]mage) *+:.+")) {
+		if (footer.matches("(?s).*?\\[{2} *+(?i:Plik|File|Image) *+:.+")) {
 			throw new UnsupportedOperationException("file found in article footer");
 		}
 		
