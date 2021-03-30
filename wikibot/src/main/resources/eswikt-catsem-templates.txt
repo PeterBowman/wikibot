@@ -203,6 +203,7 @@ oftalmología = Oftalmología
 ornitología = Ornitología
 países = Países, Topónimos
 paleontología = Paleontología
+parapsicología = Parapsicología
 parentesco = Parentesco
 peces = Peces
 penínsulas = Penínsulas
