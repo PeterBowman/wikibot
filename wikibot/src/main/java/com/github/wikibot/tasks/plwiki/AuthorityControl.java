@@ -149,8 +149,9 @@ public final class AuthorityControl {
 			
 			if (!warnings.isEmpty()) {
 				System.out.printf("%d warnings: %s%n", warnings.size(), warnings);
-				updateWarningsList(warnings);
 			}
+			
+			updateWarningsList(warnings);
 			
 			if (!errors.isEmpty()) {
 				System.out.printf("%d errors: %s%n", errors.size(), errors);
