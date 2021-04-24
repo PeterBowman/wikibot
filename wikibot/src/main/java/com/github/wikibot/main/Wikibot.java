@@ -415,7 +415,7 @@ public class Wikibot extends WMFWiki {
         getparams.put("prop", "pageprops");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, String>> metamap = new HashMap<>();
-        // copy because redirect resolver overwrites
+        // copy because normalization and redirect resolvers overwrites
         List<String> pages2 = new ArrayList<>(pages);
         List<String> chunks = constructTitleString(pages);
         for (int i = 0; i < chunks.size(); i++)
@@ -424,6 +424,7 @@ public class Wikibot extends WMFWiki {
             postparams.put("titles", temp);
             String caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
             String line = makeApiCall(getparams, postparams, caller);
+            resolveNormalizedParser(pages2, line);
             if (isResolvingRedirects())
                 resolveRedirectParser(pages2, line);
 
@@ -467,7 +468,7 @@ public class Wikibot extends WMFWiki {
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.size(); i++)
         {
-            Map<String, String> tempmap = metamap.get(normalize(pages2.get(i)));
+            Map<String, String> tempmap = metamap.get(pages2.get(i));
             if (tempmap != null)
             {
                 props[i] = new HashMap<>(tempmap);
