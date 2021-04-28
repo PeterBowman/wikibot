@@ -260,6 +260,7 @@ varios = Varios
 vegetales = Vegetales
 vehículos = Vehículos
 verduras = Verduras
+vertebrados = Vertebrados
 vestimenta = Vestimenta
 veterinaria = Veterinaria
 vivienda = Vivienda
