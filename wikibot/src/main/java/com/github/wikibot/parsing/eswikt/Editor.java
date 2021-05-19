@@ -12,6 +12,8 @@ import static org.wikiutils.ParseUtils.getTemplates;
 import static org.wikiutils.ParseUtils.removeCommentsAndNoWikiText;
 import static org.wikiutils.ParseUtils.templateFromMap;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,11 +46,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
 public class Editor extends AbstractEditor {
@@ -4953,24 +4953,19 @@ public class Editor extends AbstractEditor {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Wikibot wb = Login.createSession("es.wiktionary.org");
+		var text = Files.readString(Paths.get("./data/eswikt-editor.txt"));
+		var title = "test";
 		
-		String text;
-		String title = "Paronym";
 		//String title = "mole"; TODO
 		//String title = "אביב"; // TODO: delete old section template
 		//String title = "das"; // TODO: attempt to fix broken headers (missing "=")
-		
-		text = wb.getPageText(List.of(title)).get(0);
-		//text = String.join("\n", IOUtils.loadFromFile("./data/eswikt.txt", "", "UTF8"));
 		
 		Page page = Page.store(title, text);
 		AbstractEditor editor = new Editor(page);
 		editor.check();
 		
-		wb.edit(title, editor.getPageText(), editor.getSummary(), false, true, -2, null);
 		System.out.println(editor.getLogs());
-		
-		wb.logout();
+		System.out.println(editor.getSummary());
+		Files.writeString(Paths.get("./data/eswikt-editor-result.txt"), editor.getPageText());
 	}
 }
