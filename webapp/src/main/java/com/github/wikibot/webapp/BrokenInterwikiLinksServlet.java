@@ -60,8 +60,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	private static final String URI_TMPL = "jdbc:mysql://%1$s.web.db.svc.wikimedia.cloud:3306/%1$s_p";
 	
 	private Properties sqlProperties = new Properties();
-	private Context context;
-	private DataSource dataSource;
+	private DataSource plwiktDS;
 	
 	static {
 		Map<String, List<String>> _databaseFamilyToPrefixes = new HashMap<>(40);
@@ -124,10 +123,15 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		DataSource metaDS;
 		
 		try {
-			System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
-			context = (Context) new InitialContext().lookup("java:comp/env");
-			dataSource = (DataSource) context.lookup("jdbc/plwiktionary-web");
+			var context = (Context) new InitialContext().lookup("java:comp/env");
+			plwiktDS = (DataSource) context.lookup("jdbc/plwiktionary-web");
 			metaDS = (DataSource) context.lookup("jdbc/meta");
+			
+			sqlProperties.put("user", context.lookup("user"));
+			sqlProperties.put("password", context.lookup("password"));
+			sqlProperties.put("useUnicode", context.lookup("useUnicode"));
+			sqlProperties.put("characterEncoding", context.lookup("characterEncoding"));
+			sqlProperties.put("sslMode", context.lookup("sslMode"));
 		} catch (NamingException | SecurityException e) {
 			throw new UnavailableException(e.getMessage());
 		}
@@ -155,12 +159,6 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		} catch (SQLException e) {
 			throw new UnavailableException(e.getMessage());
 		}
-		
-		sqlProperties.put("user", getServletContext().getInitParameter("user"));
-		sqlProperties.put("password", getServletContext().getInitParameter("password"));
-		sqlProperties.put("useUnicode", getServletContext().getInitParameter("useUnicode"));
-		sqlProperties.put("characterEncoding", getServletContext().getInitParameter("characterEncoding"));
-		sqlProperties.put("sslMode", getServletContext().getInitParameter("sslMode"));
 		
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
@@ -211,7 +209,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 				session.removeAttribute("lastRequest");			}
 		}
 		
-		try (Connection conn = dataSource.getConnection()) {
+		try (Connection conn = plwiktDS.getConnection()) {
 			final long startTimer = System.currentTimeMillis();
 			
 			if (!requestInfo.onlyMainNamespace && !namespaces.containsKey(sourceProject)) {

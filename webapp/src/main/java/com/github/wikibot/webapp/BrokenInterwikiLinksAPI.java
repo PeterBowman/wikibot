@@ -28,8 +28,6 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 	
 	@Override
 	public void init() throws ServletException {
-		System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
-		
 		try {
 			Context context = (Context) new InitialContext().lookup("java:comp/env");
 			dataSource = (DataSource) context.lookup("jdbc/meta");
