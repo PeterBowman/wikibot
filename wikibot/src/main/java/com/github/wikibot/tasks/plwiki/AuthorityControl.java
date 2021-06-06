@@ -68,7 +68,7 @@ public final class AuthorityControl {
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static final Pattern P_TEXT = Pattern.compile(
-		"(?:\\{{2}\\s*+(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?i:Kategoria|Category) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?i:__NOINDEX__|__NIEINDEKSUJ__|__NOTOC__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
+		"(?:\\{{2}\\s*+(?:SORTUJ|DOMYŚLNIESORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?i:Kategoria|Category) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?i:__NOINDEX__|__NIEINDEKSUJ__|__NOTOC__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
 	);
 	
 	static {
@@ -489,7 +489,7 @@ public final class AuthorityControl {
 			return Optional.empty(); // ignore redirss, there's nothing we can do
 		}
 		
-		if (body.matches("(?s).*?(?:SORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT).*")) {
+		if (body.matches("(?s).*?(?:SORTUJ|DOMYŚLNIESORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT).*")) {
 			throw new UnsupportedOperationException("sort magic word found in article body");
 		}
 		
