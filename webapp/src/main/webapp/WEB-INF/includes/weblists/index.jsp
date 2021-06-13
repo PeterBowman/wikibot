@@ -31,6 +31,11 @@
 			</a>
 		</li>
 		<li>
+			<a href="${pageContext.request.contextPath}/weblists/plwikinews-missing-plwiki-backlinks">
+				(plwikinews) artykuły bez linku zwrotnego z Wikipedii
+			</a>
+		</li>
+		<li>
 			<a href="${pageContext.request.contextPath}/weblists/eswikt-lonely-pages">
 				(eswiktionary) complemento para Especial:PáginasHuérfanas
 			</a>

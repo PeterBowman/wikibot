@@ -64,6 +64,18 @@
     <servlet-class>com.github.wikibot.webapp.SandboxRedirects</servlet-class>
   </servlet>
   <servlet>
+    <servlet-name>MissingPlwikinewsRefsOnPlwiki</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingPlwikinewsRefsOnPlwiki</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>MissingPlwikinewsRefsOnPlwikiAPI</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingPlwikinewsRefsOnPlwiki</servlet-class>
+    <init-param>
+        <param-name>API</param-name>
+        <param-value>yes</param-value>
+    </init-param>
+  </servlet>
+  <servlet>
     <servlet-name>LonelyPages</servlet-name>
     <servlet-class>com.github.wikibot.webapp.LonelyPages</servlet-class>
   </servlet>
@@ -135,6 +147,14 @@
     <url-pattern>/weblists/plwiki-sandbox-redirects</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
+    <servlet-name>MissingPlwikinewsRefsOnPlwiki</servlet-name>
+    <url-pattern>/weblists/plwikinews-missing-plwiki-backlinks</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MissingPlwikinewsRefsOnPlwikiAPI</servlet-name>
+    <url-pattern>/weblists/plwikinews-missing-plwiki-backlinks/api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
     <servlet-name>LonelyPages</servlet-name>
     <url-pattern>/weblists/eswikt-lonely-pages</url-pattern>
     <url-pattern>/lonely-pages</url-pattern>
@@ -186,6 +206,16 @@
   </resource-ref>
   <resource-ref>
     <res-ref-name>jdbc/plwiki-analytics</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
+  	<res-ref-name>jdbc/plwikinews-web</res-ref-name>
+  	<res-type>javax.sql.DataSource</res-type>
+  	<res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
+    <res-ref-name>jdbc/plwikinews-analytics</res-ref-name>
     <res-type>javax.sql.DataSource</res-type>
     <res-auth>Container</res-auth>
   </resource-ref>
