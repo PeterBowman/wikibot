@@ -29,7 +29,8 @@
     </jsp:attribute>
     <jsp:body>
         <p>
-            Spis artykułów w polskojęzycznej wersji Wikinews, które nie są linkowane z Wikipedii.
+            Spis artykułów w polskojęzycznej wersji Wikinews, które nie są linkowane z przestrzeni głównej Wikipedii
+            ani bezpośrednio, ani za pośrednictwem kategorii Wikinews, w której są zawarte.
         </p>
         <div id="plwikinews-missing-plwiki-backlinks-content">
         	<c:choose>

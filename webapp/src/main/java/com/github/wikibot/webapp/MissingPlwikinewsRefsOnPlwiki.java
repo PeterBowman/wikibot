@@ -23,6 +23,7 @@ import javax.sql.DataSource;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.wikipedia.Wiki;
 
 /**
  * Servlet implementation class PrettyRefServlet
@@ -35,12 +36,16 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
 	private DataSource plwikiDataSource;
 	private DataSource plwikinewsDataSource;
 	
+	private Wiki plwikinews;
+	
 	@Override
 	public void init() throws ServletException {
 		try {
 			Context context = (Context) new InitialContext().lookup("java:comp/env");
 			plwikiDataSource = (DataSource) context.lookup("jdbc/plwiki-web");
 			plwikinewsDataSource = (DataSource) context.lookup("jdbc/plwikinews-web");
+			plwikinews = Wiki.newSession("pl.wikinews.org");
+			plwikinews.getNamespaces(); // populate cache
 		} catch (NamingException e) {
 			throw new UnavailableException(e.getMessage());
 		}
@@ -89,7 +94,9 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
 		try (var connection = plwikiDataSource.getConnection()) {
 			final var query = "SELECT DISTINCT iwl_title" +
 				" FROM iwlinks" +
-				" WHERE iwl_prefix = 'n'" +
+				" INNER JOIN page ON page_id = iwl_from" +
+				" WHERE page_namespace = 0" +
+				" AND iwl_prefix = 'n'" +
 				" AND iwl_title != '';";
 			
 			var rs = connection.createStatement().executeQuery(query);
@@ -108,23 +115,37 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
 	}
 	
 	private List<String> filterMissingBacklinks(Set<String> backlinks) {
+		var articles = backlinks.stream()
+			.filter(page -> plwikinews.namespace(page) == Wiki.MAIN_NAMESPACE)
+			.map(target -> String.format("'%s'", target.replace("'", "\\'")))
+			.collect(Collectors.joining(","));
+		
+		var categories = backlinks.stream()
+			.filter(page -> plwikinews.namespace(page) == Wiki.CATEGORY_NAMESPACE)
+			.map(target -> plwikinews.removeNamespace(target))
+			.map(target -> String.format("'%s'", target.replace("'", "\\'")))
+			.collect(Collectors.joining(","));
+		
 		try (var connection = plwikinewsDataSource.getConnection()) {
-			final var values = backlinks.stream()
-				.map(target -> String.format("'%s'", target.replace("'", "\\'")))
-				.collect(Collectors.joining(","));
-			
 			final var query = "SELECT page_title" +
 				" FROM page" +
 				" WHERE page_namespace = 0" +
 				" AND page_is_redirect = 0" +
-				" AND page_title NOT IN (" + values + ")" +
+				" AND page_title NOT IN (" + articles + ")" +
 				" AND page_title NOT IN (" +
 					" SELECT rd_title" +
 					" FROM redirect" +
 					" INNER JOIN page AS p2 ON rd_from = p2.page_id" +
 					" WHERE p2.page_namespace = 0" +
 					" AND rd_namespace = 0" +
-					" AND p2.page_title IN (" + values + ")" +
+					" AND p2.page_title IN (" + articles + ")" +
+				")" +
+				" AND page_title NOT IN (" +
+					" SELECT p3.page_title" +
+					" FROM categorylinks" +
+					" INNER JOIN page AS p3 ON cl_from = p3.page_id" +
+					" WHERE p3.page_namespace = 0" +
+					" AND cl_to IN (" + categories + ")" +
 				")" +
 				" ORDER BY CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;";
 			
