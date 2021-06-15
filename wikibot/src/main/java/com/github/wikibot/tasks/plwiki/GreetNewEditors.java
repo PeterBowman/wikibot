@@ -107,10 +107,7 @@ public final class GreetNewEditors {
 	}
 	
 	private static boolean testAlreadyGreeted(String text) {
-		return text.contains("<!-- Szablon:Witaj redaktorze -->")
-			|| text.contains("Wikipedia:Redaktorzy")
-			|| text.contains("Wikipedia:Przeglądanie artykułów")
-			|| !ParseUtils.getTemplatesIgnoreCase(GREET_TEMPLATE, text).isEmpty();
+		return text.contains("<!-- Szablon:Witaj redaktorze -->") || !ParseUtils.getTemplatesIgnoreCase(GREET_TEMPLATE, text).isEmpty();
 	}
 	
 	private static String extractTimestamp() throws IOException {
