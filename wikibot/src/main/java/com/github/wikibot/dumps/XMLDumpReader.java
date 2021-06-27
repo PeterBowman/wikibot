@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -22,9 +21,6 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.parser.Parser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -154,19 +150,6 @@ public final class XMLDumpReader {
 		}
 		
 		return new StAXDumpReader(streamReader, estimateSize);
-	}
-	
-	public List<XMLRevision> getParsedIncrementalDump() throws IOException {
-		Document doc;
-		
-		try (InputStream is = getInputStream(0)) {
-			doc = Jsoup.parse(is, null, "", Parser.xmlParser());
-		} catch (CompressorException e) {
-			throw new IOException(e);
-		}
-		
-		doc.outputSettings().prettyPrint(false);
-		return JsoupDumpReader.parseDocument(doc);
 	}
 	
 	public static void main(String[] args) throws Exception {
