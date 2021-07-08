@@ -31,4 +31,5 @@ module org.github.wikibot {
 	opens com.github.wikibot.tasks.eswikt;
 	opens com.github.wikibot.tasks.plwiki;
 	opens com.github.wikibot.tasks.plwikt;
+	opens com.github.wikibot.utils;
 }
