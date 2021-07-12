@@ -39,7 +39,7 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		return getListedContent(getparams, pages, "getContents", "titles", this::parseContentLine);
+		return getListedContent(new HashMap<>(getparams), pages, "getContents", "titles", this::parseContentLine);
 	}
     
     public List<PageContainer> getContentOfPageIds(List<Long> pageids) throws IOException {
@@ -50,7 +50,7 @@ public class Wikibot extends WMFWiki {
     		"rvslots", "main"
     	);
 		List<String> stringified = pageids.stream().map(Object::toString).collect(Collectors.toList());
-		return getListedContent(getparams, stringified, "getContents", "pageids", this::parseContentLine);
+		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "pageids", this::parseContentLine);
 	}
     
     public List<PageContainer> getContentOfRevIds(List<Long> revids) throws IOException {
@@ -61,7 +61,7 @@ public class Wikibot extends WMFWiki {
     		"rvslots", "main"
     	);
 		List<String> stringified = revids.stream().map(Object::toString).collect(Collectors.toList());
-		return getListedContent(getparams, stringified, "getContents", "revids", this::parseContentLine);
+		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "revids", this::parseContentLine);
     }
 	
 	/**
@@ -121,11 +121,33 @@ public class Wikibot extends WMFWiki {
 		List<String> chunks = constructTitleString(titles);
 		List<T> list = new ArrayList<>(titles.size());
 		Map<String, Object> postparams = new HashMap<>();
+		final int totalChunks = chunks.size();
 		
-		for (int i = 0; i < chunks.size(); i++) {
-			postparams.put(postParamName, chunks.get(i));
-			String localCaller = String.format("%s (%d/%d)", caller, i + 1, chunks.size());
-			String line = makeApiCall(new HashMap<>(getparams), postparams, localCaller);
+		while (!chunks.isEmpty() || getparams.containsKey("continue")) {
+			String localCaller = String.format("%s (%d/%d)", caller, totalChunks - chunks.size() + 1, totalChunks);
+			
+			if (!getparams.containsKey("continue")) {
+				postparams.put(postParamName, chunks.remove(0));
+			} else {
+				localCaller += " [continuation]";
+			}
+			
+			String line = makeApiCall(getparams, postparams, localCaller);
+			
+			if (line.contains("<continue ")) {
+				int a = line.indexOf("<continue ") + 9;
+				int b = line.indexOf(" />", a);
+				String cont = line.substring(a, b);
+				
+				for (String contpair : cont.split("\" ")) {
+					contpair = " " + contpair.trim();
+					String contattr = contpair.substring(0, contpair.indexOf("=\""));
+					getparams.put(contattr.trim(), parseAttribute(cont, contattr, 0));
+				}
+			} else {
+				getparams.keySet().removeIf(param -> param.endsWith("continue"));
+			}
+			
 			biCons.accept(line, list);
 		}
 		
