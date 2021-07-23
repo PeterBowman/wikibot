@@ -95,7 +95,7 @@ public final class AuthorityControl {
 				articles = processCronDumps(Paths.get(cron));
 			} else if (cli.hasOption("dump")) {
 				var dump = cli.getOptionValue("dump");
-				var reader = new XMLDumpReader(dump);
+				var reader = new XMLDumpReader(Paths.get(dump));
 				
 				if (cli.hasOption("stub")) {
 					var stub = cli.getOptionValue("stub");
@@ -115,7 +115,7 @@ public final class AuthorityControl {
 			articles.removeAll(retrieveTemplateTransclusions());
 			articles.removeAll(retrieveRedirects());
 			articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
-			System.out.printf("Got %d filtered articles.", articles.size());
+			System.out.printf("Got %d filtered articles.%n", articles.size());
 			
 			if (!articles.isEmpty()) {
 				Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
