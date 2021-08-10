@@ -33,8 +33,14 @@ public final class ResolveLinks {
 	);
 	
 	private static final int[] TARGET_NAMESPACES = new int[] {
-		Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */
+		Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, 100 /* Portal */
 	};
+	
+	private static final List<String> PROJECT_WHITELIST = List.of(
+		"Wikipedia:Skarbnica Wikipedii", "Wikipedia:Indeks biografii"
+	);
+	
+	private static final int USER_SUBPAGE_SIZE_LIMIT = 500000;
 
 	private static Wikibot wb;
 	
@@ -49,7 +55,7 @@ public final class ResolveLinks {
 		final String summary;
 		
 		if (mode.equals("redir")) {
-			sources = wb.whatLinksHere(List.of(target), true, false, Wiki.MAIN_NAMESPACE).get(0);
+			sources = wb.whatLinksHere(List.of(target), true, false, TARGET_NAMESPACES).get(0);
 			System.out.printf("%d redirs: %s%n", sources.size(), sources);
 			
 			if (sources.isEmpty()) {
@@ -76,6 +82,8 @@ public final class ResolveLinks {
 			.distinct()
 			// retain user sandboxes
 			.filter(title -> wb.namespace(title) != Wiki.USER_NAMESPACE || !wb.getRootPage(title).equals(title))
+			// retain biography notes
+			.filter(title -> wb.namespace(title) != Wiki.PROJECT_NAMESPACE || PROJECT_WHITELIST.contains(wb.getRootPage(title)))
 			.collect(Collectors.toList());
 		
 		System.out.printf("%d unique backlinks found.%n", backlinks.size());
@@ -112,6 +120,15 @@ public final class ResolveLinks {
 		wb.setMarkMinor(true);
 		
 		for (var page : wb.getContentOfPages(backlinks)) {
+			if (
+				wb.namespace(page.getTitle()) == Wiki.USER_NAMESPACE &&
+				(Integer)wb.getPageInfo(List.of(page.getTitle())).get(0).get("size") > USER_SUBPAGE_SIZE_LIMIT
+			) {
+				System.out.println("User subpage exceeds size limit: " + page.getTitle());
+				errors.add(page.getTitle());
+				continue;
+			}
+			
 			var newText = page.getText();
 			
 			for (var pattern : patterns) {
