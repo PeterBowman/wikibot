@@ -124,12 +124,13 @@ public class Wikibot extends WMFWiki {
 		final int totalChunks = chunks.size();
 		
 		while (!chunks.isEmpty() || getparams.containsKey("continue")) {
-			String localCaller = String.format("%s (%d/%d)", caller, totalChunks - chunks.size() + 1, totalChunks);
+			final String localCaller;
 			
 			if (!getparams.containsKey("continue")) {
 				postparams.put(postParamName, chunks.remove(0));
+				localCaller = String.format("%s (%d/%d)", caller, totalChunks - chunks.size(), totalChunks);
 			} else {
-				localCaller += " [continuation]";
+				localCaller = String.format("%s (%d/%d) [continuation]", caller, totalChunks - chunks.size(), totalChunks);
 			}
 			
 			String line = makeApiCall(getparams, postparams, localCaller);
