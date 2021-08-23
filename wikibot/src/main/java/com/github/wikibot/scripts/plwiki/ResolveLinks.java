@@ -101,7 +101,7 @@ public final class ResolveLinks {
 			.map(Pattern::compile)
 			.collect(Collectors.toList());
 		
-		BiConsumer<Matcher, StringBuffer> replaceFunc = (m, sb) -> {
+		BiConsumer<Matcher, StringBuilder> replaceFunc = (m, sb) -> {
 			var link = m.group(1);
 			var fragment = Optional.ofNullable(m.group(2)).orElse("");
 			var text = Optional.ofNullable(m.group(3)).orElse(link);

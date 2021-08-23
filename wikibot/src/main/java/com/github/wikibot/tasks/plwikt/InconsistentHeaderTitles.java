@@ -319,7 +319,7 @@ public final class InconsistentHeaderTitles {
 	
 	private static String stripWikiLinks(String text) {
 		Matcher m = P_LINK.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
+		StringBuilder sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
 			String target = Optional.ofNullable(m.group(2)).orElse(m.group(1));

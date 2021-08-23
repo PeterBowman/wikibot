@@ -320,7 +320,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static Item.Page processLink(Project context, Project reference, String link) {
 		Matcher m = P_TARGET_LINK.matcher(link);
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		Project currentProject = context;
 		int currentNamespace = 0;

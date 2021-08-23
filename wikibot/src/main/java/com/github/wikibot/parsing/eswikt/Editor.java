@@ -573,7 +573,7 @@ public class Editor extends AbstractEditor {
 	
 	private static void extractTemplateRanges(String text, List<Range<Integer>> ranges) {
 		Matcher m = P_TMPL_DEPTH.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
+		StringBuilder sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
 			ranges.add(Range.between(m.start(), m.end()));
@@ -1806,7 +1806,7 @@ public class Editor extends AbstractEditor {
 			String intro = section.getIntro();
 			Pattern patt = Pattern.compile("\\{\\{ *?" + templateName + " *?\\}\\}");
 			Matcher m = patt.matcher(intro);
-			StringBuffer sb = new StringBuffer(intro.length());
+			StringBuilder sb = new StringBuilder(intro.length());
 			List<Range<Integer>> ignoredRanges = Utils.getStandardIgnoredRanges(intro);
 			
 			while (m.find()) {

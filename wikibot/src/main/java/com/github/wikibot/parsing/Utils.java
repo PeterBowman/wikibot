@@ -164,28 +164,28 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
-			BiConsumer<Matcher, StringBuffer> biCons) {
+			BiConsumer<Matcher, StringBuilder> biCons) {
 		ToIntFunction<Matcher> func = Matcher::start;
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
-			ToIntFunction<Matcher> func, BiConsumer<Matcher, StringBuffer> biCons) {
+			ToIntFunction<Matcher> func, BiConsumer<Matcher, StringBuilder> biCons) {
 		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
 	public static String replaceWithIgnoredranges(String text, Pattern patt, String replacement,
 			List<Range<Integer>> ignoredRanges) {
 		ToIntFunction<Matcher> func = Matcher::start;
-		BiConsumer<Matcher, StringBuffer> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
+		BiConsumer<Matcher, StringBuilder> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
 		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
 	}
 	
 	public static String replaceWithIgnoredranges(String text, Pattern patt,
 			List<Range<Integer>> ignoredRanges, ToIntFunction<Matcher> func,
-			BiConsumer<Matcher, StringBuffer> biCons) {
+			BiConsumer<Matcher, StringBuilder> biCons) {
 		Matcher m = patt.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
+		StringBuilder sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
 			if (containedInRanges(ignoredRanges, func.applyAsInt(m))) {

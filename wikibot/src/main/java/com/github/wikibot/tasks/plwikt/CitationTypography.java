@@ -290,7 +290,7 @@ public final class CitationTypography {
 		while (mLine.find()) {
 			String line = mLine.group();
 			Matcher mOccurence = P_OCCURENCE.matcher(line);
-			StringBuffer sb = new StringBuffer(line.length());
+			StringBuilder sb = new StringBuilder(line.length());
 			
 			while (mOccurence.find()) {
 				if (isForeignExample && mOccurence.end() < line.indexOf("→")) {

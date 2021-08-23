@@ -50,7 +50,7 @@ public class Editor extends AbstractEditor {
 			
 			final String inflectionText = inflection.getContent();
 			Matcher m = pLinkToTemplateZw.matcher(inflectionText);
-			StringBuffer sb = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 			
 			while (m.find()) {
 				String match = m.group(1);

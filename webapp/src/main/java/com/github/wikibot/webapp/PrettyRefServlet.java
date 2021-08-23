@@ -238,7 +238,7 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		// add the shorttags
 		m = Ref.REF_RETAG_R.matcher(text);
-		StringBuffer sb = new StringBuffer(text.length());
+		StringBuilder sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
 			String group = m.group();
@@ -395,7 +395,7 @@ public class PrettyRefServlet extends HttpServlet {
 			// insert new refs section(s) into page code
 			// remove all encountered sections, replace first one with ours
 			m = SOURCES_RE.matcher(text);
-			sb = new StringBuffer(text.length());
+			sb = new StringBuilder(text.length());
 			boolean replacedOnce = false;
 			
 			while (m.find()) {
