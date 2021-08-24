@@ -1,7 +1,9 @@
 package com.github.wikibot.scripts;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,9 +32,9 @@ import com.github.wikibot.parsing.Utils;
 
 public final class DumpWatcher {
 	private static final Path DUMPS_SCHEDULE = Paths.get("./data/dumps/schedule.txt");
-	private static final Path DUMPS_PENDING = Paths.get("./data/dumps/pending.txt");
 	private static final Path PUBLIC_DUMPS = Paths.get("./data/dumps/public/");
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+	private static final String JOB_LAUNCHER = "jsub";
 	
 	private static final JSONObject DUMP_CONFIG;
 	
@@ -91,7 +93,6 @@ public final class DumpWatcher {
 			System.out.println("Processing updated data...");
 			
 			var output = new ArrayList<String>();
-			var jobs = new ArrayList<String>();
 			
 			for (var entry : entries) {
 				output.add(entry.serializeData());
@@ -99,18 +100,33 @@ public final class DumpWatcher {
 				if (entry.updated && !entry.script.isBlank()) {
 					var paths = entry.targetedFiles.stream().map(Path::toString).collect(Collectors.toList());
 					var job = entry.script + " " + String.join(" ", paths);
-					jobs.add(job);
-					System.out.println(job);
+					System.out.println("Adding job to the queue: " + job);
+					issueJob(job);
 				}
 			}
 			
-			System.out.println("Writing output to " + DUMPS_SCHEDULE);
+			System.out.println("Updating schedule at " + DUMPS_SCHEDULE);
 			Files.write(DUMPS_SCHEDULE, output, StandardOpenOption.WRITE);
-			
-			System.out.printf("Registering %d job(s) into %s%n", jobs.size(), DUMPS_PENDING);
-			Files.write(DUMPS_PENDING, jobs, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 		} else {
 			System.out.println("No changes detected");
+		}
+	}
+	
+	private static void issueJob(String job) throws IOException {
+		var process = Runtime.getRuntime().exec(new String[] {JOB_LAUNCHER, job});
+		
+		String s;
+		
+		try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+			while ((s = reader.readLine()) != null) {
+				System.out.println(s);
+			}
+		}
+		
+		try (var reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+			while ((s = reader.readLine()) != null) {
+				System.out.println(s);
+			}
 		}
 	}
 	
