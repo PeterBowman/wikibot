@@ -34,7 +34,7 @@ public final class DumpWatcher {
 	private static final Path DUMPS_SCHEDULE = Paths.get("./data/dumps/schedule.txt");
 	private static final Path PUBLIC_DUMPS = Paths.get("./data/dumps/public/");
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-	private static final String JOB_LAUNCHER = "jsub";
+	private static final String JOB_LAUNCHER = "jsub %s";
 	
 	private static final JSONObject DUMP_CONFIG;
 	
@@ -113,7 +113,7 @@ public final class DumpWatcher {
 	}
 	
 	private static void issueJob(String job) throws IOException {
-		var process = Runtime.getRuntime().exec(new String[] {JOB_LAUNCHER, job});
+		var process = Runtime.getRuntime().exec(String.format(JOB_LAUNCHER, job));
 		
 		String s;
 		
@@ -127,6 +127,10 @@ public final class DumpWatcher {
 			while ((s = reader.readLine()) != null) {
 				System.out.println(s);
 			}
+		}
+		
+		if (process.exitValue() != 0) {
+			throw new RuntimeException("Process returned " + process.exitValue());
 		}
 	}
 	

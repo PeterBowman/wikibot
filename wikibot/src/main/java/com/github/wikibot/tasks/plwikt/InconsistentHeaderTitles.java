@@ -190,7 +190,7 @@ public final class InconsistentHeaderTitles {
 		if (path.equals("local")) {
 			reader = new XMLDumpReader("plwiktionary");
 		} else {
-			reader = new XMLDumpReader(path);
+			reader = new XMLDumpReader(Paths.get(path));
 		}
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {

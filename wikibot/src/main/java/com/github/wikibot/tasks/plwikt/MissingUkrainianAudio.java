@@ -59,7 +59,7 @@ public final class MissingUkrainianAudio {
 			
 			if (line.hasOption("dump")) {
 				String pathToFile = line.getOptionValue("dump");
-				return new XMLDumpReader(pathToFile);
+				return new XMLDumpReader(Paths.get(pathToFile));
 			} else {
 				new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
 				throw new IllegalArgumentException();
