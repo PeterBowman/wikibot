@@ -112,7 +112,7 @@ public final class DumpWatcher {
 		}
 	}
 	
-	private static void issueJob(String job) throws IOException {
+	private static void issueJob(String job) throws IOException, InterruptedException {
 		var process = Runtime.getRuntime().exec(String.format(JOB_LAUNCHER, job));
 		
 		String s;
@@ -129,7 +129,7 @@ public final class DumpWatcher {
 			}
 		}
 		
-		if (process.exitValue() != 0) {
+		if (process.waitFor() != 0) {
 			throw new RuntimeException("Process returned " + process.exitValue());
 		}
 	}
