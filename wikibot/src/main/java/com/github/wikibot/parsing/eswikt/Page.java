@@ -43,7 +43,7 @@ public final class Page extends AbstractPage<Section> {
 		}
 		
 		try {
-			CODE_TO_LANG = Files.lines(Paths.get("./data/eswikt.langs.txt"))
+			CODE_TO_LANG = Files.readAllLines(Paths.get("./data/eswikt.langs.txt")).stream()
 				.map(line -> line.split("\t"))
 				.collect(Collectors.toMap(
 					arr -> arr[0], // lower case!

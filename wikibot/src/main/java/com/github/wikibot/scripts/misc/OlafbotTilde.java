@@ -1,12 +1,11 @@
 package com.github.wikibot.scripts.misc;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -141,7 +140,7 @@ public final class OlafbotTilde implements Selectorizable {
 	}
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
+		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("worklist.txt"));
 		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
 		String line = null;
 		
@@ -199,11 +198,11 @@ public final class OlafbotTilde implements Selectorizable {
 		pw.close();
 	}
 	
-	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
+	public static void edit() throws IOException, ClassNotFoundException, LoginException {
 		LinkedHashMap<String, String[]> pages = new LinkedHashMap<>();
-		File f1 = LOCATION_SER.resolve("preview.ser").toFile();
-		File f2 = LOCATION_SER.resolve("stats.ser").toFile();
-		File f3 = LOCATION_SER.resolve("all.ser").toFile();
+		Path f1 = LOCATION_SER.resolve("preview.ser");
+		Path f2 = LOCATION_SER.resolve("stats.ser");
+		Path f3 = LOCATION_SER.resolve("all.ser");
 		
 		pages = Misc.deserialize(f1);
 		
@@ -273,7 +272,7 @@ public final class OlafbotTilde implements Selectorizable {
 			edited.add(page + " || " + lang);
 		}
 		
-		f1.delete();
+		Files.deleteIfExists(f1);
 		
 		if (errors.size() != 0) {
 			System.out.println("Errores en: " + errors.toString());

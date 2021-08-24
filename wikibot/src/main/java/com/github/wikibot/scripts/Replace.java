@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,10 +56,10 @@ public final class Replace implements Selectorizable {
 		}
 	}
 	
-	public void getDiffs() throws FileNotFoundException, IOException, ClassNotFoundException {
+	public void getDiffs() throws IOException, ClassNotFoundException {
 		String target = "prettytable";
 		String replacement = "wikitable";
-		List<String> titles = Files.lines(TITLES).collect(Collectors.toList());
+		List<String> titles = Files.readAllLines(TITLES);
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
@@ -103,10 +102,10 @@ public final class Replace implements Selectorizable {
 		Misc.serialize(timestamps, INFO);
 	}
 	
-	public void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
+	public void edit() throws IOException, ClassNotFoundException, LoginException {
 		String target = Misc.deserialize(TARGET);
 		String replacement = Misc.deserialize(REPLACEMENT);
-		Map<String, String> map = Misc.readList(Files.lines(WORKLIST).toArray(String[]::new));
+		Map<String, String> map = Misc.readList(Files.readAllLines(WORKLIST).toArray(String[]::new));
 		Map<String, OffsetDateTime> timestamps = Misc.deserialize(INFO);
 		
 		System.out.printf("Título: %s%n", target);

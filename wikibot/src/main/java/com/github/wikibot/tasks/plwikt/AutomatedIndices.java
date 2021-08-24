@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -126,7 +124,7 @@ public final class AutomatedIndices {
 			indexToHash = new HashMap<>();
 		}
 		
-		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getFile().getName());
+		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getPathToDump().getFileName());
 		
 		wb.setMarkBot(true);
 		wb.setMarkMinor(false);
@@ -151,7 +149,7 @@ public final class AutomatedIndices {
 			String talkPage = wb.getTalkPage(WORKLIST);
 			String text = errors.stream().map(err -> String.format("# %s", err)).collect(Collectors.joining("\n"));
 			text = String.format(ERROR_REPORT_TEMPLATE_FMT, String.join("|", MAINTAINERS)) + ":\n" + text + "\n~~~~";
-			wb.newSection(talkPage, reader.getFile().getName(), text, false, false);
+			wb.newSection(talkPage, reader.getPathToDump().getFileName().toString(), text, false, false);
 		}
 	}
 	
@@ -215,11 +213,11 @@ public final class AutomatedIndices {
 		entries.removeIf(e -> e.languageTemplates.isEmpty() || e.templates.isEmpty() || e.categories.isEmpty());
 	}
 	
-	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
+	private static XMLDumpReader getDumpReader(String[] args) throws IOException {
 		if (args.length == 0) {
 			return new XMLDumpReader("plwiktionary");
 		} else {
-			return new XMLDumpReader(new File(args[0].trim()));
+			return new XMLDumpReader(Paths.get(args[0].trim()));
 		}
 	}
 	

@@ -2,7 +2,6 @@ package com.github.wikibot.scripts.eswikt;
 
 import static org.wikiutils.ParseUtils.getTemplates;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
@@ -65,7 +63,7 @@ public final class ScheduledEditor {
 					processAllpages();
 					break;
 				case "-d":
-					XMLDumpReader reader = new XMLDumpReader(new File(args[1]));
+					XMLDumpReader reader = new XMLDumpReader(Paths.get(args[1].trim()));
 					processDumpFile(reader);
 					break;
 				default:
@@ -259,15 +257,12 @@ public final class ScheduledEditor {
 		System.out.println(log);
 		t.printStackTrace();
 		
-		String[] lines;
+		List<String> list = new ArrayList<>();
 		
 		try {
-			lines = Files.lines(ERROR_LOG).toArray(String[]::new);
-		} catch (IOException e) {
-			lines = new String[]{};
-		}
+			list.addAll(Files.readAllLines(ERROR_LOG));
+		} catch (IOException e) {}
 		
-		List<String> list = new ArrayList<>(Arrays.asList(lines));
 		list.add(log);
 		
 		try {

@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -103,7 +102,7 @@ public final class SpanishCanonicalInflectedForms {
 		return titles;
 	}
 	
-	private static boolean checkAndUpdateStoredData(List<String> list) throws FileNotFoundException, IOException {
+	private static boolean checkAndUpdateStoredData(List<String> list) throws IOException {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		

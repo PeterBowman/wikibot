@@ -172,12 +172,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 	}
 	
 	public static void makeArrayLists() throws IOException {
-		List<String[]> list_aff = Files.lines(MISSING_AFF).map(line -> new String[]{
+		List<String[]> list_aff = Files.readAllLines(MISSING_AFF).stream().map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());
 		
-		List<String[]> list_neg = Files.lines(MISSING_NEG).map(line -> new String[]{
+		List<String[]> list_neg = Files.readAllLines(MISSING_NEG).stream().map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
     	}).collect(Collectors.toList());
@@ -207,7 +207,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 			wb.edit(entry[1], content, summary, false, true, -2, null);
 		}
 		
-		MISSING_AFF_SER.toFile().delete();
+		Files.delete(MISSING_AFF_SER);
 	}
 	
 	public static void writeNeg() throws LoginException, IOException {
@@ -229,7 +229,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 			wb.edit(entry[1], content, summary, false, true, -2, null);
 		}
 		
-		MISSING_NEG_SER.toFile().delete();
+		Files.delete(MISSING_NEG_SER);
 	}
 	
 	public static String makePage(String verb, String gerund, boolean isNegate) {

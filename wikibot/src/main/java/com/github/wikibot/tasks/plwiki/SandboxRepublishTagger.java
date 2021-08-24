@@ -43,9 +43,9 @@ public final class SandboxRepublishTagger {
 	private static String extractTimestamp() throws IOException {
 		String startTimestamp;
 		
-		if (LAST_DATE.toFile().exists()) {
+		if (Files.exists(LAST_DATE)) {
 			startTimestamp = Files.readAllLines(LAST_DATE).get(0);
-		} else if (PICK_DATE.toFile().exists()) {
+		} else if (Files.exists(PICK_DATE)) {
 			startTimestamp = Files.readAllLines(PICK_DATE).get(0);
 		} else {
 			throw new UnsupportedOperationException("No timestamp file found.");

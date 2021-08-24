@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +57,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		TsvParserSettings settings = new TsvParserSettings();
 		settings.setHeaderExtractionEnabled(true);
 		TsvParser parser = new TsvParser(settings);
-		List<String[]> list = parser.parseAll(new FileReader(DATA.toFile()));
+		List<String[]> list = parser.parseAll(Files.newBufferedReader(DATA));
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
 		
@@ -110,7 +109,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
+		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(PAGES_SER);
 		List<String> errors = new ArrayList<>();
@@ -143,7 +142,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			System.out.printf("%d errores en: %s%n", errors.size(), errors.toString());
 		}
 		
-		DATA.toFile().delete();
+		Files.deleteIfExists(DATA);
 	}
 	
 	public static void main(String[] args) {

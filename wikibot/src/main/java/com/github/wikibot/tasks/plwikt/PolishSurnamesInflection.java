@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
@@ -485,7 +486,7 @@ public final class PolishSurnamesInflection {
 		
 		final String timestamp = "Ostatnia aktualizacja: ~~~~~.";
 		
-		if (!fLogsHash.toFile().exists() || (int) Misc.deserialize(fLogsHash) != logs.hashCode()) {
+		if (!Files.exists(fLogsHash) || (int) Misc.deserialize(fLogsHash) != logs.hashCode()) {
 			String text = LOG_INTRO + "\n\n" + timestamp + "\n----\n" + logs.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));
@@ -496,7 +497,7 @@ public final class PolishSurnamesInflection {
 			Misc.serialize(logs.hashCode(), fLogsHash);
 		}
 		
-		if (!fErrorsHash.toFile().exists() || (int) Misc.deserialize(fErrorsHash) != errors.hashCode()) {
+		if (!Files.exists(fErrorsHash) || (int) Misc.deserialize(fErrorsHash) != errors.hashCode()) {
 			String text = timestamp + "\n\n" + errors.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));

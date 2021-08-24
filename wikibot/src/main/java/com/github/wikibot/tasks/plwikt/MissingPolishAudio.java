@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,14 +55,14 @@ public final class MissingPolishAudio {
 				.forEach(title -> categorizeTargets(title, regMap, targetMap));
 		}
 		
-		writeLists(targetMap, extractTimestamp(reader.getFile()));
+		writeLists(targetMap, extractTimestamp(reader.getPathToDump()));
 	}
 	
-	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
+	private static XMLDumpReader getDumpReader(String[] args) throws IOException {
 		if (args.length == 0) {
 			return new XMLDumpReader("plwiktionary");
 		} else {
-			return new XMLDumpReader(new File(args[0].trim()));
+			return new XMLDumpReader(Paths.get(args[0].trim()));
 		}
 	}
 	
@@ -100,8 +98,8 @@ public final class MissingPolishAudio {
 		}
 	}
 	
-	private static String extractTimestamp(File f) {
-		String fileName = f.getName();
+	private static String extractTimestamp(Path path) {
+		String fileName = path.getFileName().toString();
 		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
 		String errorString = "brak-daty";
 
@@ -124,14 +122,16 @@ public final class MissingPolishAudio {
 	}
 	
 	private static void writeLists(Map<String, Set<String>> map, String timestamp) throws IOException {
-		File[] files = LOCATION.toFile().listFiles();
+		try (var files = Files.newDirectoryStream(LOCATION)) {
+			for (var file : files) {
+				Files.delete(file);
+			}
+		}
 		
 		for (var entry : map.entrySet()) {
 			String filename = String.format("%s-%s.txt", entry.getKey(), timestamp);
 			String output = entry.getValue().stream().map(s -> String.format("#%s", s)).collect(Collectors.joining(" "));
 			Files.write(LOCATION.resolve(filename), Arrays.asList(output));
 		}
-		
-		Stream.of(files).forEach(File::delete);
 	}
 }

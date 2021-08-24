@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
@@ -243,13 +242,13 @@ public final class CitationTypography {
 		).distinct().toArray(String[]::new);
 	}
 	
-	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
+	private static String[] readDumpFile(String path) throws IOException {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
 			reader = new XMLDumpReader("plwiktionary");
 		} else {
-			reader = new XMLDumpReader(new File(path));
+			reader = new XMLDumpReader(path);
 		}
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
@@ -389,8 +388,7 @@ public final class CitationTypography {
 		}
 	}
 	
-	private static void serializeResults(List<Entry> entries, Map<String, Integer> titleToPageId)
-			throws FileNotFoundException, IOException {
+	private static void serializeResults(List<Entry> entries, Map<String, Integer> titleToPageId) throws IOException {
 		Misc.serialize(entries, LOCATION.resolve("entries.ser"));
 		Misc.serialize(titleToPageId, LOCATION.resolve("title_to_page_id.ser"));
 		
@@ -410,11 +408,11 @@ public final class CitationTypography {
 		Pattern patt = Pattern.compile("(.+)='(.+)'");
 		Path cnf = Paths.get("./replica.my.cnf");
 		
-		if (!cnf.toFile().exists()) {
+		if (!Files.exists(cnf)) {
 			cnf = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(cnf)
+		Files.readAllLines(cnf).stream()
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));

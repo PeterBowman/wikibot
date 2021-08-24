@@ -1,11 +1,10 @@
 package com.github.wikibot.scripts.misc;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -163,7 +162,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	public static void mascWorklist() throws IOException {
 		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
-		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
+		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("worklist.txt"));
 		String line, header = null;
 		List<String> aux = null;
 		boolean isHeader = true;
@@ -220,7 +219,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	public static void femWorklist() throws IOException {
 		Map<String, List<String>> list = new LinkedHashMap<>(100);
 
-		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("fem_worklist.txt").toFile()));
+		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("fem_worklist.txt"));
 		String line, header = null;
 		List<String> aux = null;
 		boolean isHeader = true;
@@ -331,7 +330,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 	}
 	
 	public static void editMasc() throws IOException, LoginException, ClassNotFoundException {
-		File f = LOCATION_SER.resolve("masc_output").toFile();
+		Path f = LOCATION_SER.resolve("masc_output");
 		Map<String, String> list = Misc.deserialize(f);
 		
 		wb.setThrottle(5000);
@@ -354,11 +353,11 @@ public final class FemaleFormsInTranslations implements Selectorizable {
     		}
 		}
 		
-		f.delete();
+		Files.delete(f);
 	}
 	
 	public static void editFem() throws IOException, LoginException, ClassNotFoundException {
-		File f = LOCATION_SER.resolve("fem_output").toFile();
+		Path f = LOCATION_SER.resolve("fem_output");
 		Map<String, String> list = Misc.deserialize(f);
 		
 		wb.setMarkMinor(false);
@@ -383,7 +382,7 @@ public final class FemaleFormsInTranslations implements Selectorizable {
     		}
 		}
 		
-		f.delete();
+		Files.delete(f);
 	}
 
 	public static void main(String[] args) {

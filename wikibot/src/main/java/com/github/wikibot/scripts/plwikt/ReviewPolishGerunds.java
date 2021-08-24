@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
@@ -52,7 +51,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	}
 	
 	public static void getLists() throws IOException {
-		List<String> titles = Files.lines(PAGES).collect(Collectors.toList());
+		List<String> titles = Files.readAllLines(PAGES);
 		List<PageContainer> pages = wb.getContentOfPages(titles);
 		Map<String, String> worklist = new LinkedHashMap<>();
 		
@@ -109,7 +108,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {
 		PageContainer[] pages = Misc.deserialize(INFO);
-		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
+		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
 		Map<String, String> worklist = Misc.readList(lines);
 		Set<String> titles = worklist.keySet();
 		List<String> errors = new ArrayList<>();

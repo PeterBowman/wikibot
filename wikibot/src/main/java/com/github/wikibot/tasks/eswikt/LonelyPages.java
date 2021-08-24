@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.eswikt;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,13 +49,13 @@ public final class LonelyPages {
 	private static Properties prepareSQLProperties() throws IOException {
 		Properties properties = new Properties(defaultSQLProperties);
 		Pattern patt = Pattern.compile("(.+)='(.+)'");
-		File f = new File("./replica.my.cnf");
+		Path f = Paths.get("./replica.my.cnf");
 		
-		if (!f.exists()) {
-			f = new File(LOCATION + ".my.cnf");
+		if (!Files.exists(f)) {
+			f = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(f.toPath())
+		Files.readAllLines(f).stream()
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));
@@ -88,15 +86,15 @@ public final class LonelyPages {
 		}
 	}
 	
-	private static void storeData(List<String> list) throws FileNotFoundException, IOException, ClassNotFoundException {
+	private static void storeData(List<String> list) throws IOException, ClassNotFoundException {
 		var data = LOCATION.resolve("data.ser");
 		var ctrl = LOCATION.resolve("UPDATED");
 		var cal = LOCATION.resolve("timestamp.ser");
 		
-		if (!data.toFile().exists() || list.hashCode() != (int) Misc.deserialize(data).hashCode()) {
+		if (!Files.exists(data) || list.hashCode() != (int) Misc.deserialize(data).hashCode()) {
 			Misc.serialize(list, data);
 			Misc.serialize(OffsetDateTime.now(), cal);
-			ctrl.toFile().delete();
+			Files.deleteIfExists(ctrl);
 		}
 	}
 }

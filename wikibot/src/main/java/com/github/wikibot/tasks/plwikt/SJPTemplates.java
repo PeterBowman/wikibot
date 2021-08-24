@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,8 +92,7 @@ public final class SJPTemplates {
 		}
 	}
 	
-	private static boolean checkStoredData(List<Wiki.Revision> targetRevs)
-			throws FileNotFoundException, IOException {
+	private static boolean checkStoredData(List<Wiki.Revision> targetRevs) throws IOException {
 		Path hash = LOCATION.resolve("hashcode.ser");
 		int targetHash = targetRevs.hashCode();
 		

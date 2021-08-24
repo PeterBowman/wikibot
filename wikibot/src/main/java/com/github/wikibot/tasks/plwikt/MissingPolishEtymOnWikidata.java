@@ -1,5 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
@@ -86,7 +87,7 @@ public final class MissingPolishEtymOnWikidata {
 
 		Path hash = LOCATION.resolve("hash.ser");
 
-		if (hash.toFile().exists() && (int) Misc.deserialize(hash) == map.hashCode()) {
+		if (Files.exists(hash) && (int) Misc.deserialize(hash) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {

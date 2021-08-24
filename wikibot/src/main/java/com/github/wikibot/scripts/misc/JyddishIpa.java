@@ -1,13 +1,11 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -56,12 +54,12 @@ public class JyddishIpa implements Selectorizable {
 	public static void getList(boolean getPagesList, boolean edit) throws IOException, LoginException {
 		String chars = new String(new char[]{ 'ŋ' });
 		
-		File f = LOCATION.resolve("full_list.ser").toFile();
+		Path f = LOCATION.resolve("full_list.ser");
 		String[] int_list = null;
 		
-		if (f.exists()) {
+		if (Files.exists(f)) {
 			try {
-				ObjectInputStream in = new ObjectInputStream(new FileInputStream(f));
+				ObjectInputStream in = new ObjectInputStream(Files.newInputStream(f));
 				int_list = (String[]) in.readObject();
 				System.out.println("Objeto extraído del archivo \"full_list.ser\".");
 				in.close();
@@ -89,14 +87,14 @@ public class JyddishIpa implements Selectorizable {
 			
 			int_list = ArrayUtils.intersection(catmembers_list.toArray(String[]::new), list.toArray(String[]::new));
 			
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
+			ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(f));
 			out.writeObject(int_list);
 			System.out.println("Objeto guardado en el archivo \"full_list.ser\".");
 			out.close();
 		}
 		
 		if (!getPagesList) {
-			System.out.println(int_list.length + " páginas extraídas" + (f.exists() ? " de un objeto deserializado existente" : ""));
+			System.out.println(int_list.length + " páginas extraídas" + (Files.exists(f) ? " de un objeto deserializado existente" : ""));
 			return;
 		}
 		

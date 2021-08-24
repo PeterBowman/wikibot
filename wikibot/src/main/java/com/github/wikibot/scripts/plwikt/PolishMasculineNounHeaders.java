@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -100,7 +99,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void getContents() throws UnsupportedEncodingException, IOException {
-		List<String> lines = Files.lines(ALL_PAGES).collect(Collectors.toList());
+		List<String> lines = Files.readAllLines(ALL_PAGES);
 		List<String> selection = lines.subList(0, Math.min(LIMIT, lines.size() - 1));
 		
 		System.out.printf("Tamaño de la lista: %d%n", selection.size());
@@ -130,8 +129,8 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		Misc.serialize(pages, SERIALIZED);
 	}
 	
-	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
-		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
+	public static void edit() throws IOException, ClassNotFoundException, LoginException {
+		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines);
 		PageContainer[] pages = Misc.deserialize(SERIALIZED);
 		

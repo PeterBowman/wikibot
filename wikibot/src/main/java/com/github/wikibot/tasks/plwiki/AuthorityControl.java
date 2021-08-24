@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.plwiki;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -349,9 +348,8 @@ public final class AuthorityControl {
 	
 	private static List<Long> retrieveOffsets(Path path, Set<Long> pageids) throws IOException {
 		var offsets = new HashSet<Long>(5000);
-		var file = path.toFile();
 		
-		try (var reader = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(file))))) {
+		try (var reader = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(Files.newInputStream(path))))) {
 			reader.lines()
 				.map(line -> Map.entry(
 					Long.parseLong(line.substring(0, line.indexOf(':'))),
@@ -408,11 +406,11 @@ public final class AuthorityControl {
 		var patt = Pattern.compile("(.+)='(.+)'");
 		var cnf = Paths.get("./replica.my.cnf");
 		
-		if (!cnf.toFile().exists()) {
+		if (!Files.exists(cnf)) {
 			cnf = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(cnf)
+		Files.readAllLines(cnf).stream()
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));

@@ -1,9 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +39,7 @@ public final class MissingPolishExamples {
 	
 	public static void main(String[] args) throws Exception {
 		XMLDumpReader reader = getDumpReader(args);
-		LocalDate timestamp = extractTimestamp(reader.getFile());
+		LocalDate timestamp = extractTimestamp(reader.getPathToDump());
 		
 		final Set<String> titles;
 		
@@ -95,16 +92,16 @@ public final class MissingPolishExamples {
 		storeData(list, timestamp);
 	}
 	
-	private static XMLDumpReader getDumpReader(String[] args) throws FileNotFoundException {
+	private static XMLDumpReader getDumpReader(String[] args) throws IOException {
 		if (args.length == 0) {
 			return new XMLDumpReader("plwiktionary");
 		} else {
-			return new XMLDumpReader(new File(args[0].trim()));
+			return new XMLDumpReader(Paths.get(args[0].trim()));
 		}
 	}
 	
-	private static LocalDate extractTimestamp(File f) throws ParseException {
-		String fileName = f.getName();
+	private static LocalDate extractTimestamp(Path path) throws ParseException {
+		String fileName = path.getFileName().toString();
 		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
 		Matcher m = patt.matcher(fileName);
 		
@@ -132,14 +129,14 @@ public final class MissingPolishExamples {
 		XStream xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries.toFile()))) {
+		try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
 			xstream.toXML(list, bos);
 		}
 
 		Files.write(fDumpTimestamp, List.of(xstream.toXML(timestamp)));
 		Files.write(fBotTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
 		
-		fCtrl.toFile().delete();
+		Files.deleteIfExists(fCtrl);
 	}
 	
 	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples

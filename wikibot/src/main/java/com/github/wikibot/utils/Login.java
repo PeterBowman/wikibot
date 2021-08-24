@@ -1,6 +1,5 @@
 package com.github.wikibot.utils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -82,10 +81,10 @@ public class Login {
 	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
 		String filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		System.out.println("Reading from: " + filename);
-		return Files.lines(LOCATION.resolve(filename)).findFirst().orElse("").trim().toCharArray();
+		return Files.readString(LOCATION.resolve(filename)).trim().toCharArray();
 	}
 	
-	private static void promptAndStoreCredentials() throws FileNotFoundException, IOException {
+	private static void promptAndStoreCredentials() throws IOException {
 		System.out.print("Username: ");
 		String username = Misc.readLine();
 		

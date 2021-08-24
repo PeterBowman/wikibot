@@ -113,9 +113,9 @@ public final class GreetNewEditors {
 	private static String extractTimestamp() throws IOException {
 		String startTimestamp;
 		
-		if (LAST_DATE.toFile().exists()) {
+		if (Files.exists(LAST_DATE)) {
 			startTimestamp = Files.readString(LAST_DATE).trim();
-		} else if (PICK_DATE.toFile().exists()) {
+		} else if (Files.exists(PICK_DATE)) {
 			startTimestamp = Files.readString(PICK_DATE).trim();
 		} else {
 			System.out.printf("No timestamp file found, picking last %d days.", DEFAULT_LAST_DAYS);

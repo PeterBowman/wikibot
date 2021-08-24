@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.misc;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -88,7 +87,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		Misc.serialize(querymap, TARGET_LIST);
 	}
 	
-	public static void analyzeLists() throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static void analyzeLists() throws ClassNotFoundException, IOException {
 		//Map<String, String> listA = Misc.deserialize(locationser + "targetlist - 372.ser");
 		//Map<String, String> listB = Misc.deserialize(locationser + "targetlist - 321.ser");
 		Map<String, String> listX = Misc.deserialize(LOCATION_SER.resolve("targetlist.ser"));
@@ -130,7 +129,7 @@ public final class CyryllicAccentsInTranslations implements Selectorizable {
 		pw.close();
 	}
 	
-	public static void edit() throws FileNotFoundException, ClassNotFoundException, IOException, LoginException {
+	public static void edit() throws ClassNotFoundException, IOException, LoginException {
 		String text = Misc.deserialize(ANALYZED_LIST);
 		wb.edit(BOT_PAGE, text, "lista");
 	}

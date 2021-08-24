@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -109,14 +107,14 @@ public final class BoldedSelflinks {
 			return;
 		}
 		
-		String timestamp = extractTimestamp(reader.getFile());
+		String timestamp = extractTimestamp(reader.getPathToDump());
 		String pageText = makePageText(list, timestamp);
 		
 		wb.setMarkBot(false);
 		wb.edit(TARGET_PAGE, pageText, "aktualizacja");
 	}
 	
-	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, FileNotFoundException {
+	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
 		if (args.length != 0) {
 			Options options = new Options();
 			options.addOption("d", "dump", true, "read from dump file");
@@ -126,7 +124,7 @@ public final class BoldedSelflinks {
 			
 			if (line.hasOption("dump")) {
 				String pathToFile = line.getOptionValue("dump");
-				return new XMLDumpReader(new File(pathToFile));
+				return new XMLDumpReader(pathToFile);
 			} else {
 				new HelpFormatter().printHelp(BoldedSelflinks.class.getName(), options);
 				throw new IllegalArgumentException();
@@ -194,7 +192,7 @@ public final class BoldedSelflinks {
 		return false;
 	}
 	
-	private static boolean checkAndUpdateStoredData(List<Item> list) throws FileNotFoundException, IOException {
+	private static boolean checkAndUpdateStoredData(List<Item> list) throws IOException {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
@@ -220,8 +218,8 @@ public final class BoldedSelflinks {
 		}
 	}
 	
-	private static String extractTimestamp(File f) {
-		String fileName = f.getName();
+	private static String extractTimestamp(Path path) {
+		String fileName = path.getFileName().toString();
 		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
 		String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
 		

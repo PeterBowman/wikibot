@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,7 +111,7 @@ public final class ShortCommas implements Selectorizable {
 		Misc.serialize(pages, INFO);
 	}
 	
-	public static void stripCommas() throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static void stripCommas() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(INFO);
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
@@ -175,9 +174,9 @@ public final class ShortCommas implements Selectorizable {
 		Misc.serialize(pages, INFO);
 	}
 	
-	public static void edit() throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static void edit() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(INFO);
-		String[] lines = Files.lines(WORKLIST).toArray(String[]::new);
+		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n\n");
 		List<String> errors = new ArrayList<>();
 		
@@ -210,7 +209,7 @@ public final class ShortCommas implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public static void main(String[] args) throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static void main(String[] args) throws ClassNotFoundException, IOException {
 		Misc.runTimerWithSelector(new ShortCommas());
 	}
 }

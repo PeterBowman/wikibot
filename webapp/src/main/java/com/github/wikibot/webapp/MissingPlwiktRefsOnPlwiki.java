@@ -1,10 +1,10 @@
 package com.github.wikibot.webapp;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -46,11 +46,11 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/plwikt-missing-plwiki-backlinks.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
-	private static final File fEntries = LOCATION.resolve("entries.xml").toFile();
-	private static final File fStats = LOCATION.resolve("stats.xml").toFile();
-	private static final File fTemplates = LOCATION.resolve("templates.xml").toFile();
-	private static final File fTimestamp = LOCATION.resolve("timestamp.xml").toFile();
-	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
+	private static final Path fEntries = LOCATION.resolve("entries.xml");
+	private static final Path fStats = LOCATION.resolve("stats.xml");
+	private static final Path fTemplates = LOCATION.resolve("templates.xml");
+	private static final Path fTimestamp = LOCATION.resolve("timestamp.xml");
+	private static final Path fCtrl = LOCATION.resolve("UPDATED");
 	
 	private static final List<Entry> entries = new ArrayList<>(0);
 	private static final Map<String, Integer> stats = new HashMap<>(0);
@@ -156,32 +156,34 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 	@SuppressWarnings("unchecked")
 	private static synchronized void checkCurrentState(boolean forced, List<Entry> l, Map<String, Integer> s,
 			List<String> t, Calendar c) throws IOException {
-		if (forced || !fCtrl.exists()) {
+		if (forced || !Files.exists(fCtrl)) {
 			try {
 				List<Entry> localEntries;
 				
-				try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(fEntries))) {
+				try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(fEntries))) {
 					localEntries = (List<Entry>) xstream.fromXML(bis);
 				}
 				
 				entries.clear();
 				entries.addAll(localEntries);
 				
-				Map<String, Integer> localStats = (Map<String, Integer>) xstream.fromXML(fStats);
+				Map<String, Integer> localStats = (Map<String, Integer>) xstream.fromXML(fStats.toFile());
 				stats.clear();
 				stats.putAll(localStats);
 				
-				Map<String, String> localTemplates = (Map<String, String>) xstream.fromXML(fTemplates);
+				Map<String, String> localTemplates = (Map<String, String>) xstream.fromXML(fTemplates.toFile());
 				templates.clear();
 				templates.addAll(localTemplates.keySet());
 				
-				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fTimestamp);
+				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fTimestamp.toFile());
 				calendar.setTime(Date.from(odt.toInstant()));
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
 			
-			fCtrl.createNewFile();
+			try {
+				Files.createFile(fCtrl);
+			} catch (FileAlreadyExistsException e) {}
 		}
 		
 		if (l != null && s != null && t != null && c != null) {

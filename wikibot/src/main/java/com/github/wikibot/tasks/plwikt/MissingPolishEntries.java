@@ -68,7 +68,7 @@ public class MissingPolishEntries {
 		int hash = titles.hashCode();
 		Path fHash = LOCATION.resolve("hash.ser");
 		
-		if (fHash.toFile().exists() && (int) Misc.deserialize(fHash) == hash) {
+		if (Files.exists(fHash) && (int) Misc.deserialize(fHash) == hash) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
@@ -144,11 +144,13 @@ public class MissingPolishEntries {
 	}
 	
 	private static Path getLatestDumpFile() throws IOException {
-		return Files.list(DUMPS_PATH)
-			.sorted(Comparator.reverseOrder())
-			.filter(path -> P_DUMP_FILE.matcher(path.getFileName().toString()).matches())
-			.findFirst()
-			.orElseThrow();
+		try (var stream = Files.list(DUMPS_PATH)) {
+			return stream
+				.sorted(Comparator.reverseOrder())
+				.filter(path -> P_DUMP_FILE.matcher(path.getFileName().toString()).matches())
+				.findFirst()
+				.orElseThrow();
+		}
 	}
 	
 	private static String getOutput(Set<String> titles) {

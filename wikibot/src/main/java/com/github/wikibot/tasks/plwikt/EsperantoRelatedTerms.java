@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -209,8 +208,7 @@ public final class EsperantoRelatedTerms {
 		System.out.printf("%d items after removing ignored from subpage%n", items.size());
 	}
 	
-	private static boolean checkAndUpdateStoredData(Map<String, List<MorphemTitlePair>> items)
-			throws FileNotFoundException, IOException {
+	private static boolean checkAndUpdateStoredData(Map<String, List<MorphemTitlePair>> items) throws IOException {
 		int newHashCode = items.hashCode();
 		int storedHashCode;
 		

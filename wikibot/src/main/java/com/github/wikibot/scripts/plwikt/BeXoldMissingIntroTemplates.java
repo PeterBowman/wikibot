@@ -1,11 +1,9 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -86,7 +84,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	}
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("worklist.txt").toFile()));
+		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("worklist.txt")); 
 		Map<String, String> pages = new LinkedHashMap<>();
 		String line = null;
 		String title = null;
@@ -116,11 +114,11 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		Misc.serialize(pages, LOCATION_SER + "preview.ser");
 	}
 	
-	public static void edit() throws FileNotFoundException, IOException, ClassNotFoundException, LoginException {
+	public static void edit() throws IOException, ClassNotFoundException, LoginException {
 		Map<String, String> pages = new LinkedHashMap<>();
 		Map<String, OffsetDateTime> info = null;
-		File f1 = LOCATION_SER.resolve("preview.ser").toFile();
-		File f2 = LOCATION_SER.resolve("info.ser").toFile();
+		Path f1 = LOCATION_SER.resolve("preview.ser");
+		Path f2 = LOCATION_SER.resolve("info.ser");
 		
 		pages = Misc.deserialize(f1);
 		info = Misc.deserialize(f2);
@@ -188,8 +186,8 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
     		}
 		}
 		
-		f1.delete();
-		f2.delete();
+		Files.deleteIfExists(f1);
+		Files.deleteIfExists(f2);
 		
 		if (conflicts.size() != 0) {
 			System.out.println("Conflictos en: " + conflicts.toString());

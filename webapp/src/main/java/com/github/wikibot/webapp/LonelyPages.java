@@ -1,10 +1,10 @@
 package com.github.wikibot.webapp;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -38,9 +38,9 @@ public class LonelyPages extends HttpServlet {
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/eswikt-lonely-pages.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
-	private static final File fData = LOCATION.resolve("data.ser").toFile();
-	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
-	private static final File fCal = LOCATION.resolve("timestamp.ser").toFile();
+	private static final Path fData = LOCATION.resolve("data.ser");
+	private static final Path fCtrl = LOCATION.resolve("UPDATED");
+	private static final Path fCal = LOCATION.resolve("timestamp.ser");
 	
 	private static final List<String> storage = new ArrayList<>(0);
 	private static final Calendar calendar = Calendar.getInstance();
@@ -104,7 +104,7 @@ public class LonelyPages extends HttpServlet {
 	}
 	
 	private static synchronized void checkCurrentState(boolean forced, List<String> l, Calendar c) throws IOException {
-		if (forced || !fCtrl.exists()) {
+		if (forced || !Files.exists(fCtrl)) {
 			try {
 				List<String> list = deserialize(fData);
 				storage.clear();
@@ -120,7 +120,9 @@ public class LonelyPages extends HttpServlet {
 				throw new IOException(e);
 			}
 			
-			fCtrl.createNewFile();
+			try {
+				Files.createFile(fCtrl);
+			} catch (FileAlreadyExistsException e) {}
 		}
 		
 		if (l != null && c != null) {
@@ -130,8 +132,8 @@ public class LonelyPages extends HttpServlet {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static <T> T deserialize(File f) throws IOException, ClassNotFoundException {
-		try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+	private static <T> T deserialize(Path path) throws IOException, ClassNotFoundException {
+		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(path))) {
 			return (T) in.readObject();
 		}
 	}

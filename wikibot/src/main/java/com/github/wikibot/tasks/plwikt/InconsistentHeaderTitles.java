@@ -1,7 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,7 +122,7 @@ public final class InconsistentHeaderTitles {
 		
 		Path hash = LOCATION.resolve("hash.ser");
 		
-		if (hash.toFile().exists() && (int) Misc.deserialize(hash) == map.hashCode()) {
+		if (Files.exists(hash) && (int) Misc.deserialize(hash) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
@@ -186,13 +184,13 @@ public final class InconsistentHeaderTitles {
 		wb.getContentOfPages(distinctTitles).parallelStream().forEach(InconsistentHeaderTitles::findErrors);
 	}
 
-	private static String[] readDumpFile(String path) throws FileNotFoundException, IOException {
+	private static String[] readDumpFile(String path) throws IOException {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
 			reader = new XMLDumpReader("plwiktionary");
 		} else {
-			reader = new XMLDumpReader(new File(path));
+			reader = new XMLDumpReader(path);
 		}
 		
 		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {

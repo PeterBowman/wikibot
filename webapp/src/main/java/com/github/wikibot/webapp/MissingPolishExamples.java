@@ -1,10 +1,10 @@
 package com.github.wikibot.webapp;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -45,10 +45,10 @@ public class MissingPolishExamples extends HttpServlet {
 	private static final String DATE_TIME_FORMAT = "HH:mm, d MMM yyyy (z)";
 	private static final String DATE_FORMAT = "d MMM yyyy";
 	
-	private static final File fEntries = LOCATION.resolve("entries.xml").toFile();
-	private static final File fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml").toFile();
-	private static final File fBotTimestamp = LOCATION.resolve("bot-timestamp.xml").toFile();
-	private static final File fCtrl = LOCATION.resolve("UPDATED").toFile();
+	private static final Path fEntries = LOCATION.resolve("entries.xml");
+	private static final Path fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
+	private static final Path fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
+	private static final Path fCtrl = LOCATION.resolve("UPDATED");
 	
 	private static final List<Entry> entries = new ArrayList<>(0);
 	private static final Calendar calDump = Calendar.getInstance();
@@ -142,27 +142,29 @@ public class MissingPolishExamples extends HttpServlet {
 	
 	@SuppressWarnings("unchecked")
 	private static synchronized void checkCurrentState(boolean forced, List<Entry> l, Calendar cd, Calendar cb) throws IOException {
-		if (forced || !fCtrl.exists()) {
+		if (forced || !Files.exists(fCtrl)) {
 			try {
 				List<Entry> localEntries;
 				
-				try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(fEntries))) {
+				try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(fEntries))) {
 					localEntries = (List<Entry>) xstream.fromXML(bis);
 				}
 				
 				entries.clear();
 				entries.addAll(localEntries);
 				
-				LocalDate ld = (LocalDate) xstream.fromXML(fDumpTimestamp);
+				LocalDate ld = (LocalDate) xstream.fromXML(fDumpTimestamp.toFile());
 				calDump.setTime(Date.from(ld.atStartOfDay().atZone(ZoneOffset.UTC).toInstant()));
 				
-				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fBotTimestamp);
+				OffsetDateTime odt = (OffsetDateTime) xstream.fromXML(fBotTimestamp.toFile());
 				calBot.setTime(Date.from(odt.toInstant()));
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
 			
-			fCtrl.createNewFile();
+			try {
+				Files.createFile(fCtrl);
+			} catch (FileAlreadyExistsException e) {}
 		}
 		
 		if (l != null && cd != null && cb != null) {

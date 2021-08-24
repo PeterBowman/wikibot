@@ -1,7 +1,6 @@
 package com.github.wikibot.utils;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -66,9 +65,9 @@ public class MorfeuszLookup {
 		final InputStream is;
 		
 		if (compressed) {
-			is = new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(pathToDump.toFile())));
+			is = new GzipCompressorInputStream(new BufferedInputStream(Files.newInputStream(pathToDump)));
 		} else {
-			is = new BufferedInputStream(new FileInputStream(pathToDump.toFile()));
+			is = new BufferedInputStream(Files.newInputStream(pathToDump));
 		}
 		
 		// must create new parser instance on each stream run, otherwise returns nothing once stopped

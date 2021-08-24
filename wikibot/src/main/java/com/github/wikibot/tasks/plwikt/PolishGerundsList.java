@@ -174,7 +174,7 @@ public class PolishGerundsList implements Selectorizable {
 	    }
 	}*/
 	
-	public static void getMorfeuszList() throws FileNotFoundException, IOException {
+	public static void getMorfeuszList() throws IOException {
 		Set<String> gers = new HashSet<>(300000);
 		Set<String> substs = new HashSet<>(150000);
 		
@@ -398,7 +398,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		com.github.wikibot.parsing.Section reflexiveVerbs = com.github.wikibot.parsing.Section.create("czasowniki zwrotne", 3);
 		
-		tempList = Files.lines(location_old.resolve("reflexivos.txt"))
+		tempList = Files.readAllLines(location_old.resolve("reflexivos.txt")).stream()
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
 			.collect(Collectors.toList());
 		

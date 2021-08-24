@@ -1,6 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,7 +72,7 @@ public class LatinInfinitiveBacklinks {
 			
 			Files.write(LOCATION.resolve("results.txt"), list);
 			
-			var text = String.format(INTRO, reader.getFile().getName()) + String.join("\n", list);
+			var text = String.format(INTRO, reader.getPathToDump().getFileName().toString()) + String.join("\n", list);
 			wb.edit(TARGET_PAGE, text, "aktualizacja", false, false, -2, null);
 			
 			Files.writeString(hash, Integer.toString(occurrences.hashCode()));
@@ -81,7 +81,7 @@ public class LatinInfinitiveBacklinks {
 		}
 	}
 	
-	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, FileNotFoundException {
+	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
 		if (args.length != 0) {
 			var options = new Options();
 			options.addOption("d", "dump", true, "read from dump file");

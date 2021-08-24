@@ -1,8 +1,6 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -84,14 +82,14 @@ public final class MassReview {
 		wb.logout();
 	}
 
-	private static List<String[]> extractList() throws IOException, UnsupportedEncodingException, FileNotFoundException {
+	private static List<String[]> extractList() throws IOException, UnsupportedEncodingException {
 		TsvParserSettings settings = new TsvParserSettings();
 		settings.setHeaderExtractionEnabled(true);
 		TsvParser parser = new TsvParser(settings);
 		
 		List<String[]> list;
 		
-		try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DATA.toFile()), StandardCharsets.UTF_8))) {
+		try (Reader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(DATA), StandardCharsets.UTF_8))) {
 			list = parser.parseAll(reader);
 		}
 		
@@ -102,7 +100,7 @@ public final class MassReview {
 	private static String findLastModifiedEntry(List<String[]> list) throws IOException {
 		String lastReviewed = "";
 		
-		if (LAST.toFile().exists()) {
+		if (Files.exists(LAST)) {
 			List<String> lines = Files.readAllLines(LAST);
 			
 			if (!lines.isEmpty()) {

@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -151,7 +150,7 @@ public final class UnsourcedUkrainianEntries {
 		return templates.stream().anyMatch(template -> !ParseUtils.getTemplates(template, el.text()).isEmpty());
 	}
 	
-	private static boolean checkAndUpdateStoredData(List<String> list, List<String> sublist) throws FileNotFoundException, IOException {
+	private static boolean checkAndUpdateStoredData(List<String> list, List<String> sublist) throws IOException {
 		int newHashCode = sublist.hashCode();
 		int storedHashCode;
 		

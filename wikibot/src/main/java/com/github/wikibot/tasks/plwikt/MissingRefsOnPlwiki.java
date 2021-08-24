@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -388,7 +387,7 @@ public class MissingRefsOnPlwiki {
 		XStream xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fEntries.toFile()))) {
+		try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
 			xstream.toXML(entries, bos);
 		}
 
@@ -396,7 +395,7 @@ public class MissingRefsOnPlwiki {
 		Files.write(fTemplates, List.of(xstream.toXML(TARGET_TEMPLATES)));
 		Files.write(fTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
 
-		fCtrl.toFile().delete();
+		Files.deleteIfExists(fCtrl);
 	}
 
 	// keep in sync with com.github.wikibot.webapp.MissingPlwiktRefsOnPlwiki

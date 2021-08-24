@@ -1,6 +1,5 @@
 package com.github.wikibot.scripts.plwikt;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,8 +102,8 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	}
 	
 	public static void edit() throws LoginException, IOException, ClassNotFoundException {
-		File f = LOCATION.resolve("missing.ser").toFile();
-		List<String> list = Misc.deserialize(f);
+		Path path = LOCATION.resolve("missing.ser");
+		List<String> list = Misc.deserialize(path);
 		
 		System.out.printf("Tamaño de la lista extraída: %d%n", list.size());
 		
@@ -122,7 +121,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 			wb.edit(page, content, summary, false, true, -2, null);
 		}
 		
-		f.delete();
+		Files.delete(path);
 	}
 	
 	public static void main(String[] args) {

@@ -1,15 +1,10 @@
 package com.github.wikibot.scripts.eswikt;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -84,14 +79,13 @@ public final class UpdateLanguageCodes {
 		storeLangs(storedLangs);
 	}
 
-	private static Map<String, String> extractStoredLangs() throws FileNotFoundException, IOException {
-		File f_langs = LANGS.toFile();
+	private static Map<String, String> extractStoredLangs() throws IOException {
 		List<String[]> list;
 		TsvParserSettings settings = new TsvParserSettings();
 		TsvParser parser = new TsvParser(settings);
 		
-		if (f_langs.exists()) {
-			try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f_langs), StandardCharsets.UTF_8))) {
+		if (Files.exists(LANGS)) {
+			try (Reader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(LANGS), StandardCharsets.UTF_8))) {
 				list = parser.parseAll(reader);
 			}
 			
@@ -180,8 +174,7 @@ public final class UpdateLanguageCodes {
 		int index = text.indexOf("<!--");
 		
 		if (index == -1) {
-			text = Files.lines(INTRO).collect(Collectors.joining("\n"));
-			return text + "\n" + table;
+			return Files.readString(INTRO) + "\n" + table;
 		}
 		
 		index = text.indexOf("\n", index);
@@ -191,8 +184,7 @@ public final class UpdateLanguageCodes {
 		Matcher m = Pattern.compile("<span class=\"update-timestamp\">(.+?)</span>").matcher(intro);
 		
 		if (!m.find()) {
-			text = Files.lines(INTRO).collect(Collectors.joining("\n"));
-			return text + "\n" + table;
+			return Files.readString(INTRO) + "\n" + table;
 		}
 		
 		String timestamp = String.format("~~~~~ (%d idiomas)", size);
@@ -227,9 +219,9 @@ public final class UpdateLanguageCodes {
 		return sb.append(String.join("; ", details)).append(")").toString();
 	}
 	
-	private static void storeLangs(Map<String, String> map) throws FileNotFoundException, UnsupportedEncodingException {
+	private static void storeLangs(Map<String, String> map) throws IOException {
 		TsvWriterSettings settings = new TsvWriterSettings();
-		Writer outputWriter = new OutputStreamWriter(new FileOutputStream(LANGS.toFile()), StandardCharsets.UTF_8);
+		Writer outputWriter = new OutputStreamWriter(Files.newOutputStream(LANGS), StandardCharsets.UTF_8);
 		TsvWriter writer = new TsvWriter(outputWriter, settings);
 		String[][] rows = map.keySet().stream().map(key -> new String[]{key, map.get(key)}).toArray(String[][]::new);
 		writer.writeRowsAndClose(rows);

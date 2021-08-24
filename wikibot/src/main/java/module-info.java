@@ -28,6 +28,7 @@ module org.github.wikibot {
 	requires transitive java.desktop;
 	
 	// https://stackoverflow.com/a/41265267
+	opens com.github.wikibot.main;
 	opens com.github.wikibot.tasks.eswikt;
 	opens com.github.wikibot.tasks.plwiki;
 	opens com.github.wikibot.tasks.plwikt;

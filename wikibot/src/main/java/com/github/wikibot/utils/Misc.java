@@ -1,14 +1,12 @@
 package com.github.wikibot.utils;
 
 import java.io.Console;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,34 +55,26 @@ public final class Misc {
 		}
 	}
 	
-	public static void serialize(Object target, String source) throws FileNotFoundException, IOException {
-		serialize(target, new File(source));
+	public static void serialize(Object target, String source) throws IOException {
+		serialize(target, Paths.get(source));
 	}
 	
-	public static void serialize(Object target, Path path) throws FileNotFoundException, IOException {
-		serialize(target, path.toFile());
-	}
-	
-	public static void serialize(Object target, File f) throws FileNotFoundException, IOException {
-		try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
+	public static void serialize(Object target, Path path) throws IOException {
+		try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(path))) {
 			out.writeObject(target);
-			System.out.printf("Object successfully serialized: %s%n", f.getName());
+			System.out.printf("Object successfully serialized: %s%n", path);
 		}
 	}
 	
-	public static <T> T deserialize(String source) throws FileNotFoundException, IOException, ClassNotFoundException {
-		return deserialize(new File(source));
+	public static <T> T deserialize(String source) throws IOException, ClassNotFoundException {
+		return deserialize(Paths.get(source));
 	}
 	
-	public static <T> T deserialize(Path source) throws FileNotFoundException, IOException, ClassNotFoundException {
-		return deserialize(source.toFile());
-	}
-	
-	@SuppressWarnings("unchecked")
-	public static <T> T deserialize(File f) throws FileNotFoundException, IOException, ClassNotFoundException {
-		try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+	public static <T> T deserialize(Path source) throws IOException, ClassNotFoundException {
+		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(source))) {
+			@SuppressWarnings("unchecked")
 			T target = (T) in.readObject();
-			System.out.printf("Object successfully deserialized: %s%n", f.getName());
+			System.out.printf("Object successfully deserialized: %s%n", source);
 			return target;
 		}
 	}

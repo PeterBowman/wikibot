@@ -84,7 +84,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void getEditTargets() throws IOException {
-		String[] titles = Files.lines(EDIT_LIST).toArray(String[]::new);
+		String[] titles = Files.readAllLines(EDIT_LIST).toArray(String[]::new);
 		Map<String, Collection<String>> map = new HashMap<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
@@ -112,7 +112,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void rename() throws LoginException, IOException {
-		String[] titles = Files.lines(RENAME_LIST).toArray(String[]::new);
+		String[] titles = Files.readAllLines(RENAME_LIST).toArray(String[]::new);
 		
 		System.out.printf("Tamaño de la lista: %d%n", titles.length);
 		
@@ -126,7 +126,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void edit() throws IOException, LoginException {
-		String[] lines = Files.lines(REVIEWED_LIST).toArray(String[]::new);
+		String[] lines = Files.readAllLines(REVIEWED_LIST).toArray(String[]::new);
 		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
 		List<String> errors = new ArrayList<>();
 		

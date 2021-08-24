@@ -1,13 +1,12 @@
 package com.github.wikibot.scripts.plwikt;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -80,10 +79,10 @@ public final class GermanNounDeclension implements Selectorizable {
 			return;
 		}
 		
-		File f = LOCATION.resolve("excluded.ser").toFile();
+		Path f = LOCATION.resolve("excluded.ser");
 		List<String[]> excluded = null;
 		
-		if (f.exists()) {
+		if (Files.exists(f)) {
 			excluded = Misc.deserialize(f);
 		} else {
 			excluded = new ArrayList<>(200);
@@ -179,7 +178,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		pw_excl.close();
 		
 		try {
-	        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
+	        ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(f));
 			out.writeObject(excluded);
 			System.out.println("Serialización realizada con éxito - excluded");
 			out.close();
@@ -191,10 +190,10 @@ public final class GermanNounDeclension implements Selectorizable {
 	}
 	
 	public static void makeLists() throws IOException, ClassNotFoundException {		
-		File f = LOCATION.resolve("excluded.ser").toFile();
+		Path f = LOCATION.resolve("excluded.ser");
 		List<String[]> excluded = null;
 		
-		if (f.exists()) {
+		if (Files.exists(f)) {
 			excluded = Misc.deserialize(f);
 		} else {
 			excluded = new ArrayList<>(100);
@@ -262,7 +261,7 @@ public final class GermanNounDeclension implements Selectorizable {
 			}
 			pw_excl.close();
 			
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
+			ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(f));
 			out.writeObject(excluded);
 			System.out.println("Serialización realizada con éxito - excluded");
 			out.close();
@@ -274,16 +273,16 @@ public final class GermanNounDeclension implements Selectorizable {
 		System.out.println("Tamaño de la lista de conjugados: " + decl.size());
 	}
 	
-	public static void edit() throws FileNotFoundException, IOException, LoginException, ClassNotFoundException {
+	public static void edit() throws IOException, LoginException, ClassNotFoundException {
 		int newcount = 0;
 		int conflicts = 0;
 		
-		File f = LOCATION.resolve("editcount.ser").toFile();
-		File f_decl = LOCATION.resolve("decl_list.ser").toFile();
+		Path f = LOCATION.resolve("editcount.ser");
+		Path f_decl = LOCATION.resolve("decl_list.ser");
 		
 		List<String[]> decl_list = Misc.deserialize(f_decl);
 		
-		final int editcount = f.exists()
+		final int editcount = Files.exists(f)
 			? Misc.deserialize(f)
 			: 0;
 		
@@ -341,7 +340,7 @@ public final class GermanNounDeclension implements Selectorizable {
     		System.out.println((++newcount) + editcount);
 		}
 		
-		f_decl.delete();
+		Files.deleteIfExists(f_decl);
 		
 		Misc.serialize(editcount + newcount, f);
 		

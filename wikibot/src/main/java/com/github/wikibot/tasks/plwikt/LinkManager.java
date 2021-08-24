@@ -1,10 +1,10 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -62,11 +62,11 @@ public final class LinkManager implements Selectorizable {
 	private static final String worklistintro = "* Zatwierdzone: \n";
 	private static final String reportheader = "== Raport ==\n";
 	
-	private static final File f_data = location.resolve("data.ser").toFile();
-	private static final File f_codes = location.resolve("codes.ser").toFile();
-	private static final File f_timestamps = location.resolve("timestamps.ser").toFile();
-	private static final File f_stats = location.resolve("stats.ser").toFile();
-	private static final File f_request = location.resolve("request.ser").toFile();
+	private static final Path f_data = location.resolve("data.ser");
+	private static final Path f_codes = location.resolve("codes.ser");
+	private static final Path f_timestamps = location.resolve("timestamps.ser");
+	private static final Path f_stats = location.resolve("stats.ser");
+	private static final Path f_request = location.resolve("request.ser");
 	
 	private static final int assertbatch = 5;
 	private static final int pagecap = 100;
@@ -510,8 +510,8 @@ public final class LinkManager implements Selectorizable {
 			}
 		}
 		
-		f_codes.delete();
-		f_timestamps.delete();
+		Files.deleteIfExists(f_codes);
+		Files.deleteIfExists(f_timestamps);
 		
 		int stats = Misc.deserialize(f_stats);
 		
@@ -566,12 +566,12 @@ public final class LinkManager implements Selectorizable {
 		wb.edit(mainpage, worklist, summary, false, false, -2, null);
 	}
 	
-	public static void patrol() throws FileNotFoundException, ClassNotFoundException, IOException, InterruptedException, LoginException {
+	public static void patrol() throws ClassNotFoundException, IOException, InterruptedException, LoginException {
 		final int minutes = 5;
 		final long interval = minutes * 60 * 1000;
 		RequestInfo request = null;
 		
-		if (f_request.exists()) {
+		if (Files.exists(f_request)) {
 			request = Misc.deserialize(f_request);
 		} else {
 			request = new RequestInfo(0, "", null);
@@ -600,10 +600,10 @@ public final class LinkManager implements Selectorizable {
 			}
 			
 			if (!currentRequest.equals(request.currentRequest)) {
-				f_codes.delete();
+				Files.deleteIfExists(f_codes);
 				getRequest();
 				request.currentRequest = currentRequest;
-			} else if (f_codes.exists()) {
+			} else if (Files.exists(f_codes)) {
 				OffsetDateTime startTimestamp = request.currentTimestamp; // earliest
 				OffsetDateTime endTimestamp = currentRevision.getTimestamp(); // latest
 				
@@ -630,7 +630,7 @@ public final class LinkManager implements Selectorizable {
 							} catch (Exception e) {
 								System.out.println("Fallo desconocido");
 								System.out.println(e);
-								f_codes.delete();
+								Files.deleteIfExists(f_codes);
 							}
 						} else {
 							System.out.printf("Prueba de edición fallida, falta de privilegios (%s)%n", username);

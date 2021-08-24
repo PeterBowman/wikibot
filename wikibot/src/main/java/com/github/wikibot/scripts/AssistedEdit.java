@@ -92,7 +92,7 @@ public final class AssistedEdit {
 	}
 	
 	public static void getContents(FieldTypes fieldType) throws IOException {
-		List<String> titles = Files.lines(TITLES)
+		List<String> titles = Files.readAllLines(TITLES).stream()
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
@@ -153,13 +153,13 @@ public final class AssistedEdit {
 	}
 	
 	public static void applyChanges(FieldTypes fieldType, String summary, boolean minor) throws IOException {
-		Map<String, String> map = Misc.readList(Files.lines(WORKLIST).toArray(String[]::new));
+		Map<String, String> map = Misc.readList(Files.readAllLines(WORKLIST).toArray(String[]::new));
 		final var initialSize = map.size();
 		System.out.printf("Size: %d%n", initialSize);
 		
 		if (fieldType != null) {
 			String filename = String.format(WORKLIST_FIELD_FORMAT, fieldType.localised());
-			Map<String, String> mapFields = Misc.readList(Files.lines(LOCATION.resolve(filename)).toArray(String[]::new));
+			Map<String, String> mapFields = Misc.readList(Files.readAllLines(LOCATION.resolve(filename)).toArray(String[]::new));
 			
 			mapFields.entrySet().forEach(e -> map.computeIfPresent(
 				e.getKey().substring(0,  e.getKey().indexOf('#') - 1),

@@ -245,11 +245,11 @@ public final class MorfeoDatabase {
 		Pattern patt = Pattern.compile("(.+)='(.+)'");
 		Path cnf = Paths.get("./replica.my.cnf");
 		
-		if (!cnf.toFile().exists()) {
+		if (!Files.exists(cnf)) {
 			cnf = LOCATION.resolve(".my.cnf");
 		}
 		
-		Files.lines(cnf)
+		Files.readAllLines(cnf).stream()
 			.map(patt::matcher)
 			.filter(Matcher::matches)
 			.forEach(m -> properties.setProperty(m.group(1), m.group(2)));

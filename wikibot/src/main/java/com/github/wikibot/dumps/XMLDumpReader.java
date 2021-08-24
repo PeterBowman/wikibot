@@ -1,12 +1,13 @@
 package com.github.wikibot.dumps;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -27,73 +28,59 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
 public final class XMLDumpReader {
-
-	public static final File LOCAL_DUMPS_PATH = new File("./data/dumps");
+	public static final Path LOCAL_DUMPS = Paths.get("./data/dumps");
 	
-	private File file;
+	private Path pathToDumpFile;
 	
-	public XMLDumpReader(File file) throws FileNotFoundException {
-		Objects.requireNonNull(file);
-		this.file = file;
-		
-		if (!file.exists()) {
-			throw new FileNotFoundException();
-		}
-		
-		System.out.printf("Reading from file: %s%n", file);
-	}
-	
-	public XMLDumpReader(String database) throws FileNotFoundException {
+	public XMLDumpReader(String database) throws IOException {
 		Objects.requireNonNull(database);
-		file = getLocalFile(database);
-		System.out.printf("Reading from file: %s%n", file);
+		pathToDumpFile = getLocalFile(database);
+		System.out.printf("Reading from file: %s%n", pathToDumpFile);
 	}
 	
 	public XMLDumpReader(Path pathToFile) throws FileNotFoundException {
 		Objects.requireNonNull(pathToFile);
-		file = pathToFile.toFile();
+		pathToDumpFile = pathToFile;
 		
-		if (!file.exists()) {
-			throw new FileNotFoundException();
+		if (!Files.exists(pathToFile)) {
+			throw new FileNotFoundException(pathToFile.toString());
 		}
 		
-		System.out.printf("Reading from file: %s%n", file);
+		System.out.printf("Reading from file: %s%n", pathToFile);
 	}
 	
-	public File getFile() {
-		return file;
+	public Path getPathToDump() {
+		return Paths.get(pathToDumpFile.toUri()); // clone path
 	}
 	
-	private static File getLocalFile(String database) throws FileNotFoundException {
+	private static Path getLocalFile(String database) throws IOException {
 		Pattern dbPatt = Pattern.compile("^" + database + "\\b.+?\\.xml\\b.*");
-		File[] matching = LOCAL_DUMPS_PATH.listFiles((dir, name) -> dbPatt.matcher(name).matches());
 		
-		if (matching.length == 0) {
-			throw new FileNotFoundException("Dump file not found: " + database.toString());
+		try (var files = Files.list(LOCAL_DUMPS)) {
+			return files
+				.filter(Files::isRegularFile)
+				.filter(path -> dbPatt.matcher(path.getFileName().toString()).matches())
+				.findFirst()
+				.orElseThrow(() -> new FileNotFoundException("Dump file not found: " + database));
 		}
-		
-		return matching[0];
 	}
 	
 	private InputStream getInputStream(long position) throws IOException, CompressorException {
-		FileInputStream fis = new FileInputStream(file);
-		InputStream is = new BufferedInputStream(fis);
+		var extension = FilenameUtils.getExtension(pathToDumpFile.getFileName().toString());
 		
-		var extension = FilenameUtils.getExtension(file.getName());
+		if (position != 0 && !extension.equals("bz2")) {
+			throw new UnsupportedOperationException("position mark only supported in .bz2 files");
+		}
+		
+		FileInputStream fis = new FileInputStream(pathToDumpFile.toFile());
+		BufferedInputStream is = new BufferedInputStream(fis);
 		
 		if (!extension.equals("xml")) {
 			if (position != 0) {
-				if (!extension.equals("bz2")) {
-					fis.close();
-					throw new UnsupportedOperationException("position mark only supported in .bz2 files");
-				}
-				
-				// must be placed before the bzip compressor instantiation
 				fis.getChannel().position(position);
-				// workaround to allow multiple XML root elements (only .bz2)
-				is = new XMLFragmentBZip2CompressorInputStream(is);
+				return new XMLFragmentBZip2CompressorInputStream(is);
 			} else {
-				is = new CompressorStreamFactory().createCompressorInputStream(is);
+				return new CompressorStreamFactory().createCompressorInputStream(is);
 			}
 		}
 		

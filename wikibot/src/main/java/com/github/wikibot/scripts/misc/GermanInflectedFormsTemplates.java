@@ -1,9 +1,7 @@
 package com.github.wikibot.scripts.misc;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -94,7 +92,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 	
 	public static void makeLists() throws IOException {				
 		PrintWriter pw = new PrintWriter(LOCATION.resolve("write_list.txt").toFile());
-		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("work_list.txt").toFile()));
+		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("work_list.txt"));
 		//BufferedReader br = new BufferedReader(new FileReader(location + "work_list_headers.txt"));
 		String line = null;
 		
@@ -171,8 +169,8 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
 		System.out.println("Tamaño de la lista: " + list.size());
 	}
 	
-	public static void edit() throws FileNotFoundException, IOException, LoginException, ClassNotFoundException {
-		File f = LOCATION.resolve("write_list.ser").toFile();
+	public static void edit() throws IOException, LoginException, ClassNotFoundException {
+		Path f = LOCATION.resolve("write_list.ser");
 		List<String[]> list = Misc.deserialize(f);
 		
 		if (list.size() == 0) {
@@ -245,7 +243,7 @@ public final class GermanInflectedFormsTemplates implements Selectorizable {
     		}
 		}
 		
-		f.delete();
+		Files.deleteIfExists(f);
 		
 		System.out.println("Conflictos de edición: " + conflicts + ", problemas: " + problems.size());
 		System.out.println(problems.toString());
