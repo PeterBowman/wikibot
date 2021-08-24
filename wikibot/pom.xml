@@ -45,7 +45,7 @@
   	<dependency>
   		<groupId>org.jsoup</groupId>
   		<artifactId>jsoup</artifactId>
-  		<version>1.14.1</version>
+  		<version>1.14.2</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.commons</groupId>
@@ -75,7 +75,7 @@
   	<dependency>
   		<groupId>com.thoughtworks.xstream</groupId>
   		<artifactId>xstream</artifactId>
-  		<version>1.4.17</version>
+  		<version>1.4.18</version>
   	</dependency>
   	<dependency>
   		<groupId>com.github.plural4j</groupId>

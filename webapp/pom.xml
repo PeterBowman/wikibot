@@ -101,7 +101,7 @@
     <dependency>
     	<groupId>org.jsoup</groupId>
     	<artifactId>jsoup</artifactId>
-    	<version>1.14.1</version>
+    	<version>1.14.2</version>
     </dependency>
     <dependency>
     	<groupId>org.bitbucket.cowwoc</groupId>
@@ -131,7 +131,7 @@
     <dependency>
     	<groupId>com.thoughtworks.xstream</groupId>
     	<artifactId>xstream</artifactId>
-    	<version>1.4.17</version>
+    	<version>1.4.18</version>
     </dependency>
   </dependencies>
   <properties>
