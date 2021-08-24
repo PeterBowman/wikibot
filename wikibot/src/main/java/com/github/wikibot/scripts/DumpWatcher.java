@@ -29,8 +29,8 @@ import org.json.JSONObject;
 import com.github.wikibot.parsing.Utils;
 
 public final class DumpWatcher {
-	private static final Path DUMPS_HISTORY = Paths.get("./.dumpsrc");
-	private static final Path DUMPS_PENDING = Paths.get("./dumps_pending");
+	private static final Path DUMPS_SCHEDULE = Paths.get("./data/dumps/schedule.txt");
+	private static final Path DUMPS_PENDING = Paths.get("./data/dumps/pending.txt");
 	private static final Path PUBLIC_DUMPS = Paths.get("./data/dumps/public/");
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	
@@ -47,7 +47,7 @@ public final class DumpWatcher {
 		final List<DumpEntry> entries;
 
 		if (args.length == 0) {
-			var lines = readLinesFromFile(DUMPS_HISTORY);
+			var lines = readLinesFromFile(DUMPS_SCHEDULE);
 			entries = lines.stream().map(DumpEntry::parseStoredEntry).collect(Collectors.toList());
 			System.out.printf("Dump history retrieved (%d items)%n", entries.size());
 		} else {
@@ -104,8 +104,8 @@ public final class DumpWatcher {
 				}
 			}
 			
-			System.out.println("Writing output to " + DUMPS_HISTORY);
-			Files.write(DUMPS_HISTORY, output, StandardOpenOption.WRITE);
+			System.out.println("Writing output to " + DUMPS_SCHEDULE);
+			Files.write(DUMPS_SCHEDULE, output, StandardOpenOption.WRITE);
 			
 			System.out.printf("Registering %d job(s) into %s%n", jobs.size(), DUMPS_PENDING);
 			Files.write(DUMPS_PENDING, jobs, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
