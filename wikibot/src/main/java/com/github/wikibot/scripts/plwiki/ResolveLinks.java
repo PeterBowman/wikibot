@@ -107,11 +107,17 @@ public final class ResolveLinks {
 			var text = Optional.ofNullable(m.group(3)).orElse(link);
 			var trail = Optional.ofNullable(m.group(4)).orElse("");
 			
+			final String replacement;
+			
 			if (mode.equals("redir") && sources.contains(text + trail)) {
-				m.appendReplacement(sb, String.format("[[%s%s]]", target, fragment));
+				replacement = String.format("[[%s%s]]", target, fragment);
+			} else if (fragment.isEmpty() && target.equals(text + trail)) {
+				replacement = String.format("[[%s]]%s", target, trail);
 			} else {
-				m.appendReplacement(sb, String.format("[[%s%s|%s]]", target, fragment, text + trail));
+				replacement = String.format("[[%s%s|%s]]", target, fragment, text + trail);
 			}
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 		};
 		
 		var edited = new ArrayList<String>();
