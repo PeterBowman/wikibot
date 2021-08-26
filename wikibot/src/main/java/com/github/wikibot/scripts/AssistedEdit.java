@@ -248,9 +248,10 @@ public final class AssistedEdit {
 		
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 		
-		if (fieldType != null) {
-			String oldFilename = String.format(WORKLIST_FILTERED_FORMAT, fieldType.localised());
-			String newFilename = String.format("done-%s.txt", fieldType.localised());
+		if (sectionName != null || fieldType != null) {
+			String fieldName = Optional.ofNullable(fieldType).map(FieldTypes::localised).orElse(null);
+			String oldFilename = String.format(WORKLIST_FILTERED_FORMAT, sectionName, fieldName);
+			String newFilename = String.format("done-%s-%s.txt", sectionName, fieldName);
 			Files.move(WORKLIST.resolveSibling(oldFilename), WORKLIST.resolveSibling(newFilename), StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
