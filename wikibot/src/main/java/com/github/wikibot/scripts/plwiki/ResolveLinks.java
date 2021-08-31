@@ -112,6 +112,8 @@ public final class ResolveLinks {
 			if (mode.equals("redir") && sources.contains(text + trail)) {
 				replacement = String.format("[[%s%s]]", target, fragment);
 			} else if (fragment.isEmpty() && target.equals(text + trail)) {
+				replacement = String.format("[[%s]]", target);
+			} else if (fragment.isEmpty() && target.equals(text)) {
 				replacement = String.format("[[%s]]%s", target, trail);
 			} else {
 				replacement = String.format("[[%s%s|%s]]", target, fragment, text + trail);
