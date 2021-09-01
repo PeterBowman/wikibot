@@ -92,12 +92,16 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
 	
 	private Set<String> getInterwikiLinks() {
 		try (var connection = plwikiDataSource.getConnection()) {
-			final var query = "SELECT DISTINCT iwl_title" +
-				" FROM iwlinks" +
-				" INNER JOIN page ON page_id = iwl_from" +
-				" WHERE page_namespace = 0" +
-				" AND iwl_prefix = 'n'" +
-				" AND iwl_title != '';";
+			final var query = """
+				SELECT
+					DISTINCT iwl_title
+				FROM
+					iwlinks INNER JOIN page ON page_id = iwl_from
+				WHERE
+					page_namespace = 0 AND
+					iwl_prefix = 'n' AND
+					iwl_title != '';
+				""";
 			
 			var rs = connection.createStatement().executeQuery(query);
 			var list = new ArrayList<String>(5000);
@@ -127,28 +131,39 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
 			.collect(Collectors.joining(","));
 		
 		try (var connection = plwikinewsDataSource.getConnection()) {
-			final var query = "SELECT page_title" +
-				" FROM page" +
-				" WHERE page_namespace = 0" +
-				" AND page_is_redirect = 0" +
-				" AND page_title NOT IN (" + articles + ")" +
-				" AND page_title NOT IN (" +
-					" SELECT rd_title" +
-					" FROM redirect" +
-					" INNER JOIN page AS p2 ON rd_from = p2.page_id" +
-					" WHERE p2.page_namespace = 0" +
-					" AND rd_namespace = 0" +
-					" AND p2.page_title IN (" + articles + ")" +
-				")" +
-				" AND page_title NOT IN (" +
-					" SELECT p3.page_title" +
-					" FROM categorylinks" +
-					" INNER JOIN page AS p3 ON cl_from = p3.page_id" +
-					" WHERE p3.page_namespace = 0" +
-					" AND cl_to IN (" + categories + ")" +
-				")" +
-				" ORDER BY CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;";
+			final var queryFmt = """
+				SELECT
+					page_title
+				FROM
+					page
+				WHERE
+					page_namespace = 0 AND
+					page_is_redirect = 0 AND
+					page_title NOT IN (%1$s) AND
+					page_title NOT IN (
+						SELECT
+							rd_title
+						FROM
+							redirect INNER JOIN page AS p2 ON rd_from = p2.page_id
+						WHERE
+							p2.page_namespace = 0 AND
+							rd_namespace = 0 AND
+							p2.page_title IN (%1$s)
+					) AND
+					page_title NOT IN (
+						SELECT
+							p3.page_title
+						FROM
+							categorylinks INNER JOIN page AS p3 ON cl_from = p3.page_id
+						WHERE
+							p3.page_namespace = 0 AND
+							cl_to IN (%2$s)
+					)
+				ORDER BY
+					CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;
+				""";
 			
+			var query = String.format(queryFmt, articles, categories);
 			var rs = connection.createStatement().executeQuery(query);
 			var list = new ArrayList<String>();
 			

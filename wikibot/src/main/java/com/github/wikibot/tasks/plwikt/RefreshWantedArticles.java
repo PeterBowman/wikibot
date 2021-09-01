@@ -135,10 +135,10 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static List<String> extractTitles(Node node) {
-		String text;
+		final String text;
 		
-		if (node instanceof Element) {
-			text = ((Element) node).html().trim();
+		if (node instanceof Element n) {
+			text = n.html().trim();
 		} else {
 			text = node.toString().trim();
 		}

@@ -359,10 +359,7 @@ public class Editor extends AbstractEditor {
 	
 	static {
 		REDUCED_SECTION_CHECK = section -> {
-			if (
-				section instanceof LangSection &&
-				((LangSection) section).langCodeEqualsTo("trans")
-			) {
+			if (section instanceof LangSection s && s.langCodeEqualsTo("trans")) {
 				return true;
 			}
 			
@@ -1319,11 +1316,11 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				etymologySections.isEmpty() &&
-				section instanceof LangSection &&
+				section instanceof LangSection s &&
 				(
 					title.contains(" ") ||
-					RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) ||
-					REDUCED_SECTION_CHECK.test((LangSection) section)
+					RECONSTRUCTED_LANGS.contains(s.getLangCode()) ||
+					REDUCED_SECTION_CHECK.test(s)
 				) &&
 				getTemplates("etimología", section.getIntro()).isEmpty() &&
 				getTemplates("etimología2", section.getIntro()).isEmpty()
@@ -1341,8 +1338,8 @@ public class Editor extends AbstractEditor {
 					continue;
 				}
 			} else if (
-				section instanceof LangSection &&
-				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
+				section instanceof LangSection ls &&
+				ls.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
 				!section.nextSiblingSection()
 					.filter(s -> s.getHeader().startsWith("ETYM "))
 					.isPresent()
@@ -1379,8 +1376,8 @@ public class Editor extends AbstractEditor {
 					params.put("templateName", "etimología");
 					
 					// this should always be true
-					if (section instanceof LangSection) {
-						String langCode = ((LangSection) section).getLangCode();
+					if (section instanceof LangSection ls) {
+						String langCode = ls.getLangCode();
 						
 						if (!langCode.equals("es")) {
 							params.put("leng", langCode);
@@ -1591,10 +1588,10 @@ public class Editor extends AbstractEditor {
 			insertAltComment(section, alt);
 		}
 		
-		if (section instanceof LangSection) {
-			Map<String, String> params = ((LangSection) section).getTemplateParams();
+		if (section instanceof LangSection ls) {
+			Map<String, String> params = ls.getTemplateParams();
 			params.remove("alt");
-			((LangSection) section).setTemplateParams(params);
+			ls.setTemplateParams(params);
 		}
 	}
 
@@ -2747,20 +2744,13 @@ public class Editor extends AbstractEditor {
 								} else {
 									pron = "variaciones fonéticas";
 									
-									switch (type) {
-										case "ys":
-											altPron = "Yeísta, seseante";
-											break;
-										case "yc":
-											altPron = "Yeísta, no seseante";
-											break;
-										case "lls":
-											altPron = "No yeísta, seseante";
-											break;
-										case "llc":
-											altPron = "No yeísta, no seseante";
-											break;
-									}
+									altPron = switch (type) {
+										case "ys" -> "Yeísta, seseante";
+										case "yc" -> "Yeísta, no seseante";
+										case "lls" -> "No yeísta, seseante";
+										case "llc" -> "No yeísta, no seseante";
+										default -> altPron;
+									};
 								}
 								
 								String ipa = params.get(type).replace("'", "ˈ");

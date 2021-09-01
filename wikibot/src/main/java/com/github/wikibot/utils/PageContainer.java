@@ -45,13 +45,11 @@ public class PageContainer implements Serializable {
 	public boolean equals(Object obj) {
 		if (obj == this) {
 			return true;
-		}
-		
-		if (!(obj instanceof PageContainer)) {
+		} else if (obj instanceof PageContainer pc) {
+			return title.equals(pc.title) && text.equals(pc.text) && timestamp.equals(pc.timestamp);
+		} else {
 			return false;
 		}
 		
-		var pc = (PageContainer) obj;
-		return title.equals(pc.title) && text.equals(pc.text) && timestamp.equals(pc.timestamp);
 	}
 }

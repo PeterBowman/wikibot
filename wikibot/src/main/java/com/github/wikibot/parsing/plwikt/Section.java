@@ -170,39 +170,18 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	}
 	
 	private void identifySectionType() {
-		switch (lang) {
-			case "język polski":
-			case "termin obcy w języku polskim":
-				sectionType = SectionTypes.POLISH;
-				break;
-			case "znak chiński":
-				sectionType = SectionTypes.CHINESE_SIGN;
-				break;
-			case "język chiński standardowy":
-				sectionType = SectionTypes.CHINESE;
-				break;
-			case "język staroegipski":
-				sectionType = SectionTypes.EGYPTIAN;
-				break;
-			case "język koreański":
-				sectionType = SectionTypes.KOREAN;
-				break;
-			case "język japoński":
-				sectionType = SectionTypes.JAPANESE;
-				break;
-			case "esperanto":
-				sectionType = SectionTypes.ESPERANTO;
-				break;
-			case "esperanto (morfem)":
-				sectionType = SectionTypes.ESPERANTO_M;
-				break;
-			case "użycie międzynarodowe":
-				sectionType = SectionTypes.INTERNATIONAL;
-				break;
-			default:
-				sectionType = SectionTypes.LATIN;
-				break;
-		}
+		sectionType = switch (lang) {
+			case "język polski", "termin obcy w języku polskim" -> SectionTypes.POLISH;
+			case "znak chiński" -> SectionTypes.CHINESE_SIGN;
+			case "język chiński standardowy" -> SectionTypes.CHINESE;
+			case "język staroegipski" -> SectionTypes.EGYPTIAN;
+			case "język koreański" -> SectionTypes.KOREAN;
+			case "język japoński" -> SectionTypes.JAPANESE;
+			case "esperanto" -> SectionTypes.ESPERANTO;
+			case "esperanto (morfem)" -> SectionTypes.ESPERANTO_M;
+			case "użycie międzynarodowe" -> SectionTypes.INTERNATIONAL;
+			default -> SectionTypes.LATIN;
+		};
 	}
 	
 	private void addMissingFields() {

@@ -287,14 +287,11 @@ public final class EsperantoRelatedTerms {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof MorphemTitlePair)) {
+			} else if (o instanceof MorphemTitlePair mtp) {
+				return title.equals(mtp.title) && morphem.equals(mtp.morphem);
+			} else {
 				return false;
 			}
-			
-			MorphemTitlePair mtp = (MorphemTitlePair) o;
-			return title.equals(mtp.title) && morphem.equals(mtp.morphem);
 		}
 		
 		@Override

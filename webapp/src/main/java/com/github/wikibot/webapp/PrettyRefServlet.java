@@ -960,14 +960,11 @@ public class PrettyRefServlet extends HttpServlet {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Ref)) {
+			} else if (o instanceof Ref r) {
+				return name.equals(r.name);
+			} else {
 				return false;
 			}
-			
-			Ref r = (Ref) o;
-			return name.equals(r.name);
 		}
 	}
 

@@ -34,13 +34,14 @@ public class LatinInfinitiveBacklinks {
 	private static final String INTRO;
 	
 	static {
-		INTRO =
-			"Prawdopodobne wystąpienia łacińskich bezokoliczników w wywołaniach szablonów etymologii " + 
-			"({{s|etym}}, {{s|etym2}}, {{s|etymn}} oraz {{s|etymn2}}): " + 
-			"[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]]." +
-			"\n\n" +
-			"Dane na podstawie %s. Aktualizacja: ~~~~~." +
-			"\n----\n";
+		INTRO = """
+			Prawdopodobne wystąpienia łacińskich bezokoliczników w wywołaniach szablonów etymologii
+			({{s|etym}}, {{s|etym2}}, {{s|etymn}} oraz {{s|etymn2}}):
+			[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]].
+			
+			Dane na podstawie %s. Aktualizacja: ~~~~~.
+			----
+			""";
 	}
 	
 	public static void main(String[] args) throws Exception {

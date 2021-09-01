@@ -48,12 +48,17 @@ public final class UnsourcedUkrainianEntries {
 	private static Wikibot wb;
 	
 	static {
-		PAGE_INTRO =
-			"Hasła ukraińskie, w których przynajmniej jedno znaczenie nie zostało uźródłowione przy użyciu " +
-			"dowolnego szablonu z [[:Kategoria:Szablony źródeł (ukraiński)]].\n\n" +
-			"Znaleziono %s. Aktualizacja: ~~~~~.\n" +
-			"__NOEDITSECTION__\n{{TOCright}}\n{{język linków|ukraiński}}\n\n" +
-			"%s";
+		PAGE_INTRO = """
+			Hasła ukraińskie, w których przynajmniej jedno znaczenie nie zostało uźródłowione przy użyciu
+			dowolnego szablonu z [[:Kategoria:Szablony źródeł (ukraiński)]].
+			
+			Znaleziono %s. Aktualizacja: ~~~~~.
+			__NOEDITSECTION__
+			{{TOCright}}
+			{{język linków|ukraiński}}
+			
+			%s
+			""";
 		
 		var polishWords = new WordForms[] {
 			new WordForms(new String[] {"hasło", "hasła", "haseł"}),

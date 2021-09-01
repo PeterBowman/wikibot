@@ -120,16 +120,12 @@ public class WebArchiveLookup {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Item)) {
+			} else if (o instanceof Item i) {
+				return available == i.available && requestUrl.equals(i.requestUrl) &&
+					archivedUrl.equals(i.archivedUrl) && timestamp.equals(i.timestamp);
+			} else {
 				return false;
 			}
-			
-			Item i = (Item) o;
-			
-			return available == i.available && requestUrl.equals(i.requestUrl) &&
-					archivedUrl.equals(i.archivedUrl) && timestamp.equals(i.timestamp);
 		}
 		
 		@Override

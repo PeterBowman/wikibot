@@ -86,15 +86,17 @@ public final class MisusedRegTemplates {
 			.map(template -> String.format("{{s|%s}}", template))
 			.collect(Collectors.joining(", "));
 		
-		PAGE_INTRO =
-			"Lista nieprawidłowo użytych [[:Kategoria:Szablony dialektów i gwar|szablonów regionalizmów]]. " +
-			"Wskazane tutaj wystąpienia skutkują zwykle niezamierzonym umieszczeniem strony w kategorii, " +
-			"często w wyniku pominięcia pierwszego parametru w polu innym niż „znaczenia” " +
-			"(zasady działania szablonów mogą się różnić, zapoznaj się z instrukcją na ich stronie opisu)." +
-			"\n\n" +
-			"Rozpoznawane szablony: " + templateList + "." +
-			"\n\n" +
-			"Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.";
+		PAGE_INTRO = String.format("""
+			Lista nieprawidłowo użytych [[:Kategoria:Szablony dialektów i gwar|szablonów regionalizmów]].
+			Wskazane tutaj wystąpienia skutkują zwykle niezamierzonym umieszczeniem strony w kategorii,
+			często w wyniku pominięcia pierwszego parametru w polu innym niż „znaczenia”
+			(zasady działania szablonów mogą się różnić, zapoznaj się z instrukcją na ich stronie opisu).
+			
+			Rozpoznawane szablony: %s.
+			
+			Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.
+			----
+			""", templateList);
 		
 		WordForms[] polishWords = new WordForms[] {
 			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
@@ -267,7 +269,7 @@ public final class MisusedRegTemplates {
 		
 		String intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
 		
-		return intro + "\n\n" + elements;
+		return intro + elements;
 	}
 	
 	@XStreamAlias("item")
@@ -312,17 +314,13 @@ public final class MisusedRegTemplates {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Item)) {
+			} else if (o instanceof Item i) {
+				return
+					pageTitle.equals(i.pageTitle) && langName.equals(i.langName) &&
+					fieldType == i.fieldType && templateName.equals(i.templateName);
+			} else {
 				return false;
 			}
-			
-			Item i = (Item) o;
-			
-			return
-				pageTitle.equals(i.pageTitle) && langName.equals(i.langName) &&
-				fieldType == i.fieldType && templateName.equals(i.templateName);
 		}
 		
 		@Override

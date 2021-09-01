@@ -127,14 +127,9 @@ public class SandboxRedirects extends HttpServlet {
 	
 	private static LogData extractSerializedData(String serialized) {
 		Matcher m = P_MOVE_LOG.matcher(serialized);
-		LogData logData = new LogData();
 		
 		if (m.matches()) {
-			String type = m.group(1);
-			logData.sourceExists = (type == "3");
-			logData.targetPage = m.group(2);
-			logData.targetDisplay = m.group(3);
-			return logData;
+			return new LogData(m.group(1).equals("3"), m.group(2), m.group(3));
 		} else {
 			throw new RuntimeException("Błąd odczytu danych: " + serialized);
 		}
@@ -150,9 +145,5 @@ public class SandboxRedirects extends HttpServlet {
 		}
 	}
 	
-	private static class LogData {
-		boolean sourceExists;
-		String targetPage;
-		String targetDisplay;
-	}
+	private record LogData (boolean sourceExists, String targetPage, String targetDisplay) {}
 }

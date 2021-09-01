@@ -75,13 +75,15 @@ public final class InconsistentHeaderTitles {
 	private static Map<String, Collection<Item>> map;
 	
 	static {
-		PAGE_INTRO =
-			"Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej. " +
-			"Odświeżany jest automatycznie przy użyciu wewnętrzej listy ostatnio przenalizowanych stron. " +
-			"Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota. " +
-			"Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem " +
-			"<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]])." +
-			"\n__NOEDITSECTION__\n{{TOChorizontal}}";
+		PAGE_INTRO = """
+			Spis zawiera listę haseł z rozbieżnością pomiędzy nazwą strony a tytułem sekcji językowej.
+			Odświeżany jest automatycznie przy użyciu wewnętrzej listy ostatnio przenalizowanych stron.
+			Zmiany wykonane ręcznie na tej stronie nie będą uwzględniane przez bota.
+			Spacje niełamliwe i inne znaki niewidoczne w podglądzie strony oznaczono symbolem
+			<code>&#9251;</code> ([[w:en:Whitespace character#Unicode]]).
+			__NOEDITSECTION__
+			{{TOChorizontal}}
+			""";
 		
 		WordForms[] polishWords = new WordForms[] {
 			new WordForms(new String[] {"hasło", "hasła", "haseł"}),
@@ -339,7 +341,7 @@ public final class InconsistentHeaderTitles {
 		
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
-		page.setIntro(PAGE_INTRO + "\n" + String.format(
+		page.setIntro(PAGE_INTRO + String.format(
 			"Znaleziono %s %s (%s %s) w %s %s. Aktualizacja: ~~~~~.",
 			NUMBER_FORMAT_PL.format(total), PLURAL_PL.pl(total, "hasło"),
 			NUMBER_FORMAT_PL.format(unique), PLURAL_PL.pl(unique, "strona"),
@@ -422,14 +424,11 @@ public final class InconsistentHeaderTitles {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Item)) {
+			} else if (o instanceof Item i) {
+				return pageTitle.equals(i.pageTitle) && headerTitle.equals(i.headerTitle);
+			} else {
 				return false;
 			}
-			
-			Item i = (Item) o;
-			return pageTitle.equals(i.pageTitle) && headerTitle.equals(i.headerTitle);
 		}
 		
 		@Override

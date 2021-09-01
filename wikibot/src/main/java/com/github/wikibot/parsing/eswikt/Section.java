@@ -56,8 +56,8 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		Section parentSection = this;
 		
 		while (parentSection != null) {
-			if (parentSection instanceof LangSection) {
-				return Optional.of((LangSection) parentSection);
+			if (parentSection instanceof LangSection ls) {
+				return Optional.of(ls);
 			}
 			
 			parentSection = parentSection.parentSection;

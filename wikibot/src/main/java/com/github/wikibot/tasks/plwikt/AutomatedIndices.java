@@ -393,13 +393,11 @@ public final class AutomatedIndices {
 		public boolean equals(Object obj) {
 			if (obj == this) {
 				return true;
-			}
-			
-			if (!(obj instanceof Entry)) {
+			} else if (obj instanceof Entry e) {
+				return indexName.equals(e.indexName);
+			} else {
 				return false;
 			}
-			
-			return indexName.equals(((Entry) obj).indexName);
 		}
 	}
 }

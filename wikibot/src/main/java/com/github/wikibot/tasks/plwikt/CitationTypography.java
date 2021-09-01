@@ -913,20 +913,16 @@ public final class CitationTypography {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Entry)) {
+			} else if (o instanceof Entry e) {
+				return
+					title.equals(e.title) &&
+					langSection.equals(e.langSection) &&
+					fieldType == e.fieldType &&
+					originalText.equals(e.originalText) &&
+					newText.equals(e.newText);
+			} else {
 				return false;
 			}
-			
-			Entry e = (Entry) o;
-			
-			return
-				title.equals(e.title) &&
-				langSection.equals(e.langSection) &&
-				fieldType == e.fieldType &&
-				originalText.equals(e.originalText) &&
-				newText.equals(e.newText);
 		}
 		
 		@Override

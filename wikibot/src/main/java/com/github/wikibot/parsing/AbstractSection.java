@@ -545,18 +545,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null || !(obj instanceof AbstractSection)) {
-			return false;
-		}
-		
 		if (obj == this) {
 			return true;
+		} else if (obj instanceof AbstractSection<?> s) {
+			return uuid.equals(s.uuid);
+		} else {
+			return false;
 		}
-		
-		@SuppressWarnings("unchecked")
-		AbstractSection<T> s = (AbstractSection<T>) obj;
-		
-		return uuid.equals(s.uuid);
 	}
 	
 	@Override
