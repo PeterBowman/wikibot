@@ -2,7 +2,6 @@ package com.github.wikibot.parsing.plwikt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class DefinitionsField extends Field {
 	List<DefinitionHeader> definitions;
@@ -51,7 +50,7 @@ public final class DefinitionsField extends Field {
 		@SuppressWarnings("unused")
 		List<String> list = definitions.stream()
 			.map(def -> def.header)
-			.collect(Collectors.toList());
+			.toList();
 		
 		return found;
 	}

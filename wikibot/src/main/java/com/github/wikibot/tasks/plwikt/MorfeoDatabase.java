@@ -67,7 +67,7 @@ public final class MorfeoDatabase {
 		List<String> morphems = items.values().stream()
 			.flatMap(Collection::stream)
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.size());
 		
@@ -195,7 +195,7 @@ public final class MorfeoDatabase {
 		List<String> list = map.entrySet().stream()
 			.filter(entry -> entry.getValue() == null)
 			.map(Map.Entry::getKey)
-			.collect(Collectors.toList());
+			.toList();
 		
 		List<String> _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", Wiki.MAIN_NAMESPACE);
 		List<String> _normal = wb.getCategoryMembers("Esperanto - morfemy", Wiki.MAIN_NAMESPACE);

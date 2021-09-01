@@ -471,7 +471,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		if (!childSections.isEmpty()) {
 			return flattenSubSections(childSections).stream()
 				.filter(predicate)
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 		} else {
 			return new ArrayList<>(0);
 		}

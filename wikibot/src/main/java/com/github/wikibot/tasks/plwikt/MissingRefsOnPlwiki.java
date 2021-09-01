@@ -102,9 +102,9 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Targeted {{wikipedia}} transclusions on plwiktionary: %d%n", stats.get("targetedTemplateTransclusions"));
 
 		List<String> parsedPlwikiTitles = plwiktToParsedPlwiki.values().stream()
-				.flatMap(Set::stream)
-				.distinct()
-				.collect(Collectors.toList());
+			.flatMap(Set::stream)
+			.distinct()
+			.toList();
 
 		stats.put("targetedArticles", parsedPlwikiTitles.size());
 		System.out.printf("Targeted articles on plwikipedia: %d%n", stats.get("targetedArticles"));
@@ -133,10 +133,10 @@ public class MissingRefsOnPlwiki {
 		System.out.printf("Total plwiktionary backlinks: %d%n", stats.get("totalPlwiktBacklinks"));
 
 		List<String> plwiktBacklinks = plwikiToPlwiktBacklinks.values().stream()
-				.flatMap(Set::stream)
-				.distinct()
-				.filter(backlink -> !plwiktToParsedPlwiki.containsKey(backlink))
-				.collect(Collectors.toList());
+			.flatMap(Set::stream)
+			.distinct()
+			.filter(backlink -> !plwiktToParsedPlwiki.containsKey(backlink))
+			.toList();
 
 		removeFoundOccurrences(plwiktToParsedPlwiki, plwikiToPlwiktBacklinks, plwikiRedirToTarget);
 

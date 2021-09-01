@@ -157,7 +157,7 @@ public final class MisusedRegTemplates {
 				.map(Page::wrap)
 				.flatMap(MisusedRegTemplates::extractItemsFromPage)
 				.sorted()
-				.collect(Collectors.toList());
+				.toList();
 		}
 		
 		System.out.printf("%d items found%n", list.size());

@@ -323,7 +323,7 @@ public final class AuthorityControl {
 			.map(patt::matcher)
 			.flatMap(Matcher::results)
 			.sorted((mr1, mr2) -> Long.compare(Long.parseLong(mr1.group(1)), Long.parseLong(mr2.group(1))))
-			.collect(Collectors.toList());
+			.toList();
 		
 		var worklist = new LinkedHashMap<Map.Entry<Path, Path>, SortedSet<Long>>(indexes.size(), 1.0f);
 		

@@ -58,7 +58,7 @@ public class LatinInfinitiveBacklinks {
 		
 		System.out.printf("Got %d unfiltered occurrences.%n", occurrences.size());
 		
-		var titles = occurrences.keySet().stream().collect(Collectors.toList());
+		var titles = occurrences.keySet().stream().toList();
 		occurrences.clear();
 		
 		wb.getContentOfPages(titles).stream().forEach(pc -> mapOccurrences(pc.getTitle(), pc.getText(), occurrences));
@@ -69,7 +69,7 @@ public class LatinInfinitiveBacklinks {
 		if (!Files.exists(hash) || Integer.parseInt(Files.readString(hash)) != occurrences.hashCode()) {
 			var list = occurrences.entrySet().stream()
 				.map(e -> String.format("#[[%s]]: %s", e.getKey(), e.getValue().stream().collect(Collectors.joining(", "))))
-				.collect(Collectors.toList());
+				.toList();
 			
 			Files.write(LOCATION.resolve("results.txt"), list);
 			

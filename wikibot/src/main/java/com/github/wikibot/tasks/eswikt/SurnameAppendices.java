@@ -109,7 +109,7 @@ public final class SurnameAppendices {
 	private static List<String> getLinksOnPage(String page) throws IOException {
 		return wb.getLinksOnPage(page).stream()
 			.filter(link -> wb.namespace(link) == Wiki.MAIN_NAMESPACE)
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	private static List<String> mergeLists(List<String> listA, List<String> listB) {
@@ -117,7 +117,7 @@ public final class SurnameAppendices {
 			.flatMap(Collection::stream)
 			.distinct()
 			.sorted(collator)
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	private static String prepareOutput(String header, List<String> surnames) {

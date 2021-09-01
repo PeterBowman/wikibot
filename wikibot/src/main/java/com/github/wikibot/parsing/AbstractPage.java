@@ -166,7 +166,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 	public List<T> filterSections(Predicate<T> predicate) {
 		return sections.stream()
 			.filter(predicate)
-			.collect(Collectors.toList());
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 	
 	public List<T> findSectionsWithHeader(String regex) {

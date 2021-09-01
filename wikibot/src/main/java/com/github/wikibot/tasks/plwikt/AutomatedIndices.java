@@ -79,9 +79,7 @@ public final class AutomatedIndices {
 			.distinct()
 			.collect(Collectors.toMap(
 				lang -> lang,
-				lang -> entries.stream()
-					.filter(e -> e.languageTemplates.contains(lang))
-					.collect(Collectors.toList())
+				lang -> entries.stream().filter(e -> e.languageTemplates.contains(lang)).toList()
 			));
 		
 		Map<String, ULocale> langToLocale = langToEntries.keySet().stream()
@@ -158,7 +156,7 @@ public final class AutomatedIndices {
 			.flatMap(e -> e.languageTemplates.stream())
 			.distinct()
 			.map(t -> String.format("Szablon:%s", t))
-			.collect(Collectors.toList());
+			.toList();
 		
 		boolean[] existLanguageTemplates = wb.exists(languageTemplates);
 		Set<String> missingLanguageTemplates = new HashSet<>();
@@ -176,7 +174,7 @@ public final class AutomatedIndices {
 			.flatMap(e -> e.templates.stream())
 			.distinct()
 			.map(t -> String.format("Szablon:%s", t))
-			.collect(Collectors.toList());
+			.toList();
 		
 		boolean[] existDefTemplates = wb.exists(defTemplates);
 		Set<String> missingDefTemplates = new HashSet<>();
@@ -194,7 +192,7 @@ public final class AutomatedIndices {
 			.flatMap(e -> e.categories.stream())
 			.distinct()
 			.map(c -> String.format("Kategoria:%s", c))
-			.collect(Collectors.toList());
+			.toList();
 		
 		if (!categories.isEmpty()) {
 			boolean[] existCategories = wb.exists(categories);
@@ -370,7 +368,7 @@ public final class AutomatedIndices {
 		}
 		
 		private static List<String> makeList(Stream<String> stream) {
-			return stream.map(String::trim).filter(s -> !s.isEmpty()).distinct().collect(Collectors.toList());
+			return stream.map(String::trim).filter(s -> !s.isEmpty()).distinct().collect(Collectors.toCollection(ArrayList::new));
 		}
 		
 		@Override

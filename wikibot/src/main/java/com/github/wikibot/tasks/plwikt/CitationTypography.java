@@ -121,14 +121,14 @@ public final class CitationTypography {
 			
 			entries = pages.parallelStream()
 				.flatMap(CitationTypography::mapOccurrences)
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 			
 			contentCache = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
 			
 			System.out.printf("%d entries extracted.%n", entries.size());
 			
 			if (!entries.isEmpty()) {
-				List<String> l = entries.stream().map(entry -> entry.title).distinct().collect(Collectors.toList());
+				List<String> l = entries.stream().map(entry -> entry.title).distinct().collect(Collectors.toCollection(ArrayList::new));
 				
 				try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
 					queryPageTable(plwiktConn, l, titleToPageId);
@@ -459,7 +459,7 @@ public final class CitationTypography {
 			List<Integer> list = storedEntries.entrySet().stream()
 				.filter(entry -> nonReviewedNonPendingEntries.contains(entry.getValue()))
 				.map(Map.Entry::getKey)
-				.collect(Collectors.toList());
+				.toList();
 			
 			populatePendingTable(conn, list);
 		}

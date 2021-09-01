@@ -313,9 +313,7 @@ public class Editor extends AbstractEditor {
 			"<!---*\\s*== ?Locuciones ?==(\\* ?\\[\\[\\]\\][^\\n-]*?|\\s*)+-*?-->"
 		);
 		
-		COMMENT_PATT_LIST = pCommentsList.stream()
-			.map(Pattern::compile)
-			.collect(Collectors.toList());
+		COMMENT_PATT_LIST = pCommentsList.stream().map(Pattern::compile).toList();
 	}
 	
 	static {
@@ -341,7 +339,7 @@ public class Editor extends AbstractEditor {
 						// http://stackoverflow.com/questions/25523375
 						.orElse(null)
 					)
-					.collect(Collectors.toList())
+					.toList()
 			));
 		
 		SEM_TMPLS_MAP = Utils.readLinesFromResource("/eswikt-catsem-templates.txt", Editor.class)
@@ -354,7 +352,7 @@ public class Editor extends AbstractEditor {
 		
 		LENG_PARAM_TMPLS = Stream.concat(LENG_PARAM_TMPLS_STANDARD.stream(), SEM_TMPLS_MAP.keySet().stream())
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	static {
@@ -365,7 +363,7 @@ public class Editor extends AbstractEditor {
 			
 			List<Section> targetSections = section.getChildSections().stream()
 				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
-				.collect(Collectors.toList());
+				.toList();
 			
 			if (targetSections.isEmpty()) {
 				return false;
@@ -401,7 +399,7 @@ public class Editor extends AbstractEditor {
 			
 			List<String> allHeaders = allSubsections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=edere&oldid=3774065
 			// TODO: https://es.wiktionary.org/w/index.php?title=consultum&diff=3774086&oldid=3773900
@@ -1152,7 +1150,7 @@ public class Editor extends AbstractEditor {
 				.filter(ref -> !ref.tag().isSelfClosing())
 				.filter(ref -> ref.html().isEmpty())
 				.filter(ref -> ref.attributes().size() != 0)
-				.collect(Collectors.toList());
+				.toList();
 			
 			if (!emptyRefs.isEmpty()) {
 				emptyRefs.forEach(ref -> ref.after(String.format("<ref%s />", ref.attributes())));
@@ -4551,7 +4549,7 @@ public class Editor extends AbstractEditor {
 			.filter(s -> s.getLevel() == level)
 			.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
 			.filter(s -> P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find())
-			.collect(Collectors.toList());
+			.toList();
 		
 		int prevIndex = -1;
 		

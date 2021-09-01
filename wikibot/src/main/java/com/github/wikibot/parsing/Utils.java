@@ -100,7 +100,7 @@ public final class Utils {
 		List<List<Range<Integer>>> filtered = Stream.of(ranges)
 			.filter(Objects::nonNull)
 			.filter(l -> !l.isEmpty())
-			.collect(Collectors.toList());
+			.toList();
 		
 		if (filtered.isEmpty()) {
 			return new ArrayList<>();
@@ -119,7 +119,7 @@ public final class Utils {
 			.filter(Objects::nonNull)
 			.flatMap(List::stream)
 			.sorted(Comparator.comparingInt(Range::getMinimum))
-			.collect(Collectors.toList());
+			.collect(Collectors.toCollection(ArrayList::new));
 					
 		return list;
 	}

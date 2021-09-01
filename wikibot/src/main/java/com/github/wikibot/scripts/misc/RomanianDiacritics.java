@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -96,7 +95,7 @@ public final class RomanianDiacritics implements Selectorizable {
 		
 		List<String> temp = pages.stream()
 			.map(PageContainer::getTitle)
-			.collect(Collectors.toList());
+			.toList();
 		
 		for (String title : list) {
 			if (!temp.contains(title)) {

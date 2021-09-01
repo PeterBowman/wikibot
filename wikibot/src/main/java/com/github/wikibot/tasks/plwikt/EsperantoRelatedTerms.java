@@ -136,7 +136,7 @@ public final class EsperantoRelatedTerms {
 				.map(Map.Entry::getValue)
 				.flatMap(Collection::stream)
 				.distinct()
-				.collect(Collectors.toList());
+				.toList();
 			
 			Set<String> relatedTerms = extractLinks(f.getContent());
 			List<MorphemTitlePair> list = new ArrayList<>();

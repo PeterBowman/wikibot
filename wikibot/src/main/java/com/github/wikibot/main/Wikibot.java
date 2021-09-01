@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
@@ -50,7 +49,7 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		List<String> stringified = pageids.stream().map(Object::toString).collect(Collectors.toList());
+		List<String> stringified = pageids.stream().map(Object::toString).toList();
 		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "pageids", this::parseContentLine);
 	}
     
@@ -61,7 +60,7 @@ public class Wikibot extends WMFWiki {
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		List<String> stringified = revids.stream().map(Object::toString).collect(Collectors.toList());
+		List<String> stringified = revids.stream().map(Object::toString).toList();
 		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "revids", this::parseContentLine);
     }
 	

@@ -159,7 +159,7 @@ public final class BoldedSelflinks {
 					)
 				)
 				.sorted((i1, i2) -> COLL_PL.compare(i1.title, i2.title))
-				.collect(Collectors.toList());
+				.toList();
 		}
 	}
 	

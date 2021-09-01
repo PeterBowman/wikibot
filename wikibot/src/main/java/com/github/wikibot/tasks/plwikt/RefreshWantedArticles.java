@@ -181,7 +181,7 @@ public final class RefreshWantedArticles {
 		// Missing pages have been already filtered out
 		List<String> nonMissingTitles = pages.stream()
 			.map(PageContainer::getTitle)
-			.collect(Collectors.toList());
+			.toList();
 		
 		List<String> redirects = wb.resolveRedirects(nonMissingTitles);
 		
@@ -207,7 +207,7 @@ public final class RefreshWantedArticles {
 			.map(Page::wrap)
 			.filter(page -> page.getPolishSection().isPresent())
 			.map(Page::getTitle)
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	private static void processElement(Element el, List<String> visibleTitles, List<String> doneVisible,

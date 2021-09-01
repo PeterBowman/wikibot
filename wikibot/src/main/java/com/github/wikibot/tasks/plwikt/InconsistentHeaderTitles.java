@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
@@ -177,7 +176,7 @@ public final class InconsistentHeaderTitles {
 		List<String> distinctTitles = Stream.of(newTitles, bufferedTitles)
 			.flatMap(Stream::of)
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		if (distinctTitles.isEmpty()) {
 			return;
@@ -332,7 +331,7 @@ public final class InconsistentHeaderTitles {
 	private static com.github.wikibot.parsing.Page makePage() {
 		List<String> values = map.values().stream()
 			.flatMap(coll -> coll.stream().map(item -> item.pageTitle))
-			.collect(Collectors.toList());
+			.toList();
 		
 		int total = values.size();
 		int unique = (int) values.stream().distinct().count();

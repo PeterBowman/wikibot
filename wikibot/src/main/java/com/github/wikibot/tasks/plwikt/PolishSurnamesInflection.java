@@ -480,7 +480,7 @@ public final class PolishSurnamesInflection {
 		
 		List<? extends LogEntry> errors = logs.stream()
 			.filter(log -> log instanceof ErrorLogEntry)
-			.collect(Collectors.toList());
+			.toList();
 		
 		logs.removeAll(errors);
 		

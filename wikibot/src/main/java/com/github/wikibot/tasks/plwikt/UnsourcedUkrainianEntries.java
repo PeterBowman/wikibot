@@ -74,11 +74,11 @@ public final class UnsourcedUkrainianEntries {
 		
 		var sourceTmpls = wb.getCategoryMembers(SOURCES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(wb::removeNamespace)
-			.collect(Collectors.toList());
+			.toList();
 		
 		var ignoredHeaderTmpls = wb.getCategoryMembers(IGNORED_DEF_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(wb::removeNamespace)
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("%d templates: %s%n", sourceTmpls.size(), sourceTmpls);
 		
@@ -88,7 +88,7 @@ public final class UnsourcedUkrainianEntries {
 			.filter(s -> !hasAllDefinitionsSourced(s, sourceTmpls, ignoredHeaderTmpls))
 			.map(f -> f.getContainingPage().get().getTitle())
 			.sorted(Collator.getInstance(new Locale("uk")))
-			.collect(Collectors.toList());
+			.toList();
 		
 		var sublist = titles.subList(0, RESULT_LIMIT);
 		

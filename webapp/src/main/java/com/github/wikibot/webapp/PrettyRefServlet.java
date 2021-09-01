@@ -574,7 +574,7 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 					
 					String params = m.group(1).trim();
-					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toList());
+					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toCollection(ArrayList::new));
 					Iterator<String> i = list.iterator();
 					
 					while (i.hasNext()) {
