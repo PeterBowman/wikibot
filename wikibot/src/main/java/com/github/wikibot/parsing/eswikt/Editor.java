@@ -1754,7 +1754,7 @@ public class Editor extends AbstractEditor {
 			header = header.replaceFirst("(?i)^Proverbio\\b", "Refrán");
 			
 			header = header.replaceFirst("(?iu)^Acr[óo]nimo\\b$", "Sigla");
-			header = header.replaceFirst("(?i)^Sub?stantivo\\b$", "Sustantivo");
+			header = header.replaceFirst("(?i)^Sub?stantivo\\b", "Sustantivo");
 			header = header.replaceFirst("(?iu)^Contracci[óo]n\\b", "Contracción");
 			
 			header = header.replaceFirst("(?i)^Formas? flexivas?$", "Forma flexiva");
