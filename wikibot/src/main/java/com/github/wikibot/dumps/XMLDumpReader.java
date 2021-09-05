@@ -70,7 +70,7 @@ public final class XMLDumpReader {
 		
 		this.pathToDumpFile = pathToDumpFile;
 		assumeMultiStream = false;
-		System.out.printf("Reading from dump: %s%n", pathToDumpFile);
+		System.out.println("Reading from dump: " + pathToDumpFile);
 	}
 	
 	public XMLDumpReader(Path pathToDumpFile, Path pathToIndexFile) throws FileNotFoundException {
@@ -94,7 +94,8 @@ public final class XMLDumpReader {
 		this.pathToDumpFile = pathToDumpFile;
 		this.pathToIndexFile = pathToIndexFile;
 		assumeMultiStream = true;
-		System.out.printf("Using index: %s%n", pathToIndexFile);
+		System.out.println("Reading from dump: " + pathToDumpFile);
+		System.out.println("Using index: " + pathToIndexFile);
 	}
 	
 	public XMLDumpReader seekTitles(Collection<String> filteredTitles) {
@@ -150,7 +151,7 @@ public final class XMLDumpReader {
 				.orElseThrow(() -> new FileNotFoundException("Dump file not found: " + database));
 		}
 		
-		System.out.printf("Reading from dump: %s%n", pathToDumpFile);
+		System.out.println("Reading from dump: " + pathToDumpFile);
 		
 		if (assumeMultiStream) {
 			var filename = pathToDumpFile.getFileName().toString().replaceFirst("\\.xml\\b", "-index.txt");
@@ -160,7 +161,7 @@ public final class XMLDumpReader {
 				throw new FileNotFoundException(pathToIndexFile.toString());
 			}
 			
-			System.out.printf("Using index: %s%n", pathToIndexFile);
+			System.out.println("Using index: " + pathToIndexFile);
 		}
 	}
 	
