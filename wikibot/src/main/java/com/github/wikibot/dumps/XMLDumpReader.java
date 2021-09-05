@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -57,17 +58,17 @@ public final class XMLDumpReader {
 	public XMLDumpReader(String database, boolean useMultiStream) throws IOException {
 		Objects.requireNonNull(database);
 		assumeMultiStream = useMultiStream;
-		searchLocalFiles(database, useMultiStream);
+		searchLocalFiles(database);
 	}
 	
 	public XMLDumpReader(Path pathToDumpFile) throws FileNotFoundException {
 		Objects.requireNonNull(pathToDumpFile);
-		this.pathToDumpFile = pathToDumpFile;
 		
 		if (!Files.exists(pathToDumpFile)) {
 			throw new FileNotFoundException(pathToDumpFile.toString());
 		}
 		
+		this.pathToDumpFile = pathToDumpFile;
 		assumeMultiStream = false;
 		System.out.printf("Reading from dump: %s%n", pathToDumpFile);
 	}
@@ -75,8 +76,6 @@ public final class XMLDumpReader {
 	public XMLDumpReader(Path pathToDumpFile, Path pathToIndexFile) throws FileNotFoundException {
 		Objects.requireNonNull(pathToDumpFile);
 		Objects.requireNonNull(pathToIndexFile);
-		this.pathToDumpFile = pathToDumpFile;
-		this.pathToIndexFile = pathToIndexFile;
 		
 		if (!Files.exists(pathToDumpFile)) {
 			throw new FileNotFoundException(pathToDumpFile.toString());
@@ -86,6 +85,14 @@ public final class XMLDumpReader {
 			throw new FileNotFoundException(pathToIndexFile.toString());
 		}
 		
+		var extension = FilenameUtils.getExtension(pathToIndexFile.getFileName().toString());
+		
+		if (!extension.equals("bz2")) {
+			throw new UnsupportedOperationException("position mark only supported in .bz2 files");
+		}
+
+		this.pathToDumpFile = pathToDumpFile;
+		this.pathToIndexFile = pathToIndexFile;
 		assumeMultiStream = true;
 		System.out.printf("Using index: %s%n", pathToIndexFile);
 	}
@@ -126,20 +133,26 @@ public final class XMLDumpReader {
 		return Paths.get(pathToDumpFile.toUri()); // clone path
 	}
 	
-	private void searchLocalFiles(String database, boolean useMultiStream) throws IOException {
-		var dbPatt = Pattern.compile("^" + database + "\\b.+?" + (useMultiStream ? "-multistream" : "(?<!-multistream)") +"\\.xml\\b.*");
+	private void searchLocalFiles(String database) throws IOException {
+		final Pattern dumpPatt;
+		
+		if (assumeMultiStream) {
+			dumpPatt = Pattern.compile("^" + database + "\\b.+?-multistream\\.xml\\.bz2$");
+		} else {
+			dumpPatt = Pattern.compile("^" + database + "\\b.+?(?<!-multistream)\\.xml\\b.*");
+		}
 		
 		try (var files = Files.list(LOCAL_DUMPS)) {
 			pathToDumpFile = files
 				.filter(Files::isRegularFile)
-				.filter(path -> dbPatt.matcher(path.getFileName().toString()).matches())
+				.filter(path -> dumpPatt.matcher(path.getFileName().toString()).matches())
 				.findFirst()
 				.orElseThrow(() -> new FileNotFoundException("Dump file not found: " + database));
 		}
 		
 		System.out.printf("Reading from dump: %s%n", pathToDumpFile);
 		
-		if (useMultiStream) {
+		if (assumeMultiStream) {
 			var filename = pathToDumpFile.getFileName().toString().replaceFirst("\\.xml\\b", "-index.txt");
 			pathToIndexFile = pathToDumpFile.resolveSibling(filename);
 			
@@ -151,8 +164,8 @@ public final class XMLDumpReader {
 		}
 	}
 	
-	private void maybeRetrieveOffsets() throws IOException, CompressorException {
-		if (availableChunks != null) {
+	private void maybeRetrieveOffsets() throws IOException {
+		if (!assumeMultiStream || availableChunks != null) {
 			return;
 		}
 		
@@ -196,29 +209,22 @@ public final class XMLDumpReader {
 		System.out.printf("Multistream chunks retrieved: %d (dump size: %d)%n", availableChunks.size(), dumpSize);
 	}
 	
-	private InputStream getInputStream() throws IOException, CompressorException {
-		var extension = FilenameUtils.getExtension(pathToDumpFile.getFileName().toString());
-		
+	private InputStream getInputStream() throws IOException {
 		if (assumeMultiStream) {
-			if (!extension.equals("bz2")) {
-				throw new UnsupportedOperationException("position mark only supported in .bz2 files");
-			}
-			
-			maybeRetrieveOffsets();
 			return new RootlessXMLInputStream(pathToDumpFile, availableChunks);
 		} else {
-			var isCompressed = !extension.equals("xml");
-			return getInputStream(isCompressed);
-		}
-	}
-	
-	private InputStream getInputStream(boolean isCompressed) throws IOException, CompressorException {
-		var is = new BufferedInputStream(Files.newInputStream(pathToDumpFile));
-		
-		if (isCompressed) {
-			return new CompressorStreamFactory().createCompressorInputStream(is);
-		} else {
-			return is;
+			var extension = FilenameUtils.getExtension(pathToDumpFile.getFileName().toString());
+			var input = new BufferedInputStream(Files.newInputStream(pathToDumpFile));
+
+			if (!extension.equals("xml")) {
+				try {
+					return new CompressorStreamFactory().createCompressorInputStream(input);
+				} catch (CompressorException e) {
+					throw new IOException(e);
+				}
+			} else {
+				return input;
+			}
 		}
 	}
 	
@@ -234,27 +240,30 @@ public final class XMLDumpReader {
 			throw new IOException(e);
 		}
 		
+		maybeRetrieveOffsets();
+		
 		try (var is = getInputStream()) {
 			xmlReader.parse(new InputSource(is));
-		} catch (CompressorException | SAXException e) {
+		} catch (SAXException e) {
 			throw new IOException(e);
 		}
 	}
 	
 	public void runSAXReader(Consumer<XMLRevision> cons) throws IOException {
+		Objects.requireNonNull(cons);
 		var sph = new SAXPageHandler(cons);
 		runSAXReaderTemplate(sph);
 	}
 	
 	public void runParallelSAXReader(Consumer<XMLRevision> cons) throws IOException {
+		Objects.requireNonNull(cons);
 		var sph = new SAXConcurrentPageHandler(cons);
 		runSAXReaderTemplate(sph);
 	}
 	
-	public Stream<XMLRevision> getStAXReaderStream() throws IOException {
+	private Stream<XMLRevision> getStAXReaderStreamInternal(InputStream input) {
 		try {
 			var factory = XMLInputFactory.newInstance();
-			var input = getInputStream();
 			var streamReader = factory.createXMLStreamReader(input);
 			
 			var stream = new StAXDumpReader(streamReader, dumpSize).stream().onClose(() -> {
@@ -273,9 +282,28 @@ public final class XMLDumpReader {
 			} else {
 				return stream;
 			}
-		} catch (CompressorException | XMLStreamException e) {
-			throw new IOException(e);
+		} catch (XMLStreamException e) {
+			throw new RuntimeException(e.getMessage());
 		}
+	}
+	
+	public Stream<XMLRevision> getStAXReaderStream() throws IOException {
+		maybeRetrieveOffsets();
+		var input = getInputStream();
+		return getStAXReaderStreamInternal(input);
+	}
+	
+	public Stream<XMLRevision> getConcurrentStAXReaderStream() throws IOException {
+		if (!assumeMultiStream) {
+			throw new UnsupportedOperationException("only available in multistream dumps");
+		}
+		
+		maybeRetrieveOffsets();
+		
+		return availableChunks.parallelStream()
+			.map(offset -> new RootlessXMLInputStream(pathToDumpFile, List.of(offset)))
+			.map(this::getStAXReaderStreamInternal)
+			.flatMap(Function.identity());
 	}
 	
 	public static void main(String[] args) throws Exception {
