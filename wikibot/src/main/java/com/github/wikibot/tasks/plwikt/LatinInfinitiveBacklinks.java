@@ -48,7 +48,7 @@ public class LatinInfinitiveBacklinks {
 		var reader = getXMLReader(args);
 		var occurrences = new TreeMap<String, Set<String>>();
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

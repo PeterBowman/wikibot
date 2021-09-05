@@ -10,7 +10,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseable {
+public final class StAXDumpReader implements Iterable<XMLRevision> {
 	private XMLStreamReader streamReader;
 	private final int estimateSize;
 	
@@ -33,11 +33,6 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		return new StAXIterator();
 	}
 
-	@Override
-	public void close() throws Exception {
-		streamReader.close();
-	}
-	
 	public Stream<XMLRevision> stream() {
 		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED | Spliterator.SORTED;
 		

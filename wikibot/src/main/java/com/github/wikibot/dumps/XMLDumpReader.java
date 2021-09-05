@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -249,12 +250,28 @@ public final class XMLDumpReader {
 		runSAXReaderTemplate(sph);
 	}
 	
-	public StAXDumpReader getStAXReader() throws IOException {
+	public Stream<XMLRevision> getStAXReaderStream() throws IOException {
 		try {
-			var is = getInputStream();
 			var factory = XMLInputFactory.newInstance();
-			var streamReader = factory.createXMLStreamReader(is);
-			return new StAXDumpReader(streamReader);
+			var input = getInputStream();
+			var streamReader = factory.createXMLStreamReader(input);
+			
+			var stream = new StAXDumpReader(streamReader).stream().onClose(() -> {
+				try {
+					input.close();
+					streamReader.close();
+				} catch (XMLStreamException | IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			
+			if (filteredTitles != null) {
+				return stream.filter(rev -> filteredTitles.contains(rev.getTitle()));
+			} else if (filteredIds != null) {
+				return stream.filter(rev -> filteredIds.contains(rev.getPageid()));
+			} else {
+				return stream;
+			}
 		} catch (CompressorException | XMLStreamException e) {
 			throw new IOException(e);
 		}
@@ -264,7 +281,7 @@ public final class XMLDumpReader {
 		var reader = new XMLDumpReader("eswiktionary");
 		long count = 0;
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			count = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

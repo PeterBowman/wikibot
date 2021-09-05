@@ -43,7 +43,7 @@ public final class MissingPolishAudio {
 		Map<String, List<String>> regMap = categorizeRegWords();
 		ConcurrentMap<String, Set<String>> targetMap = new ConcurrentHashMap<>();
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

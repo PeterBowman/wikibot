@@ -204,7 +204,7 @@ public final class AuthorityControl {
 		var reader = new XMLDumpReader(path);
 		final Map<Long, Long> newestRevids;
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			newestRevids = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -228,7 +228,7 @@ public final class AuthorityControl {
 	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
 		final var qPatt = Pattern.compile("^Q\\d+$");
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -362,7 +362,7 @@ public final class AuthorityControl {
 			var reader = new XMLDumpReader(paths.getKey(), paths.getValue());
 			
 			try {
-				var batch = processDumpFile(reader.seekIds(pageids), rev -> pageids.contains(rev.getPageid()));
+				var batch = processDumpFile(reader.seekIds(pageids));
 				results.addAll(batch);
 			} catch (IOException e) {
 				System.out.printf("IOException at file %s: %s.%n", paths.getKey(), e.getMessage());

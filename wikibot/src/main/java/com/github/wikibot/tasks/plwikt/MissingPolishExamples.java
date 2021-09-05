@@ -43,7 +43,7 @@ public final class MissingPolishExamples {
 		
 		final Set<String> titles;
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			titles = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -58,7 +58,7 @@ public final class MissingPolishExamples {
 		System.out.printf("%d titles retrieved\n", titles.size());
 		Map<String, Set<Backlink>> titlesToBacklinks = new ConcurrentSkipListMap<>();
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
