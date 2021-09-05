@@ -12,14 +12,14 @@ import javax.xml.stream.XMLStreamReader;
 
 public final class StAXDumpReader implements Iterable<XMLRevision> {
 	private XMLStreamReader streamReader;
-	private final int estimateSize;
+	private final long estimateSize;
 	
 	public StAXDumpReader(XMLStreamReader streamReader) {
 		this.streamReader = streamReader;
 		this.estimateSize = 0;
 	}
 	
-	public StAXDumpReader(XMLStreamReader streamReader, int estimateSize) {
+	public StAXDumpReader(XMLStreamReader streamReader, long estimateSize) {
 		if (estimateSize < 0) {
 			throw new IllegalArgumentException("Negative estimateSize value: " + estimateSize);
 		}

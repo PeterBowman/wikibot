@@ -11,16 +11,17 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -46,6 +47,7 @@ public final class XMLDumpReader {
 	private Set<Long> filteredIds;
 	private List<Long> availableChunks;
 	
+	private long dumpSize;
 	private boolean assumeMultiStream;
 	
 	public XMLDumpReader(String database) throws IOException {
@@ -160,39 +162,38 @@ public final class XMLDumpReader {
 			throw new UnsupportedOperationException("unsupported index file extension: " + extension);
 		}
 		
-		class Entry {
-			Long chunk;
-			Long id;
-			String title;
-		}
+		var filteredOffsets = new LinkedHashSet<Long>(10000);
+		var allOffsets = new ArrayList<Long>(1000000);
 		
 		try (
 			var input = Files.newInputStream(pathToIndexFile);
 			var maybeCompressed = extension.equals("bz2") ? new BZip2CompressorInputStream(input) : input;
 			var reader = new BufferedReader(new InputStreamReader(maybeCompressed))
 		) {
-			var stream = reader.lines().map(line -> {
+			var it = reader.lines().iterator();
+			
+			while (it.hasNext()) {
+				var line = it.next();
+				
 				var firstSeparator = line.indexOf(':');
 				var secondSeparator = line.indexOf(':', firstSeparator + 1);
 				
-				var item = new Entry();
-				item.chunk = Long.parseLong(line.substring(0, firstSeparator));
-				item.id = Long.parseLong(line.substring(firstSeparator + 1, secondSeparator));
-				item.title = line.substring(secondSeparator + 1);
+				var offset = Long.parseLong(line.substring(0, firstSeparator));
+				var id = Long.parseLong(line.substring(firstSeparator + 1, secondSeparator));
+				var title = line.substring(secondSeparator + 1);
 				
-				return item;
-			});
-			
-			if (filteredTitles != null) {
-				stream = stream.filter(item -> filteredTitles.contains(item.title));
-			} else if (filteredIds != null) {
-				stream = stream.filter(item -> filteredIds.contains(item.id));
+				if ((filteredTitles == null || filteredTitles.contains(title)) && (filteredIds == null || filteredIds.contains(id))) {
+					filteredOffsets.add(offset);
+				}
+				
+				allOffsets.add(offset);
 			}
-			
-			availableChunks = stream.map(item -> item.chunk).distinct().collect(Collectors.toList());
 		}
 		
-		System.out.println("Multistream chunks retrieved: " + availableChunks.size());
+		allOffsets.retainAll(filteredOffsets);
+		dumpSize = allOffsets.size();
+		availableChunks = Collections.unmodifiableList(new ArrayList<>(filteredOffsets));
+		System.out.printf("Multistream chunks retrieved: %d (dump size: %d)%n", availableChunks.size(), dumpSize);
 	}
 	
 	private InputStream getInputStream() throws IOException, CompressorException {
@@ -256,7 +257,7 @@ public final class XMLDumpReader {
 			var input = getInputStream();
 			var streamReader = factory.createXMLStreamReader(input);
 			
-			var stream = new StAXDumpReader(streamReader).stream().onClose(() -> {
+			var stream = new StAXDumpReader(streamReader, dumpSize).stream().onClose(() -> {
 				try {
 					input.close();
 					streamReader.close();
