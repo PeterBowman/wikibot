@@ -1,8 +1,6 @@
 package com.github.wikibot.tasks.plwiki;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +10,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,7 +31,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.json.JSONPointer;
@@ -226,17 +222,13 @@ public final class AuthorityControl {
 	}
 	
 	private static List<String> processDumpFile(XMLDumpReader reader) throws IOException {
-		return processDumpFile(reader, 0, 0, rev -> true);
+		return processDumpFile(reader, rev -> true);
 	}
 	
 	private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
-		return processDumpFile(reader, 0, 0, pred);
-	}
-	
-	private static List<String> processDumpFile(XMLDumpReader reader, long offset, int size, Predicate<XMLRevision> pred) throws IOException {
 		final var qPatt = Pattern.compile("^Q\\d+$");
 		
-		try (var stream = reader.getStAXReader(offset, size).stream()) {
+		try (var stream = reader.getStAXReader().stream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -311,7 +303,7 @@ public final class AuthorityControl {
 		return backlinks;
 	}
 	
-	private static Map<Path, Map.Entry<List<Long>, SortedSet<Long>>> prepareWorklist(Path base, JSONObject files) throws IOException {
+	private static Map<Map.Entry<Path, Path>, SortedSet<Long>> prepareWorklist(Path base, JSONObject files) throws IOException {
 		SortedSet<Long> pageids;
 		
 		try {
@@ -333,39 +325,19 @@ public final class AuthorityControl {
 			.sorted((mr1, mr2) -> Long.compare(Long.parseLong(mr1.group(1)), Long.parseLong(mr2.group(1))))
 			.collect(Collectors.toList());
 		
-		var worklist = new LinkedHashMap<Path, Map.Entry<List<Long>, SortedSet<Long>>>(indexes.size(), 1.0f);
+		var worklist = new LinkedHashMap<Map.Entry<Path, Path>, SortedSet<Long>>(indexes.size(), 1.0f);
 		
 		for (var mr : indexes) {
 			var subset = pageids.subSet(Long.parseLong(mr.group(1)), Long.parseLong(mr.group(2)) + 1);
 			
 			if (!subset.isEmpty()) {
-				var filename = mr.group();
-				var offsets = retrieveOffsets(base.resolve(filename), subset);
-				var dump = filename.replaceFirst("-index(\\d+)\\.txt", "$1.xml");
-				worklist.put(base.resolve(dump), Map.entry(offsets, subset));
+				var index = mr.group();
+				var dump = index.replaceFirst("-index(\\d+)\\.txt\\b", "$1.xml");
+				worklist.put(Map.entry(base.resolve(dump), base.resolve(index)), subset);
 			}
 		}
 		
 		return worklist;
-	}
-	
-	private static List<Long> retrieveOffsets(Path path, Set<Long> pageids) throws IOException {
-		var offsets = new HashSet<Long>(5000);
-		
-		try (var reader = new BufferedReader(new InputStreamReader(new BZip2CompressorInputStream(Files.newInputStream(path))))) {
-			reader.lines()
-				.map(line -> Map.entry(
-					Long.parseLong(line.substring(0, line.indexOf(':'))),
-					Long.parseLong(line.substring(line.indexOf(':') + 1, line.indexOf(':', line.indexOf(':') + 1)))
-				))
-				.filter(e -> !offsets.contains(e.getKey()))
-				.filter(e -> pageids.contains(e.getValue()))
-				.map(Map.Entry::getKey)
-				.forEach(offsets::add);
-		}
-		
-		System.out.printf("Inspected %s: %d offsets (%d pageids).%n", path.getFileName(), offsets.size(), pageids.size());
-		return offsets.stream().sorted(Comparator.naturalOrder()).collect(Collectors.toList());
 	}
 	
 	private static List<String> processDumpCollection(Path path) throws IOException {
@@ -385,17 +357,15 @@ public final class AuthorityControl {
 		System.out.printf("Reading from %d dump files.%n", worklist.size());
 		
 		for (var dumpEntry : worklist.entrySet()) {
-			var reader = new XMLDumpReader(dumpEntry.getKey());
-			var offsets = dumpEntry.getValue().getKey();
-			var pageids = dumpEntry.getValue().getValue();
+			var paths = dumpEntry.getKey();
+			var pageids = dumpEntry.getValue();
+			var reader = new XMLDumpReader(paths.getKey(), paths.getValue());
 			
-			for (var offset : offsets) {
-				try {
-					var batch = processDumpFile(reader, offset, 100, rev -> pageids.contains(rev.getPageid()));
-					results.addAll(batch);
-				} catch (IOException e) {
-					System.out.printf("IOException at offset %d: %s.%n", offset, e.getMessage());
-				}
+			try {
+				var batch = processDumpFile(reader.seekIds(pageids), rev -> pageids.contains(rev.getPageid()));
+				results.addAll(batch);
+			} catch (IOException e) {
+				System.out.printf("IOException at file %s: %s.%n", paths.getKey(), e.getMessage());
 			}
 		}
 

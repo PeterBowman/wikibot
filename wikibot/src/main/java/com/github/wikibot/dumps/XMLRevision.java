@@ -2,6 +2,7 @@ package com.github.wikibot.dumps;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import com.github.wikibot.utils.PageContainer;
 
@@ -128,7 +129,9 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 		
 	@Override
 	public int compareTo(XMLRevision o) {
-		return Long.compare(revid, o.revid);
+		return Optional.of(Long.compare(pageid, o.pageid))
+			.filter(v -> v != 0)
+			.orElse(Long.compare(revid, o.revid));
 	}
 	
 	@Override

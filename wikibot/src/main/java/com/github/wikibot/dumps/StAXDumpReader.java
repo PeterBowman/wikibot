@@ -39,7 +39,12 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 	}
 	
 	public Stream<XMLRevision> stream() {
-		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED;
+		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED | Spliterator.SORTED;
+		
+		if (estimateSize > 0) {
+			characteristics |= Spliterator.SIZED | Spliterator.SUBSIZED;
+		}
+		
 		Spliterator<XMLRevision> spliterator;
 		
 		if (estimateSize == 0) {
