@@ -340,10 +340,15 @@ public final class XMLDumpReader {
 			endRoot = new ByteArrayInputStream(String.format("</%s>", ROOT_ELEMENT).getBytes());
 		}
 		
-		private InputStream getCompressedInputStream(long position) throws IOException {
+		private InputStream getCompressedInputStream(long position) throws IOException, CompressorException {
 			var fis = new FileInputStream(pathToDump.toFile());
 			fis.getChannel().position(position);
-			return new BZip2CompressorInputStream(new BufferedInputStream(fis));
+			
+			try {
+				return new BZip2CompressorInputStream(new BufferedInputStream(fis));
+			} catch (IOException e) {
+				throw new CompressorException(e.getMessage(), e.getCause());
+			}
 		}
 		
 		private void getNextStream() throws IOException {
@@ -351,12 +356,18 @@ public final class XMLDumpReader {
 				currentInput.close();
 			}
 			
-			if (offsets.hasNext()) {
+			while (offsets.hasNext()) {
 				var offset = offsets.next();
-				currentInput = getCompressedInputStream(offset);
-			} else {
-				currentInput = null;
+				
+				try {
+					currentInput = getCompressedInputStream(offset);
+					return;
+				} catch (CompressorException e) {
+					System.out.printf("Unable to read file at channel position %d: %s%n", offset, e.getMessage());
+				}
 			}
+			
+			currentInput = null;
 		}
 		
 		@Override
