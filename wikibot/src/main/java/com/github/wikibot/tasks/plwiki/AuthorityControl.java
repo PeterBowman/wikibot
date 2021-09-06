@@ -364,8 +364,10 @@ public final class AuthorityControl {
 			try {
 				var batch = processDumpFile(reader.seekIds(pageids));
 				results.addAll(batch);
+				System.out.printf("Got %d articles in last batch.%n", batch.size());
 			} catch (IOException e) {
 				System.out.printf("IOException at file %s: %s.%n", paths.getKey(), e.getMessage());
+				System.out.printf("Caused by: %s.%n", e.getCause());
 			}
 		}
 

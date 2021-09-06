@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -272,7 +273,7 @@ public final class XMLDumpReader {
 					input.close();
 					streamReader.close();
 				} catch (XMLStreamException | IOException e) {
-					throw new RuntimeException(e);
+					throw new UncheckedIOException(new IOException(e));
 				}
 			});
 			
@@ -284,7 +285,7 @@ public final class XMLDumpReader {
 				return stream;
 			}
 		} catch (XMLStreamException e) {
-			throw new RuntimeException(e.getMessage());
+			throw new UncheckedIOException(new IOException(e));
 		}
 	}
 	

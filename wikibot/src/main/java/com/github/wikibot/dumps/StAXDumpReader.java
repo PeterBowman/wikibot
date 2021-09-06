@@ -1,5 +1,7 @@
 package com.github.wikibot.dumps;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -86,7 +88,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
 				
 				return false;
 			} catch (XMLStreamException e) {
-				throw new RuntimeException(e);
+				throw new UncheckedIOException(new IOException(e));
 			}
 		}
 		
@@ -102,7 +104,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
 				
 				return revision;
 			} catch (XMLStreamException e) {
-				throw new RuntimeException(e);
+				throw new UncheckedIOException(new IOException(e));
 			}
 		}
 		
