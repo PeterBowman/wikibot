@@ -224,7 +224,7 @@ public final class XMLDumpReader {
 	
 	private InputStream getInputStream() throws IOException {
 		if (assumeMultiStream) {
-			return new RootlessXMLInputStream(pathToDumpFile, availableChunks);
+			return new RootlessXMLInputStream();
 		} else {
 			var extension = FilenameUtils.getExtension(pathToDumpFile.getFileName().toString());
 			var input = new BufferedInputStream(Files.newInputStream(pathToDumpFile));
@@ -314,7 +314,7 @@ public final class XMLDumpReader {
 		maybeRetrieveOffsets();
 		
 		return availableChunks.parallelStream()
-			.map(offset -> new RootlessXMLInputStream(pathToDumpFile, List.of(offset)))
+			.map(offset -> new RootlessXMLInputStream())
 			.map(this::getStAXReaderStreamInternal)
 			.flatMap(Function.identity());
 	}
@@ -333,26 +333,22 @@ public final class XMLDumpReader {
 		System.out.printf("Total count: %d%n", count);
 	}
 	
-	private static class RootlessXMLInputStream extends InputStream {
+	private class RootlessXMLInputStream extends InputStream {
 		private static final String ROOT_ELEMENT = "dummy_root";
 		
-		private Path pathToDump;
 		private Iterator<Long> offsets;
-		
 		private ByteArrayInputStream startRoot;
 		private ByteArrayInputStream endRoot;
 		private InputStream currentInput;
 		
-		RootlessXMLInputStream(Path pathToDump, Iterable<Long> offsets) {
-			this.pathToDump = pathToDump;
-			this.offsets = offsets.iterator();
-			
+		RootlessXMLInputStream() {
+			offsets = availableChunks.iterator();
 			startRoot = new ByteArrayInputStream(String.format("<%s>", ROOT_ELEMENT).getBytes());
 			endRoot = new ByteArrayInputStream(String.format("</%s>", ROOT_ELEMENT).getBytes());
 		}
 		
 		private InputStream getCompressedInputStream(long position) throws IOException, CompressorException {
-			var fis = new FileInputStream(pathToDump.toFile());
+			var fis = new FileInputStream(pathToDumpFile.toFile());
 			fis.getChannel().position(position);
 			
 			try {
