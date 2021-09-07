@@ -115,7 +115,7 @@ public final class AuthorityControl {
 			
 			var wiki = Wiki.newSession("pl.wikipedia.org");
 			articles.removeAll(retrieveTemplateTransclusions());
-			articles.removeAll(retrieveRedirects());
+			articles.removeAll(retrieveNonRedirects());
 			articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
 			System.out.printf("Got %d filtered articles.%n", articles.size());
 			
@@ -317,7 +317,7 @@ public final class AuthorityControl {
 		try {
 			var backlinks = retrievePropertyBacklinks();
 			backlinks.values().removeAll(retrieveTemplateTransclusions());
-			backlinks.values().removeAll(retrieveRedirects());
+			backlinks.values().retainAll(retrieveNonRedirects());
 			pageids = new TreeSet<>(backlinks.keySet());
 		} catch (ClassNotFoundException | SQLException | IOException e) {
 			throw new RuntimeException(e);
@@ -449,26 +449,27 @@ public final class AuthorityControl {
 		return transclusions;
 	}
 	
-	private static Set<String> retrieveRedirects() throws ClassNotFoundException, SQLException, IOException {
+	private static Set<String> retrieveNonRedirects() throws ClassNotFoundException, SQLException, IOException {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		
-		var redirects = new HashSet<String>(600000);
+		var articles = new HashSet<String>(2000000);
 		
 		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
 			var query = "SELECT page_title"
 				+ " FROM page"
 				+ " WHERE page_namespace = 0"
-				+ " AND page_is_redirect = 1;";
+				+ " AND page_is_redirect = 0;";
 			
 			var rs = connection.createStatement().executeQuery(query);
 			
 			while (rs.next()) {
 				var title = rs.getString("page_title").replace('_', ' ');
-				redirects.add(title);
+				articles.add(title);
 			}
 		}
 		
-		return redirects;
+		System.out.printf("Got %d non-redirect articles on plwiki.%n", articles.size());
+		return articles;
 	}
 	
 	private static Optional<String> prepareText(String text) {
