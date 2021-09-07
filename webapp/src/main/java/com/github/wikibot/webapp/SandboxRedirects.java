@@ -60,19 +60,24 @@ public class SandboxRedirects extends HttpServlet {
 		boolean hasNext = false;
 		
 		try (Connection conn = dataSource.getConnection()) {
-			String query = "SELECT"
-					+ " CONVERT(log_title USING utf8mb4) AS log_title,"
-					+ " CONVERT(log_params USING utf8mb4) AS log_params,"
-					+ " log_timestamp"
-				+ " FROM plwiki_p.logging"
-				+ " WHERE"
-					+ " log_type = 'move' AND"
-					+ " log_namespace = 0 AND"
-					//+ " log_comment = '" + MOVE_LOG_COMMENT + "' AND"
-					+ " log_params LIKE '%:\\\"Wikipedysta:%'"
-				+ " ORDER BY log_id DESC"
-				+ " LIMIT " + (limit + 1)
-				+ " OFFSET " + offset;
+			String query = String.format("""
+				SELECT
+					CONVERT(log_title USING utf8mb4) AS log_title,
+					CONVERT(log_params USING utf8mb4) AS log_params,
+					log_timestamp
+				FROM
+					plwiki_p.logging
+				WHERE
+					log_type = 'move' AND
+					log_namespace = 0 AND
+					log_params LIKE '%%:"Wikipedysta:%%'
+				ORDER BY
+					log_id DESC
+				LIMIT
+					%d
+				OFFSET
+					%d;
+				""", limit + 1, offset);
 			
 			Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setFetchSize(Integer.MIN_VALUE);

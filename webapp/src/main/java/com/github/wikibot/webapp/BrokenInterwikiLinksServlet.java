@@ -275,13 +275,17 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static List<Item> fetchInterwikiLinks(Connection conn, Project sourceProject, Project targetProject,
 			RequestInfo request) throws SQLException {
-		String query = "SELECT"
-				+ " CONVERT(page_title USING utf8mb4) AS page_title,"
-				+ " CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,"
-				+ " CONVERT(iwl_title USING utf8mb4) AS iwl_title,"
-				+ " page_namespace"
-			+ " FROM iwlinks INNER JOIN page ON iwl_from = page_id"
-			+ " WHERE iwl_title != ''";
+		String query = """
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS page_title,
+				CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,
+				CONVERT(iwl_title USING utf8mb4) AS iwl_title,
+				page_namespace
+			FROM iwlinks
+				INNER JOIN page ON iwl_from = page_id
+			WHERE
+				iwl_title != ''
+			""";
 		
 		if (request.onlyMainNamespace) {
 			query += " AND page_namespace = 0";
@@ -428,18 +432,21 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		
 		String values = String.join(",", targets);
 		
-		String query = "SELECT"
-			+ " CONVERT(page_title USING utf8mb4) AS page_title,"
-			+ " page_namespace,"
-			+ " page_is_redirect";
+		String query = """
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS page_title,
+				page_namespace,
+				page_is_redirect
+			""";
 		
 		if (request.includeCreated || request.showDisambigs) {
-			query += ", EXISTS("
-					+ "SELECT NULL"
-					+ " FROM page_props"
-					+ " WHERE pp_page = page_id"
-					+ " AND pp_propname = 'disambiguation'"
-				+ ") AS is_disambig";
+			query += """
+				, EXISTS(
+					SELECT NULL
+					FROM page_props
+					WHERE pp_page = page_id AND pp_propname = 'disambiguation'
+				) AS is_disambig"
+				""";
 		}
 		
 		query += " FROM page";

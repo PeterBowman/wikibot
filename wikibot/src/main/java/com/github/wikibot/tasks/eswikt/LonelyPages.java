@@ -64,18 +64,18 @@ public final class LonelyPages {
 	}
 	
 	private static void fetchLonelyPages(Connection conn, List<String> list) throws SQLException {
-		String query = "SELECT CONVERT(page_title USING utf8mb4) AS title"
-			+ " FROM page"
-			+ " LEFT JOIN pagelinks"
-			+ " ON pl_namespace = page_namespace"
-			+ " AND pl_title = page_title"
-			+ " LEFT JOIN templatelinks"
-			+ " ON tl_namespace = page_namespace"
-			+ " AND tl_title = page_title"
-			+ " WHERE pl_namespace IS NULL"
-			+ " AND page_namespace = 0"
-			+ " AND page_is_redirect = 0"
-			+ " AND tl_namespace IS NULL;";
+		String query = """
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS title
+			FROM page
+				LEFT JOIN pagelinks ON pl_namespace = page_namespace AND pl_title = page_title
+				LEFT JOIN templatelinks ON tl_namespace = page_namespace AND tl_title = page_title
+			WHERE
+				pl_namespace IS NULL AND
+				page_namespace = 0 AND
+				page_is_redirect = 0 AND
+				tl_namespace IS NULL;
+			""";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);

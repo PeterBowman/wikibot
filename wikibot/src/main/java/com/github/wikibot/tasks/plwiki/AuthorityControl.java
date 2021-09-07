@@ -278,14 +278,19 @@ public final class AuthorityControl {
 				.map(template -> String.format("'%s'", template))
 				.collect(Collectors.joining(","));
 			
-			var query = "SELECT DISTINCT(page_id), ips_site_page"
-				+ " FROM page"
-				+ " INNER JOIN pagelinks on pl_from = page_id"
-				+ " INNER JOIN wb_items_per_site on page_namespace = 0 AND CONCAT('Q', ips_item_id) = page_title"
-				+ " WHERE pl_from_namespace = 0"
-				+ " AND ips_site_id = 'plwiki'"
-				+ " AND pl_namespace = 120" // Property
-				+ " AND pl_title in (" + properties + ");";
+			var query = String.format("""
+				SELECT
+					DISTINCT(page_id),
+					ips_site_page
+				FROM page
+					INNER JOIN pagelinks ON pl_from = page_id
+					INNER JOIN wb_items_per_site ON page_namespace = 0 AND CONCAT('Q', ips_item_id) = page_title
+				WHERE
+					pl_from_namespace = 0 AND
+					ips_site_id = 'plwiki' AND
+					pl_namespace = 120 AND
+					pl_title in (%s);
+				""", properties);
 			
 			var rs = connection.createStatement().executeQuery(query);
 			
@@ -403,11 +408,16 @@ public final class AuthorityControl {
 				.map(template -> String.format("'%s'", template.replace(' ', '_')))
 				.collect(Collectors.joining(","));
 			
-			var query = "SELECT page_title"
-				+ " FROM page INNER JOIN templatelinks on tl_from = page_id"
-				+ " WHERE tl_from_namespace = 0"
-				+ " AND tl_namespace = 10"
-				+ " AND tl_title in (" + templates + ");";
+			var query = String.format("""
+				SELECT
+					page_title
+				FROM page
+					INNER JOIN templatelinks on tl_from = page_id
+				WHERE
+					tl_from_namespace = 0 AND
+					tl_namespace = 10 AND
+					tl_title in (%s);
+				""", templates);
 			
 			var rs = connection.createStatement().executeQuery(query);
 			
@@ -427,10 +437,11 @@ public final class AuthorityControl {
 		var articles = new HashSet<String>(2000000);
 		
 		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
-			var query = "SELECT page_title"
-				+ " FROM page"
-				+ " WHERE page_namespace = 0"
-				+ " AND page_is_redirect = 0;";
+			var query = """
+				SELECT page_title
+				FROM page
+				WHERE page_namespace = 0 AND page_is_redirect = 0;
+				""";
 			
 			var rs = connection.createStatement().executeQuery(query);
 			

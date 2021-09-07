@@ -63,15 +63,24 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
 		try (Connection conn = dataSource.getConnection()) {
 			String escaped = searchParam.trim().replaceFirst("^https?://([^/]+).*$", "$1").replace("'", "\\'");
 			
-			String query = "SELECT dbname, url"
-				+ " FROM wiki"
-				+ " WHERE url IS NOT NULL AND ("
-					+ " dbname LIKE '" + escaped + "%'"
-					+ " OR (lang = '" + escaped + "' AND family != 'special')"
-					+ " OR url LIKE 'https://" + escaped + "%'"
-					+ " OR name LIKE '" + escaped + "%'"
-				+ ") ORDER BY size DESC, is_closed"
-				+ " LIMIT " + limit;
+			String query = String.format("""
+				SELECT
+					dbname, url
+				FROM
+					wiki
+				WHERE
+					url IS NOT NULL AND (
+						dbname LIKE '%1$s%%' OR
+						(lang = '%1$s' AND family != 'special') OR
+						url LIKE 'https://%1$s%%' OR
+						name LIKE '%1$s%%'
+					)
+				ORDER BY
+					size DESC,
+					is_closed
+				LIMIT
+					%2$d;
+				""", escaped, limit);
 			
 			ResultSet rs = conn.createStatement().executeQuery(query);
 			JSONArray ja = new JSONArray();

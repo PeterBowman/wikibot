@@ -203,16 +203,22 @@ public class MissingPolishEntries {
 		
 		@Override
 		public String toString() {
-			return "Stats for the current run:\n"
-				+ "* reading from: " + dumpFile + "\n"
-				+ "* total worklist size: " + worklistSize + "\n"
-				+ "* all entries: " + allEntries + "\n"
-				+ "* polish entries (lemmas): " + polishLemmas + "\n"
-				+ "* polish entries (inflected): " + polishInflected + "\n"
-				+ "* polish entries (redirs): " + polishRedirs + "\n"
-				+ "* polish entries (overall): " + polishOverall() + "\n"
-				+ "* database lemmas: " + databaseLemmas + "\n"
-				+ "* database overall size: " + databaseOverall;
+			return String.format("""
+				Stats for the current run:
+				* reading from: %s
+				* total worklist size: %d
+				* all entries: %d
+				* polish entries (lemmas): %d
+				* polish entries (inflected): %d
+				* polish entries (redirs): %d
+				* polish entries (overall): %d
+				* database lemmas: %d
+				* database overall size: $d
+				""",
+				dumpFile,
+				worklistSize, allEntries, polishLemmas, polishInflected, polishRedirs,
+				polishOverall(), databaseLemmas, databaseOverall
+			).stripTrailing();
 		}
 	}
 }
