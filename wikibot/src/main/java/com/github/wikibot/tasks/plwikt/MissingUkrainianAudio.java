@@ -30,7 +30,7 @@ public final class MissingUkrainianAudio {
 		var reader = getXMLReader(args);
 		final List<String> titles;
 		
-		try (var stream = reader.getStAXReader().stream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			titles = stream
 				.filter(XMLRevision::nonRedirect)
 				.filter(XMLRevision::isMainNamespace)

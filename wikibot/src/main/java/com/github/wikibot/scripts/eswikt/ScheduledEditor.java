@@ -125,7 +125,7 @@ public final class ScheduledEditor {
 	}
 	
 	private static void processDumpFile(XMLDumpReader dumpReader) throws IOException {
-		try (var stream = dumpReader.getStAXReader().stream()) {
+		try (var stream = dumpReader.getStAXReaderStream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

@@ -251,7 +251,7 @@ public final class CitationTypography {
 			reader = new XMLDumpReader(Paths.get(path));
 		}
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

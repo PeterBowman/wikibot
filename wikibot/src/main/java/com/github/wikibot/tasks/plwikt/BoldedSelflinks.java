@@ -137,7 +137,7 @@ public final class BoldedSelflinks {
 	private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
 		final Pattern pNewline = Pattern.compile("\n");
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			return stream
 				.filter(XMLRevision::nonRedirect)
 				.filter(XMLRevision::isMainNamespace)

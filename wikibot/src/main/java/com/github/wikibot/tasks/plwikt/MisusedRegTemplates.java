@@ -147,7 +147,7 @@ public final class MisusedRegTemplates {
 	private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
 		List<Item> list;
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReader().stream()) {
+		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
 			list = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)

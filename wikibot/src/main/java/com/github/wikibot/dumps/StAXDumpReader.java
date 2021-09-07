@@ -1,5 +1,7 @@
 package com.github.wikibot.dumps;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -10,16 +12,16 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseable {
+public final class StAXDumpReader implements Iterable<XMLRevision> {
 	private XMLStreamReader streamReader;
-	private final int estimateSize;
+	private final long estimateSize;
 	
 	public StAXDumpReader(XMLStreamReader streamReader) {
 		this.streamReader = streamReader;
 		this.estimateSize = 0;
 	}
 	
-	public StAXDumpReader(XMLStreamReader streamReader, int estimateSize) {
+	public StAXDumpReader(XMLStreamReader streamReader, long estimateSize) {
 		if (estimateSize < 0) {
 			throw new IllegalArgumentException("Negative estimateSize value: " + estimateSize);
 		}
@@ -33,13 +35,13 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 		return new StAXIterator();
 	}
 
-	@Override
-	public void close() throws Exception {
-		streamReader.close();
-	}
-	
 	public Stream<XMLRevision> stream() {
-		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED;
+		int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED | Spliterator.SORTED;
+		
+		if (estimateSize > 0) {
+			characteristics |= Spliterator.SIZED | Spliterator.SUBSIZED;
+		}
+		
 		Spliterator<XMLRevision> spliterator;
 		
 		if (estimateSize == 0) {
@@ -86,7 +88,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 				
 				return false;
 			} catch (XMLStreamException e) {
-				throw new RuntimeException(e);
+				throw new UncheckedIOException(new IOException(e));
 			}
 		}
 		
@@ -102,7 +104,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision>, AutoCloseabl
 				
 				return revision;
 			} catch (XMLStreamException e) {
-				throw new RuntimeException(e);
+				throw new UncheckedIOException(new IOException(e));
 			}
 		}
 		
