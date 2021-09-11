@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class Wikibot extends WMFWiki {
     	return wb;
     }
 	
-    public List<PageContainer> getContentOfPages(List<String> pages) throws IOException {
+    public List<PageContainer> getContentOfPages(Collection<String> pages) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -42,7 +43,7 @@ public class Wikibot extends WMFWiki {
 		return getListedContent(new HashMap<>(getparams), pages, "getContents", "titles", this::parseContentLine);
 	}
     
-    public List<PageContainer> getContentOfPageIds(List<Long> pageids) throws IOException {
+    public List<PageContainer> getContentOfPageIds(Collection<Long> pageids) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -53,7 +54,7 @@ public class Wikibot extends WMFWiki {
 		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "pageids", this::parseContentLine);
 	}
     
-    public List<PageContainer> getContentOfRevIds(List<Long> revids) throws IOException {
+    public List<PageContainer> getContentOfRevIds(Collection<Long> revids) throws IOException {
     	Map<String, String> getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
@@ -115,10 +116,10 @@ public class Wikibot extends WMFWiki {
 		return getGeneratedContent(getparams, "gbl");
 	}
 	
-	private <T> List<T> getListedContent(Map<String, String> getparams, List<String> titles, String caller,
+	private <T> List<T> getListedContent(Map<String, String> getparams, Collection<String> titles, String caller,
 			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
-		List<String> chunks = constructTitleString(titles);
+		var chunks = constructTitleString(new ArrayList<>(titles));
 		List<T> list = new ArrayList<>(titles.size());
 		Map<String, Object> postparams = new HashMap<>();
 		final int totalChunks = chunks.size();

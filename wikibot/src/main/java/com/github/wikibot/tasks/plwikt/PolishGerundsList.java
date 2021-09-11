@@ -257,7 +257,7 @@ public class PolishGerundsList implements Selectorizable {
 		List<String> listErrors = new ArrayList<>(200);
 		List<String> listNoDictEntry = new ArrayList<>(500);
 		
-		List<PageContainer> pages = wb.getContentOfPages(new ArrayList<>(gerunds));
+		List<PageContainer> pages = wb.getContentOfPages(gerunds);
 		
 		for (PageContainer page : pages) {
 			String title = page.getTitle();

@@ -4,7 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,8 +69,7 @@ public final class MissingPolishEtymOnWikidata {
 			));
 
 		Wikibot plwikt = Login.createSession("pl.wiktionary.org");
-		List<String> wiktTitles = new ArrayList<>(wiktToLexemes.keySet());
-		List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktTitles);
+		List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktToLexemes.keySet());
 
 		Map<String, String> map = wiktContent.stream()
 			.map(Page::wrap)

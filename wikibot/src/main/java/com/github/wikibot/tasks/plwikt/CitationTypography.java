@@ -117,7 +117,7 @@ public final class CitationTypography {
 		Map<String, Integer> titleToPageId = new HashMap<>(titles.size() * 2);
 		
 		if (!titles.isEmpty()) {
-			List<PageContainer> pages = wb.getContentOfPages(new ArrayList<>(titles));
+			List<PageContainer> pages = wb.getContentOfPages(titles);
 			
 			entries = pages.parallelStream()
 				.flatMap(CitationTypography::mapOccurrences)
@@ -663,10 +663,8 @@ public final class CitationTypography {
 			titles.removeAll(contentCache.keySet());
 			
 			if (!titles.isEmpty()) {
-				List<String> l = new ArrayList<>(titles);
-				
 				try {
-					wb.getContentOfPages(l).forEach(pc -> contentCache.putIfAbsent(pc.getTitle(), pc.getText()));
+					wb.getContentOfPages(titles).forEach(pc -> contentCache.putIfAbsent(pc.getTitle(), pc.getText()));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
