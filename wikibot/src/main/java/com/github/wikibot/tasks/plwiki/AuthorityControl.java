@@ -111,7 +111,7 @@ public final class AuthorityControl {
 			
 			var wiki = Wiki.newSession("pl.wikipedia.org");
 			articles.removeAll(retrieveTemplateTransclusions());
-			articles.removeAll(retrieveNonRedirects());
+			articles.retainAll(retrieveNonRedirects());
 			articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
 			System.out.printf("Got %d filtered articles.%n", articles.size());
 			
