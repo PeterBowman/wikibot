@@ -128,6 +128,12 @@ public final class ResolveLinks {
 		wb.setMarkMinor(true);
 		
 		for (var page : wb.getContentOfPages(backlinks)) {
+			if (StringUtils.containsAnyIgnoreCase(page.getText(), "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
+				System.out.println("Page is a redirect: " + page.getTitle());
+				errors.add(page.getTitle());
+				continue;
+			}
+			
 			if (
 				wb.namespace(page.getTitle()) == Wiki.USER_NAMESPACE &&
 				(Integer)wb.getPageInfo(List.of(page.getTitle())).get(0).get("size") > USER_SUBPAGE_SIZE_LIMIT
