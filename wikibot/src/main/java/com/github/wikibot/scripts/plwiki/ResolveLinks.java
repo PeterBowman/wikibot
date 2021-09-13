@@ -184,13 +184,39 @@ public final class ResolveLinks {
 		for (var templateName : SOFT_REDIR_TEMPLATES) {
 			for (var template : ParseUtils.getTemplatesIgnoreCase(templateName, text)) {
 				var params = ParseUtils.getTemplateParametersWithValue(template);
+				var hash = params.hashCode();
 				
 				params.entrySet().stream()
-					.filter(e -> StringUtils.equalsAny(template, "Zobacz też", "Seealso")
+					.filter(e -> StringUtils.equalsAny(templateName, "Zobacz też", "Seealso")
 						? e.getKey().equals("ParamWithoutName1")
 						: e.getKey().startsWith("ParamWithoutName"))
 					.filter(e -> sources.contains(e.getValue()))
 					.forEach(e -> e.setValue(target));
+				
+				if (params.hashCode() != hash) {
+					text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
+				}
+			}
+		}
+		
+		for (var template : ParseUtils.getTemplatesIgnoreCase("Link-interwiki", text)) {
+			var params = ParseUtils.getTemplateParametersWithValue(template);
+			var local = params.getOrDefault("pl", params.get("ParamWithoutName1"));
+			
+			if (local != null && sources.contains(local)) {
+				if (params.containsKey("pl")) {
+					params.put("pl", target);
+				} else {
+					params.put("ParamWithoutName1", target);
+				}
+				
+				if (!params.containsKey("tekst") && !params.containsKey("ParamWithoutName4")) {
+					if (!params.containsKey("ParamWithoutName3")) {
+						params.put("tekst", local);
+					} else {
+						params.put("ParamWithoutName4", local);
+					}
+				}
 				
 				text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
 			}
