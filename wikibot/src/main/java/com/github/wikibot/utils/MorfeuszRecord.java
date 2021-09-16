@@ -64,6 +64,18 @@ public final class MorfeuszRecord implements Comparable<MorfeuszRecord> {
 	}
 	
 	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		} else if (obj instanceof MorfeuszRecord mr) {
+			return mr.form.equals(form) && mr.lemma.equals(lemma) && mr.tags.equals(tags) &&
+				mr.labels.equals(labels) && mr.name.equals(name);
+		} else {
+			return false;
+		}
+	}
+	
+	@Override
 	public int compareTo(MorfeuszRecord o) {
 		if (!form.equals(o.form)) {
 			return form.compareTo(o.form);
