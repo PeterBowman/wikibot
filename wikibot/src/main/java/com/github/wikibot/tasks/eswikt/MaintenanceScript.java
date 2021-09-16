@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
+import javax.security.auth.login.AccountLockedException;
 import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -120,6 +121,9 @@ public final class MaintenanceScript {
 				} catch (ConcurrentModificationException cme) {
 					logError("Edit conflict", pc.getTitle(), cme);
 					continue;
+				} catch (AccountLockedException | AssertionError e) {
+					logError("Blocked or session lost", pc.getTitle(), e);
+					break;
 				} catch (Throwable t) {
 					logError("Edit error", pc.getTitle(), t);
 					continue;

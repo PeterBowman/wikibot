@@ -134,6 +134,7 @@ public class Wikibot extends WMFWiki {
 			}
 			
 			String line = makeApiCall(getparams, postparams, localCaller);
+			detectUncheckedErrors(line, null, null);
 			
 			if (line.contains("<continue ")) {
 				int a = line.indexOf("<continue ") + 9;
@@ -221,6 +222,7 @@ public class Wikibot extends WMFWiki {
 		Map<String, Object> postparams = new HashMap<>();
 		postparams.put("text", text);
 		String line = makeApiCall(getparams, postparams, "expandTemplates");
+		detectUncheckedErrors(line, null, null);
 		
 		int a = line.indexOf("<wikitext ");
 		a = line.indexOf(">", a) + 1;
@@ -427,8 +429,10 @@ public class Wikibot extends WMFWiki {
 		postparams.put("token", getToken("csrf"));
 		
 		String response = makeApiCall(getparams, postparams, "review");
-		checkErrorsAndUpdateStatus(response, "review");
-		log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
+		
+		if (checkErrorsAndUpdateStatus(response, "review", null, null)) {
+			log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
+		}
 	}
     
     public List<Map<String, String>> getPageProps(List<String> pages) throws IOException
@@ -447,6 +451,7 @@ public class Wikibot extends WMFWiki {
             postparams.put("titles", temp);
             String caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
             String line = makeApiCall(getparams, postparams, caller);
+            detectUncheckedErrors(line, null, null);
             resolveNormalizedParser(pages2, line);
             if (isResolvingRedirects())
                 resolveRedirectParser(pages2, line);

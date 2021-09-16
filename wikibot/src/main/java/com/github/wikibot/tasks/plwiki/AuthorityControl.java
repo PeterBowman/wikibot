@@ -26,6 +26,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import javax.security.auth.login.AccountLockedException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -139,7 +141,7 @@ public final class AuthorityControl {
 					errors.add(page.getTitle());
 					t.printStackTrace();
 					
-					if (t instanceof AssertionError) {
+					if (t instanceof AccountLockedException | t instanceof AssertionError) {
 						break;
 					}
 				}
