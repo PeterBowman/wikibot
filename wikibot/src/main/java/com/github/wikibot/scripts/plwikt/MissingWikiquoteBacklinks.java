@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -61,8 +60,8 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", list.size());
 		
-		List<Long> wiktids = list.stream().map(data -> Long.parseLong(data[0])).collect(Collectors.toList());
-		List<String> quotetitles = list.stream().map(data -> data[1]).collect(Collectors.toList());
+		List<Long> wiktids = list.stream().map(data -> Long.parseLong(data[0])).toList();
+		List<String> quotetitles = list.stream().map(data -> data[1]).toList();
 		
 		List<PageContainer> wiktpages = wb.getContentOfPageIds(wiktids);
 		List<PageContainer> quotepages = quote.getContentOfPages(quotetitles);

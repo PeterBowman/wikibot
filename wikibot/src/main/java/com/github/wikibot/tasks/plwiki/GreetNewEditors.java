@@ -9,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -49,7 +48,7 @@ public final class GreetNewEditors {
 			.filter(Objects::nonNull) // user was revdeleted?
 			.map(username -> wb.removeNamespace(username, Wiki.USER_NAMESPACE))
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		if (usernames.isEmpty()) {
 			System.out.println("No new editors detected, aborting.");
@@ -63,7 +62,7 @@ public final class GreetNewEditors {
 			.filter(user -> !user.getGroups().contains("bot"))
 			.map(Wiki.User::getUsername)
 			.map(username -> String.format("%s:%s", wb.namespaceIdentifier(Wiki.USER_TALK_NAMESPACE), username))
-			.collect(Collectors.toList());
+			.toList();
 		
 		var infos = wb.getPageInfo(talkPages);
 		

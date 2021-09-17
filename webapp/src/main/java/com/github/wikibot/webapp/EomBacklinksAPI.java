@@ -63,13 +63,14 @@ public class EomBacklinksAPI extends HttpServlet {
 		}
 		
 		try (Connection conn = dataSource.getConnection()) {
-			String query = "SELECT morphem"
-				+ " FROM morfeo"
-				+ " WHERE morphem COLLATE utf8mb4_general_ci"
-				+ " LIKE '" + searchParam.trim().replace("'", "\\'") + "%'"
-				+ " GROUP BY morphem"
-				+ " ORDER BY COUNT(morphem) DESC"
-				+ " LIMIT " + limit;
+			String query = String.format("""
+				SELECT morphem
+				FROM morfeo
+				WHERE morphem COLLATE utf8mb4_general_ci LIKE '%s%%'
+				GROUP BY morphem
+				ORDER BY COUNT(morphem) DESC
+				LIMIT %d;
+				""", searchParam.trim().replace("'", "\\'"), limit);
 			
 			ResultSet rs = conn.createStatement().executeQuery(query);
 			List<String> results = new ArrayList<>(limit);

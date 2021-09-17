@@ -3,7 +3,6 @@ package com.github.wikibot.dumps;
 import static org.apache.commons.text.StringEscapeUtils.unescapeXml;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -15,7 +14,7 @@ public final class JsoupDumpReader {
 	public static List<XMLRevision> parseDocument(Document doc) {
 		return doc.select("page > revision").stream()
 			.map(JsoupDumpReader::parseRevision)
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	private static XMLRevision parseRevision(Element revision) {

@@ -180,7 +180,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			System.out.printf("Errores en: %s%n", errors.toString());
 		}
 		
-		List<String> omitted = Stream.of(pages).map(page -> page.getTitle()).collect(Collectors.toList());
+		List<String> omitted = Stream.of(pages).map(page -> page.getTitle()).collect(Collectors.toCollection(ArrayList::new));
 		omitted.removeAll(map.keySet());
 		
 		System.out.printf("Editados: %d, errores: %d, omitidos: %d%n", edited.size(), errors.size(), omitted.size());

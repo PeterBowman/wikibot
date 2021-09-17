@@ -574,7 +574,7 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 					
 					String params = m.group(1).trim();
-					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toList());
+					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toCollection(ArrayList::new));
 					Iterator<String> i = list.iterator();
 					
 					while (i.hasNext()) {
@@ -960,14 +960,11 @@ public class PrettyRefServlet extends HttpServlet {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Ref)) {
+			} else if (o instanceof Ref r) {
+				return name.equals(r.name);
+			} else {
 				return false;
 			}
-			
-			Ref r = (Ref) o;
-			return name.equals(r.name);
 		}
 	}
 

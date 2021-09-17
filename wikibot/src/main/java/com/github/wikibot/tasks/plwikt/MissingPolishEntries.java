@@ -40,16 +40,17 @@ public class MissingPolishEntries {
 	private static Wikibot wb;
 	
 	static {
-		PAGE_INTRO =
-			"{{TOCright}}{{język linków|polski}}\n\n" + 
-			"Spis brakujących haseł polskich na podstawie bazy danych Morfeusz SGJP " +
-			"([http://morfeusz.sgjp.pl/download/ <tt>%1$s</tt>]). Poniższe strony istnieją, " +
-			"lecz brak sekcji polskiej.\n" + 
-			"* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$s\n" + 
-			"* haseł polskich: %3$s (podstawowe), %4$s (formy fleksyjne), %5$s (przekierowania), %6$s (łącznie)\n" + 
-			"* haseł w bazie SGJP: %7$s (wraz z formami odmienionymi: %8$s)\n" + 
-			"* rozmiar listy: %9$s\n" + 
-			"Wygenerowano ~~~~~.";
+		PAGE_INTRO = """
+			{{TOCright}}{{język linków|polski}}
+			
+			Spis brakujących haseł polskich na podstawie bazy danych Morfeusz SGJP ([http://morfeusz.sgjp.pl/download/ <tt>%1$s</tt>]).
+			Poniższe strony istnieją, lecz brak sekcji polskiej. 
+			* stron w sumie (przestrzeń główna wraz z przekierowaniami): %2$s
+			* haseł polskich: %3$s (podstawowe), %4$s (formy fleksyjne), %5$s (przekierowania), %6$s (łącznie) 
+			* haseł w bazie SGJP: %7$s (wraz z formami odmienionymi: %8$s) 
+			* rozmiar listy: %9$s
+			Wygenerowano ~~~~~.
+			""";
 		
 		COLLATOR_PL = Collator.getInstance(new Locale("pl", "PL"));
 		COLLATOR_PL.setStrength(Collator.SECONDARY);
@@ -182,7 +183,7 @@ public class MissingPolishEntries {
 				NUMBER_FORMAT_PL.format(stats.databaseLemmas),
 				NUMBER_FORMAT_PL.format(stats.databaseOverall),
 				NUMBER_FORMAT_PL.format(stats.worklistSize)
-			) + "\n\n" + out;
+			) + "\n" + out;
 	}
 	
 	private static class Stats {
@@ -202,16 +203,22 @@ public class MissingPolishEntries {
 		
 		@Override
 		public String toString() {
-			return "Stats for the current run:\n"
-				+ "* reading from: " + dumpFile + "\n"
-				+ "* total worklist size: " + worklistSize + "\n"
-				+ "* all entries: " + allEntries + "\n"
-				+ "* polish entries (lemmas): " + polishLemmas + "\n"
-				+ "* polish entries (inflected): " + polishInflected + "\n"
-				+ "* polish entries (redirs): " + polishRedirs + "\n"
-				+ "* polish entries (overall): " + polishOverall() + "\n"
-				+ "* database lemmas: " + databaseLemmas + "\n"
-				+ "* database overall size: " + databaseOverall;
+			return String.format("""
+				Stats for the current run:
+				* reading from: %s
+				* total worklist size: %d
+				* all entries: %d
+				* polish entries (lemmas): %d
+				* polish entries (inflected): %d
+				* polish entries (redirs): %d
+				* polish entries (overall): %d
+				* database lemmas: %d
+				* database overall size: $d
+				""",
+				dumpFile,
+				worklistSize, allEntries, polishLemmas, polishInflected, polishRedirs,
+				polishOverall(), databaseLemmas, databaseOverall
+			).stripTrailing();
 		}
 	}
 }

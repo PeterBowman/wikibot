@@ -275,13 +275,17 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 	
 	private static List<Item> fetchInterwikiLinks(Connection conn, Project sourceProject, Project targetProject,
 			RequestInfo request) throws SQLException {
-		String query = "SELECT"
-				+ " CONVERT(page_title USING utf8mb4) AS page_title,"
-				+ " CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,"
-				+ " CONVERT(iwl_title USING utf8mb4) AS iwl_title,"
-				+ " page_namespace"
-			+ " FROM iwlinks INNER JOIN page ON iwl_from = page_id"
-			+ " WHERE iwl_title != ''";
+		String query = """
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS page_title,
+				CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,
+				CONVERT(iwl_title USING utf8mb4) AS iwl_title,
+				page_namespace
+			FROM iwlinks
+				INNER JOIN page ON iwl_from = page_id
+			WHERE
+				iwl_title != ''
+			""";
 		
 		if (request.onlyMainNamespace) {
 			query += " AND page_namespace = 0";
@@ -428,18 +432,21 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		
 		String values = String.join(",", targets);
 		
-		String query = "SELECT"
-			+ " CONVERT(page_title USING utf8mb4) AS page_title,"
-			+ " page_namespace,"
-			+ " page_is_redirect";
+		String query = """
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS page_title,
+				page_namespace,
+				page_is_redirect
+			""";
 		
 		if (request.includeCreated || request.showDisambigs) {
-			query += ", EXISTS("
-					+ "SELECT NULL"
-					+ " FROM page_props"
-					+ " WHERE pp_page = page_id"
-					+ " AND pp_propname = 'disambiguation'"
-				+ ") AS is_disambig";
+			query += """
+				, EXISTS(
+					SELECT NULL
+					FROM page_props
+					WHERE pp_page = page_id AND pp_propname = 'disambiguation'
+				) AS is_disambig"
+				""";
 		}
 		
 		query += " FROM page";
@@ -684,18 +691,14 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof RequestInfo)) {
+			} else if (o instanceof RequestInfo r) {
+				return
+					targetDB.equals(r.targetDB) && onlyMainNamespace == r.onlyMainNamespace &&
+					showRedirects == r.showRedirects && showDisambigs == r.showDisambigs &&
+					includeCreated == r.includeCreated;
+			} else {
 				return false;
 			}
-			
-			RequestInfo r = (RequestInfo) o;
-			
-			return
-				targetDB.equals(r.targetDB) && onlyMainNamespace == r.onlyMainNamespace &&
-				showRedirects == r.showRedirects && showDisambigs == r.showDisambigs &&
-				includeCreated == r.includeCreated;
 		}
 		
 		@Override
@@ -706,22 +709,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			);
 		}
 		
-		private static class Output {
-			long timeElapsedMs;
-			int totalSize;
-			int filteredSize;
-			
-			Output(long elapsedMs, int totalSize, int filteredSize) {
-				this.timeElapsedMs = elapsedMs;
-				this.totalSize = totalSize;
-				this.filteredSize = filteredSize;
-			}
-			
-			@Override
-			public String toString() {
-				return String.format("[%d, %d, %d]", timeElapsedMs, totalSize, filteredSize);
-			}
-		}
+		private record Output (long timeElapsedMs, int totalSize, int filteredSize) {}
 	}
 	
 	private static class Project {
@@ -752,17 +740,13 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		}
 		
 		static Project retrieveProject(String lang, String databaseFamily) {
-			switch (lang) {
-				case "be-tarask":
-					lang = "be-x-old";
-					break;
-				case "nb":
-					lang = "no";
-					break;
-			}
+			lang = switch (lang) {
+				case "be-tarask" -> "be-x-old";
+				case "nb" -> "no";
+				default -> lang;
+			};
 			
 			lang = lang.replace("-", "_");
-			
 			return retrieveProject(lang + databaseFamily);
 		}
 		
@@ -785,14 +769,11 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Project)) {
+			} else if (o instanceof Project p) {
+				return database.equals(p.database);
+			} else {
 				return false;
 			}
-			
-			Project p = (Project) o;
-			return database.equals(p.database);
 		}
 		
 		@Override
@@ -881,39 +862,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			return "<li>" + sourceLink + " → " + targetLink + "</li>";
 		}
 		
-		private static class Page {
-			String title;
-			int ns;
-			
-			Page(String title, int ns) {
-				this.title = title;
-				this.ns = ns;
-			}
-			
-			@Override
-			public int hashCode() {
-				return title.hashCode() + ns;
-			}
-			
-			@Override
-			public boolean equals(Object o) {
-				if (o == this) {
-					return true;
-				}
-				
-				if (!(o instanceof Page)) {
-					return false;
-				}
-				
-				Page p = (Page) o;
-				return title.equals(p.title) && ns == p.ns;
-			}
-			
-			@Override
-			public String toString() {
-				return ns + ":" + title;
-			}
-		}
+		private record Page (String title, int ns) {}
 	}
 	
 	private static class ItemComparator implements Comparator<Item> {

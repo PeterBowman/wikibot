@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -65,7 +64,6 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 	public void init() throws ServletException {
 		try {
 			xstream = new XStream(new StaxDriver());
-			XStream.setupDefaultSecurity(xstream);
 			xstream.allowTypes(new Class[] {Entry.class});
 			xstream.processAnnotations(Entry.class);
 			
@@ -92,15 +90,15 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
 		checkCurrentState(localEntries, localStats, localTemplates, localCalendar); // synchronized, returns local copies
 		
 		if (onlyRedirects) {
-			localEntries = localEntries.stream().filter(e -> e.getPlwikiRedir() != null).collect(Collectors.toList());
+			localEntries = localEntries.stream().filter(e -> e.getPlwikiRedir() != null).toList();
 		}
 		
 		if (onlyMissing) {
-			localEntries = localEntries.stream().filter(Entry::isPlwikiMissing).collect(Collectors.toList());
+			localEntries = localEntries.stream().filter(Entry::isPlwikiMissing).toList();
 		}
 		
 		if (onlyDisambigs) {
-			localEntries = localEntries.stream().filter(Entry::isPlwikiDisambig).collect(Collectors.toList());
+			localEntries = localEntries.stream().filter(Entry::isPlwikiDisambig).toList();
 		}
 		
 		List<Entry> results = getDataView(localEntries, limit, offset);

@@ -34,13 +34,14 @@ public class LatinInfinitiveBacklinks {
 	private static final String INTRO;
 	
 	static {
-		INTRO =
-			"Prawdopodobne wystąpienia łacińskich bezokoliczników w wywołaniach szablonów etymologii " + 
-			"({{s|etym}}, {{s|etym2}}, {{s|etymn}} oraz {{s|etymn2}}): " + 
-			"[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]]." +
-			"\n\n" +
-			"Dane na podstawie %s. Aktualizacja: ~~~~~." +
-			"\n----\n";
+		INTRO = """
+			Prawdopodobne wystąpienia łacińskich bezokoliczników w wywołaniach szablonów etymologii
+			({{s|etym}}, {{s|etym2}}, {{s|etymn}} oraz {{s|etymn2}}):
+			[[Specjalna:Niezmienny link/7662696#Łacińskie bezokoliczniki|dyskusja]], [[/mapowania|mapowania]].
+			
+			Dane na podstawie %s. Aktualizacja: ~~~~~.
+			----
+			""";
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -57,7 +58,7 @@ public class LatinInfinitiveBacklinks {
 		
 		System.out.printf("Got %d unfiltered occurrences.%n", occurrences.size());
 		
-		var titles = occurrences.keySet().stream().collect(Collectors.toList());
+		var titles = occurrences.keySet().stream().toList();
 		occurrences.clear();
 		
 		wb.getContentOfPages(titles).stream().forEach(pc -> mapOccurrences(pc.getTitle(), pc.getText(), occurrences));
@@ -68,7 +69,7 @@ public class LatinInfinitiveBacklinks {
 		if (!Files.exists(hash) || Integer.parseInt(Files.readString(hash)) != occurrences.hashCode()) {
 			var list = occurrences.entrySet().stream()
 				.map(e -> String.format("#[[%s]]: %s", e.getKey(), e.getValue().stream().collect(Collectors.joining(", "))))
-				.collect(Collectors.toList());
+				.toList();
 			
 			Files.write(LOCATION.resolve("results.txt"), list);
 			

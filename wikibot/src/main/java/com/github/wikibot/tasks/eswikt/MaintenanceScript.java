@@ -22,9 +22,9 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.security.auth.login.AccountLockedException;
 import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -86,12 +86,12 @@ public final class MaintenanceScript {
 			.flatMap(Collection::stream)
 			.distinct()
 			.filter(title -> !StringUtils.containsAny(title, '/', ':'))
-			.collect(Collectors.toList());
+			.toList();
 		
 		List<PageContainer> pages = wb.getContentOfPages(titles).stream()
 			// TODO: implement a Comparator in PageContainer so this is not necessary anymore
 			.sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.getTitle()), titles.indexOf(pc2.getTitle())))
-			.collect(Collectors.toList());
+			.toList();
 		
 		for (PageContainer pc : pages) {
 			AbstractEditor editor = new Editor(pc);
@@ -121,6 +121,9 @@ public final class MaintenanceScript {
 				} catch (ConcurrentModificationException cme) {
 					logError("Edit conflict", pc.getTitle(), cme);
 					continue;
+				} catch (AccountLockedException | AssertionError e) {
+					logError("Blocked or session lost", pc.getTitle(), e);
+					break;
 				} catch (Throwable t) {
 					logError("Edit error", pc.getTitle(), t);
 					continue;
@@ -249,7 +252,7 @@ public final class MaintenanceScript {
 				.filter(rev -> rev.getTimestamp().isBefore(dateTime))
 				.sorted(Comparator.comparing(Wiki.Revision::getTimestamp))
 				.map(Wiki.Revision::getTitle)
-				.collect(Collectors.toList());
+				.toList();
 		}
 	
 		@Override
@@ -290,7 +293,7 @@ public final class MaintenanceScript {
 				.sorted(Comparator.comparing(Wiki.LogEntry::getTimestamp))
 				.map(log -> log.getDetails().get("target_title"))
 				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
-				.collect(Collectors.toList());
+				.toList();
 		}
 	
 		@Override

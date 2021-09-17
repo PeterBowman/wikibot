@@ -50,7 +50,7 @@ public final class DumpWatcher {
 
 		if (args.length == 0) {
 			var lines = readLinesFromFile(DUMPS_SCHEDULE);
-			entries = lines.stream().map(DumpEntry::parseStoredEntry).collect(Collectors.toList());
+			entries = lines.stream().map(DumpEntry::parseStoredEntry).toList();
 			System.out.printf("Dump history retrieved (%d items)%n", entries.size());
 		} else {
 			var line = String.join(" ", args);
@@ -98,7 +98,7 @@ public final class DumpWatcher {
 				output.add(entry.serializeData());
 				
 				if (entry.updated && !entry.script.isBlank()) {
-					var paths = entry.targetedFiles.stream().map(Path::toString).collect(Collectors.toList());
+					var paths = entry.targetedFiles.stream().map(Path::toString).toList();
 					var job = entry.script + " " + String.join(" ", paths);
 					System.out.println("Adding job to the queue: " + job);
 					issueJob(job);
@@ -145,7 +145,7 @@ public final class DumpWatcher {
 	private static List<String> readLinesFromFile(Path path) throws IOException {
 		return Files.readAllLines(path).stream()
 			.filter(line -> !line.isBlank() && !line.startsWith("#"))
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	private static List<DumpDirectory> retrieveDumpDirectories(Path parentDir, Date startDate) throws IOException {
@@ -357,9 +357,7 @@ public final class DumpWatcher {
 		}
 		
 		List<Path> retrieveFiles(List<String> query) {
-			return query.stream()
-				.flatMap(q -> retrieveFiles(q).stream())
-				.collect(Collectors.toList());
+			return query.stream().flatMap(q -> retrieveFiles(q).stream()).toList();
 		}
 		
 		List<Path> retrieveFiles(String query) {

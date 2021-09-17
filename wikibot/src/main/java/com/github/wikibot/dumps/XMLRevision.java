@@ -119,12 +119,13 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof XMLRevision) || obj != this) {
+		if (obj == this) {
+			return true;
+		} else if (obj instanceof XMLRevision rev) {
+			return rev.revid == revid;
+		} else {
 			return false;
 		}
-		
-		XMLRevision rev = (XMLRevision) obj;
-		return rev.revid == revid;
 	};
 		
 	@Override

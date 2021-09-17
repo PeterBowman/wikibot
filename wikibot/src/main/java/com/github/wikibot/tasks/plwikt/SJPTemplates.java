@@ -40,7 +40,7 @@ public final class SJPTemplates {
 		var usernames = targetRevs.stream()
 			.map(Wiki.Revision::getUser)
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		var registeredUsers = wb.getUsers(usernames).stream()
 			.filter(Objects::nonNull)
@@ -64,7 +64,7 @@ public final class SJPTemplates {
 		
 		for (String title : titles) {
 			List<Wiki.Revision> revs = wb.getPageHistory(title, null);
-			List<Long> revids = revs.stream().map(Wiki.Revision::getID).collect(Collectors.toList());
+			List<Long> revids = revs.stream().map(Wiki.Revision::getID).toList();
 			List<PageContainer> pcs = wb.getContentOfRevIds(revids);
 			
 			PageContainer page = pcs.stream()

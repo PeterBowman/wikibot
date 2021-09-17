@@ -17,7 +17,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.wikipedia.Wiki;
@@ -87,7 +86,7 @@ public final class ShortCommas implements Selectorizable {
 	public static void getShorts() throws IOException {
 		List<String> templates = wb.getCategoryMembers("Szablony skrótów", Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(template -> template.replace("Szablon:", ""))
-			.collect(Collectors.toList());
+			.toList();
 		
 		Files.write(SHORTS, templates);
 	}

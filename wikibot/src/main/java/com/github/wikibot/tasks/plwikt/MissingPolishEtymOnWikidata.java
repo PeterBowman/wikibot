@@ -38,11 +38,13 @@ public final class MissingPolishEtymOnWikidata {
 	private static final String TARGET_PAGE_INTRO;
 
 	static {
-		TARGET_PAGE_INTRO = "Zawartość pola etymologii haseł polskich z brakującą etymologią w Wikidanych. " +
-			"Wygenerowano ~~~~~.\n" +
-			"----\n" +
-			"%1$s" +
-			"\n\n{{przypisy}}";
+		TARGET_PAGE_INTRO = """
+			Zawartość pola etymologii haseł polskich z brakującą etymologią w Wikidanych. Wygenerowano ~~~~~.
+			----
+			%1$s
+			
+			{{przypisy}}
+			""";
 	}
 
 	public static void main(String[] args) throws Exception {

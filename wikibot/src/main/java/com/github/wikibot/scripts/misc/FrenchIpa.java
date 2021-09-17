@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.wikipedia.Wiki;
 
@@ -38,7 +37,7 @@ public class FrenchIpa {
 				title.contains("tr") ||
 				title.contains("vr")
 			))
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
 		Files.write(Paths.get("./test2.txt"), pages);

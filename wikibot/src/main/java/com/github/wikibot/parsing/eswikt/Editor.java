@@ -313,9 +313,7 @@ public class Editor extends AbstractEditor {
 			"<!---*\\s*== ?Locuciones ?==(\\* ?\\[\\[\\]\\][^\\n-]*?|\\s*)+-*?-->"
 		);
 		
-		COMMENT_PATT_LIST = pCommentsList.stream()
-			.map(Pattern::compile)
-			.collect(Collectors.toList());
+		COMMENT_PATT_LIST = pCommentsList.stream().map(Pattern::compile).toList();
 	}
 	
 	static {
@@ -341,7 +339,7 @@ public class Editor extends AbstractEditor {
 						// http://stackoverflow.com/questions/25523375
 						.orElse(null)
 					)
-					.collect(Collectors.toList())
+					.toList()
 			));
 		
 		SEM_TMPLS_MAP = Utils.readLinesFromResource("/eswikt-catsem-templates.txt", Editor.class)
@@ -354,21 +352,18 @@ public class Editor extends AbstractEditor {
 		
 		LENG_PARAM_TMPLS = Stream.concat(LENG_PARAM_TMPLS_STANDARD.stream(), SEM_TMPLS_MAP.keySet().stream())
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 	}
 	
 	static {
 		REDUCED_SECTION_CHECK = section -> {
-			if (
-				section instanceof LangSection &&
-				((LangSection) section).langCodeEqualsTo("trans")
-			) {
+			if (section instanceof LangSection s && s.langCodeEqualsTo("trans")) {
 				return true;
 			}
 			
 			List<Section> targetSections = section.getChildSections().stream()
 				.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
-				.collect(Collectors.toList());
+				.toList();
 			
 			if (targetSections.isEmpty()) {
 				return false;
@@ -404,7 +399,7 @@ public class Editor extends AbstractEditor {
 			
 			List<String> allHeaders = allSubsections.stream()
 				.map(AbstractSection::getStrippedHeader)
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 			
 			// TODO: https://es.wiktionary.org/w/index.php?title=edere&oldid=3774065
 			// TODO: https://es.wiktionary.org/w/index.php?title=consultum&diff=3774086&oldid=3773900
@@ -1155,7 +1150,7 @@ public class Editor extends AbstractEditor {
 				.filter(ref -> !ref.tag().isSelfClosing())
 				.filter(ref -> ref.html().isEmpty())
 				.filter(ref -> ref.attributes().size() != 0)
-				.collect(Collectors.toList());
+				.toList();
 			
 			if (!emptyRefs.isEmpty()) {
 				emptyRefs.forEach(ref -> ref.after(String.format("<ref%s />", ref.attributes())));
@@ -1319,11 +1314,11 @@ public class Editor extends AbstractEditor {
 			
 			if (
 				etymologySections.isEmpty() &&
-				section instanceof LangSection &&
+				section instanceof LangSection s &&
 				(
 					title.contains(" ") ||
-					RECONSTRUCTED_LANGS.contains(((LangSection) section).getLangCode()) ||
-					REDUCED_SECTION_CHECK.test((LangSection) section)
+					RECONSTRUCTED_LANGS.contains(s.getLangCode()) ||
+					REDUCED_SECTION_CHECK.test(s)
 				) &&
 				getTemplates("etimología", section.getIntro()).isEmpty() &&
 				getTemplates("etimología2", section.getIntro()).isEmpty()
@@ -1341,8 +1336,8 @@ public class Editor extends AbstractEditor {
 					continue;
 				}
 			} else if (
-				section instanceof LangSection &&
-				((LangSection) section).hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
+				section instanceof LangSection ls &&
+				ls.hasSubSectionWithHeader(HAS_FLEXIVE_FORM_HEADER_RE) &&
 				!section.nextSiblingSection()
 					.filter(s -> s.getHeader().startsWith("ETYM "))
 					.isPresent()
@@ -1379,8 +1374,8 @@ public class Editor extends AbstractEditor {
 					params.put("templateName", "etimología");
 					
 					// this should always be true
-					if (section instanceof LangSection) {
-						String langCode = ((LangSection) section).getLangCode();
+					if (section instanceof LangSection ls) {
+						String langCode = ls.getLangCode();
 						
 						if (!langCode.equals("es")) {
 							params.put("leng", langCode);
@@ -1591,10 +1586,10 @@ public class Editor extends AbstractEditor {
 			insertAltComment(section, alt);
 		}
 		
-		if (section instanceof LangSection) {
-			Map<String, String> params = ((LangSection) section).getTemplateParams();
+		if (section instanceof LangSection ls) {
+			Map<String, String> params = ls.getTemplateParams();
 			params.remove("alt");
-			((LangSection) section).setTemplateParams(params);
+			ls.setTemplateParams(params);
 		}
 	}
 
@@ -2747,20 +2742,13 @@ public class Editor extends AbstractEditor {
 								} else {
 									pron = "variaciones fonéticas";
 									
-									switch (type) {
-										case "ys":
-											altPron = "Yeísta, seseante";
-											break;
-										case "yc":
-											altPron = "Yeísta, no seseante";
-											break;
-										case "lls":
-											altPron = "No yeísta, seseante";
-											break;
-										case "llc":
-											altPron = "No yeísta, no seseante";
-											break;
-									}
+									altPron = switch (type) {
+										case "ys" -> "Yeísta, seseante";
+										case "yc" -> "Yeísta, no seseante";
+										case "lls" -> "No yeísta, seseante";
+										case "llc" -> "No yeísta, no seseante";
+										default -> altPron;
+									};
 								}
 								
 								String ipa = params.get(type).replace("'", "ˈ");
@@ -4561,7 +4549,7 @@ public class Editor extends AbstractEditor {
 			.filter(s -> s.getLevel() == level)
 			.filter(s -> !STANDARD_HEADERS.contains(s.getStrippedHeader()))
 			.filter(s -> P_TERM.matcher(removeCommentsAndNoWikiText(s.getIntro())).find())
-			.collect(Collectors.toList());
+			.toList();
 		
 		int prevIndex = -1;
 		

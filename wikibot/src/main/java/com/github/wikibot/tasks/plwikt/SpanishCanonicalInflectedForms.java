@@ -95,7 +95,7 @@ public final class SpanishCanonicalInflectedForms {
 			.filter(SpanishCanonicalInflectedForms::matchNonInflectedDefinitions)
 			.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
 			.sorted(collator)
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("%d titles extracted%n", titles.size());
 		

@@ -162,7 +162,7 @@ public final class UpdateLanguageCodes {
 		
 		List<String> rows = map.keySet().stream()
 			.map(key -> String.format("| %s || %s\n", key, map.get(key)))
-			.collect(Collectors.toList());
+			.toList();
 		
 		sb.append(String.join("|-\n", rows));
 		sb.append("|}");

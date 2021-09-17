@@ -480,7 +480,7 @@ public final class PolishSurnamesInflection {
 		
 		List<? extends LogEntry> errors = logs.stream()
 			.filter(log -> log instanceof ErrorLogEntry)
-			.collect(Collectors.toList());
+			.toList();
 		
 		logs.removeAll(errors);
 		
@@ -547,14 +547,11 @@ public final class PolishSurnamesInflection {
 		}
 		
 		View getView(SurnameGender gender) {
-			switch (gender) {
-				case MASCULINE:
-					return new View(surname, masculineSingular, masculinePlural, masculineNum);
-				case FEMININE:
-					return new View(surname, feminineSingular, femininePlural, feminineNum);
-				default:
-					throw new UnsupportedOperationException(gender.toString());
-			}
+			return switch (gender) {
+				case MASCULINE -> new View(surname, masculineSingular, masculinePlural, masculineNum);
+				case FEMININE -> new View(surname, feminineSingular, femininePlural, feminineNum);
+				default -> throw new UnsupportedOperationException(gender.toString());
+			};
 		}
 		
 		void insertIntoSet(Set<Item> set) {
@@ -578,24 +575,7 @@ public final class PolishSurnamesInflection {
 			);
 		}
 		
-		static class View {
-			final String surname;
-			final Item singular;
-			final Item plural;
-			final MeaningNumber mn;
-			
-			private View(String surname, Item singular, Item plural, MeaningNumber mn) {
-				this.surname = surname;
-				this.singular = singular;
-				this.plural = plural;
-				this.mn = mn;
-			}
-			
-			@Override
-			public String toString() {
-				return String.format("[%s %s: %s, %s]", surname, mn, singular, plural);
-			}
-		}
+		record View (String surname, Item singular, Item plural, MeaningNumber mn) {}
 	}
 	
 	private static class MeaningNumber implements Comparable<MeaningNumber> {
@@ -660,14 +640,11 @@ public final class PolishSurnamesInflection {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof MeaningNumber)) {
+			} else if (o instanceof MeaningNumber mn) {
+				return primary.equals(mn.primary) && secondary.equals(mn.secondary);
+			} else {
 				return false;
 			}
-			
-			MeaningNumber mn = (MeaningNumber) o;
-			return primary.equals(mn.primary) && secondary.equals(mn.secondary);
 		}
 		
 		@Override
@@ -867,14 +844,11 @@ public final class PolishSurnamesInflection {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Item)) {
+			} else if (o instanceof Item i) {
+				return surname.equals(i.surname) && gender.equals(i.gender);
+			} else {
 				return false;
 			}
-			
-			Item i = (Item) o;
-			return surname.equals(i.surname) && gender.equals(i.gender);
 		}
 		
 		@Override
@@ -909,14 +883,11 @@ public final class PolishSurnamesInflection {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof LogEntry)) {
+			} else if (o instanceof LogEntry le) {
+				return title.equals(le.title) && message.equals(le.message);
+			} else {
 				return false;
 			}
-			
-			LogEntry le = (LogEntry) o;
-			return title.equals(le.title) && message.equals(le.message);
 		}
 		
 		@Override

@@ -62,7 +62,6 @@ public class MissingPolishExamples extends HttpServlet {
 	public void init() throws ServletException {
 		try {
 			xstream = new XStream(new StaxDriver());
-			XStream.setupDefaultSecurity(xstream);
 			xstream.allowTypes(new Class[] {Entry.class});
 			xstream.processAnnotations(Entry.class);
 			

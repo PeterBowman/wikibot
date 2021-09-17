@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
@@ -81,7 +80,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 			.filter(Objects::nonNull)
 			.filter(info -> !(boolean)info.get("exists"))
 			.map(info -> (String)info.get("displaytitle"))
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("Tamaño de la lista de faltantes: %d%n", missing.size());
 		
@@ -95,7 +94,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		List<String> duplicates = titles.stream()
 			.filter(title -> !title.endsWith(" się"))
 			.filter(title -> titles.contains(title + " się"))
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("Tamaño de la lista de duplicados: %d%n", duplicates.size());
 		Files.write(LOCATION.resolve("duplicates.txt"), duplicates);

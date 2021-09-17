@@ -87,7 +87,7 @@ public final class MissingPolishExamples {
 		// XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
 		List<Entry> list = titlesToBacklinks.entrySet().stream()
 			.map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
-			.collect(Collectors.toList());
+			.toList();
 		
 		storeData(list, timestamp);
 	}

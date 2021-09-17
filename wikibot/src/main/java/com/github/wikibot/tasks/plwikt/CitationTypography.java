@@ -121,14 +121,14 @@ public final class CitationTypography {
 			
 			entries = pages.parallelStream()
 				.flatMap(CitationTypography::mapOccurrences)
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
 			
 			contentCache = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
 			
 			System.out.printf("%d entries extracted.%n", entries.size());
 			
 			if (!entries.isEmpty()) {
-				List<String> l = entries.stream().map(entry -> entry.title).distinct().collect(Collectors.toList());
+				List<String> l = entries.stream().map(entry -> entry.title).distinct().collect(Collectors.toCollection(ArrayList::new));
 				
 				try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
 					queryPageTable(plwiktConn, l, titleToPageId);
@@ -342,10 +342,16 @@ public final class CitationTypography {
 			.map(title -> String.format("'%s'", title.replace("'", "\\'").replace(" ", "_")))
 			.collect(Collectors.joining(", "));
 		
-		String query = "SELECT CONVERT(page_title USING utf8mb4) AS page_title, page_id"
-			+ " FROM page"
-			+ " WHERE page_namespace = 0"
-			+ " AND page_title IN (" + values + ");";
+		String query = String.format("""
+			SELECT
+				CONVERT(page_title USING utf8mb4) AS page_title,
+				page_id
+			FROM
+				page
+			WHERE
+				page_namespace = 0 AND
+				page_title IN (%s);
+			""", values);
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -427,10 +433,12 @@ public final class CitationTypography {
 			.distinct()
 			.collect(Collectors.joining(", "));
 		
-		String query = "INSERT INTO page_title (page_id, page_title)"
-			+ " VALUES " + values
-			+ " ON DUPLICATE KEY"
-			+ " UPDATE page_title = VALUES(page_title);";
+		String query = String.format("""
+			INSERT INTO page_title (page_id, page_title)
+			VALUES %s
+			ON DUPLICATE KEY
+			UPDATE page_title = VALUES(page_title);
+			""", values);
 		
 		Statement stmt = conn.createStatement();
 		int updatedRows = stmt.executeUpdate(query);
@@ -459,7 +467,7 @@ public final class CitationTypography {
 			List<Integer> list = storedEntries.entrySet().stream()
 				.filter(entry -> nonReviewedNonPendingEntries.contains(entry.getValue()))
 				.map(Map.Entry::getKey)
-				.collect(Collectors.toList());
+				.toList();
 			
 			populatePendingTable(conn, list);
 		}
@@ -474,12 +482,23 @@ public final class CitationTypography {
 			.map(entry -> entry.title)
 			.distinct()
 			.map(title -> String.format("'%s'", title.replace("'", "\\'")))
-			.collect(Collectors.joining(", "));
+			.collect(Collectors.joining(","));
 		
-		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text,"
-				+ " review_status, is_pending"
-			+ " FROM all_entries"
-			+ " WHERE page_title IN (" + titles + ");";
+		String query = String.format("""
+			SELECT
+				entry_id,
+				page_title,
+				language,
+				field_id,
+				source_text,
+				edited_text,
+				review_status,
+				is_pending
+			FROM
+				all_entries
+			WHERE
+				page_title IN (%s);
+			""", titles);
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -527,15 +546,14 @@ public final class CitationTypography {
 		String preparedSourceLineQuery = "INSERT INTO source_line (source_text) VALUES (?);";
 		String preparedEditedLineQuery = "INSERT INTO edited_line (edited_text) VALUES (?);";
 		
-		String preparedEntryQuery = "INSERT INTO entry"
-			+ " (page_id, language, field_id, source_line_id, edited_line_id)"
-			+ " SELECT page_id, ?, ?, ?, ?"
-			+ " FROM page_title"
-			+ " WHERE page_title.page_title = ?;";
+		String preparedEntryQuery = """
+			INSERT INTO entry (page_id, language, field_id, source_line_id, edited_line_id)
+			SELECT page_id, ?, ?, ?, ?
+			FROM page_title
+			WHERE page_title.page_title = ?;
+			""";
 		
-		String preparedChangeLogQuery = "INSERT INTO change_log (change_log_id, entry_id)"
-			+ " VALUES (?, ?);";
-		
+		String preparedChangeLogQuery = "INSERT INTO change_log (change_log_id, entry_id) VALUES (?, ?);";
 		String preparedPendingQuery = "INSERT INTO pending (entry_id) VALUES (?);";
 		
 		int opt = Statement.RETURN_GENERATED_KEYS;
@@ -624,10 +642,12 @@ public final class CitationTypography {
 			.map(id -> String.format("(%d)", id))
 			.collect(Collectors.joining(", "));
 		
-		String query = "INSERT INTO pending (entry_id)"
-			+ " VALUES " + values
-			+ " ON DUPLICATE KEY"
-			+ " UPDATE entry_id = VALUES(entry_id);";
+		String query = String.format("""
+			INSERT INTO pending (entry_id)
+			VALUES %s
+			ON DUPLICATE KEY
+			UPDATE entry_id = VALUES(entry_id);
+			""", values);
 		
 		Statement stmt = conn.createStatement();
 		int insertedRows = stmt.executeUpdate(query);
@@ -635,9 +655,19 @@ public final class CitationTypography {
 	}
 	
 	private static Map<Integer, Entry> queryPendingEntries(Connection conn) throws SQLException {
-		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
-			+ " FROM all_entries"
-			+ " WHERE is_pending IS TRUE;";
+		String query = """
+			SELECT
+				entry_id,
+				page_title,
+				language,
+				field_id,
+				source_text,
+				edited_text
+			FROM
+				all_entries
+			WHERE
+				is_pending IS TRUE;
+			""";
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -727,11 +757,21 @@ public final class CitationTypography {
 	}
 	
 	private static Map<Integer, Entry> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
-		String query = "SELECT entry_id, page_title, language, field_id, source_text, edited_text"
-			+ " FROM all_entries"
-			+ " WHERE is_pending IS TRUE"
-			+ " AND review_status = 1"
-			+ " AND review_timestamp <= " + gapTimestamp + ";";
+		String query = String.format("""
+			SELECT
+				entry_id,
+				page_title,
+				language,
+				field_id,
+				source_text,
+				edited_text
+			FROM
+				all_entries
+			WHERE
+				is_pending IS TRUE AND
+				review_status = 1 AND
+				review_timestamp <= %s;
+			""", gapTimestamp);
 		
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery(query);
@@ -746,14 +786,16 @@ public final class CitationTypography {
 	}
 	
 	private static int deleteRejectedEntries(Connection conn, String gapTimestamp) throws SQLException {
-		String query = "DELETE pending"
-			+ " FROM pending"
-			+ " INNER JOIN reviewed"
-			+ " ON reviewed.entry_id = pending.entry_id"
-			+ " INNER JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE review_log.review_status = 0"
-			+ " AND review_log.timestamp <= " + gapTimestamp + ";";
+		String query = String.format("""
+			DELETE
+				pending
+			FROM pending
+				INNER JOIN reviewed ON reviewed.entry_id = pending.entry_id
+				INNER JOIN review_log ON review_log.review_log_id = reviewed.review_log_id
+			WHERE
+				review_log.review_status = 0 AND
+				review_log.timestamp <= %s;
+			""", gapTimestamp);
 		
 		return conn.createStatement().executeUpdate(query);
 	}
@@ -762,13 +804,15 @@ public final class CitationTypography {
 			throws SQLException {
 		Statement queryRevisionLog = conn.createStatement();
 		
-		ResultSet rs = queryRevisionLog.executeQuery(
-			"SELECT review_log.user, review_log.timestamp"
-			+ " FROM reviewed"
-			+ " INNER JOIN review_log"
-			+ " ON review_log.review_log_id = reviewed.review_log_id"
-			+ " WHERE reviewed.entry_id = " + entryId + ";"
-		);
+		ResultSet rs = queryRevisionLog.executeQuery(String.format("""
+			SELECT
+				review_log.user,
+				review_log.timestamp
+			FROM
+				reviewed INNER JOIN review_log ON review_log.review_log_id = reviewed.review_log_id
+			WHERE
+				reviewed.entry_id = %d;
+			""", entryId));
 		
 		if (!rs.next()) {
 			System.out.printf("Entry not found: %s.%n", entry.title);
@@ -849,15 +893,20 @@ public final class CitationTypography {
 			Timestamp revTimestamp = Timestamp.from(revision.getTimestamp().toInstant());
 			
 			// 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
-			PreparedStatement st = conn.prepareStatement("INSERT INTO edit_log"
-				+ " (change_log_id, rev_id, edit_timestamp)"
-				+ " SELECT change_log.change_log_id, ?, ?"
-				+ " FROM change_log"
-				+ " WHERE entry_id = " + entryId
-				+ " AND change_timestamp <= " + gapTimestamp
-				+ " ORDER BY change_log_id DESC"
-				+ " LIMIT 1;"
-			);
+			PreparedStatement st = conn.prepareStatement(String.format("""
+				INSERT INTO
+					edit_log (change_log_id, rev_id, edit_timestamp)
+				SELECT
+					change_log.change_log_id, ?, ?
+				FROM
+					change_log
+				WHERE
+					entry_id = %d AND
+					change_timestamp <= %d
+				ORDER BY
+					change_log_id DESC
+				LIMIT 1;
+				""", entryId, gapTimestamp));
 			
 			st.setInt(1, (int) revId);
 			st.setTimestamp(2, revTimestamp);
@@ -870,10 +919,12 @@ public final class CitationTypography {
 	}
 	
 	private static void updateTimestampTable(Connection conn, String type) throws SQLException {
-		String query = "INSERT INTO execution_log (type)"
-			+ " VALUES ('" + type + "')"
-			+ " ON DUPLICATE KEY"
-			+ " UPDATE timestamp = NOW();";
+		String query = String.format("""
+			INSERT INTO execution_log (type)
+			VALUES ('%s')
+			ON DUPLICATE KEY
+			UPDATE timestamp = NOW();
+			""", type);
 		
 		conn.createStatement().executeUpdate(query);
 	}
@@ -913,20 +964,16 @@ public final class CitationTypography {
 		public boolean equals(Object o) {
 			if (o == this) {
 				return true;
-			}
-			
-			if (!(o instanceof Entry)) {
+			} else if (o instanceof Entry e) {
+				return
+					title.equals(e.title) &&
+					langSection.equals(e.langSection) &&
+					fieldType == e.fieldType &&
+					originalText.equals(e.originalText) &&
+					newText.equals(e.newText);
+			} else {
 				return false;
 			}
-			
-			Entry e = (Entry) o;
-			
-			return
-				title.equals(e.title) &&
-				langSection.equals(e.langSection) &&
-				fieldType == e.fieldType &&
-				originalText.equals(e.originalText) &&
-				newText.equals(e.newText);
 		}
 		
 		@Override

@@ -86,7 +86,7 @@ public final class ProcessLanguageLinks {
 				.filter(rev -> !rev.getText().equals(Utils.replaceWithStandardIgnoredRanges(rev.getText(), patt, "")))
 				.sorted(new XMLRevisionComparator())
 				.map(XMLRevision::getTitle)
-				.collect(Collectors.toList());
+				.toList();
 		}
 		
 		Files.write(TODO_LIST, list);

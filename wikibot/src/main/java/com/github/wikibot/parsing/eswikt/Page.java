@@ -118,8 +118,8 @@ public final class Page extends AbstractPage<Section> {
 		langSections.clear();
 		
 		for (Section section : sections) {
-			if (section instanceof LangSection) {
-				langSections.add((LangSection) section);
+			if (section instanceof LangSection ls) {
+				langSections.add(ls);
 			}
 		}
 		

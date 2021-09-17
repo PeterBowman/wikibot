@@ -492,16 +492,13 @@ public final class Catgram {
 	}
 	
 	private static String getConjunctionString(String member, Conjunction conj) {
-		switch (conj) {
-			case AND:
-				// http://lema.rae.es/dpd/srv/search?id=9n8R9ghyFD6fcqFIBx
-				return member.matches("^h?[ií](?![aeiouáéíóú]).+") ? "e" : "y";
-			case OR:
-				// http://lema.rae.es/dpd/srv/search?id=7wb3ECfmhD6reWjGRa
-				return member.matches("^h?[oó].+") ? "u" : "o";
-			default:
-				throw new UnsupportedOperationException(); // unreachable
-		}
+		return switch (conj) {
+			// http://lema.rae.es/dpd/srv/search?id=9n8R9ghyFD6fcqFIBx
+			case AND -> member.matches("^h?[ií](?![aeiouáéíóú]).+") ? "e" : "y";
+			// http://lema.rae.es/dpd/srv/search?id=7wb3ECfmhD6reWjGRa
+			case OR -> member.matches("^h?[oó].+") ? "u" : "o";
+			default -> throw new UnsupportedOperationException(); // unreachable
+		};
 	}
 	
 	public Data getFirstMember() {

@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
@@ -84,7 +83,7 @@ public final class ResolveLinks {
 			.filter(title -> wb.namespace(title) != Wiki.USER_NAMESPACE || !wb.getRootPage(title).equals(title))
 			// retain biography notes
 			.filter(title -> wb.namespace(title) != Wiki.PROJECT_NAMESPACE || PROJECT_WHITELIST.contains(wb.getRootPage(title)))
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("%d unique backlinks found.%n", backlinks.size());
 		
@@ -94,12 +93,12 @@ public final class ResolveLinks {
 		
 		var sourcesIgnoreCase = sources.stream()
 			.flatMap(redir -> Stream.of(StringUtils.capitalize(redir), StringUtils.uncapitalize(redir)))
-			.collect(Collectors.toList());
+			.toList();
 		
 		var patterns = sourcesIgnoreCase.stream()
 			.map(redir -> String.format(PATT_LINK, Pattern.quote(redir)))
 			.map(Pattern::compile)
-			.collect(Collectors.toList());
+			.toList();
 		
 		BiConsumer<Matcher, StringBuilder> replaceFunc = (m, sb) -> {
 			var link = m.group(1);

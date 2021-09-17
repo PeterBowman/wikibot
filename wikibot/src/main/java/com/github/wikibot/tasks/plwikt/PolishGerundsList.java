@@ -315,9 +315,9 @@ public class PolishGerundsList implements Selectorizable {
 		Misc.serialize(listOnlyTemplates, locationser.resolve("sin definición.ser"));
 		Misc.serialize(listNoDictEntry, locationser.resolve("sin entrada.ser"));
 		
-		List<String> listOnlyDefinitions2 = new ArrayList<>(listOnlyDefinitions.stream()
+		List<String> listOnlyDefinitions2 = listOnlyDefinitions.stream()
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
-			.collect(Collectors.toList()));
+			.toList();
 		
 		Files.write(location.resolve("sin plantilla.txt"), listOnlyDefinitions2);
 		Files.write(location.resolve("sin definición.txt"), listOnlyTemplates);
@@ -374,7 +374,7 @@ public class PolishGerundsList implements Selectorizable {
 		com.github.wikibot.parsing.Section noDictEntrySection = com.github.wikibot.parsing.Section.create("niewystępujące w słowniku", 3);
 		tempList = listNoDictEntry.stream()
 			.map(entry -> String.format("# [[%s]]", entry))
-			.collect(Collectors.toList());
+			.collect(Collectors.toCollection(ArrayList::new));
 		
 		Misc.sortList(tempList, "pl");
 		noDictEntrySection.setIntro("{{columns|\n" + String.join("\n", tempList) + "\n}}");
@@ -389,7 +389,7 @@ public class PolishGerundsList implements Selectorizable {
 			)
 			.flatMap(Collection::stream)
 			.map(line -> String.format("# [[%s]] – %s", (Object[])line.split(" - ")))
-			.collect(Collectors.toList());
+			.collect(Collectors.toCollection(ArrayList::new));
 		
 		Misc.sortList(tempList, "pl");
 		possibleErrors.setIntro(String.join("\n", tempList));
@@ -400,7 +400,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		tempList = Files.readAllLines(location_old.resolve("reflexivos.txt")).stream()
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
-			.collect(Collectors.toList());
+			.collect(Collectors.toCollection(ArrayList::new));
 		
 		Misc.sortList(tempList, "pl");
 		reflexiveVerbs.setIntro(String.join(", ", tempList));

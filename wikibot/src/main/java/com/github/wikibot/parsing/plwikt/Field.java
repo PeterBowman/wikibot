@@ -31,12 +31,10 @@ public class Field implements Comparable<Field> {
 	}
 	
 	static Field parseField(FieldTypes fieldType, String content) {
-		switch (fieldType) {
-			case DEFINITIONS:
-				return new DefinitionsField(fieldType, content);
-			default:
-				return new Field(fieldType, content); 
-		}
+		return switch (fieldType) {
+			case DEFINITIONS -> new DefinitionsField(fieldType, content);
+			default -> new Field(fieldType, content); 
+		};
 	}
 	
 	public FieldTypes getFieldType() {
@@ -152,16 +150,13 @@ public class Field implements Comparable<Field> {
 	
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Field)) {
-			return false;
-		}
-		
 		if (o == this) {
 			return true;
+		} else if (o instanceof Field f) {
+			return uuid.equals(f.uuid);
+		} else {
+			return false;
 		}
-		
-		Field f = (Field) o;
-		return uuid.equals(f.uuid);
 	}
 
 	@Override

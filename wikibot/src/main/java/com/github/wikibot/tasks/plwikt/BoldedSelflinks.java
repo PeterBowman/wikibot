@@ -32,7 +32,6 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class BoldedSelflinks {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/BoldedSelflinks/");
@@ -82,18 +81,20 @@ public final class BoldedSelflinks {
 				: e.getKey().localised())
 			.collect(Collectors.joining(", "));
 		
-		PAGE_INTRO =
-			"Zestawienie wystąpień pogrubionych selflinków, czyli linków prowadzących do strony, w której " +
-			"się znajdują. Automatyczne pogrubianie takich linków, wymuszone przez oprogramowanie MediaWiki, " +
-			"jest zazwyczaj tłumione za sprawą lokalnego [[MediaWiki:Gadget-section-links.js|skryptu JS]], " +
-			"o ile dany link nie prowadzi do tej samej sekcji językowej. Wykluczenia:\n" +
-			"* języki z wyłączoną obsługą selflinków przez JS – " + excludedSelflinks + ";\n" +
-			"* języki źle współpracujące z mechanizmem selflinków – " + excludedLangs + ";\n" +
-			"* pola – " + excludedFields + ".\n" +
-			"Lista uwzględnia również zwykłe pogrubienia (tekst owinięty znakami <code><nowiki>'''</nowiki></code>, " +
-			"niezawierający <code><nowiki>[]{}</nowiki></code>) na powyższych zasadach.\n" +
-			"\n" +
-			"Dane na podstawie zrzutu z bazy danych z dnia $1. Aktualizacja: ~~~~~.";;
+		PAGE_INTRO = String.format("""
+			Zestawienie wystąpień pogrubionych selflinków, czyli linków prowadzących do strony, w której
+			się znajdują. Automatyczne pogrubianie takich linków, wymuszone przez oprogramowanie MediaWiki,
+			jest zazwyczaj tłumione za sprawą lokalnego [[MediaWiki:Gadget-section-links.js|skryptu JS]],
+			o ile dany link nie prowadzi do tej samej sekcji językowej. Wykluczenia:
+			* języki z wyłączoną obsługą selflinków przez JS – %s
+			* języki źle współpracujące z mechanizmem selflinków – %s
+			* pola – %s
+			Lista uwzględnia również zwykłe pogrubienia (tekst owinięty znakami <code><nowiki>'''</nowiki></code>,
+			niezawierający <code><nowiki>[]{}</nowiki></code>) na powyższych zasadach.
+			
+			Dane na podstawie zrzutu z bazy danych z dnia $1. Aktualizacja: ~~~~~.
+			----
+			""", excludedSelflinks, excludedLangs, excludedFields);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -158,7 +159,7 @@ public final class BoldedSelflinks {
 					)
 				)
 				.sorted((i1, i2) -> COLL_PL.compare(i1.title, i2.title))
-				.collect(Collectors.toList());
+				.toList();
 		}
 	}
 	
@@ -206,12 +207,9 @@ public final class BoldedSelflinks {
 			storedHashCode = 0;
 		}
 		
-		XStream xstream = new XStream();
-		xstream.processAnnotations(Item.class);
-		
 		if (storedHashCode != newHashCode) {
 			Files.writeString(fHash, Integer.toString(newHashCode));
-			Files.writeString(fList, xstream.toXML(list));
+			Files.writeString(fList, new XStream().toXML(list));
 			return true;
 		} else {
 			return false;
@@ -258,33 +256,8 @@ public final class BoldedSelflinks {
 			.map(entry -> String.format("#[[%s]]%n%s", entry.getKey(), String.join("\n", entry.getValue())))
 			.collect(Collectors.joining("\n"));
 		
-		return PAGE_INTRO.replace("$1", timestamp) + "\n\n" + output;
+		return PAGE_INTRO.replace("$1", timestamp) + output;
 	}
 	
-	@XStreamAlias("item")
-	private static class Item {
-		String title;
-		String language;
-		String fieldType;
-		String line;
-		
-		Item(String title, String language, String fieldType, String line) {
-			this.title = title;
-			this.language = language;
-			this.fieldType = fieldType;
-			this.line = line;
-		}
-		
-		@Override
-		public String toString() {
-			return String.format("[%s,%s,%s,%s]", title, language, fieldType, line);
-		}
-		
-		@Override
-		public int hashCode() {
-			return
-				title.hashCode() + language.hashCode() +
-				fieldType.hashCode() + line.hashCode();
-		}
-	}
+	private record Item (String title, String language, String fieldType, String line) {}
 }

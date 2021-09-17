@@ -44,7 +44,7 @@ public final class ArchiveExternalLinks {
 		webArchive = new WebArchiveLookup();
 		
 		var list = wb.linksearch(url, protocol, Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.CATEGORY_NAMESPACE);
-		var titles = list.stream().map(item -> item[0]).distinct().collect(Collectors.toList());
+		var titles = list.stream().map(item -> item[0]).distinct().collect(Collectors.toCollection(ArrayList::new));
 		
 		// retain user sandboxes
 		titles.removeIf(title -> wb.namespace(title) == Wiki.USER_NAMESPACE && wb.getRootPage(title).equals(title));
@@ -141,7 +141,7 @@ public final class ArchiveExternalLinks {
 			.flatMap(templateName -> ParseUtils.getTemplatesIgnoreCase(templateName, text).stream())
 			.filter(template -> !ParseUtils.getTemplateParametersWithValue(template).getOrDefault("archiwum", "").isBlank())
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		var ranges = new ArrayList<Range<Integer>>();
 		

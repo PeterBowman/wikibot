@@ -60,19 +60,24 @@ public class SandboxRedirects extends HttpServlet {
 		boolean hasNext = false;
 		
 		try (Connection conn = dataSource.getConnection()) {
-			String query = "SELECT"
-					+ " CONVERT(log_title USING utf8mb4) AS log_title,"
-					+ " CONVERT(log_params USING utf8mb4) AS log_params,"
-					+ " log_timestamp"
-				+ " FROM plwiki_p.logging"
-				+ " WHERE"
-					+ " log_type = 'move' AND"
-					+ " log_namespace = 0 AND"
-					//+ " log_comment = '" + MOVE_LOG_COMMENT + "' AND"
-					+ " log_params LIKE '%:\\\"Wikipedysta:%'"
-				+ " ORDER BY log_id DESC"
-				+ " LIMIT " + (limit + 1)
-				+ " OFFSET " + offset;
+			String query = String.format("""
+				SELECT
+					CONVERT(log_title USING utf8mb4) AS log_title,
+					CONVERT(log_params USING utf8mb4) AS log_params,
+					log_timestamp
+				FROM
+					plwiki_p.logging
+				WHERE
+					log_type = 'move' AND
+					log_namespace = 0 AND
+					log_params LIKE '%%:"Wikipedysta:%%'
+				ORDER BY
+					log_id DESC
+				LIMIT
+					%d
+				OFFSET
+					%d;
+				""", limit + 1, offset);
 			
 			Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setFetchSize(Integer.MIN_VALUE);
@@ -127,14 +132,9 @@ public class SandboxRedirects extends HttpServlet {
 	
 	private static LogData extractSerializedData(String serialized) {
 		Matcher m = P_MOVE_LOG.matcher(serialized);
-		LogData logData = new LogData();
 		
 		if (m.matches()) {
-			String type = m.group(1);
-			logData.sourceExists = (type == "3");
-			logData.targetPage = m.group(2);
-			logData.targetDisplay = m.group(3);
-			return logData;
+			return new LogData(m.group(1).equals("3"), m.group(2), m.group(3));
 		} else {
 			throw new RuntimeException("Błąd odczytu danych: " + serialized);
 		}
@@ -150,9 +150,5 @@ public class SandboxRedirects extends HttpServlet {
 		}
 	}
 	
-	private static class LogData {
-		boolean sourceExists;
-		String targetPage;
-		String targetDisplay;
-	}
+	private record LogData (boolean sourceExists, String targetPage, String targetDisplay) {}
 }

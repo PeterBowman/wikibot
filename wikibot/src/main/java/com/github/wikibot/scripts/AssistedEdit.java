@@ -105,7 +105,7 @@ public final class AssistedEdit {
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("Size: %d%n", titles.size());
 		

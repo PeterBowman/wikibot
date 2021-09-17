@@ -83,7 +83,7 @@ public final class Replace implements Selectorizable {
 		System.out.printf("Tamaño final: %d%n", map.size());
 		
 		if (map.size() != pages.size()) {
-			List<String> all = pages.stream().map(PageContainer::getTitle).collect(Collectors.toList());
+			List<String> all = pages.stream().map(PageContainer::getTitle).collect(Collectors.toCollection(ArrayList::new));
 			Set<String> found = map.keySet();
 			all.removeAll(found);
 			

@@ -67,7 +67,7 @@ public final class MorfeoDatabase {
 		List<String> morphems = items.values().stream()
 			.flatMap(Collection::stream)
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 		
 		System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.size());
 		
@@ -147,10 +147,15 @@ public final class MorfeoDatabase {
 			.map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
 			.collect(Collectors.joining(","));
 		
-		String query = "SELECT CONVERT(page_title USING utf8) AS page_title"
-			+ " FROM page"
-			+ " WHERE page_namespace = 0"
-			+ " AND page_title IN (" + values + ");";
+		String query = String.format("""
+			SELECT
+				CONVERT(page_title USING utf8) AS page_title
+			FROM
+				page
+			WHERE
+				page_namespace = 0 AND
+				page_title IN (%s);
+			""", values);
 		
 		ResultSet rs = conn.createStatement().executeQuery(query);
 		Set<String> set = new HashSet<>(morphems.size());
@@ -195,7 +200,7 @@ public final class MorfeoDatabase {
 		List<String> list = map.entrySet().stream()
 			.filter(entry -> entry.getValue() == null)
 			.map(Map.Entry::getKey)
-			.collect(Collectors.toList());
+			.toList();
 		
 		List<String> _all = wb.getCategoryMembers("esperanto (morfem) (indeks)", Wiki.MAIN_NAMESPACE);
 		List<String> _normal = wb.getCategoryMembers("Esperanto - morfemy", Wiki.MAIN_NAMESPACE);
@@ -348,9 +353,7 @@ public final class MorfeoDatabase {
 		}
 		
 		if (!values.isEmpty()) {
-			String query = "INSERT INTO morfeo (title, morphem, position, type)"
-				+ " VALUES " + String.join(",", values) + ";";
-			
+			String query = "INSERT INTO morfeo (title, morphem, position, type) VALUES " + String.join(",", values) + ";";
 			return conn.createStatement().executeUpdate(query);
 		} else {
 			return 0;
@@ -358,10 +361,12 @@ public final class MorfeoDatabase {
 	}
 	
 	private static void updateTimestampTable(Connection conn) throws SQLException {
-		String query = "INSERT INTO execution_log (type)"
-			+ " VALUES ('tasks.plwikt.MorfeoDatabase')"
-			+ " ON DUPLICATE KEY"
-			+ " UPDATE timestamp = NOW();";
+		String query = """
+			INSERT INTO execution_log (type)
+			VALUES ('tasks.plwikt.MorfeoDatabase')
+			ON DUPLICATE KEY
+			UPDATE timestamp = NOW();
+			""";
 		
 		conn.createStatement().executeUpdate(query);
 	}

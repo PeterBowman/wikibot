@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -56,8 +55,8 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 		Section parentSection = this;
 		
 		while (parentSection != null) {
-			if (parentSection instanceof LangSection) {
-				return Optional.of((LangSection) parentSection);
+			if (parentSection instanceof LangSection ls) {
+				return Optional.of(ls);
 			}
 			
 			parentSection = parentSection.parentSection;
@@ -101,7 +100,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
 	protected boolean hasDuplicatedChildSections() {
 		List<String> headers = childSections.stream()
 			.map(AbstractSection::getStrippedHeader)
-			.collect(Collectors.toList());
+			.toList();
 		
 		Map<String, Integer> cardinalityMap = CollectionUtils.getCardinalityMap(headers);
 		

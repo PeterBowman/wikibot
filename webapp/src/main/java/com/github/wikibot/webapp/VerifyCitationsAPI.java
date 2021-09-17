@@ -68,21 +68,24 @@ public class VerifyCitationsAPI extends HttpServlet {
 		
 		switch (typeParam) {
 			case "user":
-				query = "SELECT user AS result"
-					+ " FROM ("
-						+ " SELECT user"
-						+ " FROM change_log"
-						+ " WHERE user NOT LIKE '@%'"
-						+ " UNION"
-						+ " SELECT user"
-						+ " FROM review_log"
-					+ ") AS derived"
-					+ " WHERE user";
+				query = """
+					SELECT
+						user AS result
+					FROM (
+						SELECT user FROM change_log WHERE user NOT LIKE '@%'
+						UNION
+						SELECT user FROM review_log
+					) AS derived
+					WHERE
+						user
+					""";
 				break;
 			case "title":
-				query = "SELECT page_title AS result"
-					+ " FROM page_title"
-					+ " WHERE page_title.page_title";
+				query = """
+					SELECT page_title AS result
+					FROM page_title
+					WHERE page_title.page_title
+					""";
 				break;
 			default:
 				response.getWriter().append(emptyResult);

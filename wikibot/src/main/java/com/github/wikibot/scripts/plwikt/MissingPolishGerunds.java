@@ -175,12 +175,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 		List<String[]> list_aff = Files.readAllLines(MISSING_AFF).stream().map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
-    	}).collect(Collectors.toList());
+    	}).toList();
 		
 		List<String[]> list_neg = Files.readAllLines(MISSING_NEG).stream().map(line -> new String[]{
 			line.substring(0, line.indexOf(" - ")),
 			line.substring(line.indexOf(" - ") + 3)
-    	}).collect(Collectors.toList());
+    	}).toList();
 		
 		Misc.serialize(list_aff, MISSING_AFF_SER);
 		Misc.serialize(list_neg, MISSING_NEG_SER);

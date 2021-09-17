@@ -228,16 +228,12 @@ public class NKJPGenerator extends HttpServlet {
 		}
 		
 		String getContentType() {
-			switch (format) {
-				case "json":
-					return "application/json";
-				case "jsonp":
-					return "text/javascript";
-				case "plain":
-					return "text/plain";
-				default:
-					throw new Error("Unsupported format: " + format);
-			}
+			return switch (format) {
+				case "json" -> "application/json";
+				case "jsonp" -> "text/javascript";
+				case "plain" -> "text/plain";
+				default -> throw new Error("Unsupported format: " + format);
+			};
 		}
 		
 		abstract void prepareOutput(Map<String, String> resultMap);

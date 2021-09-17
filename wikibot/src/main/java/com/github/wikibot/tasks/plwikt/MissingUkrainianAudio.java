@@ -8,7 +8,6 @@ import java.nio.file.StandardOpenOption;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -40,7 +39,7 @@ public final class MissingUkrainianAudio {
 				.filter(f -> f.isEmpty() || ParseUtils.getTemplates("audio", f.getContent()).isEmpty())
 				.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
 				.sorted(Collator.getInstance(new Locale("uk")))
-				.collect(Collectors.toList());
+				.toList();
 		}
 		
 		var path = LOCATION.resolve("titles.txt");

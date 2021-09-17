@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
@@ -81,11 +80,9 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 				String param = ParseUtils.getTemplateParam(templates.get(0), 1);
 				return new Translations(page.getTitle(), param, s);
 			})
-			.collect(Collectors.toList());
+			.toList();
 		
-		List<PageContainer> mascpages = wb.getContentOfPages(
-			nouns.stream().map(item -> item.alt_gender).collect(Collectors.toList())
-		);
+		List<PageContainer> mascpages = wb.getContentOfPages(nouns.stream().map(item -> item.alt_gender).toList());
 		
 		int count = 0;
 		
