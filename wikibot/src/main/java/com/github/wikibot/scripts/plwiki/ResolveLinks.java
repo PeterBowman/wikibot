@@ -200,9 +200,9 @@ public final class ResolveLinks {
 		
 		for (var template : ParseUtils.getTemplatesIgnoreCase("Link-interwiki", text)) {
 			var params = ParseUtils.getTemplateParametersWithValue(template);
-			var local = params.getOrDefault("pl", params.get("ParamWithoutName1"));
+			var local = params.getOrDefault("pl", params.getOrDefault("ParamWithoutName1", ""));
 			
-			if (local != null && sources.contains(local)) {
+			if (sources.contains(local)) {
 				if (params.containsKey("pl")) {
 					params.put("pl", target);
 				} else {
@@ -218,6 +218,37 @@ public final class ResolveLinks {
 				}
 				
 				text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
+			}
+		}
+		
+		for (var template : ParseUtils.getTemplatesIgnoreCase("Sort", text)) {
+			var params = ParseUtils.getTemplateParametersWithValue(template);
+			var key = params.getOrDefault("ParamWithoutName1", "");
+			
+			if (sources.contains(key) && !params.containsKey("ParamWithoutName2")) {
+				params.put("ParamWithoutName2", String.format("[[%s|%s]]", target, key));
+				text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
+			}
+		}
+		
+		for (var template : ParseUtils.getTemplatesIgnoreCase("Sortname", text)) {
+			var params = ParseUtils.getTemplateParametersWithValue(template);
+			
+			if (!params.containsKey("nolink")) {
+				var key = "";
+				
+				if (params.containsKey("ParamWithoutName3")) {
+					key = params.get("ParamWithoutName3");
+				} else {
+					var name = params.getOrDefault("ParamWithoutName1", "");
+					var surname = params.getOrDefault("ParamWithoutName2", "");
+					key = String.format("%s %s", name, surname);
+				}
+				
+				if (sources.contains(key)) {
+					params.put("ParamWithoutName3", target);
+					text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
+				}
 			}
 		}
 		
