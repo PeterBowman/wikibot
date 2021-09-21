@@ -100,13 +100,13 @@ public class Login {
 		}
 	}
 	
-	public static Wikibot createSession(String domain) throws CredentialException {
+	public static void login(Wiki wiki) throws CredentialException {
 		String username = System.getenv(ENV_USERNAME_VAR);
-		return createSession(domain, username);
+		login(wiki, username);
 	}
 	
-	public static Wikibot createSession(String domain, String username) throws CredentialException {
-		Objects.requireNonNull(domain);
+	public static void login(Wiki wiki, String username) throws CredentialException {
+		Objects.requireNonNull(wiki);
 		Objects.requireNonNull(username);
 		
 		final char[] password;
@@ -117,9 +117,18 @@ public class Login {
 			throw new CredentialException("Unable to retrieve credentials: " + e.getMessage());
 		}
 		
+		login(wiki, username, password);
+	}
+	
+	public static Wikibot createSession(String domain) throws CredentialException {
 		Wikibot wb = Wikibot.newSession(domain);
-		login(wb, username, password);
-		
+		login(wb);
+		return wb;
+	}
+	
+	public static Wikibot createSession(String domain, String username) throws CredentialException {
+		Wikibot wb = Wikibot.newSession(domain);
+		login(wb, username);
 		return wb;
 	}
 	
