@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
@@ -14,6 +15,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -29,6 +31,10 @@ public final class ResolveLinks {
 	
 	private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
 		"Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
+	);
+	
+	private static final List<String> IGNORED_REDIR_TEMPLATES = List.of(
+		"Inne znaczenia", "DisambigR"
 	);
 	
 	private static final int[] TARGET_NAMESPACES = new int[] {
@@ -142,10 +148,22 @@ public final class ResolveLinks {
 				continue;
 			}
 			
+			var ignoredRanges = IGNORED_REDIR_TEMPLATES.stream()
+				.flatMap(templateName -> ParseUtils.getTemplatesIgnoreCase(templateName, page.getText()).stream())
+				.distinct()
+				.map(template -> Pattern.compile(template, Pattern.LITERAL))
+				.map(patt -> Utils.findRanges(page.getText(), patt))
+				.collect(Collectors.toCollection(ArrayList::new));
+			
+			ignoredRanges.add(Utils.getStandardIgnoredRanges(page.getText()));
+			
+			@SuppressWarnings("unchecked")
+			var combinedRanges = (List<Range<Integer>>)Utils.getCombinedRanges(ignoredRanges.toArray(new List[0]));
+			
 			var newText = page.getText();
 			
 			for (var pattern : patterns) {
-				newText = Utils.replaceWithStandardIgnoredRanges(newText, pattern, replaceFunc);
+				newText = Utils.replaceWithIgnoredRanges(newText, pattern, combinedRanges, replaceFunc);
 				newText = replaceAdditionalOccurrences(newText, target, sourcesIgnoreCase);
 			}
 			

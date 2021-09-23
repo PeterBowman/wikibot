@@ -156,32 +156,34 @@ public final class Utils {
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, String regex, String replacement) {
-		return replaceWithIgnoredranges(text, Pattern.compile(regex), replacement, getStandardIgnoredRanges(text));
+		return replaceWithIgnoredRanges(text, Pattern.compile(regex), replacement, getStandardIgnoredRanges(text));
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt, String replacement) {
-		return replaceWithIgnoredranges(text, patt, replacement, getStandardIgnoredRanges(text));
+		return replaceWithIgnoredRanges(text, patt, replacement, getStandardIgnoredRanges(text));
 	}
 	
-	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
-			BiConsumer<Matcher, StringBuilder> biCons) {
-		ToIntFunction<Matcher> func = Matcher::start;
-		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt, BiConsumer<Matcher, StringBuilder> biCons) {
+		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), biCons);
 	}
 	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			ToIntFunction<Matcher> func, BiConsumer<Matcher, StringBuilder> biCons) {
-		return replaceWithIgnoredranges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
-	public static String replaceWithIgnoredranges(String text, Pattern patt, String replacement,
-			List<Range<Integer>> ignoredRanges) {
-		ToIntFunction<Matcher> func = Matcher::start;
+	public static String replaceWithIgnoredRanges(String text, Pattern patt, String replacement, List<Range<Integer>> ignoredRanges) {
 		BiConsumer<Matcher, StringBuilder> biCons = (m, sb) -> m.appendReplacement(sb, replacement);
-		return replaceWithIgnoredranges(text, patt, ignoredRanges, func, biCons);
+		return replaceWithIgnoredRanges(text, patt, ignoredRanges, biCons);
 	}
 	
-	public static String replaceWithIgnoredranges(String text, Pattern patt,
+	public static String replaceWithIgnoredRanges(String text, Pattern patt,
+			List<Range<Integer>> ignoredRanges, BiConsumer<Matcher, StringBuilder> biCons) {
+		ToIntFunction<Matcher> func = Matcher::start;
+		return replaceWithIgnoredRanges(text, patt, ignoredRanges, func, biCons);
+	}
+	
+	public static String replaceWithIgnoredRanges(String text, Pattern patt,
 			List<Range<Integer>> ignoredRanges, ToIntFunction<Matcher> func,
 			BiConsumer<Matcher, StringBuilder> biCons) {
 		Matcher m = patt.matcher(text);
