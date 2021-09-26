@@ -231,7 +231,7 @@ public final class XMLDumpReader {
 
 			if (!extension.equals("xml")) {
 				try {
-					return new CompressorStreamFactory().createCompressorInputStream(input);
+					return new CompressorStreamFactory(true).createCompressorInputStream(input);
 				} catch (CompressorException e) {
 					throw new IOException(e);
 				}
