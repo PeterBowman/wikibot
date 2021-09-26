@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -336,42 +337,35 @@ public final class XMLDumpReader {
 	private static class RootlessXMLInputStream extends InputStream {
 		private static final String ROOT_ELEMENT = "dummy_root";
 		
-		private Path dump;
-		private Iterator<Long> offsets;
+		private Iterator<Long> offsetsIter;
+		private FileInputStream dumpStream;
+		private FileChannel dumpChannel;
 		private ByteArrayInputStream startRoot;
 		private ByteArrayInputStream endRoot;
 		private InputStream currentInput;
 		
 		RootlessXMLInputStream(Path dump, Iterable<Long> offsets) {
-			this.dump = dump;
-			this.offsets = offsets.iterator();
+			offsetsIter = offsets.iterator();
 			startRoot = new ByteArrayInputStream(String.format("<%s>", ROOT_ELEMENT).getBytes());
 			endRoot = new ByteArrayInputStream(String.format("</%s>", ROOT_ELEMENT).getBytes());
-		}
-		
-		private InputStream getCompressedInputStream(long position) throws IOException, CompressorException {
-			var fis = new FileInputStream(dump.toFile());
-			fis.getChannel().position(position);
 			
 			try {
-				return new BZip2CompressorInputStream(new BufferedInputStream(fis));
-			} catch (IOException e) {
-				throw new CompressorException(e.getMessage(), e.getCause());
+				dumpStream = new FileInputStream(dump.toFile());
+				dumpChannel = dumpStream.getChannel();
+			} catch (FileNotFoundException e) {
+				throw new UncheckedIOException(e);
 			}
 		}
 		
-		private void getNextStream() throws IOException {
-			if (currentInput != null) {
-				currentInput.close();
-			}
-			
-			while (offsets.hasNext()) {
-				var offset = offsets.next();
+		private void prepareNextStream() {
+			while (offsetsIter.hasNext()) {
+				var offset = offsetsIter.next();
 				
 				try {
-					currentInput = getCompressedInputStream(offset);
+					dumpChannel.position(offset);
+					currentInput = new BZip2CompressorInputStream(new BufferedInputStream(dumpStream));
 					return;
-				} catch (CompressorException e) {
+				} catch (IOException e) {
 					System.out.printf("Unable to read file at channel position %d: %s%n", offset, e.getMessage());
 				}
 			}
@@ -397,7 +391,7 @@ public final class XMLDumpReader {
 			}
 			
 			if (currentInput == null) {
-				getNextStream();
+				prepareNextStream();
 			}
 			
 			while (currentInput != null) {
@@ -406,7 +400,7 @@ public final class XMLDumpReader {
 				if (c != -1) {
 					return c;
 				} else {
-					getNextStream();
+					prepareNextStream();
 				}
 			}
 			
@@ -441,7 +435,7 @@ public final class XMLDumpReader {
 					off += n;
 				}
 				
-				getNextStream();
+				prepareNextStream();
 			}
 			
 			return read;
@@ -449,9 +443,7 @@ public final class XMLDumpReader {
 		
 		@Override
 		public void close() throws IOException {
-			if (currentInput != null) {
-				currentInput.close();
-			}
+			dumpStream.close();
 		}
 	}
 }
