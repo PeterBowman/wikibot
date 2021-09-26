@@ -184,8 +184,8 @@ public final class XMLDumpReader {
 		var multiple = 0;
 		
 		try (
-			var input = Files.newInputStream(pathToIndexFile);
-			var maybeCompressed = extension.equals("bz2") ? new BZip2CompressorInputStream(input) : input;
+			var bufferedInput = new BufferedInputStream(Files.newInputStream(pathToIndexFile));
+			var maybeCompressed = extension.equals("bz2") ? new BZip2CompressorInputStream(bufferedInput) : bufferedInput;
 			var reader = new BufferedReader(new InputStreamReader(maybeCompressed))
 		) {
 			var it = reader.lines().iterator();
