@@ -1,6 +1,9 @@
 package com.github.wikibot.scripts.plwiki;
 
+import java.nio.file.Paths;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +63,10 @@ public final class ResolveLinks {
 		final String summary;
 		
 		if (mode.equals("redir")) {
+			if (line.hasOption("file")) {
+				throw new IllegalArgumentException("Option 'file' not compatible with mode 'redir'");
+			}
+			
 			sources = wb.whatLinksHere(List.of(target), true, false, TARGET_NAMESPACES).get(0);
 			System.out.printf("%d redirs: %s%n", sources.size(), sources);
 			
@@ -81,10 +88,17 @@ public final class ResolveLinks {
 			throw new IllegalArgumentException("illegal mode: " + mode);
 		}
 		
-		var backlinks = wb.whatLinksHere(sources, false, false, TARGET_NAMESPACES).stream()
-			.flatMap(Collection::stream)
-			.sorted()
-			.distinct()
+		final Stream<String> titles;
+		
+		if (line.hasOption("file")) {
+			var path = Paths.get(line.getOptionValue("file"));
+			var namespaces = Arrays.stream(TARGET_NAMESPACES).boxed().toList();
+			titles = Files.readAllLines(path).stream().filter(title -> namespaces.contains(wb.namespace(title)));
+		} else {
+			titles = wb.whatLinksHere(sources, false, false, TARGET_NAMESPACES).stream().flatMap(Collection::stream);
+		}
+		
+		var backlinks = titles.sorted().distinct()
 			// retain user sandboxes
 			.filter(title -> wb.namespace(title) != Wiki.USER_NAMESPACE || !wb.getRootPage(title).equals(title))
 			// retain biography notes
@@ -187,6 +201,7 @@ public final class ResolveLinks {
 		options.addRequiredOption("m", "mode", true, "script mode (redir, disamb)");
 		options.addOption("s", "source", true, "source page");
 		options.addRequiredOption("t", "target", true, "target page");
+		options.addOption("f", "file", true, "path to worklist");
 		
 		if (args.length == 0) {
 			System.out.print("Options: ");
