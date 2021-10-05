@@ -141,12 +141,20 @@ public final class ResolveLinks {
 			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 		};
 		
+		var props = wb.getPageProps(backlinks);
+		
 		var edited = new ArrayList<String>();
 		var errors = new ArrayList<String>();
 		
 		wb.setMarkMinor(true);
 		
 		for (var page : wb.getContentOfPages(backlinks)) {
+			if (props.stream().filter(m -> page.getTitle().equals(m.get("pagename"))).anyMatch(m -> m.containsKey("disambiguation"))) {
+				System.out.println("Page is a disambiguation: " + page.getTitle());
+				errors.add(page.getTitle());
+				continue;
+			}
+			
 			if (StringUtils.containsAnyIgnoreCase(page.getText(), "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
 				System.out.println("Page is a redirect: " + page.getTitle());
 				errors.add(page.getTitle());
