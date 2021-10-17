@@ -27,13 +27,13 @@ public class Wikibot extends WMFWiki {
     }
     
     public static Wikibot newSession(String domain) {
-    	Wikibot wb = new Wikibot(domain);
+    	var wb = new Wikibot(domain);
     	wb.initVars();
     	return wb;
     }
 	
     public List<PageContainer> getContentOfPages(Collection<String> pages) throws IOException {
-    	Map<String, String> getparams = Map.of(
+    	var getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
     		"rvprop", "timestamp|content",
@@ -43,24 +43,24 @@ public class Wikibot extends WMFWiki {
 	}
     
     public List<PageContainer> getContentOfPageIds(Collection<Long> pageids) throws IOException {
-    	Map<String, String> getparams = Map.of(
+    	var getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		List<String> stringified = pageids.stream().map(Object::toString).toList();
+		var stringified = pageids.stream().map(Object::toString).toList();
 		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "pageids", this::parseContentLine);
 	}
     
     public List<PageContainer> getContentOfRevIds(Collection<Long> revids) throws IOException {
-    	Map<String, String> getparams = Map.of(
+    	var getparams = Map.of(
     		"action", "query",
     		"prop", "revisions",
     		"rvprop", "timestamp|content",
     		"rvslots", "main"
     	);
-		List<String> stringified = revids.stream().map(Object::toString).toList();
+		var stringified = revids.stream().map(Object::toString).toList();
 		return getListedContent(new HashMap<>(getparams), stringified, "getContents", "revids", this::parseContentLine);
     }
 	
@@ -76,7 +76,7 @@ public class Wikibot extends WMFWiki {
 	 * @throws IOException
 	 */
 	public List<PageContainer> getContentOfCategorymembers(String category, int... ns) throws IOException {
-		Map<String, String> getparams = Map.of(
+		var getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
 			"rvslots", "main",
@@ -90,7 +90,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public List<PageContainer> getContentOfTransclusions(String page, int... ns) throws IOException {
-		Map<String, String> getparams = Map.of(
+		var getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
 			"rvslots", "main",
@@ -103,7 +103,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public List<PageContainer> getContentOfBacklinks(String page, int... ns) throws IOException {
-		Map<String, String> getparams = Map.of(
+		var getparams = Map.of(
 			"prop", "revisions",
 			"rvprop", "timestamp|content",
 			"rvslots", "main",
@@ -119,8 +119,8 @@ public class Wikibot extends WMFWiki {
 			String postParamName, BiConsumer<String, List<T>> biCons)
 	throws IOException {
 		var chunks = constructTitleString(new ArrayList<>(titles));
-		List<T> list = new ArrayList<>(titles.size());
-		Map<String, Object> postparams = new HashMap<>();
+		var list = new ArrayList<T>(titles.size());
+		var postparams = new HashMap<String, Object>();
 		final int totalChunks = chunks.size();
 		
 		while (!chunks.isEmpty() || getparams.containsKey("continue")) {
@@ -133,17 +133,17 @@ public class Wikibot extends WMFWiki {
 				localCaller = String.format("%s (%d/%d) [continuation]", caller, totalChunks - chunks.size(), totalChunks);
 			}
 			
-			String line = makeApiCall(getparams, postparams, localCaller);
+			var line = makeApiCall(getparams, postparams, localCaller);
 			detectUncheckedErrors(line, null, null);
 			
 			if (line.contains("<continue ")) {
 				int a = line.indexOf("<continue ") + 9;
 				int b = line.indexOf(" />", a);
-				String cont = line.substring(a, b);
+				var cont = line.substring(a, b);
 				
-				for (String contpair : cont.split("\" ")) {
+				for (var contpair : cont.split("\" ")) {
 					contpair = " " + contpair.trim();
-					String contattr = contpair.substring(0, contpair.indexOf("=\""));
+					var contattr = contpair.substring(0, contpair.indexOf("=\""));
 					getparams.put(contattr.trim(), parseAttribute(cont, contattr, 0));
 				}
 			} else {
@@ -214,14 +214,14 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public String expandTemplates(String text, String title) throws IOException {
-		Map<String, String> getparams = new HashMap<>();
+		var getparams = new HashMap<String, String>();
 		getparams.put("action", "expandtemplates");
 		getparams.put("prop", "wikitext");
 		if (title != null)
 			getparams.put("title", normalize(title));
-		Map<String, Object> postparams = new HashMap<>();
+		var postparams = new HashMap<String, Object>();
 		postparams.put("text", text);
-		String line = makeApiCall(getparams, postparams, "expandTemplates");
+		var line = makeApiCall(getparams, postparams, "expandTemplates");
 		detectUncheckedErrors(line, null, null);
 		
 		int a = line.indexOf("<wikitext ");
@@ -232,7 +232,7 @@ public class Wikibot extends WMFWiki {
 	}
 	
 	public List<Wiki.Revision> getTopRevision(List<String> titles) throws IOException {
-		Map<String, String> getparams = Map.of(
+		var getparams = Map.of(
 			"action", "query",
 			"prop", "revisions",
 			"rvprop", "timestamp|user|ids|flags|size|comment|sha1",
@@ -255,7 +255,7 @@ public class Wikibot extends WMFWiki {
 	public List<Wiki.Revision> recentChanges(OffsetDateTime starttimestamp, OffsetDateTime endtimestamp, Map<String, Boolean> rcoptions,
 			List<String> rctypes, boolean toponly, String excludeUser, int... ns) throws IOException
 	{
-		Map<String, String> getparams = new HashMap<>();
+		var getparams = new HashMap<String, String>();
 		getparams.put("list", "recentchanges");
 		getparams.put("rcdir", "newer");
 		getparams.put("rcprop", "title|ids|user|timestamp|flags|comment|sizes|sha1");
@@ -275,7 +275,7 @@ public class Wikibot extends WMFWiki {
         
         if (rcoptions != null && !rcoptions.isEmpty())
         {
-            List<String> temp = new ArrayList<>();
+            var temp = new ArrayList<String>();
             rcoptions.forEach((key, value) -> temp.add((Boolean.FALSE.equals(value) ? "!" : "") + key));
             getparams.put("rcshow", String.join("|", temp));
         }
@@ -306,7 +306,7 @@ public class Wikibot extends WMFWiki {
     }
     
     public List<String> allLinks(String prefix, int namespace) throws IOException {
-    	Map<String, String> getparams = new HashMap<>();
+    	var getparams = new HashMap<String, String>();
     	getparams.put("list", "alllinks");
 
     	if (namespace == ALL_NAMESPACES) {
@@ -345,7 +345,7 @@ public class Wikibot extends WMFWiki {
         // @revised 0.15 to add short/long pages
         // No varargs namespace here because MW API only supports one namespace
         // for this module.
-        Map<String, String> getparams = new HashMap<>();
+        var getparams = new HashMap<String, String>();
         getparams.put("list", "allpages");
         if (!prefix.isEmpty()) // prefix
         {
@@ -360,11 +360,11 @@ public class Wikibot extends WMFWiki {
         getparams.put("apnamespace", Integer.toString(namespace));
         if (protectionstate != null)
         {
-        	List<String> apprtype = new ArrayList<>();
-        	List<String> apprlevel = new ArrayList<>();
-            for (Map.Entry<String, Object> entry : protectionstate.entrySet())
+        	var apprtype = new ArrayList<String>();
+        	var apprlevel = new ArrayList<String>();
+            for (var entry : protectionstate.entrySet())
             {
-                String key = entry.getKey();
+                var key = entry.getKey();
                 if (key.equals("cascade"))
                 {
                 	getparams.put("apprfiltercascade", (Boolean)entry.getValue() ? "cascading" : "noncascading");
@@ -409,16 +409,16 @@ public class Wikibot extends WMFWiki {
 		requiresExtension("Flagged Revisions");
 		throttle();
 		
-		User user = getCurrentUser();
+		var user = getCurrentUser();
 		
 		if (user == null || !user.isAllowedTo("review")) {
             throw new SecurityException("Permission denied: cannot review.");
 		}
 		
-		Map<String, String> getparams = new HashMap<>();
+		var getparams = new HashMap<String, String>();
 		getparams.put("action", "review");
 		
-		Map<String, Object> postparams = new HashMap<>();
+		var postparams = new HashMap<String, Object>();
 		
 		if (comment != null && !comment.isEmpty()) {
 			postparams.put("comment", comment);
@@ -428,7 +428,7 @@ public class Wikibot extends WMFWiki {
 		postparams.put("revid", Long.toString(rev.getID()));
 		postparams.put("token", getToken("csrf"));
 		
-		String response = makeApiCall(getparams, postparams, "review");
+		var response = makeApiCall(getparams, postparams, "review");
 		
 		if (checkErrorsAndUpdateStatus(response, "review", null, null)) {
 			log(Level.INFO, "review", "Successfully reviewed revision " + rev.getID() + " of page " + rev.getTitle());
@@ -437,20 +437,20 @@ public class Wikibot extends WMFWiki {
     
     public List<Map<String, String>> getPageProps(List<String> pages) throws IOException
     {
-        Map<String, String> getparams = new HashMap<>();
+        var getparams = new HashMap<String, String>();
         getparams.put("action", "query");
         getparams.put("prop", "pageprops");
-        Map<String, Object> postparams = new HashMap<>();
-        Map<String, Map<String, String>> metamap = new HashMap<>();
+        var postparams = new HashMap<String, Object>();
+        var metamap = new HashMap<String, Map<String, String>>();
         // copy because normalization and redirect resolvers overwrites
-        List<String> pages2 = new ArrayList<>(pages);
-        List<String> chunks = constructTitleString(pages);
+        var pages2 = new ArrayList<String>(pages);
+        var chunks = constructTitleString(pages);
         for (int i = 0; i < chunks.size(); i++)
         {
-        	String temp = chunks.get(i);
+        	var temp = chunks.get(i);
             postparams.put("titles", temp);
-            String caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
-            String line = makeApiCall(getparams, postparams, caller);
+            var caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
+            var line = makeApiCall(getparams, postparams, caller);
             detectUncheckedErrors(line, null, null);
             resolveNormalizedParser(pages2, line);
             if (isResolvingRedirects())
@@ -461,28 +461,28 @@ public class Wikibot extends WMFWiki {
             {
             	boolean hasprops = false;
                 int x = line.indexOf(" />", j);
-                String item = line.substring(j + "<page ".length(), x);
-                String header = item;
+                var item = line.substring(j + "<page ".length(), x);
+                var header = item;
                 if (item.contains("<pageprops "))
                 {
                     hasprops = true;
                     header = item.substring(0, item.indexOf("<pageprops "));
                     item = line.substring(j, line.indexOf("</page>", j));
                 }
-                String parsedtitle = parseAttribute(header, "title", 0);
-                Map<String, String> tempmap = new HashMap<>();
+                var parsedtitle = parseAttribute(header, "title", 0);
+                var tempmap = new HashMap<String, String>();
                 tempmap.put("pagename", parsedtitle);
                 if (item.contains("missing=\"\""))
                     tempmap.put("missing", "");
                 else
                 {
-                    String pageid = parseAttribute(header, "pageid", 0);
+                    var pageid = parseAttribute(header, "pageid", 0);
                     tempmap.put("pageid", pageid);
                     if (hasprops)
                     {
                         j = line.indexOf("<pageprops ", j);
                         item = line.substring(j + "<pageprops ".length(), line.indexOf(" />", j));
-		                for (String attr : item.split("=\\S+\\s*"))
+		                for (var attr : item.split("=\\S+\\s*"))
 		                    tempmap.put(attr, parseAttribute(item, attr, 0));
                     }
                 }
@@ -496,7 +496,7 @@ public class Wikibot extends WMFWiki {
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.size(); i++)
         {
-            Map<String, String> tempmap = metamap.get(pages2.get(i));
+            var tempmap = metamap.get(pages2.get(i));
             if (tempmap != null)
             {
                 props[i] = new HashMap<>(tempmap);

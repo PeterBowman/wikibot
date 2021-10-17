@@ -47,9 +47,9 @@ public class MorfeuszLookup {
 	}
 	
 	private static boolean checkExtension(Path path) throws IOException {
-		String contentType = Files.probeContentType(path);
+		var contentType = Files.probeContentType(path);
 		// there might be no FileTypeDetector installed
-		String extension = FilenameUtils.getExtension(path.toString());
+		var extension = FilenameUtils.getExtension(path.toString());
 		return "application/x-gzip".equals(contentType) || extension.equals("gz");
 	}
 	
@@ -71,7 +71,7 @@ public class MorfeuszLookup {
 		}
 		
 		// must create new parser instance on each stream run, otherwise returns nothing once stopped
-		TsvParser parser = new TsvParser(settings);
+		var parser = new TsvParser(settings);
 		var iterable = parser.iterate(is, StandardCharsets.UTF_8);
 		var iterator = new MorfeuszIterator(iterable.iterator());
 		
@@ -106,15 +106,15 @@ public class MorfeuszLookup {
 		
 		@Override
 		public MorfeuszRecord next() {
-			String[] fields = tsvIterator.next();
-			MorfeuszRecord record = MorfeuszRecord.fromArray(fields);
+			var fields = tsvIterator.next();
+			var record = MorfeuszRecord.fromArray(fields);
 			return record;
 		}
 	}
 	
 	public static void main(String[] args) throws Exception {
-		Path path = Paths.get("./data/dumps/");
-		MorfeuszLookup morfeuszLookup = new MorfeuszLookup(path.resolve("sgjp-20200607.tab.gz"));
+		var path = Paths.get("./data/dumps/");
+		var morfeuszLookup = new MorfeuszLookup(path.resolve("sgjp-20200607.tab.gz"));
 		
 		System.out.println(morfeuszLookup.getPath());
 		System.out.println(morfeuszLookup.isCompressed());

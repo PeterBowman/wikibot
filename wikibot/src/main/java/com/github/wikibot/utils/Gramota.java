@@ -4,7 +4,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
 
 public class Gramota extends OnlineDict<Gramota> {
 
@@ -33,9 +32,9 @@ public class Gramota extends OnlineDict<Gramota> {
 	}
 
 	public String withAccent() {
-		for (Element el : Jsoup.parse(content).getElementsByClass("accent")) {
-			Element parent = el.parent();
-			String combined = parent.text().trim();
+		for (var el : Jsoup.parse(content).getElementsByClass("accent")) {
+			var parent = el.parent();
+			var combined = parent.text().trim();
 
 			if (!combined.equals(entry)) {
 				continue;
@@ -49,7 +48,7 @@ public class Gramota extends OnlineDict<Gramota> {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Gramota gramota = new Gramota("милиция");
+		var gramota = new Gramota("милиция");
 		gramota.fetchEntry();
 		System.out.println(gramota.getContent());
 		System.out.println(gramota.exists());

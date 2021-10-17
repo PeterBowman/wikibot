@@ -50,6 +50,5 @@ public class PageContainer implements Serializable {
 		} else {
 			return false;
 		}
-		
 	}
 }

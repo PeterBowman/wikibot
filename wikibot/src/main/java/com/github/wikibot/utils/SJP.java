@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 public class SJP extends OnlineDict<SJP> {
 	protected boolean exists = false;
@@ -44,7 +43,7 @@ public class SJP extends OnlineDict<SJP> {
 		if (isSerial) {
 			return isDefined;
 		} else {
-			Document doc = Jsoup.parseBodyFragment(content);
+			var doc = Jsoup.parseBodyFragment(content);
 
 			return doc.getElementsByClass("sjp-wyniki").stream()
 				.map(el -> el.getElementsByClass("anchor-title"))
@@ -54,7 +53,7 @@ public class SJP extends OnlineDict<SJP> {
 	}
 	
 	public static void main(String[] args) {
-		SJP sjp = new SJP("znak równości");
+		var sjp = new SJP("znak równości");
 		
 		try {
 			sjp.fetchEntry();

@@ -7,9 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 public class Inflector extends OnlineDict<Inflector> {
 	public static final String MAIN_URL = "http://nlp.actaforte.pl:8080/Nomina/Nazwiska";
@@ -84,10 +82,10 @@ public class Inflector extends OnlineDict<Inflector> {
 	}
 	
 	public Cases getInflection() {
-		Cases cases = new Cases();
+		var cases = new Cases();
 		
-		Document doc = Jsoup.parseBodyFragment(content);
-		Element table = doc.select("table[width=800] table").first();
+		var doc = Jsoup.parseBodyFragment(content);
+		var table = doc.select("table[width=800] table").first();
 		
 		if (table == null || table.getElementsContainingOwnText("Biernik (zapraszamy):").isEmpty()) {
 			throw new InflectorException("inflection table not found");
@@ -97,7 +95,7 @@ public class Inflector extends OnlineDict<Inflector> {
 			throw new InflectorException("multiple inflection variants");
 		}
 		
-		Elements rows = table.select("> tbody > tr");
+		var rows = table.select("> tbody > tr");
 		
 		if (gender != Gender.MASCULINE_PLURAL && rows.size() != 7) {
 			throw new InflectorException(rows.size() + " cases extracted, 7 expected");
@@ -134,9 +132,9 @@ public class Inflector extends OnlineDict<Inflector> {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		String surname = "Anioł";
+		var surname = "Anioł";
 		
-		Inflector inflector = new Inflector(surname, Gender.MASCULINE_PLURAL);
+		var inflector = new Inflector(surname, Gender.MASCULINE_PLURAL);
 		inflector.fetchEntry();
 		
 		System.out.println(inflector.exists());
@@ -214,7 +212,7 @@ public class Inflector extends OnlineDict<Inflector> {
 		}
 		
 		public String getExtendedMessage() {
-			String encoded = URLEncoder.encode(getEntry(), StandardCharsets.UTF_8);
+			var encoded = URLEncoder.encode(getEntry(), StandardCharsets.UTF_8);
 			
 			return String.format(
 				"%s ([%s?nazwisko=%s&typ=%s %s])",

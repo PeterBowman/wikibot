@@ -1,6 +1,5 @@
 package com.github.wikibot.utils;
 
-import java.io.Console;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -60,7 +59,7 @@ public final class Misc {
 	}
 	
 	public static void serialize(Object target, Path path) throws IOException {
-		try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(path))) {
+		try (var out = new ObjectOutputStream(Files.newOutputStream(path))) {
 			out.writeObject(target);
 			System.out.printf("Object successfully serialized: %s%n", path);
 		}
@@ -71,9 +70,9 @@ public final class Misc {
 	}
 	
 	public static <T> T deserialize(Path source) throws IOException, ClassNotFoundException {
-		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(source))) {
+		try (var in = new ObjectInputStream(Files.newInputStream(source))) {
 			@SuppressWarnings("unchecked")
-			T target = (T) in.readObject();
+			var target = (T) in.readObject();
 			System.out.printf("Object successfully deserialized: %s%n", source);
 			return target;
 		}
@@ -129,7 +128,7 @@ public final class Misc {
 	}
 	
 	public static String makeList(Map<String, String> map) {
-		String worklist = map.keySet().stream()
+		var worklist = map.keySet().stream()
 			.map(title -> String.format("%s%n%n%s", title, map.get(title)))
 			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
 			
@@ -141,13 +140,13 @@ public final class Misc {
 	}
 	
 	public static Map<String, String> readList(String data) {
-		Map<String, String> map = new LinkedHashMap<>();
-		String[] drafts = Pattern.compile("\\*{40}").split(data);
+		var map = new LinkedHashMap<String, String>();
+		var drafts = Pattern.compile("\\*{40}").split(data);
 		
-		for (String draft : drafts) {
+		for (var draft : drafts) {
 			draft = draft.trim();
-			String title = draft.substring(0, draft.indexOf("\n\n"));
-			String content = draft.substring(draft.indexOf("\n\n") + 2);
+			var title = draft.substring(0, draft.indexOf("\n\n"));
+			var content = draft.substring(draft.indexOf("\n\n") + 2);
 			map.put(title, content);
 		}
 		
@@ -159,16 +158,16 @@ public final class Misc {
 	}
 	
 	public static String makeMultiList(Map<String, Collection<String>> map, String separator) {
-		String worklist = map.keySet().stream()
-				.map(title -> String.format(
-						"%s%n%n%s",
-						title,
-						map.get(title).stream().collect(Collectors.joining(separator))
-					)
+		var worklist = map.keySet().stream()
+			.map(title -> String.format(
+					"%s%n%n%s",
+					title,
+					map.get(title).stream().collect(Collectors.joining(separator))
 				)
-				.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
-			
-			return worklist;
+			)
+			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
+		
+		return worklist;
 	}
 	
 	public static Map<String, String[]> readMultiList(String[] lines) {
@@ -184,14 +183,14 @@ public final class Misc {
 	}
 	
 	public static Map<String, String[]> readMultiList(String data, String separator) {
-		Map<String, String[]> map = new LinkedHashMap<>();
-		String[] drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
+		var map = new LinkedHashMap<String, String[]>();
+		var drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
 		
-		for (String draft : drafts) {
+		for (var draft : drafts) {
 			draft = draft.trim();
-			String title = draft.substring(0, draft.indexOf("\n"));
-			String content = draft.substring(draft.indexOf("\n")).trim();
-			String[] contents = content.split(Pattern.compile(separator, Pattern.LITERAL).pattern());
+			var title = draft.substring(0, draft.indexOf("\n"));
+			var content = draft.substring(draft.indexOf("\n")).trim();
+			var contents = content.split(Pattern.compile(separator, Pattern.LITERAL).pattern());
 			map.put(title, contents);
 		}
 		
@@ -199,7 +198,7 @@ public final class Misc {
 	}
 	
 	public static void sortList(List<String> coll, String lang) {
-		Collator collator = Collator.getInstance(new Locale(lang));
+		var collator = Collator.getInstance(new Locale(lang));
 		collator.setStrength(Collator.SECONDARY);
 		Collections.sort(coll, collator);
 	}
@@ -216,13 +215,13 @@ public final class Misc {
 	}
 	
 	public static String readLine() {
-		Console console = System.console();
+		var console = System.console();
 		
 		if (console != null) {
 			return console.readLine();
 		} else {
 			@SuppressWarnings("resource")
-			Scanner scanner = new Scanner(System.in);
+			var scanner = new Scanner(System.in);
 			return scanner.nextLine();
 		}
 	}
@@ -233,17 +232,14 @@ public final class Misc {
 	}
 	
 	public static char[] readPassword() {
-		Console console = System.console();
+		var console = System.console();
 		
 		if (console != null) {
 			return console.readPassword();
 		} else {
 			@SuppressWarnings("resource")
-			Scanner scanner = new Scanner(System.in);
+			var scanner = new Scanner(System.in);
 			return scanner.nextLine().toCharArray();
 		}
-	}
-
-	public static void main(String[] args) {
 	}
 }

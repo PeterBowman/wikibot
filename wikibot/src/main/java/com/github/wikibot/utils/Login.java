@@ -43,7 +43,7 @@ public class Login {
 			userAgent = "bot operator: User:" + username;
 		}
 		
-		String fullUsername = String.format("%s@%s", username, BOT_PASSWORD_SUFFIX);
+		var fullUsername = String.format("%s@%s", username, BOT_PASSWORD_SUFFIX);
 		LoginUtils.loginAndSetPrefs(wiki, fullUsername, password);
 		
 		wiki.setThrottle(DEFAULT_THROTTLE_MS);
@@ -56,10 +56,10 @@ public class Login {
 	}
 	
 	private static void setAssertionFlag(Wiki wiki) {
-		Wiki.User user = wiki.getCurrentUser();
+		var user = wiki.getCurrentUser();
 		Objects.requireNonNull(user);
 		
-		List<String> groups = new ArrayList<>();
+		var groups = new ArrayList<String>();
 		
 		int assertion = Wiki.ASSERT_USER;
 		groups.add("user");
@@ -79,19 +79,19 @@ public class Login {
 	}
 	
 	private static char[] retrieveCredentials(String username) throws ClassNotFoundException, IOException {
-		String filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		var filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		System.out.println("Reading from: " + filename);
 		return Files.readString(LOCATION.resolve(filename)).trim().toCharArray();
 	}
 	
 	private static void promptAndStoreCredentials() throws IOException {
 		System.out.print("Username: ");
-		String username = Misc.readLine();
+		var username = Misc.readLine();
 		
 		System.out.print("Password: ");
 		char[] password = Misc.readPassword();
 		
-		String filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
+		var filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		
 		try {
 			Files.write(LOCATION.resolve(filename), List.of(new String(password)), StandardOpenOption.CREATE_NEW);
@@ -101,7 +101,7 @@ public class Login {
 	}
 	
 	public static void login(Wiki wiki) throws CredentialException {
-		String username = System.getenv(ENV_USERNAME_VAR);
+		var username = System.getenv(ENV_USERNAME_VAR);
 		login(wiki, username);
 	}
 	
@@ -121,13 +121,13 @@ public class Login {
 	}
 	
 	public static Wikibot createSession(String domain) throws CredentialException {
-		Wikibot wb = Wikibot.newSession(domain);
+		var wb = Wikibot.newSession(domain);
 		login(wb);
 		return wb;
 	}
 	
 	public static Wikibot createSession(String domain, String username) throws CredentialException {
-		Wikibot wb = Wikibot.newSession(domain);
+		var wb = Wikibot.newSession(domain);
 		login(wb, username);
 		return wb;
 	}

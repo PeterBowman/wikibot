@@ -60,13 +60,7 @@ public abstract class OnlineDict<T> implements Callable<T> {
 
 	protected String fetch(String url) throws IOException
 	{
-		// connect
-		/*URLConnection connection = new URL(url).openConnection();
-        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
-        connection.connect();*/
-
-		HttpURLConnection connection = (HttpURLConnection) (new URL(url).openConnection());
+		var connection = (HttpURLConnection)new URL(url).openConnection();
 		connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
 		connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
 		connection.setInstanceFollowRedirects(true);
@@ -74,25 +68,26 @@ public abstract class OnlineDict<T> implements Callable<T> {
 		connection.connect();
 
 		// get the text
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charset.forName(ENCODING)));
+		var in = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charset.forName(ENCODING)));
 
 		String line;
-		StringBuilder text = new StringBuilder(50000);
+		var text = new StringBuilder(50000);
 
-		while ((line = in.readLine()) != null)
+		while ((line = in.readLine()) != null) {
 			text.append(line).append("\n");
+		}
 
 		in.close();
-		String temp = text.toString();
+		var temp = text.toString();
 
 		return temp;
 	}
 
 	protected String getHTML(String page) throws IOException {
-		String target = URL + escape(page);
+		var target = URL + escape(page);
 		System.out.println(target);
 
-		String text = fetch(target);
+		var text = fetch(target);
 		text = text.replace("\n", "");
 		int a = text.indexOf("<body");
 		int b = text.indexOf("</body>", a) + 7;
