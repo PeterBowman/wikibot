@@ -1,23 +1,18 @@
 package com.github.wikibot.webapp;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
@@ -31,21 +26,20 @@ import javax.sql.DataSource;
 public class SandboxRedirects extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final int DEFAULT_LIMIT = 100;
-	//private static final String MOVE_LOG_COMMENT = "artykuł należy dopracować";
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/plwiki-sandbox-redirects.jsp";
 	private static final Pattern P_MOVE_LOG;
 	
 	private DataSource dataSource;
 
 	static {
-		P_MOVE_LOG = Pattern.compile("^a:([23]):\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:(.+))\";s:10:\"5::noredir\";s:1:\"[01]\";(?:s:17:\"associated_rev_id\";i:\\d+;)?\\}$");
+		P_MOVE_LOG = Pattern.compile("^a:[23]:\\{s:9:\"4::target\";s:\\d+:\"(Wikipedysta:(.+))\";s:10:\"5::noredir\";s:1:\"[01]\";(?:s:17:\"associated_rev_id\";i:\\d+;)?\\}$");
 	}
 
 	@Override
 	public void init() throws ServletException {
 		try {
-			Context context = (Context) new InitialContext().lookup("java:comp/env");
-			dataSource = (DataSource) context.lookup("jdbc/plwiki-web");
+			var context = (Context)new InitialContext().lookup("java:comp/env");
+			dataSource = (DataSource)context.lookup("jdbc/plwiki-web");
 		} catch (NamingException | SecurityException e) {
 			throw new UnavailableException(e.getMessage());
 		}
@@ -53,20 +47,26 @@ public class SandboxRedirects extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		int limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
-		int offset = handleIntParameter(request, "offset", 0);
+		var limit = handleIntParameter(request, "limit", DEFAULT_LIMIT);
+		var offset = handleIntParameter(request, "offset", 0);
 		
-		List<Map<String, Object>> results = new ArrayList<>(limit);
-		boolean hasNext = false;
+		var results = new ArrayList<Map<String, Object>>(limit);
+		var hasNext = false;
 		
-		try (Connection conn = dataSource.getConnection()) {
-			String query = String.format("""
+		try (var conn = dataSource.getConnection()) {
+			var query = String.format("""
 				SELECT
-					CONVERT(log_title USING utf8mb4) AS log_title,
-					CONVERT(log_params USING utf8mb4) AS log_params,
+					p_source.page_id AS source_id,
+					log_title,
+					p_target.page_id AS target_id,
+					log_params,
 					log_timestamp
-				FROM
-					plwiki_p.logging
+				FROM plwiki_p.logging
+					LEFT JOIN page AS p_source ON
+						p_source.page_title = log_title AND
+						p_source.page_namespace = log_namespace
+					LEFT JOIN page AS p_target ON
+						p_target.page_id = log_page
 				WHERE
 					log_type = 'move' AND
 					log_namespace = 0 AND
@@ -79,18 +79,20 @@ public class SandboxRedirects extends HttpServlet {
 					%d;
 				""", limit + 1, offset);
 			
-			Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			var stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setFetchSize(Integer.MIN_VALUE);
-			ResultSet rs = stmt.executeQuery(query);
+			var rs = stmt.executeQuery(query);
 			
-			int touched = 0;
+			var touched = 0;
 			
 			while (rs.next()) {
-				String logTitle = rs.getString("log_title");
-				String logParams = rs.getString("log_params");
-				String logTimestamp = rs.getString("log_timestamp");
+				var sourceId = rs.getLong("source_id");
+				var logTitle = rs.getString("log_title");
+				var targetId = rs.getLong("target_id");
+				var logParams = rs.getString("log_params");
+				var logTimestamp = rs.getString("log_timestamp");
 				
-				LogData logData = extractSerializedData(logParams);
+				var logData = extractSerializedData(logParams);
 				
 				if (++touched > limit) {
 					hasNext = true;
@@ -99,8 +101,9 @@ public class SandboxRedirects extends HttpServlet {
 				
 				results.add(Map.of(
 					"source", logTitle,
-					"sourceExists", logData.sourceExists,
+					"sourceExists", sourceId != 0L,
 					"target", logData.targetPage,
+					"targetExists", targetId != 0L && targetId != sourceId,
 					"targetDisplay", logData.targetDisplay,
 					"timestamp", formatDate(logTimestamp)
 				));
@@ -109,7 +112,7 @@ public class SandboxRedirects extends HttpServlet {
 			throw new UnavailableException(e.getMessage());
 		}
 		
-		RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
+		var dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
 		request.setAttribute("results", results);
 		request.setAttribute("hasNext", hasNext);
 		dispatcher.forward(request, response);
@@ -121,7 +124,7 @@ public class SandboxRedirects extends HttpServlet {
 	}
 
 	private static int handleIntParameter(HttpServletRequest request, String param, final int reference) {
-		String paramStr = request.getParameter(param);
+		var paramStr = request.getParameter(param);
 		
 		try {
 			return Math.max(0, Integer.parseInt(paramStr));
@@ -131,17 +134,17 @@ public class SandboxRedirects extends HttpServlet {
 	}
 	
 	private static LogData extractSerializedData(String serialized) {
-		Matcher m = P_MOVE_LOG.matcher(serialized);
+		var m = P_MOVE_LOG.matcher(serialized);
 		
 		if (m.matches()) {
-			return new LogData(m.group(1).equals("3"), m.group(2), m.group(3));
+			return new LogData(m.group(1), m.group(2));
 		} else {
 			throw new RuntimeException("Błąd odczytu danych: " + serialized);
 		}
 	}
 	
 	private static Date formatDate(String timestamp) {
-		SimpleDateFormat sdfDate = new SimpleDateFormat("yyyyMMddHHmmss");
+		var sdfDate = new SimpleDateFormat("yyyyMMddHHmmss");
 		
 		try {
 			return sdfDate.parse(timestamp);
@@ -150,5 +153,5 @@ public class SandboxRedirects extends HttpServlet {
 		}
 	}
 	
-	private record LogData (boolean sourceExists, String targetPage, String targetDisplay) {}
+	private record LogData (String targetPage, String targetDisplay) {}
 }

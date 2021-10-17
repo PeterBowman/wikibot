@@ -30,10 +30,15 @@
 						<li>
 							<fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
 							&nbsp;
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['target']}"
+							<t:linker
+								hrefPattern="https://pl.wikipedia.org/$1"
+								target="${item['target']}"
+								testMissingPage="${not item['targetExists']}"
 								display="${item['targetDisplay']}" />
 							←
-							<t:linker hrefPattern="https://pl.wikipedia.org/$1" target="${item['source']}"
+							<t:linker
+								hrefPattern="https://pl.wikipedia.org/$1"
+								target="${item['source']}"
 								testMissingPage="${not item['sourceExists']}" />
 						</li>
 					</c:forEach>
