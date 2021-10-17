@@ -6,18 +6,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -82,7 +78,7 @@ public final class MisusedRegTemplates {
 	private static Wikibot wb;
 	
 	static {
-		String templateList = TEMPLATES.stream()
+		var templateList = TEMPLATES.stream()
 			.map(template -> String.format("{{s|%s}}", template))
 			.collect(Collectors.joining(", "));
 		
@@ -98,7 +94,7 @@ public final class MisusedRegTemplates {
 			----
 			""", templateList);
 		
-		WordForms[] polishWords = new WordForms[] {
+		var polishWords = new WordForms[] {
 			new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),
 			new WordForms(new String[] {"stronie", "stronach", "stronach"})
 		};
@@ -111,16 +107,18 @@ public final class MisusedRegTemplates {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		XMLDumpReader reader = getXMLReader(args);
-		List<Item> list = analyzeDump(reader);
+		var reader = getXMLReader(args);
+		var list = analyzeDump(reader);
+		
+		System.out.printf("%d items found%n", list.size());
 		
 		if (!checkAndUpdateStoredData(list)) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		}
 		
-		String timestamp = extractTimestamp(reader.getPathToDump());
-		String pageText = makePageText(list, timestamp);
+		var timestamp = extractTimestamp(reader.getPathToDump());
+		var pageText = makePageText(list, timestamp);
 		
 		wb.setMarkBot(false);
 		wb.edit(TARGET_PAGE, pageText, "aktualizacja");
@@ -128,14 +126,14 @@ public final class MisusedRegTemplates {
 	
 	private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
 		if (args.length != 0) {
-			Options options = new Options();
+			var options = new Options();
 			options.addOption("d", "dump", true, "read from dump file");
 			
-			CommandLineParser parser = new DefaultParser();
-			CommandLine line = parser.parse(options, args);
+			var parser = new DefaultParser();
+			var line = parser.parse(options, args);
 			
 			if (line.hasOption("dump")) {
-				String pathToFile = line.getOptionValue("dump");
+				var pathToFile = line.getOptionValue("dump");
 				return new XMLDumpReader(Paths.get(pathToFile));
 			} else {
 				new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
@@ -147,27 +145,20 @@ public final class MisusedRegTemplates {
 	}
 	
 	private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
-		List<Item> list;
-		
-		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
-			list = stream
+		try (var stream = reader.getStAXReaderStream()) {
+			return stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
 				.filter(MisusedRegTemplates::containsTemplates)
 				.map(Page::wrap)
 				.flatMap(MisusedRegTemplates::extractItemsFromPage)
 				.sorted()
-				.toList();
+				.collect(Collectors.toList());
 		}
-		
-		System.out.printf("%d items found%n", list.size());
-		
-		return list;
 	}
 	
 	private static boolean containsTemplates(XMLRevision rev) {
-		return TEMPLATES.stream()
-			.anyMatch(template -> !ParseUtils.getTemplates(template, rev.getText()).isEmpty());
+		return TEMPLATES.stream().anyMatch(template -> !ParseUtils.getTemplates(template, rev.getText()).isEmpty());
 	}
 	
 	private static Stream<Item> extractItemsFromPage(Page page) {
@@ -199,8 +190,8 @@ public final class MisusedRegTemplates {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		Path fHash = LOCATION.resolve("hash.txt");
-		Path fList = LOCATION.resolve("list.xml");
+		var fHash = LOCATION.resolve("hash.txt");
+		var fList = LOCATION.resolve("list.xml");
 		
 		try {
 			storedHashCode = Integer.parseInt(Files.readString(fHash));
@@ -209,7 +200,7 @@ public final class MisusedRegTemplates {
 			storedHashCode = 0;
 		}
 		
-		XStream xstream = new XStream();
+		var xstream = new XStream();
 		xstream.processAnnotations(Item.class);
 		
 		if (storedHashCode != newHashCode) {
@@ -222,22 +213,22 @@ public final class MisusedRegTemplates {
 	}
 	
 	private static String extractTimestamp(Path path) {
-		String fileName = path.getFileName().toString();
-		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-		String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
+		var fileName = path.getFileName().toString();
+		var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
+		var errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
 		
-		Matcher m = patt.matcher(fileName);
+		var m = patt.matcher(fileName);
 		
 		if (!m.matches()) {
 			return errorString;
 		}
 		
-		String canonicalTimestamp = m.group(1);
+		var canonicalTimestamp = m.group(1);
 		
 		try {
-			SimpleDateFormat originalDateFormat = new SimpleDateFormat("yyyyMMdd");
-			Date date = originalDateFormat.parse(canonicalTimestamp);
-			SimpleDateFormat desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
+			var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
+			var date = originalDateFormat.parse(canonicalTimestamp);
+			var desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
 			return desiredDateFormat.format(date);
 		} catch (java.text.ParseException e) {
 			return errorString;
@@ -245,7 +236,7 @@ public final class MisusedRegTemplates {
 	}
 	
 	private static String makePageText(List<Item> list, String timestamp) {
-		Map<String, List<String>> groupedMap = list.stream()
+		var groupedMap = list.stream()
 			.collect(Collectors.groupingBy(
 				item -> item.pageTitle,
 				LinkedHashMap::new,
@@ -255,7 +246,7 @@ public final class MisusedRegTemplates {
 				)
 			));
 		
-		String elements = groupedMap.entrySet().stream()
+		var elements = groupedMap.entrySet().stream()
 			.collect(Collectors.mapping(
 				entry -> String.format(
 					"# [[%s]]: %s",
@@ -264,10 +255,10 @@ public final class MisusedRegTemplates {
 				Collectors.joining("\n")
 			));
 		
-		String itemCount = String.format("%s %s", NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "wystąpienie"));
-		String pageCount = String.format("%s %s", NUMBER_FORMAT_PL.format(groupedMap.size()), PLURAL_PL.pl(groupedMap.size(), "stronie"));
+		var itemCount = String.format("%s %s", NUMBER_FORMAT_PL.format(list.size()), PLURAL_PL.pl(list.size(), "wystąpienie"));
+		var pageCount = String.format("%s %s", NUMBER_FORMAT_PL.format(groupedMap.size()), PLURAL_PL.pl(groupedMap.size(), "stronie"));
 		
-		String intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
+		var intro = PAGE_INTRO.replace("$1", timestamp).replace("$2", itemCount).replace("$3", pageCount);
 		
 		return intro + elements;
 	}
@@ -287,11 +278,11 @@ public final class MisusedRegTemplates {
 		}
 		
 		static Item constructNewItem(Field field, Map<String, String> params) {
-			Section s = field.getContainingSection().get();
-			String pageTitle = s.getContainingPage().get().getTitle();
-			String langName = s.getLang();
-			FieldTypes fieldType = field.getFieldType();
-			String templateName = params.get("templateName");
+			var s = field.getContainingSection().get();
+			var pageTitle = s.getContainingPage().get().getTitle();
+			var langName = s.getLang();
+			var fieldType = field.getFieldType();
+			var templateName = params.get("templateName");
 			return new Item(pageTitle, langName, fieldType, templateName);
 		}
 		
@@ -301,7 +292,7 @@ public final class MisusedRegTemplates {
 		}
 		
 		public String buildEntry() {
-			String format = "&#123;{%s}} (%s, %s)";
+			var format = "&#123;{%s}} (%s, %s)";
 			
 			if (fieldType == FieldTypes.DEFINITIONS) {
 				format = "&#123;{%s}} (%s, '''%s''')";

@@ -11,16 +11,12 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
@@ -38,12 +34,12 @@ public final class MissingPolishExamples {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 	
 	public static void main(String[] args) throws Exception {
-		XMLDumpReader reader = getDumpReader(args);
-		LocalDate timestamp = extractTimestamp(reader.getPathToDump());
+		var reader = getDumpReader(args);
+		var timestamp = extractTimestamp(reader.getPathToDump());
 		
 		final Set<String> titles;
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			titles = stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -56,9 +52,9 @@ public final class MissingPolishExamples {
 		}
 		
 		System.out.printf("%d titles retrieved\n", titles.size());
-		Map<String, Set<Backlink>> titlesToBacklinks = new ConcurrentSkipListMap<>();
+		var titlesToBacklinks = new ConcurrentSkipListMap<String, Set<Backlink>>();
 		
-		try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+		try (var stream = reader.getStAXReaderStream()) {
 			stream
 				.filter(XMLRevision::isMainNamespace)
 				.filter(XMLRevision::nonRedirect)
@@ -85,9 +81,9 @@ public final class MissingPolishExamples {
 		System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
 		
 		// XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
-		List<Entry> list = titlesToBacklinks.entrySet().stream()
+		var list = titlesToBacklinks.entrySet().stream()
 			.map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
-			.toList();
+			.collect(Collectors.toList());
 		
 		storeData(list, timestamp);
 	}
@@ -101,19 +97,19 @@ public final class MissingPolishExamples {
 	}
 	
 	private static LocalDate extractTimestamp(Path path) throws ParseException {
-		String fileName = path.getFileName().toString();
-		Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
-		Matcher m = patt.matcher(fileName);
+		var fileName = path.getFileName().toString();
+		var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
+		var m = patt.matcher(fileName);
 		
 		if (!m.matches()) {
 			throw new RuntimeException();
 		}
 		
-		String canonicalTimestamp = m.group(1);
+		var canonicalTimestamp = m.group(1);
 		
 		try {
-			SimpleDateFormat originalDateFormat = new SimpleDateFormat("yyyyMMdd");
-			Date date = originalDateFormat.parse(canonicalTimestamp);
+			var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
+			var date = originalDateFormat.parse(canonicalTimestamp);
 			return LocalDate.ofInstant(date.toInstant(), ZoneOffset.UTC);
 		} catch (ParseException e) {
 			throw e;
@@ -121,15 +117,15 @@ public final class MissingPolishExamples {
 	}
 	
 	private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
-		Path fEntries = LOCATION.resolve("entries.xml");
-		Path fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
-		Path fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
-		Path fCtrl = LOCATION.resolve("UPDATED");
+		var fEntries = LOCATION.resolve("entries.xml");
+		var fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
+		var fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
+		var fCtrl = LOCATION.resolve("UPDATED");
 
-		XStream xstream = new XStream(new StaxDriver());
+		var xstream = new XStream(new StaxDriver());
 		xstream.processAnnotations(Entry.class);
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
+		try (var bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
 			xstream.toXML(list, bos);
 		}
 
@@ -152,7 +148,7 @@ public final class MissingPolishExamples {
 		List<String> backlinkSections = new ArrayList<>();
 		
 		public static Entry makeEntry(String title, List<Backlink> backlinks) {
-			Entry entry = new Entry();
+			var entry = new Entry();
 			entry.title = title;
 			
 			backlinks.forEach(bl -> {
@@ -177,7 +173,7 @@ public final class MissingPolishExamples {
 		String langLong;
 		
 		public static Backlink makeBacklink(String title, Section section) {
-			Backlink bl = new Backlink();
+			var bl = new Backlink();
 			bl.title = title;
 			bl.langShort = section.getLangShort();
 			bl.langLong = section.getLang();
