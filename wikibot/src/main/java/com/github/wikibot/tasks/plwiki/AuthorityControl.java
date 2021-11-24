@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwiki;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,20 +49,7 @@ public final class AuthorityControl {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwiki/AuthorityControl/");
 	
 	private static final List<String> TEMPLATES = List.of("Kontrola autorytatywna", "Authority control", "Ka");
-	
-	// https://pl.wikipedia.org/wiki/Szablon:Kontrola_autorytatywna#Lista_wspieranych_baz
-	private static final List<String> PROPERTIES = List.of(
-		"P213", "P496", "P214", "P245", "P727", "P244", "P227", "P349", "P5587", "P906", "P268", "P269", "P396",
-		"P409", "P508", "P691", "P723", "P947", "P950", "P1003", "P1006", "P1015", "P270", "P271", "P648", "P7293",
-		"P1695", "P1207", "P1415", "P949", "P1005", "P1273", "P1368", "P1375", "P3788", "P1280", "P1890", "P3348",
-		"P4619", "P5034", "P7699", "P3133", "P5504", "P5986", "P7859",
-		// encyclopedias
-		"P7305", "P2924", "P4613", "P3222", "P4854", "P6870", "P4342", "P7666", "P5395", "P3365", "P1417", "P3219",
-		"P3123",
-		// bonus
-		"P8832", "P2038", "P1053", "P3829", "P3124", "P2036", "P838", "P830", "P6177", "P1747", "P1727", "P6094",
-		"P846", "P1421", "P3151", "P961", "P815", "P685", "P6034", "P1070", "P5037", "P3105", "P960", "P1772"
-	);
+	private static final List<String> PROPERTIES;
 	
 	private static final Properties defaultSQLProperties = new Properties();
 	private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
@@ -72,6 +60,19 @@ public final class AuthorityControl {
 	);
 	
 	static {
+		var patt = Pattern.compile("^(P\\d+) *+(?=#|$)");
+		
+		try {
+			// https://pl.wikipedia.org/wiki/Szablon:Kontrola_autorytatywna#Lista_wspieranych_baz
+			PROPERTIES = Files.readAllLines(LOCATION.resolve("properties.txt")).stream()
+				.map(patt::matcher)
+				.flatMap(Matcher::results)
+				.map(m -> m.group(1))
+				.toList();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		
 		defaultSQLProperties.setProperty("autoReconnect", "true");
 		defaultSQLProperties.setProperty("useUnicode", "yes");
 		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
