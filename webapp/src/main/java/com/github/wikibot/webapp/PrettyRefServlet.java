@@ -46,7 +46,7 @@ public class PrettyRefServlet extends HttpServlet {
 	
 	private static final Pattern CITE_LANG_MERGER_RE = Pattern.compile("\\{\\{(cytuj [^\\{\\}]+?)\\}\\}\\s*\\{\\{lang\\|([a-z-]+)\\}\\}", Pattern.CASE_INSENSITIVE);
 	private static final Pattern CONSEC_R_RE = Pattern.compile("\\{\\{[rR]\\|([^\\}]+)\\}\\}\\s*\\{\\{[rR]\\|([^\\}]+)\\}\\}");
-	private static final Pattern SOURCES_RE = Pattern.compile("(=+ *(?:Przypisy|Uwagi) *=+\\s+)?(<references[^/]*/>|\\{\\{(?:Przypisy|Uwagi)([^\\{\\}]*|\\{\\{[^\\{\\}]+\\}\\})+\\}\\}|<references[^/]*>(.+?)</references\\s*>)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern SOURCES_RE = Pattern.compile("(=+ *(?:Przypisy|Uwagi) *=+\\s+)?(<references[^/]*/>|\\{\\{(?:Przypisy|Uwagi)([^\\{\\}]*|\\{\\{[^\\{\\}]+\\}\\})+\\}\\}|<references[^/]*>(.+?)</references\\s*>)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 	
 	private static final String JSP_DISPATCH_TARGET = "/jsp/pretty-ref.jsp";
 
@@ -99,6 +99,8 @@ public class PrettyRefServlet extends HttpServlet {
 						title = resolved != null ? resolved : title;
 						text = wiki.getPageText(List.of(title)).get(0);
 					}
+				} else {
+					text = text.replace("\r\n", "\n"); // beware od CRLFs in web text mode
 				}
 				
 				if (text == null) {
