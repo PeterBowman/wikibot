@@ -3,10 +3,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
-<c:set var="title" value="Konwersja przypisów typu &lt;ref&gt; na przypisy typu {{r}}" />
-<c:set var="heading" value="Konwersja przypisów typu <tt>&lt;ref&gt;</tt> na przypisy typu <tt>{{r}}</tt>" />
+<c:set var="heading" value="Przenoszenie refów na koniec</tt>" />
 
-<t:template title="${title}" firstHeading="${heading}" enableJS="true">
+<t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
 		<link href="styles/suggestions.css" type="text/css" rel="stylesheet">
 		<script src="scripts/suggestions.js"></script>

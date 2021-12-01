@@ -9,20 +9,18 @@ import java.text.Collator;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -33,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.nibor.autolink.LinkExtractor;
-import org.nibor.autolink.LinkSpan;
 import org.nibor.autolink.LinkType;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -62,7 +59,7 @@ public class PrettyRefServlet extends HttpServlet {
 		try {
 			wiki.getNamespaces();
 		} catch (UncheckedIOException e) {
-			wiki.getNamespaces(); //retry
+			wiki.getNamespaces(); //retry once
 		}
 	}
 
@@ -79,9 +76,11 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		boolean isGui = request.getParameter("gui") != null; // default: "on"
 		
-		if (format == null) {
-			format = "plain";
-		}
+		final var contentType = switch (format) {
+			case "json" -> "application/json";
+			case "jsonp" -> "text/javascript";
+			default -> "text/plain";
+		};
 		
 		response.setHeader("Access-Control-Allow-Origin", "*");
 		
@@ -94,8 +93,7 @@ public class PrettyRefServlet extends HttpServlet {
 					title = title.trim();
 					
 					synchronized (wiki) {
-						String resolved = wiki.resolveRedirects(List.of(title)).get(0);
-						title = resolved != null ? resolved : title;
+						title = Optional.ofNullable(wiki.resolveRedirects(List.of(title)).get(0)).orElse(title);
 						text = wiki.getPageText(List.of(title)).get(0);
 					}
 				} else {
@@ -106,33 +104,19 @@ public class PrettyRefServlet extends HttpServlet {
 					throw new RuntimeException("Page does not exist: " + title);
 				}
 				
-				String output = cleanRefs(text);
-				String contentType;
+				var output = cleanRefs(text);
 				
-				switch (format) {
-					case "json":
-					case "jsonp":
-						contentType = format.equals("json") ? "application/json" : "text/javascript";
-						
-						JSONObject json = new JSONObject();
-						json.put("status", 200);
-						json.put("content", output);
-						
-						output = json.toString();
-						
-						if (format.equals("jsonp")) {
-							output = String.format("%s(%s)", callback, output);
-						}
-						
-						break;
-					case "plain":
-					default:
-						contentType = "text/plain";
-						break;
+				if (!contentType.equals("text/plain")) {
+					var json = new JSONObject(Map.of("status", 200, "content", output));
+					output = json.toString();
+					
+					if (format.equals("jsonp")) {
+						output = String.format("%s(%s)", callback, output);
+					}
 				}
 				
 				if (isGui) {
-					RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
+					var dispatcher = getServletContext().getRequestDispatcher(JSP_DISPATCH_TARGET);
 					request.setAttribute("output", output);
 					dispatcher.forward(request, response);
 				} else {
@@ -141,23 +125,12 @@ public class PrettyRefServlet extends HttpServlet {
 					response.getWriter().append(output);
 				}
 			} catch (Exception e) {
-				if (!isGui && (format.equals("json") || format.equals("jsonp"))) {
-					String contentType = format.equals("json") ? "application/json" : "text/javascript";
-					
-					JSONObject json = new JSONObject();
-					json.put("status", 500);
-					json.put("error", e.toString());
-					
-					List<String> backTrace = new ArrayList<>();
+				if (!isGui && !contentType.equals("text/plain")) {
+					var json = new JSONObject(Map.of("status", 500, "error", e.toString()));
+					var backTrace = new ArrayList<String>();
 					backTrace.add(e.toString());
 					
-					StackTraceElement[] stackTraceElements = e.getStackTrace();
-					
-					for (int i = 0; i < stackTraceElements.length; i++) {
-						StackTraceElement el = stackTraceElements[i];
-						backTrace.add(el.toString());
-					}
-					
+					Stream.of(e.getStackTrace()).map(Object::toString).forEach(backTrace::add);
 					json.put("backtrace", String.join("\n", backTrace));
 					
 					response.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -185,22 +158,17 @@ public class PrettyRefServlet extends HttpServlet {
 		text = CITE_LANG_MERGER_RE.matcher(text).replaceAll("{{$1 | język = $2}}");
 		
 		// build list of refs
-		Matcher m = Pattern.compile(Ref.REF_OPEN_RE.pattern() + "([\\s\\S]+?)" + Ref.REF_CLOSE_RE.pattern()).matcher(text);
-		List<Ref> refs = new ArrayList<>();
-		RefBuilder refBuilder = new RefBuilder();
+		final var refBuilder = new RefBuilder();
 		
-		while (m.find()) {
-			String group = m.group();
-			refs.add(refBuilder.createRef(group, false));
-		}
+		var refs = Pattern.compile(Ref.REF_OPEN_RE.pattern() + "([\\s\\S]+?)" + Ref.REF_CLOSE_RE.pattern()).matcher(text).results()
+			.map(mr -> refBuilder.createRef(mr.group(), false))
+			.collect(Collectors.toCollection(ArrayList::new));
 		
 		// check for name conflicts
-		Set<Ref> set = new HashSet<>(refs);
-		
-		if (set.size() != refs.size()) {
-			Map<String, Integer> map = new HashMap<>();
+		if (refs.size() != refs.stream().distinct().count()) {
+			var map = new HashMap<String, Integer>();
 			
-			for (Ref ref : refs) {
+			for (var ref : refs) {
 				if (map.containsKey(ref.name)) {
 					int count = map.get(ref.name);
 					map.put(ref.name, ++count);
@@ -217,17 +185,17 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		// check for dupes
 		for (int i = 0; i < refs.size(); i++) {
-			Ref ri = refs.get(i);
+			var ri = refs.get(i);
 			
 			for (int j = 0; j < refs.size(); j++) {
-				Ref rj = refs.get(j);
+				var rj = refs.get(j);
 				
-				if (i == j || ri.content== null || rj.content == null) {
+				if (i == j || ri.content == null || rj.content == null) {
 					continue;
 				}
 				
-				String temp1 = ri.toString().replace("\"" + ri.name + "\"", "");
-				String temp2 = rj.toString().replace("\"" + rj.name + "\"", "");
+				var temp1 = ri.toString().replace("\"" + ri.name + "\"", "");
+				var temp2 = rj.toString().replace("\"" + rj.name + "\"", "");
 				
 				if (temp1.equals(temp2)) {
 					// convert the other to shorttag; this also ensures it's not matched as a dupe again
@@ -238,12 +206,12 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 		
 		// add the shorttags
-		m = Ref.REF_RETAG_R.matcher(text);
-		StringBuilder sb = new StringBuilder(text.length());
+		var m = Ref.REF_RETAG_R.matcher(text);
+		var sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
-			String group = m.group();
-			String replacement = group.replace("|", "}}{{r|").replaceAll("\\{\\{[rR]\\}\\}", "");
+			var group = m.group();
+			var replacement = group.replace("|", "}}{{r|").replaceAll("\\{\\{[rR]\\}\\}", "");
 			
 			// FIXME: make multi-{{r}} sort-of work
 			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
@@ -251,34 +219,19 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		text = m.appendTail(sb).toString();
 		
-		m = Ref.REF_SHORTTAG.matcher(text);
-		List<Ref> shortRefs = new ArrayList<>();
+		var shortRefs = Ref.REF_SHORTTAG.matcher(text).results()
+			.map(mr -> refBuilder.createRef(mr.group(), true))
+			.collect(Collectors.toCollection(ArrayList::new));
 		
-		while (m.find()) {
-			String group = m.group();
-			shortRefs.add(refBuilder.createRef(group, true));
-		}
+		Ref.REF_RETAG.matcher(text).results()
+			.map(mr -> refBuilder.createRef(mr.group(), true))
+			.forEach(shortRefs::add);
 		
-		m = Ref.REF_RETAG.matcher(text);
-		
-		while (m.find()) {
-			String group = m.group();
-			shortRefs.add(refBuilder.createRef(group, true));
-		}
-		
-		for (Ref shortRef : shortRefs) {
-			Ref other = null;
-			
-			for (Ref ref : refs) {
-				if (ref.origName != null && ref.origName.equals(shortRef.origName)) {
-					other = ref;
-					break;
-				}
-			}
-			
-			if (other == null) {
-				throw new RuntimeException("Short tag with dangling name: " + shortRef);
-			}
+		for (var shortRef : shortRefs) {
+			var other = refs.stream()
+				.filter(r -> Optional.ofNullable(r.origName).filter(name -> name.equals(shortRef.origName)).isPresent())
+				.findAny()
+				.orElseThrow(() -> new RuntimeException("Short tag with dangling name: " + shortRef));
 			
 			shortRef.name = other.name;
 			// group need not to be set if the ref was inside <references/>
@@ -290,7 +243,7 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		// normalize refs in text ({{r}} calls and <ref> tags)
 		// this might also change the inside of references section - will deal with it later
-		for (Ref ref : refs) {
+		for (var ref : refs) {
 			text = text.replaceFirst(Pattern.quote(ref.orig), Matcher.quoteReplacement(ref.toShortTag()));
 		}
 		
@@ -299,75 +252,53 @@ public class PrettyRefServlet extends HttpServlet {
 		m = SOURCES_RE.matcher(text);
 		
 		if (m.find()) {
-			String oldRefSection = m.group();
-			
 			// figure out the heading level used for ref sections and probably thoughout the article
-			String level = "==";
+			var level = Pattern.compile("^(={2,})").matcher(m.group()).results()
+				.map(mr -> mr.group(1))
+				.findFirst()
+				.orElse("==");
 			
-			if ((m = Pattern.compile("^(={2,})").matcher(oldRefSection)).find()) {
-				level = m.group(1);
-			}
-			
-			// get only refs with content (ie. not shorttags) and sort them
-			List<Ref> references = new ArrayList<>(refs);
-			Iterator<Ref> i = references.iterator();
-			
-			while (i.hasNext()) {
-				if (i.next().content == null) {
-					i.remove();
-				}
-			}
-			
-			final Collator coll = Collator.getInstance(new Locale("pl"));
+			final var coll = Collator.getInstance(new Locale("pl"));
 			coll.setStrength(Collator.SECONDARY);
 			
-			Collections.sort(references, (r1, r2) -> coll.compare(r1.name, r2.name));
+			// get only refs with content (ie. not shorttags) and sort them
+			var references = refs.stream()
+				.filter(r -> r.content != null)
+				.sorted((r1, r2) -> coll.compare(r1.name, r2.name))
+				.toList();
 			
 			// then group them by their group info (that is, by headings they belong to), sort headings
-			final Map<String, String> sectionMapping = new HashMap<>();
-			sectionMapping.put(null, "Przypisy");
-			sectionMapping.put("uwaga", "Uwagi");
-			
-			final List<String> sectionHeaders = List.of("Uwagi", "Przypisy");
+			var sectionMapping = Map.of("", "Przypisy", "uwaga", "Uwagi");
+			var sectionHeaders = List.of("Uwagi", "Przypisy");
 					
-			Map<String, List<Ref>> groupedRefs = new TreeMap<>((s1, s2) -> Integer.compare(
+			var groupedRefs = new TreeMap<String, List<Ref>>((s1, s2) -> Integer.compare(
 					sectionHeaders.indexOf(sectionMapping.get(s1)),
 					sectionHeaders.indexOf(sectionMapping.get(s2))
 				));
 			
-			for (Ref ref : references) {
-				if (groupedRefs.containsKey(ref.group)) {
-					List<Ref> list = groupedRefs.get(ref.group);
-					list.add(ref);
-				} else {
-					List<Ref> list = new ArrayList<>();
-					list.add(ref);
-					groupedRefs.put(ref.group, list);
-				}
+			for (var ref : references) {
+				var group = Optional.ofNullable(ref.group).orElse(""); // Map.of() dislikes null keys
+				groupedRefs.computeIfAbsent(group, k -> new ArrayList<>()).add(ref);
 			}
 			
 			// churn out the wikicode for each section
-			List<String> sections = new ArrayList<>();
+			var sections = new ArrayList<String>();
 			
-			for (Map.Entry<String, List<Ref>> entry : groupedRefs.entrySet()) {
-				String group = entry.getKey();
-				List<Ref> refsInGroup = entry.getValue();
+			for (var entry : groupedRefs.entrySet()) {
+				var group = entry.getKey();
+				var refsInGroup = entry.getValue();
 				
-				List<String> lines = new ArrayList<>();
+				var lines = new ArrayList<String>();
 				lines.add(String.format("%1$s %2$s %1$s", level, sectionMapping.get(group)));
 				
-				if (group != null) {
+				if (!group.isEmpty()) {
 					lines.add("<references group=\"uwaga\" responsive>");
 				} else {
 					lines.add("<references responsive>");
 				}
 				
-				for (Ref ref : refsInGroup) {
-					lines.add(ref.toString());
-				}
-				
+				refsInGroup.forEach(r -> lines.add(r.toString()));
 				lines.add("</references>");
-				
 				sections.add(String.join("\n", lines));
 			}
 			
@@ -379,7 +310,7 @@ public class PrettyRefServlet extends HttpServlet {
 			
 			while (m.find()) {
 				if (!replacedOnce) {
-					String replacement = Matcher.quoteReplacement(String.join("\n\n", sections));
+					var replacement = Matcher.quoteReplacement(String.join("\n\n", sections));
 					m.appendReplacement(sb, replacement);
 					replacedOnce = true;
 				} else {
@@ -415,11 +346,11 @@ public class PrettyRefServlet extends HttpServlet {
 		private void parse(String text) {
 			text = text.trim();
 			
-			Matcher m = NAME_RE.matcher(text);
+			var m = NAME_RE.matcher(text);
 			
 			if (m.matches()) {
 				name = m.group(1).trim();
-				List<String> templates = ParseUtils.getTemplates(name, text);
+				var templates = ParseUtils.getTemplates(name, text);
 				
 				if (templates.size() == 1 && templates.get(0).equals(text)) {
 					params = ParseUtils.getTemplateParametersWithValue(templates.get(0));
@@ -432,7 +363,7 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 		
 		Map<String, String> getParamMap() {
-			Map<String, String> map = new LinkedHashMap<>(params);
+			var map = new LinkedHashMap<String, String>(params);
 			map.remove("templateName");
 			return map;
 		}
@@ -443,8 +374,8 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		@Override
 		public String toString() {
-			HashMap<String, String> clonedMap = new LinkedHashMap<>(params);
-			String templateName = clonedMap.get("templateName");
+			var clonedMap = new LinkedHashMap<String, String>(params);
+			var templateName = clonedMap.get("templateName");
 			
 			if (templateName != null && LOWERCASE_CAPITALISATION.contains(templateName)) {
 				clonedMap.put("templateName", StringUtils.uncapitalize(templateName));
@@ -528,7 +459,7 @@ public class PrettyRefServlet extends HttpServlet {
 			orig = str;
 			
 			if (!isShortTag) {
-				Matcher m = REF_OPEN_RE.matcher(str);
+				var m = REF_OPEN_RE.matcher(str);
 				
 				if (m.find()) {
 					parseAttributes(m.group(1));
@@ -552,15 +483,11 @@ public class PrettyRefServlet extends HttpServlet {
 						group = "uwaga";
 					}
 					
-					String params = m.group(1).trim();
-					List<String> list = Arrays.stream(params.split("\\s*\\|\\s*", 0)).collect(Collectors.toCollection(ArrayList::new));
-					Iterator<String> i = list.iterator();
+					var params = m.group(1).trim();
 					
-					while (i.hasNext()) {
-						if (i.next().isBlank()) {
-							i.remove();
-						}
-					}
+					var list = Arrays.stream(params.split("\\s*\\|\\s*", 0))
+						.filter(item -> !item.isBlank())
+						.toList();
 					
 					if (list.size() != 1) {
 						throw new RuntimeException("Unsupported argument list size (Ref constructor): " + str);
@@ -591,17 +518,14 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 		
 		private void parseAttributes(String str) {
-			Matcher m = ATTR_RE.matcher(str);
+			var m = ATTR_RE.matcher(str);
 			
 			while (m.find()) {
-				String key = m.group(1);
-				String value = m.group(2).trim();
+				var key = m.group(1);
+				var value = m.group(2).trim();
 				
 				// strip quotes
-				if (
-					value.charAt(0) == value.charAt(value.length() - 1) &&
-					StringUtils.startsWithAny(value, "'", "\"")
-				) {
+				if (value.charAt(0) == value.charAt(value.length() - 1) && StringUtils.startsWithAny(value, "'", "\"")) {
 					value = value.substring(1, value.length() - 1).trim();
 				}
 				
@@ -611,7 +535,7 @@ public class PrettyRefServlet extends HttpServlet {
 						break;
 					case "group":
 						group = value;
-						Integer count = groupRefCounter.getOrDefault(group, 0);
+						var count = groupRefCounter.getOrDefault(group, 0);
 						groupRefCounter.put(group, ++count);
 						name = group + count;
 						break;
@@ -646,9 +570,9 @@ public class PrettyRefServlet extends HttpServlet {
 			String ident;
 			
 			if (isOneTemplateCall(str)) {
-				Template tpl = new Template(str);
-				Map<String, String> params = tpl.getParamMap();
-				String templateName = tpl.getTemplateName();
+				var tpl = new Template(str);
+				var params = tpl.getParamMap();
+				var templateName = tpl.getTemplateName();
 				
 				switch (templateName) {
 					case "Cytuj":
@@ -686,7 +610,7 @@ public class PrettyRefServlet extends HttpServlet {
 							pages = params.get("s");
 						}
 						
-						String title = params.get("tytuł");
+						var title = params.get("tytuł");
 						
 						if (author != null) {
 							author = extractNameFromWords(clearWikitext(author));
@@ -710,8 +634,8 @@ public class PrettyRefServlet extends HttpServlet {
 							ident = title;
 						} else if (params.containsKey("url")) {
 							try {
-								String temp = normalizeUri(params.get("url"));
-								URI uri = new URI(temp);
+								var temp = normalizeUri(params.get("url"));
+								var uri = new URI(temp);
 								ident = extractNameFromUri(uri);
 							} catch (URISyntaxException e) {
 								e.printStackTrace();
@@ -739,8 +663,8 @@ public class PrettyRefServlet extends HttpServlet {
 						ident = templateName.equals("Dziennik Ustaw") ? "DzU" : "MP";
 						ident += " ";
 						
-						List<String> list = new ArrayList<>();
-						Matcher m = Pattern.compile("\\d+").matcher(str);
+						var list = new ArrayList<String>();
+						var m = Pattern.compile("\\d+").matcher(str);
 						
 						while (m.find()) {
 							list.add(m.group());
@@ -751,14 +675,14 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 					case "Ludzie nauki":
 					{
-						String capture = str.replaceFirst(".*?(\\d+).*", "$1");
+						var capture = str.replaceFirst(".*?(\\d+).*", "$1");
 						ident = String.format("ludzie-nauki-%s", capture);
 						break;
 					}
 					case "Simbad":
 					{
-						String id = params.get("ParamWithoutName1");
-						String description = params.get("ParamWithoutName2");
+						var id = params.get("ParamWithoutName1");
+						var description = params.get("ParamWithoutName2");
 						ident = templateName;
 						
 						if (id != null) {
@@ -779,14 +703,14 @@ public class PrettyRefServlet extends HttpServlet {
 					}
 				}
 			} else {
-				LinkExtractor linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
+				var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
 				URI uri = null;
 				
-				for (LinkSpan linkSpan : linkExtractor.extractLinks(str)) {
+				for (var linkSpan : linkExtractor.extractLinks(str)) {
 					int start = linkSpan.getBeginIndex();
 					int end = linkSpan.getEndIndex();
 					
-					String temp = str.substring(start, end);
+					var temp = str.substring(start, end);
 					temp = normalizeUri(temp);
 					
 					try {
@@ -834,7 +758,7 @@ public class PrettyRefServlet extends HttpServlet {
 		}
 		
 		private static String extractNameFromUri(URI uri) {
-			String host = uri.getHost();
+			var host = uri.getHost();
 			
 			if (host == null) {
 				return "";
@@ -844,8 +768,8 @@ public class PrettyRefServlet extends HttpServlet {
 			host = TLD_RE.matcher(host).replaceFirst("");
 			host = CCTLD_RE.matcher(host).replaceFirst("");
 			
-			String path = uri.getPath();
-			String query = uri.getQuery();
+			var path = uri.getPath();
+			var query = uri.getQuery();
 			
 			if (path == null) {
 				path = "";
@@ -857,11 +781,11 @@ public class PrettyRefServlet extends HttpServlet {
 				path += query;
 			}
 			
-			Matcher m = Pattern.compile("[\\w\\d_-]{4,}").matcher(path);
-			List<String> list = new ArrayList<>();
+			var m = Pattern.compile("[\\w\\d_-]{4,}").matcher(path);
+			var list = new ArrayList<String>();
 			
 			while (m.find()) {
-				String group = m.group();
+				var group = m.group();
 				
 				if (!IGNORED_URI_EXTENSIONS.contains(group) && !group.endsWith("_id")) {
 					group = group.replace("_", "-").replaceAll("-+", "-").replaceAll("^-|-$", "");
@@ -869,7 +793,7 @@ public class PrettyRefServlet extends HttpServlet {
 				}
 			}
 			
-			String ident = host.replaceAll(".", "-") + "-" + String.join("-", list);
+			var ident = host.replaceAll(".", "-") + "-" + String.join("-", list);
 			
 			while (ident.length() > IDENT_MAX_LEN && !list.isEmpty()) {
 				list.remove(0);
@@ -881,8 +805,8 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		private static String extractNameFromWords(String str) {
 			str = Normalizer.normalize(str, Normalizer.Form.NFC);
-			Matcher m = POSIX_CATEGORIES_RE.matcher(str);
-			String result = "";
+			var m = POSIX_CATEGORIES_RE.matcher(str);
+			var result = "";
 			
 			while (m.find()) {
 				result += " " + m.group();
@@ -917,17 +841,8 @@ public class PrettyRefServlet extends HttpServlet {
 				return String.format("<ref name=\"%s\" />", name);
 			}
 			
-			String fmt = "<ref name=\"%s\">%s</ref>";
-			String cont;
-			
-			if (isOneTemplateCall(content)) {
-				Template tpl = new Template(content);
-				cont = tpl.toString();
-			} else {
-				cont = content;
-			}
-			
-			return String.format(fmt, name, cont);
+			var cont = isOneTemplateCall(content) ? new Template(content).toString() : content;
+			return String.format("<ref name=\"%s\">%s</ref>", name, cont);
 		}
 		
 		@Override
