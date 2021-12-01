@@ -45,8 +45,7 @@ public class PrettyRefServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
 	private static final Pattern CITE_LANG_MERGER_RE = Pattern.compile("\\{\\{(cytuj [^\\{\\}]+?)\\}\\}\\s*\\{\\{lang\\|([a-z-]+)\\}\\}", Pattern.CASE_INSENSITIVE);
-	private static final Pattern CONSEC_R_RE = Pattern.compile("\\{\\{[rR]\\|([^\\}]+)\\}\\}\\s*\\{\\{[rR]\\|([^\\}]+)\\}\\}");
-	private static final Pattern SOURCES_RE = Pattern.compile("(=+ *(?:Przypisy|Uwagi) *=+\\s+)?(<references[^/]*/>|\\{\\{(?:Przypisy|Uwagi)([^\\{\\}]*|\\{\\{[^\\{\\}]+\\}\\})+\\}\\}|<references[^/]*>(.+?)</references\\s*>)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	private static final Pattern SOURCES_RE = Pattern.compile("(=+ *(?:Przypisy|Uwagi) *=+\\s+)?(<references[^/]*>(.+?)</references\\s*>|<references[^/]*/>|\\{\\{(?:Przypisy|Uwagi)([^\\{\\}]*|\\{\\{[^\\{\\}]+\\}\\})+\\}\\})", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 	
 	private static final String JSP_DISPATCH_TARGET = "/jsp/pretty-ref.jsp";
 
@@ -100,7 +99,7 @@ public class PrettyRefServlet extends HttpServlet {
 						text = wiki.getPageText(List.of(title)).get(0);
 					}
 				} else {
-					text = text.replace("\r\n", "\n"); // beware od CRLFs in web text mode
+					text = text.replace("\r\n", "\n"); // beware of CRLFs in web text mode
 				}
 				
 				if (text == null) {
@@ -289,19 +288,11 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		refs.addAll(shortRefs);
 		
-		// replace refs in text with {{r}} calls
+		// normalize refs in text ({{r}} calls and <ref> tags)
 		// this might also change the inside of references section - will deal with it later
 		for (Ref ref : refs) {
 			text = text.replaceFirst(Pattern.quote(ref.orig), Matcher.quoteReplacement(ref.toShortTag()));
 		}
-		
-		// clean up multiple consecutive {{r}}
-		String temp;
-		
-		do {
-			temp = text;
-			text = CONSEC_R_RE.matcher(text).replaceAll("{{r|$1|$2}}");
-		} while (!temp.equals(text));
 		
 		// place refs in the section
 		// TODO: if both {{Uwagi}} and {{Przypisy}} are present, only the first one found is parsed
@@ -313,22 +304,8 @@ public class PrettyRefServlet extends HttpServlet {
 			// figure out the heading level used for ref sections and probably thoughout the article
 			String level = "==";
 			
-			if (
-				(m = Pattern.compile("^(={2,})").matcher(oldRefSection)).find() ||
-				(m = Pattern.compile("stopień\\s*=\\s*(={2,})").matcher(oldRefSection)).find()
-			) {
+			if ((m = Pattern.compile("^(={2,})").matcher(oldRefSection)).find()) {
 				level = m.group(1);
-			}
-			
-			// figure out the column count
-			@SuppressWarnings("unused")
-			int cols = 1;
-			
-			if (
-				(m = Pattern.compile("\\|\\s*(\\d+)\\s*(\\||\\}\\})").matcher(oldRefSection)).find() ||
-				(m = Pattern.compile("l\\. *kolumn\\s*=\\s*(\\d+)").matcher(oldRefSection)).find()
-			) {
-				cols = Integer.parseInt(m.group(1));
 			}
 			
 			// get only refs with content (ie. not shorttags) and sort them
@@ -380,16 +357,16 @@ public class PrettyRefServlet extends HttpServlet {
 				lines.add(String.format("%1$s %2$s %1$s", level, sectionMapping.get(group)));
 				
 				if (group != null) {
-					lines.add("{{Uwagi|");
+					lines.add("<references group=\"uwaga\" responsive>");
 				} else {
-					lines.add("{{Przypisy|");
+					lines.add("<references responsive>");
 				}
 				
 				for (Ref ref : refsInGroup) {
 					lines.add(ref.toString());
 				}
 				
-				lines.add("}}");
+				lines.add("</references>");
 				
 				sections.add(String.join("\n", lines));
 			}
@@ -926,11 +903,11 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		String toShortTag() {
 			if (group == null) {
-				return String.format("{{r|%s}}", name);
+				return String.format("<ref name=\"%s\" />", name);
 			} else if (group.equals("uwaga")) {
-				return String.format("{{u|%s}}", name);
+				return String.format("<ref name=\"%s\" group=\"uwaga\" />", name);
 			} else {
-				return String.format("{{r|%s|grupa1=%s}}", name, group);
+				return String.format("<ref name=\"%s\" group=\"%s\" />", name, group);
 			}
 		}
 		
