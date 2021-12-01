@@ -3,7 +3,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
-<c:set var="heading" value="Przenoszenie refów na koniec</tt>" />
+<c:set var="heading" value="Przenoszenie refów na koniec" />
 
 <t:template title="${heading}" firstHeading="${heading}" enableJS="true">
 	<jsp:attribute name="head">
