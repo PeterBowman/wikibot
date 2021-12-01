@@ -76,10 +76,15 @@ public class PrettyRefServlet extends HttpServlet {
 		
 		boolean isGui = request.getParameter("gui") != null; // default: "on"
 		
+		if (format == null) {
+			format = "plain";
+		}
+		
 		final var contentType = switch (format) {
 			case "json" -> "application/json";
 			case "jsonp" -> "text/javascript";
-			default -> "text/plain";
+			case "plain" -> "text/plain";
+			default -> throw new RuntimeException("Unsupported format parameter: " + format);
 		};
 		
 		response.setHeader("Access-Control-Allow-Origin", "*");
