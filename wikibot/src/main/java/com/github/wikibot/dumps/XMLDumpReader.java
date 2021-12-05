@@ -42,7 +42,6 @@ import org.xml.sax.XMLReader;
 
 public final class XMLDumpReader {
 	public static final Path LOCAL_DUMPS = Paths.get("./data/dumps");
-	private static final long MAX_STREAM_INDEX = 4294967295L;
 	
 	private Path pathToDumpFile;
 	private Path pathToIndexFile;
@@ -181,8 +180,6 @@ public final class XMLDumpReader {
 		
 		var filteredOffsets = new LinkedHashSet<Long>(10000);
 		var allOffsets = new ArrayList<Long>(1000000);
-		var previousOffset = 0L;
-		var multiple = 0;
 		
 		try (
 			var bufferedInput = new BufferedInputStream(Files.newInputStream(pathToIndexFile));
@@ -201,19 +198,11 @@ public final class XMLDumpReader {
 				var id = Long.parseLong(line.substring(firstSeparator + 1, secondSeparator));
 				var title = line.substring(secondSeparator + 1);
 				
-				// stored offsets overflow at 2^32-1, we need to add them up to make valid .bz2 indexes
-				var normalizedOffset = MAX_STREAM_INDEX * multiple + offset;
-				
-				if (offset < previousOffset) {
-					multiple++;
-				}
-				
 				if ((filteredTitles == null || filteredTitles.contains(title)) && (filteredIds == null || filteredIds.contains(id))) {
-					filteredOffsets.add(normalizedOffset);
+					filteredOffsets.add(offset);
 				}
 				
-				allOffsets.add(normalizedOffset);
-				previousOffset = offset;
+				allOffsets.add(offset);
 			}
 		}
 		
