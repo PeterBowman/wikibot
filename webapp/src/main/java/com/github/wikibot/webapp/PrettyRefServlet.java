@@ -295,15 +295,9 @@ public class PrettyRefServlet extends HttpServlet {
 				
 				var lines = new ArrayList<String>();
 				lines.add(String.format("%1$s %2$s %1$s", level, sectionMapping.get(group)));
-				
-				if (!group.isEmpty()) {
-					lines.add("<references group=\"uwaga\" responsive>");
-				} else {
-					lines.add("<references responsive>");
-				}
-				
+				lines.add(group.isEmpty() ? "<references responsive>" : "{{Uwagi|");
 				refsInGroup.forEach(r -> lines.add(r.toString()));
-				lines.add("</references>");
+				lines.add(group.isEmpty() ? "</references>" : "}}");
 				sections.add(String.join("\n", lines));
 			}
 			
