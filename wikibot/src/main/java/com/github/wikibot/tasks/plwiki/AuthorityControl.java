@@ -80,6 +80,8 @@ public final class AuthorityControl {
 	}
 	
 	public static void main(String[] args) throws Exception {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		
 		var cli = readOptions(args);
 		final List<String> articles;
 		
@@ -114,6 +116,7 @@ public final class AuthorityControl {
 			
 			var wiki = Wiki.newSession("pl.wikipedia.org");
 			articles.removeAll(retrieveTemplateTransclusions());
+			articles.removeAll(retrieveDisambiguations());
 			articles.retainAll(retrieveNonRedirects());
 			articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
 			System.out.printf("Got %d filtered articles.%n", articles.size());
@@ -271,8 +274,6 @@ public final class AuthorityControl {
 	}
 	
 	private static Map<Long, String> retrievePropertyBacklinks() throws ClassNotFoundException, SQLException, IOException {
-		Class.forName("com.mysql.cj.jdbc.Driver");
-		
 		var wiki = Wiki.newSession("pl.wikipedia.org");
 		var backlinks = new HashMap<Long, String>(600000);
 		
@@ -402,8 +403,6 @@ public final class AuthorityControl {
 	}
 	
 	private static Set<String> retrieveTemplateTransclusions() throws ClassNotFoundException, SQLException, IOException {
-		Class.forName("com.mysql.cj.jdbc.Driver");
-		
 		var transclusions = new HashSet<String>(500000);
 		
 		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
@@ -434,9 +433,33 @@ public final class AuthorityControl {
 		return transclusions;
 	}
 	
-	private static Set<String> retrieveNonRedirects() throws ClassNotFoundException, SQLException, IOException {
-		Class.forName("com.mysql.cj.jdbc.Driver");
+	private static Set<String> retrieveDisambiguations() throws ClassNotFoundException, SQLException, IOException {
+		var disambigs = new HashSet<String>(100000);
 		
+		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+			var query = """
+				SELECT
+					page_title
+				FROM page
+					INNER JOIN page_props on pp_page = page_id
+				WHERE
+					page_namespace = 0 AND
+					pp_propname = "disambiguation";
+				""";
+			
+			var rs = connection.createStatement().executeQuery(query);
+			
+			while (rs.next()) {
+				var title = rs.getString("page_title").replace('_', ' ');
+				disambigs.add(title);
+			}
+		}
+		
+		System.out.printf("Got %d disambiguations on plwiki.%n", disambigs.size());
+		return disambigs;
+	}
+	
+	private static Set<String> retrieveNonRedirects() throws ClassNotFoundException, SQLException, IOException {
 		var articles = new HashSet<String>(2000000);
 		
 		try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
