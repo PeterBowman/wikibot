@@ -44,6 +44,26 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <version>10.0.2</version>
+        <configuration>
+          <deployMode>EXTERNAL</deployMode>
+          <jettyBase>${env.JETTY_BASE}</jettyBase>
+          <jettyHome>${env.JETTY_HOME}</jettyHome>
+          <webApp>
+            <contextPath>/pbbot</contextPath>
+            <descriptor>${env.JETTY_BASE}/webapps/pbbot.xml</descriptor>
+          </webApp>
+          <scan>5</scan>
+          <scanTargetPatterns>
+            <scanTargetPattern>
+              <directory>src/main/webapp</directory>
+            </scanTargetPattern>
+          </scanTargetPatterns>
+        </configuration>
+      </plugin>
     </plugins>
     <finalName>pbbot</finalName>
     <pluginManagement>
