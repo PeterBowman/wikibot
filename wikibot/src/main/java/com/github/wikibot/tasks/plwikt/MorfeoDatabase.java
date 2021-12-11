@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,10 +51,7 @@ public final class MorfeoDatabase {
 	private static Wikibot wb;
 	
 	static {
-		defaultSQLProperties.setProperty("autoReconnect", "true");
-		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
-		defaultSQLProperties.setProperty("sslMode", "DISABLED");
+		defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
 	}
 	
 	public static void main(String[] args) throws Exception {

@@ -129,9 +129,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			
 			sqlProperties.put("user", context.lookup("user"));
 			sqlProperties.put("password", context.lookup("password"));
-			sqlProperties.put("useUnicode", context.lookup("useUnicode"));
-			sqlProperties.put("characterEncoding", context.lookup("characterEncoding"));
-			sqlProperties.put("sslMode", context.lookup("sslMode"));
+			sqlProperties.put("enabledTLSProtocols", context.lookup("enabledTLSProtocols"));
 		} catch (NamingException | SecurityException e) {
 			throw new UnavailableException(e.getMessage());
 		}
@@ -277,9 +275,9 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 			RequestInfo request) throws SQLException {
 		String query = """
 			SELECT
-				CONVERT(page_title USING utf8mb4) AS page_title,
-				CONVERT(iwl_prefix USING utf8mb4) AS iwl_prefix,
-				CONVERT(iwl_title USING utf8mb4) AS iwl_title,
+				page_title,
+				iwl_prefix,
+				iwl_title,
 				page_namespace
 			FROM iwlinks
 				INNER JOIN page ON iwl_from = page_id
@@ -434,7 +432,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
 		
 		String query = """
 			SELECT
-				CONVERT(page_title USING utf8mb4) AS page_title,
+				page_title,
 				page_namespace,
 				page_is_redirect
 			""";

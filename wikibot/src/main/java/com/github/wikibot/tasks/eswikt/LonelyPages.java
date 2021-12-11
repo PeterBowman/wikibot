@@ -1,7 +1,6 @@
 package com.github.wikibot.tasks.eswikt;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,10 +24,7 @@ public final class LonelyPages {
 	private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.analytics.db.svc.wikimedia.cloud:3306/eswiktionary_p";
 	
 	static {
-		defaultSQLProperties.setProperty("autoReconnect", "true");
-		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
-		defaultSQLProperties.setProperty("sslMode", "DISABLED");
+		defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -66,7 +62,7 @@ public final class LonelyPages {
 	private static void fetchLonelyPages(Connection conn, List<String> list) throws SQLException {
 		String query = """
 			SELECT
-				CONVERT(page_title USING utf8mb4) AS title
+				page_title
 			FROM page
 				LEFT JOIN pagelinks ON pl_namespace = page_namespace AND pl_title = page_title
 				LEFT JOIN templatelinks ON tl_namespace = page_namespace AND tl_title = page_title
@@ -81,7 +77,7 @@ public final class LonelyPages {
 		ResultSet rs = stmt.executeQuery(query);
 		
 		while (rs.next()) {
-			String title = rs.getString("title").replace("_", " ");
+			String title = rs.getString("page_title").replace("_", " ");
 			list.add(title);
 		}
 	}

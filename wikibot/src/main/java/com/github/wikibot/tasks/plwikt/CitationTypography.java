@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,13 +83,7 @@ public final class CitationTypography {
 		P_OCCURENCE = Pattern.compile("\\. *('{2})?((?i: *" + P_REFERENCE.pattern() + ")+)");
 		P_LINE = Pattern.compile("^(.*)" + P_OCCURENCE.pattern() + "(.*)$", Pattern.MULTILINE);
 		
-		defaultSQLProperties.setProperty("autoReconnect", "true");
-		defaultSQLProperties.setProperty("useUnicode", "yes");
-		defaultSQLProperties.setProperty("characterEncoding", StandardCharsets.UTF_8.name());
-		defaultSQLProperties.setProperty("sslMode", "DISABLED");
-		
-		// Don't use this, it either breaks the encoding or throws MysqlDataTruncation.
-		// defaultSQLProperties.setProperty("character_set_server", "utf8mb4");
+		defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -151,7 +144,6 @@ public final class CitationTypography {
 				Connection vcConn = DriverManager.getConnection(SQL_VC_URI, properties);
 				Connection commonConn = DriverManager.getConnection(SQL_COMMON_URI, properties);
 			) {
-				vcConn.createStatement().executeQuery("SET NAMES utf8mb4;"); // important
 				Map<Integer, Entry> entryMap = new LinkedHashMap<>(5000);
 				
 				if (line.hasOption("update")) {
@@ -344,7 +336,7 @@ public final class CitationTypography {
 		
 		String query = String.format("""
 			SELECT
-				CONVERT(page_title USING utf8mb4) AS page_title,
+				page_title,
 				page_id
 			FROM
 				page
