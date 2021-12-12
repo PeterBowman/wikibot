@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -35,14 +34,17 @@ import org.nibor.autolink.LinkType;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.wikibot.parsing.Page;
+import com.github.wikibot.parsing.Section;
+
 /**
  * Servlet implementation class PrettyRefServlet
  */
 public class PrettyRefServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final Pattern CITE_LANG_MERGER_RE = Pattern.compile("\\{\\{(cytuj [^\\{\\}]+?)\\}\\}\\s*\\{\\{lang\\|([a-z-]+)\\}\\}", Pattern.CASE_INSENSITIVE);
-	private static final Pattern SOURCES_RE = Pattern.compile("(=+ *(?:Przypisy|Uwagi) *=+\\s+)?(<references[^/]*>(.+?)</references\\s*>|<references[^/]*/>|\\{\\{(?:Przypisy|Uwagi)([^\\{\\}]*|\\{\\{[^\\{\\}]+\\}\\})+\\}\\})", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	private static final Pattern CITE_LANG_MERGER_RE = Pattern.compile("\\{{2}(cytuj [^\\{\\}]+?)\\}{2}\\s*\\{{2}lang\\|([a-z-]+)\\}{2}", Pattern.CASE_INSENSITIVE);
+	private static final Pattern SOURCES_RE = Pattern.compile("<references[^/]*>(.+?)</references\\s*>|<references[^/]*/>|\\{{2}(?:Przypisy|Uwagi)([^\\{\\}]*|\\{{2}[^\\{\\}]+\\}{2})+\\}{2}", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 	
 	private static final String JSP_DISPATCH_TARGET = "/jsp/pretty-ref.jsp";
 
@@ -252,79 +254,62 @@ public class PrettyRefServlet extends HttpServlet {
 			text = text.replaceFirst(Pattern.quote(ref.orig), Matcher.quoteReplacement(ref.toShortTag()));
 		}
 		
-		// place refs in the section
-		// TODO: if both {{Uwagi}} and {{Przypisy}} are present, only the first one found is parsed
-		m = SOURCES_RE.matcher(text);
+		var page = Page.store("", text);
+		var groupedRefsSections = page.findSectionsWithHeader("(?i)^Uwagi$");
+		var normalRefsSections = page.findSectionsWithHeader("(?i)^Przypisy$");
 		
-		if (m.find()) {
-			// figure out the heading level used for ref sections and probably thoughout the article
-			var level = Pattern.compile("^(={2,})").matcher(m.group()).results()
-				.map(mr -> mr.group(1))
-				.findFirst()
-				.orElse("==");
-			
-			final var coll = Collator.getInstance(new Locale("pl"));
-			coll.setStrength(Collator.SECONDARY);
-			
-			// get only refs with content (ie. not shorttags) and sort them
-			var references = refs.stream()
-				.filter(r -> r.content != null)
-				.sorted((r1, r2) -> coll.compare(r1.name, r2.name))
-				.toList();
-			
-			// then group them by their group info (that is, by headings they belong to), sort headings
-			var sectionMapping = Map.of("", "Przypisy", "uwaga", "Uwagi");
-			var sectionHeaders = List.of("Uwagi", "Przypisy");
-					
-			var groupedRefs = new TreeMap<String, List<Ref>>((s1, s2) -> Integer.compare(
-					sectionHeaders.indexOf(sectionMapping.get(s1)),
-					sectionHeaders.indexOf(sectionMapping.get(s2))
-				));
-			
-			for (var ref : references) {
-				var group = Optional.ofNullable(ref.group).orElse(""); // Map.of() dislikes null keys
-				groupedRefs.computeIfAbsent(group, k -> new ArrayList<>()).add(ref);
-			}
-			
-			// churn out the wikicode for each section
-			var sections = new ArrayList<String>();
-			
-			for (var entry : groupedRefs.entrySet()) {
-				var group = entry.getKey();
-				var refsInGroup = entry.getValue();
-				
-				var lines = new ArrayList<String>();
-				lines.add(String.format("%1$s %2$s %1$s", level, sectionMapping.get(group)));
-				lines.add(group.isEmpty() ? "<references responsive>" : "{{Uwagi|");
-				refsInGroup.forEach(r -> lines.add(r.toString()));
-				lines.add(group.isEmpty() ? "</references>" : "}}");
-				sections.add(String.join("\n", lines));
-			}
-			
-			// insert new refs section(s) into page code
-			// remove all encountered sections, replace first one with ours
-			m = SOURCES_RE.matcher(text);
-			sb = new StringBuilder(text.length());
-			boolean replacedOnce = false;
-			
-			while (m.find()) {
-				if (!replacedOnce) {
-					var replacement = Matcher.quoteReplacement(String.join("\n\n", sections));
-					m.appendReplacement(sb, replacement);
-					replacedOnce = true;
-				} else {
-					m.appendReplacement(sb, "");
-				}
-			}
-			
-			text = m.appendTail(sb).toString();
-			// extra newlines are added when previous replacement occurs more than once
-			text = text.replaceAll("\n{3,}", "\n\n");
-		} else {
-			throw new RuntimeException("No references section present?");
+		if (groupedRefsSections.size() > 1) {
+			throw new RuntimeException("Found too many 'Uwagi' sections: " + groupedRefsSections.size());
 		}
 		
-		return text;
+		if (normalRefsSections.size() > 1) {
+			throw new RuntimeException("Found too many 'Przypisy' sections: " + normalRefsSections.size());
+		}
+		
+		if (groupedRefsSections.isEmpty() && normalRefsSections.isEmpty()) {
+			throw new RuntimeException("Found no references sections");
+		}
+		
+		final var coll = Collator.getInstance(new Locale("pl"));
+		coll.setStrength(Collator.SECONDARY);
+		
+		// get only refs with content (ie. not shorttags) and sort them
+		var contentRefs = refs.stream()
+			.filter(r -> r.content != null)
+			.sorted((r1, r2) -> coll.compare(r1.name, r2.name))
+			.toList();
+		
+		if (!groupedRefsSections.isEmpty()) {
+			var targetedRefs = contentRefs.stream()
+				.filter(ref -> "uwaga".equals(ref.group))
+				.map(Ref::toString)
+				.collect(Collectors.joining("\n"));
+			
+			if (!targetedRefs.isEmpty()) {
+				var replacement = String.format("{{Uwagi|%n%s%n}}", targetedRefs);
+				var section = groupedRefsSections.get(0);
+				var newText = SOURCES_RE.matcher(section.toString()).replaceFirst(Matcher.quoteReplacement(replacement));
+				
+				section.replaceWith(Section.parse(newText));
+			}
+		}
+		
+		if (!normalRefsSections.isEmpty()) {
+			var targetedRefs = contentRefs.stream()
+				.filter(ref -> ref.group == null)
+				.map(Ref::toString)
+				.collect(Collectors.joining("\n"));
+			
+			if (!targetedRefs.isEmpty()) {
+				var replacement = String.format("<references responsive>%n%s%n</references>", targetedRefs);
+				var section = normalRefsSections.get(0);
+				var newText = SOURCES_RE.matcher(section.toString()).replaceFirst(Matcher.quoteReplacement(replacement));
+				
+				section.replaceWith(Section.parse(newText));
+			}
+		}
+		
+		return page.toString();
 	}
 
 	private static class Template {
