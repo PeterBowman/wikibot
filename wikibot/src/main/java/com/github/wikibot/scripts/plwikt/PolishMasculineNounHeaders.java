@@ -151,7 +151,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			String[] data = entry.getValue();
 			String definitionsText = data[0];
 			
-			PageContainer page = Misc.retrievePage(pages, title);
+			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			Page p = Page.wrap(page);
 			
 			Optional.of(p)

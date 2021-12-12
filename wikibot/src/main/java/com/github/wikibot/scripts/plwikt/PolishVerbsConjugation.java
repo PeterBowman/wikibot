@@ -90,7 +90,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 			String title = entry.getKey();
 			String content = entry.getValue();
 			
-			PageContainer page = Misc.retrievePage(pages, title);
+			PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			
 			if (page == null) {
 				System.out.printf("Error en \"%s\"%n", title);

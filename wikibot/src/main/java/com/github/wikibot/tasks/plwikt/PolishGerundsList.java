@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -353,7 +354,10 @@ public class PolishGerundsList implements Selectorizable {
 			tempList.add(formatted);
 		}
 		
-		Misc.sortList(tempList, "pl");
+		Collator coll = Collator.getInstance(new Locale("pl"));
+		coll.setStrength(Collator.SECONDARY);
+		
+		Collections.sort(tempList, coll);
 		onlyDefinitionSection.setIntro("{{columns|\n" + String.join("\n", tempList) + "\n}}");
 		
 		// Only template
@@ -366,7 +370,7 @@ public class PolishGerundsList implements Selectorizable {
 			tempList.add(formatted);
 		}
 		
-		Misc.sortList(tempList, "pl");
+		Collections.sort(tempList, coll);
 		onlyTemplateSection.setIntro("{{columns|\n" + String.join("\n", tempList) + "\n}}");
 		
 		// No dictionary entry
@@ -376,7 +380,7 @@ public class PolishGerundsList implements Selectorizable {
 			.map(entry -> String.format("# [[%s]]", entry))
 			.collect(Collectors.toCollection(ArrayList::new));
 		
-		Misc.sortList(tempList, "pl");
+		Collections.sort(tempList, coll);
 		noDictEntrySection.setIntro("{{columns|\n" + String.join("\n", tempList) + "\n}}");
 		
 		// Possible errors
@@ -391,7 +395,7 @@ public class PolishGerundsList implements Selectorizable {
 			.map(line -> String.format("# [[%s]] – %s", (Object[])line.split(" - ")))
 			.collect(Collectors.toCollection(ArrayList::new));
 		
-		Misc.sortList(tempList, "pl");
+		Collections.sort(tempList, coll);
 		possibleErrors.setIntro(String.join("\n", tempList));
 		
 		// Reflexive verbs
@@ -402,7 +406,7 @@ public class PolishGerundsList implements Selectorizable {
 			.map(line -> String.format("[[%s]]", line.substring(0, line.indexOf(" - "))))
 			.collect(Collectors.toCollection(ArrayList::new));
 		
-		Misc.sortList(tempList, "pl");
+		Collections.sort(tempList, coll);
 		reflexiveVerbs.setIntro(String.join(", ", tempList));
 		
 		// Append all sections

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -114,7 +115,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		List<String> errors = new ArrayList<>();
 		
 		for (String title : titles) {
-			PageContainer page = Misc.retrievePage(pages, title);
+			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			
 			if (page == null) {
 				System.out.printf("Error en \"%s\"%n", title);

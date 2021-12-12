@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -162,9 +165,12 @@ public final class MissingPolishGerunds implements Selectorizable {
 			}
 		}
 		
-		Misc.sortList(aff, "pl");
-		Misc.sortList(neg, "pl");
-
+		Collator coll = Collator.getInstance(new Locale("pl"));
+		coll.setStrength(Collator.SECONDARY);
+		
+		Collections.sort(aff, coll);
+		Collections.sort(neg, coll);
+		
 		Files.write(MISSING_AFF, aff);
 		Files.write(MISSING_NEG, neg);
 		

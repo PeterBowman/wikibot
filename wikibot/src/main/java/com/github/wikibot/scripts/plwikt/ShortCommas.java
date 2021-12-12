@@ -184,7 +184,7 @@ public final class ShortCommas implements Selectorizable {
 		
 		for (Entry<String, String[]> entry : map.entrySet()) {
 			String title = entry.getKey();
-			PageContainer page = Misc.retrievePage(pages, title);
+			PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			
 			if (page == null) {
 				System.out.printf("Error en \"%s\"%n", title);

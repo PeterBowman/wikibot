@@ -318,7 +318,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	static {
-		TMPL_ALIAS_MAP = Utils.readLinesFromResource("/eswikt-template-redirects.txt", Editor.class)
+		TMPL_ALIAS_MAP = Utils.readLinesFromResource("/eswikt-template-redirects.txt", Editor.class).stream()
 			.map(line -> line.split("\\s*=\\s*"))
 			.filter(tokens -> tokens.length == 2)
 			.collect(Collectors.toMap(
@@ -326,7 +326,7 @@ public class Editor extends AbstractEditor {
 				tokens -> tokens[1]
 			));
 		
-		SECTION_DATA_MAP = Utils.readLinesFromResource("/eswikt-catgram-compounds.txt", Editor.class)
+		SECTION_DATA_MAP = Utils.readLinesFromResource("/eswikt-catgram-compounds.txt", Editor.class).stream()
 			.map(line -> line.split("\\s*=\\s*"))
 			.filter(tokens -> tokens.length == 2)
 			.collect(Collectors.toMap(
@@ -343,7 +343,7 @@ public class Editor extends AbstractEditor {
 					.toList()
 			));
 		
-		SEM_TMPLS_MAP = Utils.readLinesFromResource("/eswikt-catsem-templates.txt", Editor.class)
+		SEM_TMPLS_MAP = Utils.readLinesFromResource("/eswikt-catsem-templates.txt", Editor.class).stream()
 			.map(line -> line.split("\\s*=\\s*"))
 			.filter(tokens -> tokens.length == 2)
 			.collect(Collectors.toMap(

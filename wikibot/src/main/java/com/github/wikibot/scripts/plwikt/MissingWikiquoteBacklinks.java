@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 import java.util.Optional;
 
 import javax.security.auth.login.FailedLoginException;
@@ -117,7 +118,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			String title = entry.getKey();
 			String[] data = entry.getValue();
 			
-			PageContainer page = Misc.retrievePage(pages, title);
+			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			OffsetDateTime timestamp = page.getTimestamp();
 			
 			Page p = Page.wrap(page);

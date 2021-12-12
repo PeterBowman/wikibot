@@ -7,12 +7,15 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -311,7 +314,9 @@ public final class FemaleFormsInTranslations implements Selectorizable {
 				myList.add("* " + transl);
 			}
 			
-			Misc.sortList(myList, "pl");
+			Collator coll = Collator.getInstance(new Locale("pl"));
+			coll.setStrength(Collator.SECONDARY);
+			Collections.sort(myList, coll);
 			String output = intro + String.join("\n", myList) + "\n";
 			
 			pw_fem.println(page.getTitle());

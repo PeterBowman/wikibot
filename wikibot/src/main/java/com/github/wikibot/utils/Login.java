@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Scanner;
 
 import javax.security.auth.login.CredentialException;
 
@@ -89,14 +90,25 @@ public class Login {
 		var username = Misc.readLine();
 		
 		System.out.print("Password: ");
-		char[] password = Misc.readPassword();
-		
+		var password = readPassword();
 		var filename = String.format(LOGIN_FORMAT, username, BOT_PASSWORD_SUFFIX) + ".txt";
 		
 		try {
 			Files.write(LOCATION.resolve(filename), List.of(new String(password)), StandardOpenOption.CREATE_NEW);
 		} catch (FileAlreadyExistsException e) {
 			System.out.println(String.format("File %s already exists!", filename));
+		}
+	}
+	
+	private static char[] readPassword() {
+		var console = System.console();
+		
+		if (console != null) {
+			return console.readPassword();
+		} else {
+			@SuppressWarnings("resource")
+			var scanner = new Scanner(System.in);
+			return scanner.nextLine().toCharArray();
 		}
 	}
 	

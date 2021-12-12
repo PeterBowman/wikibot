@@ -6,14 +6,9 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Collator;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
@@ -197,23 +192,6 @@ public final class Misc {
 		return map;
 	}
 	
-	public static void sortList(List<String> coll, String lang) {
-		var collator = Collator.getInstance(new Locale(lang));
-		collator.setStrength(Collator.SECONDARY);
-		Collections.sort(coll, collator);
-	}
-	
-	public static PageContainer retrievePage(PageContainer[] pages, String title) {
-		return retrievePage(Arrays.asList(pages), title);
-	}
-	
-	public static PageContainer retrievePage(Collection<PageContainer> pages, String title) {
-		return pages.stream()
-			.filter(page -> page.getTitle().equals(title))
-			.findFirst()
-			.orElse(null);
-	}
-	
 	public static String readLine() {
 		var console = System.console();
 		
@@ -229,17 +207,5 @@ public final class Misc {
 	public static String[] readArgs() {
 		// first parsed element becomes the executable
 		return CommandLine.parse("dummy " + readLine()).getArguments();
-	}
-	
-	public static char[] readPassword() {
-		var console = System.console();
-		
-		if (console != null) {
-			return console.readPassword();
-		} else {
-			@SuppressWarnings("resource")
-			var scanner = new Scanner(System.in);
-			return scanner.nextLine().toCharArray();
-		}
 	}
 }

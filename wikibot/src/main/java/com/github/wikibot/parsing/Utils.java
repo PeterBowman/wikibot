@@ -1,13 +1,12 @@
 package com.github.wikibot.parsing;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -18,7 +17,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Range;
 import org.wikiutils.ParseUtils;
 
@@ -97,7 +95,7 @@ public final class Utils {
 			return new ArrayList<>();
 		}
 		
-		List<List<Range<Integer>>> filtered = Stream.of(ranges)
+		var filtered = Stream.of(ranges)
 			.filter(Objects::nonNull)
 			.filter(l -> !l.isEmpty())
 			.toList();
@@ -105,17 +103,17 @@ public final class Utils {
 		if (filtered.isEmpty()) {
 			return new ArrayList<>();
 		} else if (filtered.size() == 1) {
-			List<Range<Integer>> temp = filtered.get(0);
+			var temp = filtered.get(0);
 			return new ArrayList<>(temp);
 		} else {
-			List<Range<Integer>> list = sortIgnoredRanges(filtered);
+			var list = sortIgnoredRanges(filtered);
 			combineIgnoredRanges(list);
 			return list;
 		}
 	}
 
 	private static List<Range<Integer>> sortIgnoredRanges(List<List<Range<Integer>>> ranges) {
-		List<Range<Integer>> list = ranges.stream()
+		var list = ranges.stream()
 			.filter(Objects::nonNull)
 			.flatMap(List::stream)
 			.sorted(Comparator.comparingInt(Range::getMinimum))
@@ -125,14 +123,14 @@ public final class Utils {
 	}
 
 	private static void combineIgnoredRanges(List<Range<Integer>> ranges) {
-		ListIterator<Range<Integer>> iterator = ranges.listIterator(ranges.size());
+		var iterator = ranges.listIterator(ranges.size());
 		
 		while (iterator.hasPrevious()) {
-			Range<Integer> range = iterator.previous();
+			var range = iterator.previous();
 			int previousIndex = iterator.previousIndex();
 			
 			if (previousIndex != -1) {
-				Range<Integer> range2 = ranges.get(previousIndex);
+				var range2 = ranges.get(previousIndex);
 				
 				if (range2.isOverlappedBy(range)) {
 					iterator.remove();
@@ -146,7 +144,7 @@ public final class Utils {
 			return false;
 		}
 		
-		for (Range<Integer> range : ignoredRanges) {
+		for (var range : ignoredRanges) {
 			if (range.contains(index)) {
 				return true;
 			}
@@ -179,15 +177,14 @@ public final class Utils {
 	
 	public static String replaceWithIgnoredRanges(String text, Pattern patt,
 			List<Range<Integer>> ignoredRanges, BiConsumer<Matcher, StringBuilder> biCons) {
-		ToIntFunction<Matcher> func = Matcher::start;
-		return replaceWithIgnoredRanges(text, patt, ignoredRanges, func, biCons);
+		return replaceWithIgnoredRanges(text, patt, ignoredRanges, Matcher::start, biCons);
 	}
 	
 	public static String replaceWithIgnoredRanges(String text, Pattern patt,
 			List<Range<Integer>> ignoredRanges, ToIntFunction<Matcher> func,
 			BiConsumer<Matcher, StringBuilder> biCons) {
-		Matcher m = patt.matcher(text);
-		StringBuilder sb = new StringBuilder(text.length());
+		var m = patt.matcher(text);
+		var sb = new StringBuilder(text.length());
 		
 		while (m.find()) {
 			if (containedInRanges(ignoredRanges, func.applyAsInt(m))) {
@@ -201,18 +198,18 @@ public final class Utils {
 	}
 
 	public static String replaceTemplates(String text, String templateName, UnaryOperator<String> func) {
-		List<String> templates = ParseUtils.getTemplates(templateName, text);
+		var templates = ParseUtils.getTemplates(templateName, text);
 		
 		if (templates.isEmpty()) {
 			return text;
 		}
 		
-		StringBuilder sb = new StringBuilder(text.length());
+		var sb = new StringBuilder(text.length());
 		
 		int index = 0;
 		int lastIndex = 0;
 		
-		for (String template : templates) {
+		for (var template : templates) {
 			index = indexOfIgnoringRanges(text, template, lastIndex);
 			sb.append(text.substring(lastIndex, index));
 			sb.append(func.apply(template));
@@ -224,8 +221,8 @@ public final class Utils {
 	}
 	
 	public static int indexOfIgnoringRanges(String str, String target, int fromIndex) {
-		HashMap<Integer, Integer> noWiki = ParseUtils.getIgnorePositions(str, "<nowiki>", "</nowiki>");
-		HashMap<Integer, Integer> comment = ParseUtils.getIgnorePositions(str, "<!--", "-->");
+		var noWiki = ParseUtils.getIgnorePositions(str, "<nowiki>", "</nowiki>");
+		var comment = ParseUtils.getIgnorePositions(str, "<!--", "-->");
 		
 		int index = 0;
 		
@@ -246,21 +243,17 @@ public final class Utils {
 	}
 	
 	public static String loadResource(String filename, Class<?> caller) {
-		try (InputStream is = caller.getResourceAsStream(filename)) {
-			List<String> lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
-			// could have used IOUtils.toString(), but newlines are platform-dependent
-			return String.join("\n", lines);
-		} catch (IOException | NullPointerException e) {
+		try (var lines = Files.lines(Paths.get(caller.getResource(filename).toURI()))) {
+			return lines.collect(Collectors.joining("\n"));
+		} catch (IOException | NullPointerException | URISyntaxException e) {
 			throw new MissingResourceException("Error loading resource: " + filename, caller.getName(), filename);
 		}
 	}
-	
-	public static Stream<String> readLinesFromResource(String filename, Class<?> caller) {
-		try (InputStream is = caller.getResourceAsStream(filename)) {
-			return IOUtils.readLines(is, StandardCharsets.UTF_8).stream()
-				.map(String::trim)
-				.filter(line -> !line.isEmpty() && !line.startsWith("#"));
-		} catch (IOException | NullPointerException e) {
+
+	public static List<String> readLinesFromResource(String filename, Class<?> caller) {
+		try (var lines = Files.lines(Paths.get(caller.getResource(filename).toURI()))) {
+			return lines.map(String::trim).filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
+		} catch (IOException | NullPointerException | URISyntaxException e) {
 			throw new MissingResourceException("Error loading resource: " + filename, caller.getName(), filename);
 		}
 	}
