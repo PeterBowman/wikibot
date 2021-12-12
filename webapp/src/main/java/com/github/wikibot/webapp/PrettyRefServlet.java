@@ -337,7 +337,7 @@ public class PrettyRefServlet extends HttpServlet {
 				var templates = ParseUtils.getTemplates(name, text);
 				
 				if (templates.size() == 1 && templates.get(0).equals(text)) {
-					params = ParseUtils.getTemplateParametersWithValue(templates.get(0));
+					params = getTemplateParametersWithValue(templates.get(0));
 				} else {
 					throw new RuntimeException("Unsupported template syntax: " + text);
 				}
@@ -346,8 +346,80 @@ public class PrettyRefServlet extends HttpServlet {
 			}
 		}
 		
+		private static ArrayList<String> getTemplateParameters(String template) {
+			int i = template.indexOf('|');
+			
+			if (i == -1) {
+				return null; // the template doesn't have parameters;
+			}
+			
+			template = template.substring(i + 1, template.length() - 2);
+			
+			var f = Pattern.compile("\\|").splitAsStream(template).collect(Collectors.toCollection(ArrayList::new));
+			
+			for (i = 0; i < f.size(); i++) {
+				var s = f.get(i);
+				var test = ParseUtils.removeCommentsAndNoWikiText(s); // we use another variable to not change the template content
+				
+				if (
+					(ParseUtils.countOccurrences(test, "{{") != ParseUtils.countOccurrences(test, "}}") ||
+					ParseUtils.countOccurrences(test, "[[") != ParseUtils.countOccurrences(test, "]]")) &&
+					i != f.size() - 1
+				) {
+					s += "|" + f.get(i + 1);
+					f.remove(i);
+					f.remove(i);
+					f.add(i, s);
+					i--;
+				}
+			}
+			
+			return f;
+		}
+		
+		private static LinkedHashMap<String, String> getTemplateParametersWithValue(String template) {
+			if (template == null) {
+				return null;
+			}
+			
+			int index = template.indexOf("|");
+			String templateName;
+			
+			if (index == -1) {
+				templateName = template.substring(2, template.length() - 2);
+			} else {
+				templateName = template.substring(2, index);
+			}
+			
+			var map = new LinkedHashMap<String, String>();
+			map.put("templateName", templateName);
+			
+			var parameters = getTemplateParameters(template);
+			
+			if (parameters == null) {
+				return map;
+			}
+			
+			int j = 1;
+			
+			for (var parameter : parameters) {
+				index = parameter.indexOf("=");
+				
+				if (index == -1) {
+					map.put("ParamWithoutName" + (j++), parameter);
+				} else {
+					var param = parameter.substring(0, index); // don't trim
+					var value = parameter.substring(index + 1);
+					map.put(param, value);
+				}
+			}
+			
+			return map;
+		}
+		
 		Map<String, String> getParamMap() {
-			var map = new LinkedHashMap<String, String>(params);
+			var map = new HashMap<String, String>();
+			params.entrySet().forEach(e -> map.put(e.getKey().trim(), e.getValue().trim()));
 			map.remove("templateName");
 			return map;
 		}
@@ -361,7 +433,7 @@ public class PrettyRefServlet extends HttpServlet {
 			var clonedMap = new LinkedHashMap<String, String>(params);
 			var templateName = clonedMap.get("templateName");
 			
-			if (templateName != null && LOWERCASE_CAPITALISATION.contains(templateName)) {
+			if (templateName != null && LOWERCASE_CAPITALISATION.contains(templateName.trim())) {
 				clonedMap.put("templateName", StringUtils.uncapitalize(templateName));
 			}
 			
