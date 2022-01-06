@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +15,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
+import javax.security.auth.login.AccountLockedException;
+
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -23,8 +24,6 @@ import org.apache.commons.cli.Options;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
-import com.github.wikibot.parsing.plwikt.Page;
-import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -34,21 +33,25 @@ public final class AssistedEdit {
 	private static final Path LOCATION = Paths.get("./data/scripts/AssistedEdit/");
 	private static final Path TITLES = LOCATION.resolve("titles.txt");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
+	private static final Path DONELIST = LOCATION.resolve("done.txt");
 	private static final Path TIMESTAMPS = LOCATION.resolve("timestamps.xml");
 	private static final Path HASHCODES = LOCATION.resolve("hash.xml");
-	private static final String WORKLIST_FILTERED_FORMAT = "worklist-%s-%s.txt";
+	private static final String WORKLIST_FILTERED_FORMAT = "worklist-%s.txt";
+	private static final String DONELIST_FILTERED_FORMAT = "done-%s.txt";
+	
+	private static XStream xstream = new XStream();
 	
 	private static Wikibot wb;
-	private static XStream xstream;
 	
 	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-		options.addRequiredOption("o", "op", true, "mode of operation: query|apply");
+		var options = new Options();
+		options.addRequiredOption("o", "operation", true, "mode of operation: query|apply|edit");
 		options.addRequiredOption("d", "domain", true, "wiki domain name");
 		options.addOption("s", "summary", true, "edit summary");
 		options.addOption("m", "minor", false, "mark edits as minor");
 		options.addOption("t", "throttle", true, "set edit throttle [ms]");
-		options.addOption("l", "language", true, "short language name (only pl.wiktionary.org)");
+		options.addOption("x", "section", true, "section name");
+		options.addOption("l", "language", true, "language section short name (only pl.wiktionary.org)");
 		options.addOption("f", "field", true, "field type (only pl.wiktionary.org)");
 		
 		if (args.length == 0) {
@@ -56,52 +59,31 @@ public final class AssistedEdit {
 			args = Misc.readArgs();
 		}
 		
-		CommandLineParser parser = new DefaultParser();
-		CommandLine line = parser.parse(options, args);
+		var parser = new DefaultParser();
+		var line = parser.parse(options, args);
+		var domain = line.getOptionValue("domain");
 		
-		String domain = line.getOptionValue("domain");
-		
-		if (line.hasOption("language") && !domain.equals("pl.wiktionary.org")) {
-			throw new IllegalArgumentException("Section parser was requested, but project is not pl.wiktionary.org.");
-		}
-		
-		if (line.hasOption("field") && !domain.equals("pl.wiktionary.org")) {
-			throw new IllegalArgumentException("Field parser was requested, but project is not pl.wiktionary.org.");
-		}
-		
-		String sectionName = line.getOptionValue("language");
-		
-		String fieldName = line.getOptionValue("field");
-		FieldTypes fieldType = null;
-		
-		if (fieldName != null) {
-			fieldType = Stream.of(FieldTypes.values())
-				.filter(type -> type.localised().equals(fieldName))
-				.findAny()
-				.orElseThrow();
-		}
+		var handler = switch (domain) {
+			case "pl.wiktionary.org" -> new PlwiktFragmentHandler(line.getOptionValue("language"), line.getOptionValue("field"));
+			default -> new GenericFragmentHandler(line.getOptionValue("section"));
+		};
 		
 		wb = Login.createSession(domain);
-		xstream = new XStream();
+		wb.setThrottle(Integer.parseInt(line.getOptionValue("throttle", "5000")));
 		
-		String throttle = line.getOptionValue("throttle", "5000");
-		wb.setThrottle(Integer.parseInt(throttle));
-		
-		switch (line.getOptionValue("op")) {
-			case "query":
-				getContents(sectionName, fieldType);
-				break;
-			case "apply":
-				applyChanges(sectionName, fieldType, line.getOptionValue("summary"), line.hasOption("minor"));
-				break;
-			default:
+		switch (line.getOptionValue("operation")) {
+			case "query" -> getContents(handler);
+			case "apply" -> applyFragments(handler);
+			case "edit" -> editEntries(handler, line.getOptionValue("summary"), line.hasOption("minor"));
+			default -> {
 				new HelpFormatter().printHelp(AssistedEdit.class.getName(), options);
 				throw new IllegalArgumentException();
+			}
 		}
 	}
 	
-	public static void getContents(String sectionName, FieldTypes fieldType) throws IOException {
-		List<String> titles = Files.readAllLines(TITLES).stream()
+	private static void getContents(FragmentHandler handler) throws IOException {
+		var titles = Files.readAllLines(TITLES).stream()
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
 			.distinct()
@@ -113,9 +95,9 @@ public final class AssistedEdit {
 			return;
 		}
 
-		List<PageContainer> pages = wb.getContentOfPages(titles);
+		var pages = wb.getContentOfPages(titles);
 		
-		Map<String, String> map = pages.stream()
+		var map = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getText,
@@ -125,7 +107,7 @@ public final class AssistedEdit {
 		
 		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 		
-		Map<String, OffsetDateTime> timestamps = pages.stream()
+		var timestamps = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				PageContainer::getTimestamp
@@ -133,7 +115,7 @@ public final class AssistedEdit {
 		
 		Files.writeString(TIMESTAMPS, xstream.toXML(timestamps));
 		
-		Map<String, Integer> hashcodes = pages.stream()
+		var hashcodes = pages.stream()
 			.collect(Collectors.toMap(
 				PageContainer::getTitle,
 				pc -> pc.getText().hashCode()
@@ -141,75 +123,32 @@ public final class AssistedEdit {
 		
 		Files.writeString(HASHCODES, xstream.toXML(hashcodes));
 		
-		if (sectionName != null || fieldType != null) {
-			Map<String, String> filteredMap;
-			
-			var stream = pages.stream()
-				.map(Page::wrap)
-				.flatMap(p -> p.getAllSections().stream());
-			
-			if (sectionName != null) {
-				stream = stream.filter(s -> s.getLangShort().equals(sectionName));
-			}
-			
-			if (fieldType != null) {
-				filteredMap = stream
-					.flatMap(s -> s.getField(fieldType).stream())
-					.filter(f -> !f.isEmpty())
-					.collect(Collectors.toMap(
-						f -> String.format("%s # %s",
-							f.getContainingSection().get().getContainingPage().get().getTitle(),
-							f.getContainingSection().get().getLangShort()),
-						Field::getContent,
-						(a, b) -> a,
-						LinkedHashMap::new
-					));
-			} else {
-				filteredMap = stream.collect(Collectors.toMap(
-					s -> String.format("%s # %s",
-						s.getContainingPage().get().getTitle(),
-						s.getLangShort()),
-					Section::toString,
-					(a, b) -> a,
-					LinkedHashMap::new
-				));
-			}
-			
-			String fieldName = Optional.ofNullable(fieldType).map(FieldTypes::localised).orElse(null);
-			String filename = String.format(WORKLIST_FILTERED_FORMAT, sectionName, fieldName);
+		if (handler.isEnabled()) {
+			var filteredMap = handler.extractFragments(pages);
+			var filename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
 			Files.writeString(LOCATION.resolve(filename), Misc.makeList(filteredMap));
 		}
 	}
 	
-	public static void applyChanges(String sectionName, FieldTypes fieldType, String summary, boolean minor) throws IOException {
-		Map<String, String> map = Misc.readList(Files.readAllLines(WORKLIST).toArray(String[]::new));
+	private static void applyFragments(FragmentHandler handler) throws IOException {
+		if (!handler.isEnabled()) {
+			throw new IllegalArgumentException("Fragment parser not enabled.");
+		}
+		
+		var map = Misc.readList(Files.readString(WORKLIST));
+		System.out.printf("Size: %d%n", map.size());
+		
+		var filename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
+		var fragmentMap = Misc.readList(Files.readString(LOCATION.resolve(filename)));
+		System.out.printf("Fragments: %d%n", fragmentMap.size());
+		
+		handler.applyFragments(map, fragmentMap);
+	}
+	
+	private static void editEntries(FragmentHandler handler, String summary, boolean minor) throws IOException {
+		var map = Misc.readList(Files.readString(WORKLIST));
 		final var initialSize = map.size();
 		System.out.printf("Size: %d%n", initialSize);
-		
-		if (sectionName != null || fieldType != null) {
-			String fieldName = Optional.ofNullable(fieldType).map(FieldTypes::localised).orElse(null);
-			String filename = String.format(WORKLIST_FILTERED_FORMAT, sectionName, fieldName);
-			Map<String, String> filteredMap = Misc.readList(Files.readAllLines(LOCATION.resolve(filename)).toArray(String[]::new));
-			
-			filteredMap.entrySet().forEach(e -> map.computeIfPresent(
-				e.getKey().substring(0,  e.getKey().indexOf('#') - 1),
-				(title, oldText) -> {
-					var page = Page.store(title, oldText);
-					var langShort = e.getKey().substring(e.getKey().indexOf('#') + 2);
-					var section = page.getSection(langShort, true).get();
-					
-					if (fieldType != null) {
-						var field = section.getField(fieldType).get();
-						field.editContent(e.getValue());
-					} else {
-						var newSection = Section.parse(e.getValue());
-						section.replaceWith(newSection);
-					}
-					
-					return page.toString();
-				}
-			));
-		}
 		
 		@SuppressWarnings("unchecked")
 		var timestamps = (Map<String, OffsetDateTime>) xstream.fromXML(Files.readString(TIMESTAMPS));
@@ -226,17 +165,21 @@ public final class AssistedEdit {
 			return;
 		}
 		
-		List<String> errors = new ArrayList<>();
+		var errors = new ArrayList<>();
 		
 		for (var entry : map.entrySet()) {
-			String title = entry.getKey();
-			String text = entry.getValue();
+			var title = entry.getKey();
+			var text = entry.getValue();
 			
 			try {
 				wb.edit(title, text, summary, minor, true, -2, timestamps.get(title));
 			} catch (Throwable t) {
     			t.printStackTrace();
     			errors.add(title);
+    			
+    			if (t instanceof AssertionError || t instanceof AccountLockedException) {
+    				break;
+    			}
     		}
 		}
 		
@@ -246,13 +189,160 @@ public final class AssistedEdit {
 			System.out.printf("%d errors: %s%n", errors.size(), errors.toString());
 		}
 		
-		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
+		Files.move(WORKLIST, DONELIST, StandardCopyOption.REPLACE_EXISTING);
 		
-		if (sectionName != null || fieldType != null) {
-			String fieldName = Optional.ofNullable(fieldType).map(FieldTypes::localised).orElse(null);
-			String oldFilename = String.format(WORKLIST_FILTERED_FORMAT, sectionName, fieldName);
-			String newFilename = String.format("done-%s-%s.txt", sectionName, fieldName);
+		if (handler.isEnabled()) {
+			var oldFilename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
+			var newFilename = String.format(DONELIST_FILTERED_FORMAT, handler.getFileFragment());
 			Files.move(WORKLIST.resolveSibling(oldFilename), WORKLIST.resolveSibling(newFilename), StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+	
+	private static interface FragmentHandler {
+		Map<String, String> extractFragments(List<PageContainer> pages);
+		void applyFragments(Map<String, String> map, Map<String, String> fragmentMap);
+		String getFileFragment();
+		boolean isEnabled();
+	}
+	
+	private static class GenericFragmentHandler implements FragmentHandler {
+		private String sectionName = null;
+		
+		public GenericFragmentHandler(String sectionName) {
+			this.sectionName = sectionName;
+		}
+		
+		@Override
+		public Map<String, String> extractFragments(List<PageContainer> pages) {
+			if (!isEnabled()) {
+				return Collections.emptyMap();
+			}
+			
+			return pages.stream()
+				.map(com.github.wikibot.parsing.Page::wrap)
+				.map(p -> p.findSectionsWithHeader(sectionName))
+				.filter(sections -> !sections.isEmpty())
+				.map(sections -> sections.get(0))
+				.collect(Collectors.toMap(
+					s -> s.getContainingPage().get().getTitle(),
+					s -> s.toString(),
+					(a, b) -> a,
+					LinkedHashMap::new
+				));
+		}
+		
+		@Override
+		public void applyFragments(Map<String, String> map, Map<String, String> fragmentMap) {
+			if (isEnabled()) {
+				fragmentMap.entrySet().forEach(e -> map.computeIfPresent(e.getKey(), (title, oldText) -> {
+					var page = com.github.wikibot.parsing.Page.store(title, oldText);
+					var section = page.findSectionsWithHeader(e.getKey()).get(0);
+					var newSection = com.github.wikibot.parsing.Section.parse(e.getValue());
+					section.replaceWith(newSection);
+					return page.toString();
+				}));
+			}
+		}
+		
+		@Override
+		public String getFileFragment() {
+			return sectionName;
+		}
+		
+		@Override
+		public boolean isEnabled() {
+			return sectionName != null;
+		}
+	}
+	
+	private static class PlwiktFragmentHandler implements FragmentHandler {
+		private String sectionName = null;
+		private FieldTypes fieldType = null;
+		
+		public PlwiktFragmentHandler(String sectionName, String fieldName) {
+			this.sectionName = sectionName;
+			
+			if (fieldName != null) {
+				fieldType =  Stream.of(FieldTypes.values())
+					.filter(type -> type.localised().equals(fieldName))
+					.findAny()
+					.orElseThrow(() -> new IllegalArgumentException("Unsupported field name: " + fieldName));
+			}
+		}
+		
+		@Override
+		public Map<String, String> extractFragments(List<PageContainer> pages) {
+			if (!isEnabled()) {
+				return Collections.emptyMap();
+			}
+			
+			var stream = pages.stream()
+				.map(com.github.wikibot.parsing.plwikt.Page::wrap)
+				.flatMap(p -> p.getAllSections().stream());
+			
+			if (sectionName != null) {
+				stream = stream.filter(s -> s.getLangShort().equals(sectionName));
+			}
+			
+			if (fieldType != null) {
+				return stream
+					.flatMap(s -> s.getField(fieldType).stream())
+					.filter(f -> !f.isEmpty())
+					.collect(Collectors.toMap(
+						f -> String.format("%s # %s",
+							f.getContainingSection().get().getContainingPage().get().getTitle(),
+							f.getContainingSection().get().getLangShort()),
+						Field::getContent,
+						(a, b) -> a,
+						LinkedHashMap::new
+					));
+			} else {
+				return stream.collect(Collectors.toMap(
+					s -> String.format("%s # %s",
+						s.getContainingPage().get().getTitle(),
+						s.getLangShort()),
+					s -> s.toString(),
+					(a, b) -> a,
+					LinkedHashMap::new
+				));
+			}
+		}
+		
+		@Override
+		public void applyFragments(Map<String, String> map, Map<String, String> fragmentMap) {
+			if (isEnabled()) {
+				fragmentMap.entrySet().forEach(e -> map.computeIfPresent(
+					e.getKey().substring(0,  e.getKey().indexOf('#') - 1),
+					(title, oldText) -> {
+						var page = com.github.wikibot.parsing.plwikt.Page.store(title, oldText);
+						var langShort = e.getKey().substring(e.getKey().indexOf('#') + 2);
+						var section = page.getSection(langShort, true).get();
+						
+						if (fieldType != null) {
+							var field = section.getField(fieldType).get();
+							field.editContent(e.getValue());
+						} else {
+							var newSection = com.github.wikibot.parsing.plwikt.Section.parse(e.getValue());
+							section.replaceWith(newSection);
+						}
+						
+						return page.toString();
+					}
+				));
+			}
+		}
+		
+		@Override
+		public String getFileFragment() {
+			return Optional.ofNullable(fieldType)
+				.map(FieldTypes::localised)
+				.map(fieldName -> String.format("%s-%s", sectionName, fieldName))
+				.orElse(sectionName);
+		}
+		
+		@Override
+		public boolean isEnabled() {
+			return sectionName != null || fieldType != null;
 		}
 	}
 }
