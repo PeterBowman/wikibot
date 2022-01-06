@@ -36,8 +36,8 @@ public final class AssistedEdit {
 	private static final Path DONELIST = LOCATION.resolve("done.txt");
 	private static final Path TIMESTAMPS = LOCATION.resolve("timestamps.xml");
 	private static final Path HASHCODES = LOCATION.resolve("hash.xml");
+	
 	private static final String WORKLIST_FILTERED_FORMAT = "worklist-%s.txt";
-	private static final String DONELIST_FILTERED_FORMAT = "done-%s.txt";
 	
 	private static XStream xstream = new XStream();
 	
@@ -45,7 +45,7 @@ public final class AssistedEdit {
 	
 	public static void main(String[] args) throws Exception {
 		var options = new Options();
-		options.addRequiredOption("o", "operation", true, "mode of operation: query|apply|edit");
+		options.addRequiredOption("o", "operation", true, "mode of operation: query|extract|apply|edit");
 		options.addRequiredOption("d", "domain", true, "wiki domain name");
 		options.addOption("s", "summary", true, "edit summary");
 		options.addOption("m", "minor", false, "mark edits as minor");
@@ -72,9 +72,10 @@ public final class AssistedEdit {
 		wb.setThrottle(Integer.parseInt(line.getOptionValue("throttle", "5000")));
 		
 		switch (line.getOptionValue("operation")) {
-			case "query" -> getContents(handler);
+			case "query" -> getContents();
+			case "extract" -> extractFragments(handler);
 			case "apply" -> applyFragments(handler);
-			case "edit" -> editEntries(handler, line.getOptionValue("summary"), line.hasOption("minor"));
+			case "edit" -> editEntries(line.getOptionValue("summary"), line.hasOption("minor"));
 			default -> {
 				new HelpFormatter().printHelp(AssistedEdit.class.getName(), options);
 				throw new IllegalArgumentException();
@@ -82,7 +83,7 @@ public final class AssistedEdit {
 		}
 	}
 	
-	private static void getContents(FragmentHandler handler) throws IOException {
+	private static void getContents() throws IOException {
 		var titles = Files.readAllLines(TITLES).stream()
 			.map(String::trim)
 			.filter(line -> !line.isEmpty())
@@ -97,37 +98,29 @@ public final class AssistedEdit {
 
 		var pages = wb.getContentOfPages(titles);
 		
-		var map = pages.stream()
-			.collect(Collectors.toMap(
-				PageContainer::getTitle,
-				PageContainer::getText,
-				(a, b) -> a,
-				LinkedHashMap::new
-			));
-		
+		var map = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText, (a, b) -> a, LinkedHashMap::new));
 		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 		
-		var timestamps = pages.stream()
-			.collect(Collectors.toMap(
-				PageContainer::getTitle,
-				PageContainer::getTimestamp
-			));
-		
+		var timestamps = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getTimestamp));
 		Files.writeString(TIMESTAMPS, xstream.toXML(timestamps));
 		
-		var hashcodes = pages.stream()
-			.collect(Collectors.toMap(
-				PageContainer::getTitle,
-				pc -> pc.getText().hashCode()
-			));
-		
+		var hashcodes = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, pc -> pc.getText().hashCode()));
 		Files.writeString(HASHCODES, xstream.toXML(hashcodes));
-		
-		if (handler.isEnabled()) {
-			var filteredMap = handler.extractFragments(pages);
-			var filename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
-			Files.writeString(LOCATION.resolve(filename), Misc.makeList(filteredMap));
+	}
+	
+	private static void extractFragments(FragmentHandler handler) throws IOException {
+		if (!handler.isEnabled()) {
+			throw new IllegalArgumentException("Fragment parser not enabled.");
 		}
+		
+		var map = Misc.readList(Files.readString(WORKLIST));
+		System.out.printf("Size: %d%n", map.size());
+		
+		var fragmentMap = handler.extractFragments(map);
+		System.out.printf("Fragments: %d%n", fragmentMap.size());
+		
+		var filename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
+		Files.writeString(LOCATION.resolve(filename), Misc.makeList(fragmentMap));
 	}
 	
 	private static void applyFragments(FragmentHandler handler) throws IOException {
@@ -143,9 +136,10 @@ public final class AssistedEdit {
 		System.out.printf("Fragments: %d%n", fragmentMap.size());
 		
 		handler.applyFragments(map, fragmentMap);
+		Files.writeString(WORKLIST, Misc.makeList(map));
 	}
 	
-	private static void editEntries(FragmentHandler handler, String summary, boolean minor) throws IOException {
+	private static void editEntries(String summary, boolean minor) throws IOException {
 		var map = Misc.readList(Files.readString(WORKLIST));
 		final var initialSize = map.size();
 		System.out.printf("Size: %d%n", initialSize);
@@ -190,36 +184,30 @@ public final class AssistedEdit {
 		}
 		
 		Files.move(WORKLIST, DONELIST, StandardCopyOption.REPLACE_EXISTING);
-		
-		if (handler.isEnabled()) {
-			var oldFilename = String.format(WORKLIST_FILTERED_FORMAT, handler.getFileFragment());
-			var newFilename = String.format(DONELIST_FILTERED_FORMAT, handler.getFileFragment());
-			Files.move(WORKLIST.resolveSibling(oldFilename), WORKLIST.resolveSibling(newFilename), StandardCopyOption.REPLACE_EXISTING);
-		}
 	}
 	
 	private static interface FragmentHandler {
-		Map<String, String> extractFragments(List<PageContainer> pages);
+		Map<String, String> extractFragments(Map<String, String> map);
 		void applyFragments(Map<String, String> map, Map<String, String> fragmentMap);
 		String getFileFragment();
 		boolean isEnabled();
 	}
 	
 	private static class GenericFragmentHandler implements FragmentHandler {
-		private String sectionName = null;
+		private String sectionName;
 		
 		public GenericFragmentHandler(String sectionName) {
 			this.sectionName = sectionName;
 		}
 		
 		@Override
-		public Map<String, String> extractFragments(List<PageContainer> pages) {
+		public Map<String, String> extractFragments(Map<String, String> map) {
 			if (!isEnabled()) {
 				return Collections.emptyMap();
 			}
 			
-			return pages.stream()
-				.map(com.github.wikibot.parsing.Page::wrap)
+			return map.entrySet().stream()
+				.map(e -> com.github.wikibot.parsing.Page.store(e.getKey(), e.getValue()))
 				.map(p -> p.findSectionsWithHeader(sectionName))
 				.filter(sections -> !sections.isEmpty())
 				.map(sections -> sections.get(0))
@@ -256,8 +244,8 @@ public final class AssistedEdit {
 	}
 	
 	private static class PlwiktFragmentHandler implements FragmentHandler {
-		private String sectionName = null;
-		private FieldTypes fieldType = null;
+		private String sectionName;
+		private FieldTypes fieldType;
 		
 		public PlwiktFragmentHandler(String sectionName, String fieldName) {
 			this.sectionName = sectionName;
@@ -271,13 +259,13 @@ public final class AssistedEdit {
 		}
 		
 		@Override
-		public Map<String, String> extractFragments(List<PageContainer> pages) {
+		public Map<String, String> extractFragments(Map<String, String> map) {
 			if (!isEnabled()) {
 				return Collections.emptyMap();
 			}
 			
-			var stream = pages.stream()
-				.map(com.github.wikibot.parsing.plwikt.Page::wrap)
+			var stream = map.entrySet().stream()
+				.map(e -> com.github.wikibot.parsing.plwikt.Page.store(e.getKey(), e.getValue()))
 				.flatMap(p -> p.getAllSections().stream());
 			
 			if (sectionName != null) {
