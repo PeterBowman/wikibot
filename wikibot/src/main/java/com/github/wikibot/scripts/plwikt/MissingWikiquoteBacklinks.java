@@ -109,8 +109,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String[]> map = Misc.readMultiList(lines);
+		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		PageContainer[] pages = Misc.deserialize(PAGES_SER);
 		List<String> errors = new ArrayList<>();
 		

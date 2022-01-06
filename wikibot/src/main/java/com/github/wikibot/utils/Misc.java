@@ -130,10 +130,6 @@ public final class Misc {
 		return worklist;
 	}
 	
-	public static Map<String, String> readList(String[] lines) {
-		return readList(String.join("\n", lines));
-	}
-	
 	public static Map<String, String> readList(String data) {
 		var map = new LinkedHashMap<String, String>();
 		var drafts = Pattern.compile("\\*{40}").split(data);
@@ -163,14 +159,6 @@ public final class Misc {
 			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
 		
 		return worklist;
-	}
-	
-	public static Map<String, String[]> readMultiList(String[] lines) {
-		return readMultiList(String.join("\n", lines));
-	}
-	
-	public static Map<String, String[]> readMultiList(String[] lines, String separator) {
-		return readMultiList(String.join("\n", lines), separator);
 	}
 	
 	public static Map<String, String[]> readMultiList(String data) {

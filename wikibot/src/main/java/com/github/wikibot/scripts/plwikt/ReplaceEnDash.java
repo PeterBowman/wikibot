@@ -126,8 +126,7 @@ public final class ReplaceEnDash implements Selectorizable {
 	}
 	
 	public static void edit() throws IOException, LoginException {
-		String[] lines = Files.readAllLines(REVIEWED_LIST).toArray(String[]::new);
-		Map<String, String[]> map = Misc.readMultiList(lines, "\n");
+		Map<String, String[]> map = Misc.readMultiList(Files.readString(REVIEWED_LIST), "\n");
 		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());

@@ -105,7 +105,7 @@ public final class Replace implements Selectorizable {
 	public void edit() throws IOException, ClassNotFoundException, LoginException {
 		String target = Misc.deserialize(TARGET);
 		String replacement = Misc.deserialize(REPLACEMENT);
-		Map<String, String> map = Misc.readList(Files.readAllLines(WORKLIST).toArray(String[]::new));
+		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));
 		Map<String, OffsetDateTime> timestamps = Misc.deserialize(INFO);
 		
 		System.out.printf("Título: %s%n", target);

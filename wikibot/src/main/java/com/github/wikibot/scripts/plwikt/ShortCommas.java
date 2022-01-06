@@ -175,8 +175,7 @@ public final class ShortCommas implements Selectorizable {
 	
 	public static void edit() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(INFO);
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String[]> map = Misc.readMultiList(lines, "\n\n");
+		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST), "\n\n");
 		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());

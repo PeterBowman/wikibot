@@ -208,8 +208,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 
 	public static void edit() throws ClassNotFoundException, IOException {
 		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String[]> map = Misc.readMultiList(lines);
+		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());

@@ -109,8 +109,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {
 		PageContainer[] pages = Misc.deserialize(INFO);
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String> worklist = Misc.readList(lines);
+		Map<String, String> worklist = Misc.readList(Files.readString(WORKLIST));
 		Set<String> titles = worklist.keySet();
 		List<String> errors = new ArrayList<>();
 		

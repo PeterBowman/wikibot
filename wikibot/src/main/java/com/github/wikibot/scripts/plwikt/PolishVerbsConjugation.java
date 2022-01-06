@@ -79,8 +79,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 	
 	public static void edit() throws ClassNotFoundException, IOException, LoginException {
 		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String> map = Misc.readList(lines);
+		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));
 		List<String> errors = new ArrayList<>();
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());

@@ -130,8 +130,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	}
 	
 	public static void edit() throws IOException, ClassNotFoundException, LoginException {
-		String[] lines = Files.readAllLines(WORKLIST).toArray(String[]::new);
-		Map<String, String[]> map = Misc.readMultiList(lines);
+		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		PageContainer[] pages = Misc.deserialize(SERIALIZED);
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
