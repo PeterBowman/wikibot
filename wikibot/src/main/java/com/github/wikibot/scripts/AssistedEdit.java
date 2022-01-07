@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -206,6 +207,8 @@ public final class AssistedEdit {
 				return Collections.emptyMap();
 			}
 			
+			Objects.requireNonNull(sectionName);
+			
 			return map.entrySet().stream()
 				.map(e -> com.github.wikibot.parsing.Page.store(e.getKey(), e.getValue()))
 				.map(p -> p.findSectionsWithHeader(sectionName))
@@ -224,9 +227,13 @@ public final class AssistedEdit {
 			if (isEnabled()) {
 				fragmentMap.entrySet().forEach(e -> map.computeIfPresent(e.getKey(), (title, oldText) -> {
 					var page = com.github.wikibot.parsing.Page.store(title, oldText);
-					var section = page.findSectionsWithHeader(e.getKey()).get(0);
-					var newSection = com.github.wikibot.parsing.Section.parse(e.getValue());
-					section.replaceWith(newSection);
+					var sections = page.findSectionsWithHeader(sectionName);
+					
+					if (!sections.isEmpty()) {
+						var newSection = com.github.wikibot.parsing.Section.parse(e.getValue());
+						sections.get(0).replaceWith(newSection);
+					}
+					
 					return page.toString();
 				}));
 			}
@@ -234,6 +241,7 @@ public final class AssistedEdit {
 		
 		@Override
 		public String getFileFragment() {
+			Objects.requireNonNull(sectionName);
 			return sectionName;
 		}
 		
@@ -264,31 +272,26 @@ public final class AssistedEdit {
 				return Collections.emptyMap();
 			}
 			
+			Objects.requireNonNull(sectionName);
+			
 			var stream = map.entrySet().stream()
 				.map(e -> com.github.wikibot.parsing.plwikt.Page.store(e.getKey(), e.getValue()))
-				.flatMap(p -> p.getAllSections().stream());
-			
-			if (sectionName != null) {
-				stream = stream.filter(s -> s.getLangShort().equals(sectionName));
-			}
+				.flatMap(p -> p.getAllSections().stream())
+				.filter(s -> s.getLangShort().equals(sectionName));
 			
 			if (fieldType != null) {
 				return stream
 					.flatMap(s -> s.getField(fieldType).stream())
 					.filter(f -> !f.isEmpty())
 					.collect(Collectors.toMap(
-						f -> String.format("%s # %s",
-							f.getContainingSection().get().getContainingPage().get().getTitle(),
-							f.getContainingSection().get().getLangShort()),
+						f -> f.getContainingSection().get().getContainingPage().get().getTitle(),
 						Field::getContent,
 						(a, b) -> a,
 						LinkedHashMap::new
 					));
 			} else {
 				return stream.collect(Collectors.toMap(
-					s -> String.format("%s # %s",
-						s.getContainingPage().get().getTitle(),
-						s.getLangShort()),
+					s -> s.getContainingPage().get().getTitle(),
 					s -> s.toString(),
 					(a, b) -> a,
 					LinkedHashMap::new
@@ -299,29 +302,31 @@ public final class AssistedEdit {
 		@Override
 		public void applyFragments(Map<String, String> map, Map<String, String> fragmentMap) {
 			if (isEnabled()) {
-				fragmentMap.entrySet().forEach(e -> map.computeIfPresent(
-					e.getKey().substring(0,  e.getKey().indexOf('#') - 1),
-					(title, oldText) -> {
-						var page = com.github.wikibot.parsing.plwikt.Page.store(title, oldText);
-						var langShort = e.getKey().substring(e.getKey().indexOf('#') + 2);
-						var section = page.getSection(langShort, true).get();
-						
+				Objects.requireNonNull(sectionName);
+				
+				fragmentMap.entrySet().forEach(e -> map.computeIfPresent(e.getKey(), (title, oldText) -> {
+					var page = com.github.wikibot.parsing.plwikt.Page.store(title, oldText);
+					var section = page.getSection(sectionName, true);
+					
+					if (section.isPresent()) {
 						if (fieldType != null) {
-							var field = section.getField(fieldType).get();
+							var field = section.get().getField(fieldType).get();
 							field.editContent(e.getValue());
 						} else {
 							var newSection = com.github.wikibot.parsing.plwikt.Section.parse(e.getValue());
-							section.replaceWith(newSection);
+							section.get().replaceWith(newSection);
 						}
-						
-						return page.toString();
 					}
-				));
+					
+					return page.toString();
+				}));
 			}
 		}
 		
 		@Override
 		public String getFileFragment() {
+			Objects.requireNonNull(sectionName);
+			
 			return Optional.ofNullable(fieldType)
 				.map(FieldTypes::localised)
 				.map(fieldName -> String.format("%s-%s", sectionName, fieldName))
