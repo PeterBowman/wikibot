@@ -123,16 +123,14 @@ public final class Misc {
 	}
 	
 	public static String makeList(Map<String, String> map) {
-		var worklist = map.keySet().stream()
+		return map.keySet().stream()
 			.map(title -> String.format("%s%n%n%s", title, map.get(title)))
 			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
-			
-		return worklist;
 	}
 	
 	public static Map<String, String> readList(String data) {
 		var map = new LinkedHashMap<String, String>();
-		var drafts = Pattern.compile("\\*{40}").split(data.replace("\r\n", "\n"));
+		var drafts = Pattern.compile("\n{2}\\*{40}\n{2}").split(data.replace("\r\n", "\n"));
 		
 		for (var draft : drafts) {
 			draft = draft.trim();
@@ -149,16 +147,13 @@ public final class Misc {
 	}
 	
 	public static String makeMultiList(Map<String, Collection<String>> map, String separator) {
-		var worklist = map.keySet().stream()
+		return map.keySet().stream()
 			.map(title -> String.format(
-					"%s%n%n%s",
-					title,
-					map.get(title).stream().collect(Collectors.joining(separator))
-				)
-			)
+				"%s%n%n%s",
+				title,
+				map.get(title).stream().collect(Collectors.joining(separator))
+			))
 			.collect(Collectors.joining(String.format("%n%n%s%n%n", "*".repeat(40))));
-		
-		return worklist;
 	}
 	
 	public static Map<String, String[]> readMultiList(String data) {
