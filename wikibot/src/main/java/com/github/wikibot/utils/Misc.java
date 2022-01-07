@@ -132,7 +132,7 @@ public final class Misc {
 	
 	public static Map<String, String> readList(String data) {
 		var map = new LinkedHashMap<String, String>();
-		var drafts = Pattern.compile("\\*{40}").split(data);
+		var drafts = Pattern.compile("\\*{40}").split(data.replace("\r\n", "\n"));
 		
 		for (var draft : drafts) {
 			draft = draft.trim();
@@ -167,7 +167,7 @@ public final class Misc {
 	
 	public static Map<String, String[]> readMultiList(String data, String separator) {
 		var map = new LinkedHashMap<String, String[]>();
-		var drafts = Pattern.compile("\\*{40}").split(String.join("\n", data));
+		var drafts = Pattern.compile("\\*{40}").split(String.join("\n", data.replace("\r\n", "\n")));
 		
 		for (var draft : drafts) {
 			draft = draft.trim();
