@@ -5,14 +5,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -22,46 +18,12 @@ import com.github.wikibot.main.Selectorizable;
 
 public final class Misc {
 	private Misc() {}
-	
-	public static class MyRandom {
-		private Set<Integer> set;
-		private Random r;
-		private int base;
 		
-		public MyRandom(int digits) {			
-			set = new HashSet<>();
-			r = new Random();
-			base = (int) Math.pow(10, digits - 1);
-		}
-		
-		public int generateInt() {
-			int n = 0;
-			
-			while (!set.contains(n)) {
-				set.add(n = nextInt());
-			}
-			
-			return n;
-		}
-		
-		private int nextInt() {
-			return base + r.nextInt(9 * base - 1);
-		}
-	}
-	
-	public static void serialize(Object target, String source) throws IOException {
-		serialize(target, Paths.get(source));
-	}
-	
 	public static void serialize(Object target, Path path) throws IOException {
 		try (var out = new ObjectOutputStream(Files.newOutputStream(path))) {
 			out.writeObject(target);
 			System.out.printf("Object successfully serialized: %s%n", path);
 		}
-	}
-	
-	public static <T> T deserialize(String source) throws IOException, ClassNotFoundException {
-		return deserialize(Paths.get(source));
 	}
 	
 	public static <T> T deserialize(Path source) throws IOException, ClassNotFoundException {
@@ -71,21 +33,6 @@ public final class Misc {
 			System.out.printf("Object successfully deserialized: %s%n", source);
 			return target;
 		}
-	}
-	
-	public static void runTimer(Runnable runner) {
-		long start = System.currentTimeMillis();
-		
-		runner.run();
-		
-		int seconds = (int) (System.currentTimeMillis() - start) / 1000;
-		int minutes = (int) Math.floor(seconds/60);
-		
-		System.out.println(String.format(
-			"Tiempo total transcurrido: %dm %ds.%n",
-			minutes,
-			(minutes != 0) ? (seconds % (minutes * 60)) : seconds
-		));
 	}
 	
 	public static void runTimerWithSelector(Selectorizable c) {
@@ -105,17 +52,6 @@ public final class Misc {
 				minutes,
 				(minutes != 0) ? (seconds % (minutes * 60)) : seconds
 			));
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-	
-	public static void runScheduledSelector(Selectorizable c, String arg) {
-		char value = arg.toCharArray()[0];
-		
-		try {
-			c.selector(value);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(0);

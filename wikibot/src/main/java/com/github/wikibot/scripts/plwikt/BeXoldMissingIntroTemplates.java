@@ -111,7 +111,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		if (pages.size() == 0)
 			return;
 		
-		Misc.serialize(pages, LOCATION_SER + "preview.ser");
+		Misc.serialize(pages, LOCATION_SER.resolve("preview.ser"));
 	}
 	
 	public static void edit() throws IOException, ClassNotFoundException, LoginException {

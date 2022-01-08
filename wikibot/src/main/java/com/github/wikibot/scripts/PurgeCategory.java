@@ -1,11 +1,9 @@
 package com.github.wikibot.scripts;
 
-import java.io.IOException;
 import java.util.List;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 
 public final class PurgeCategory {
 	public static void main(String[] args) throws Exception {
@@ -24,12 +22,6 @@ public final class PurgeCategory {
 		
 		System.out.printf("Se han extraído %d páginas%n", pages.size());
 				
-		Misc.runTimer(() -> {
-			try {
-				wiki.purge(true, pages.toArray(String[]::new));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+		wiki.purge(true, pages.toArray(String[]::new));
 	}
 }

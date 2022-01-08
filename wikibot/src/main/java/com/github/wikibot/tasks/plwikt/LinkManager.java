@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -41,7 +42,6 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
-import com.github.wikibot.utils.Misc.MyRandom;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
@@ -148,7 +148,7 @@ public final class LinkManager implements Selectorizable {
 		Map<String, String[]> backlinkscache = new HashMap<>(10000);
 		Map<String, String> contentscache = new HashMap<>(10000);
 		
-		MyRandom r = new Misc.MyRandom(5);
+		MyRandom r = new MyRandom(5);
 		
 		for (LinkData entry : data) {
 			if ((entry.lang != null && entry.lang.isEmpty()) || entry.links == null || entry.forms == null) {
@@ -970,11 +970,14 @@ public final class LinkManager implements Selectorizable {
 		}
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		if (args.length == 0) {
-			Misc.runTimerWithSelector(new LinkManager());
+			System.out.print("Mode of operation: ");
+			char op = (char) System.in.read();
+			new LinkManager().selector(op);
 		} else {
-			Misc.runScheduledSelector(new LinkManager(), args[0]);
+			char op = args[0].toCharArray()[0];
+			new LinkManager().selector(op);
 		}
 	}
 
@@ -1057,6 +1060,32 @@ public final class LinkManager implements Selectorizable {
 			currentId = id;
 			currentRequest = request;
 			currentTimestamp = timestamp;
+		}
+	}
+	
+	private static class MyRandom {
+		private Set<Integer> set;
+		private Random r;
+		private int base;
+		
+		public MyRandom(int digits) {			
+			set = new HashSet<>();
+			r = new Random();
+			base = (int) Math.pow(10, digits - 1);
+		}
+		
+		public int generateInt() {
+			int n = 0;
+			
+			while (!set.contains(n)) {
+				set.add(n = nextInt());
+			}
+			
+			return n;
+		}
+		
+		private int nextInt() {
+			return base + r.nextInt(9 * base - 1);
 		}
 	}
 }
