@@ -16,8 +16,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.github.wikibot.utils.Misc;
-
 public final class LonelyPages {
 	private static final Path LOCATION = Paths.get("./data/tasks.eswikt/LonelyPages/");
 	private static final Properties defaultSQLProperties = new Properties();	
@@ -48,7 +46,7 @@ public final class LonelyPages {
 		Path f = Paths.get("./replica.my.cnf");
 		
 		if (!Files.exists(f)) {
-			f = LOCATION.resolve(".my.cnf");
+			f = Paths.get("./data/sessions/replica.my.cnf");
 		}
 		
 		Files.readAllLines(f).stream()
@@ -82,14 +80,14 @@ public final class LonelyPages {
 		}
 	}
 	
-	private static void storeData(List<String> list) throws IOException, ClassNotFoundException {
-		var data = LOCATION.resolve("data.ser");
+	private static void storeData(List<String> list) throws IOException {
+		var data = LOCATION.resolve("data.txt");
 		var ctrl = LOCATION.resolve("UPDATED");
-		var cal = LOCATION.resolve("timestamp.ser");
+		var timestamp = LOCATION.resolve("timestamp.txt");
 		
-		if (!Files.exists(data) || list.hashCode() != (int) Misc.deserialize(data).hashCode()) {
-			Misc.serialize(list, data);
-			Misc.serialize(OffsetDateTime.now(), cal);
+		if (!Files.exists(data) || list.hashCode() != Files.readAllLines(data).hashCode()) {
+			Files.write(data, list);
+			Files.writeString(timestamp, OffsetDateTime.now().toString());
 			Files.deleteIfExists(ctrl);
 		}
 	}

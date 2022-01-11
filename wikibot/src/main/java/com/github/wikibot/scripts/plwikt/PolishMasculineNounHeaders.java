@@ -129,7 +129,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		Files.writeString(SERIALIZED, new XStream().toXML(pages));
 	}
 	
-	public static void edit() throws IOException, ClassNotFoundException, LoginException {
+	public static void edit() throws IOException, LoginException {
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());

@@ -111,7 +111,7 @@ public final class ShortCommas implements Selectorizable {
 		Files.writeString(INFO, new XStream().toXML(pages));
 	}
 	
-	public static void stripCommas() throws ClassNotFoundException, IOException {
+	public static void stripCommas() throws IOException {
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		
@@ -175,7 +175,7 @@ public final class ShortCommas implements Selectorizable {
 		Files.writeString(INFO, new XStream().toXML(pages));
 	}
 	
-	public static void edit() throws ClassNotFoundException, IOException {
+	public static void edit() throws IOException {
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST), "\n\n");
@@ -210,7 +210,7 @@ public final class ShortCommas implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public static void main(String[] args) throws ClassNotFoundException, IOException {
+	public static void main(String[] args) throws IOException {
 		Misc.runTimerWithSelector(new ShortCommas());
 	}
 }

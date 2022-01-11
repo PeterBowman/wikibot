@@ -57,7 +57,7 @@ public final class Replace implements Selectorizable {
 		}
 	}
 	
-	public void getDiffs() throws IOException, ClassNotFoundException {
+	public void getDiffs() throws IOException {
 		String target = "prettytable";
 		String replacement = "wikitable";
 		List<String> titles = Files.readAllLines(TITLES);
@@ -103,7 +103,7 @@ public final class Replace implements Selectorizable {
 		Files.writeString(INFO, new XStream().toXML(timestamps));
 	}
 	
-	public void edit() throws IOException, ClassNotFoundException, LoginException {
+	public void edit() throws IOException, LoginException {
 		String target = Files.readString(TARGET);
 		String replacement = Files.readString(REPLACEMENT);
 		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));

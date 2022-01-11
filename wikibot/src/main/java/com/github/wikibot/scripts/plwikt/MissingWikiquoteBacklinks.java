@@ -108,7 +108,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
-	public static void edit() throws ClassNotFoundException, IOException {
+	public static void edit() throws IOException {
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(PAGES_SER.toFile());

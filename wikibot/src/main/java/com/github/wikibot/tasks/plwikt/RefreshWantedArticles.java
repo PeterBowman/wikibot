@@ -2,6 +2,7 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -25,7 +26,6 @@ import com.github.plural4j.Plural;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
@@ -158,20 +158,13 @@ public final class RefreshWantedArticles {
 	}
 	
 	private static Set<String> manageStoredTitles(List<String> visible, List<String> hidden) throws IOException {
-		final String fileName = "store.ser";
-		Set<String> storeSet;
-		
-		try {
-			storeSet = Misc.deserialize(LOCATION.resolve(fileName));
-		} catch (ClassNotFoundException | FileNotFoundException e) {
-			storeSet = new HashSet<>();
-		}
+		var path = LOCATION.resolve("store.txt");
+		var storeSet = Files.exists(path) ? new HashSet<>(Files.readAllLines(path)) : new HashSet<String>();
 		
 		storeSet.addAll(visible);
 		storeSet.addAll(hidden);
 		
-		Misc.serialize(storeSet, LOCATION.resolve(fileName));
-		
+		Files.write(path, storeSet);
 		return storeSet;
 	}
 	

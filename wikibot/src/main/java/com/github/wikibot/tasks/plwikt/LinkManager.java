@@ -41,12 +41,12 @@ import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
+import com.thoughtworks.xstream.XStream;
 
 public final class LinkManager implements Selectorizable {
 	private static Wikibot wb;
@@ -62,11 +62,11 @@ public final class LinkManager implements Selectorizable {
 	private static final String worklistintro = "* Zatwierdzone: \n";
 	private static final String reportheader = "== Raport ==\n";
 	
-	private static final Path f_data = location.resolve("data.ser");
-	private static final Path f_codes = location.resolve("codes.ser");
-	private static final Path f_timestamps = location.resolve("timestamps.ser");
-	private static final Path f_stats = location.resolve("stats.ser");
-	private static final Path f_request = location.resolve("request.ser");
+	private static final Path f_data = location.resolve("data.xml");
+	private static final Path f_codes = location.resolve("codes.xml");
+	private static final Path f_timestamps = location.resolve("timestamps.xml");
+	private static final Path f_stats = location.resolve("stats.txt");
+	private static final Path f_request = location.resolve("request.xml");
 	
 	private static final int assertbatch = 5;
 	private static final int pagecap = 100;
@@ -94,11 +94,11 @@ public final class LinkManager implements Selectorizable {
 				wb.logout();
 				break;
 			case '2':
-				int stats = Misc.deserialize(f_stats);
+				int stats = Integer.parseInt(Files.readString(f_stats));
 				System.out.println(stats);
 				break;
 			case '3':
-				Misc.serialize(375, f_stats);
+				Files.writeString(f_stats, Integer.toString(375));
 				break;
 			case 'e':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -302,9 +302,9 @@ public final class LinkManager implements Selectorizable {
 			timestamps.put(rev.getPage(), rev.getTimestamp());
 		}*/
 		
-		Misc.serialize(data, f_data);
-		Misc.serialize(editcodes, f_codes);
-		Misc.serialize(timestamps, f_timestamps);
+		Files.writeString(f_data, new XStream().toXML(data));
+		Files.writeString(f_codes, new XStream().toXML(editcodes));
+		Files.writeString(f_timestamps, new XStream().toXML(timestamps));
 		
 		mainpagetext = wb.getPageText(List.of(mainpage)).get(0);
 		
@@ -325,9 +325,12 @@ public final class LinkManager implements Selectorizable {
 		wb.edit(mainpage, mainpagetext, summary, false, false, -2, null);
 	}
 	
-	public static void edit(String user, long revid) throws IOException, ClassNotFoundException, LoginException {
-		Map<Integer, LinkDiff> editcodes = Misc.deserialize(f_codes);
-		Map<String, OffsetDateTime> timestamps = Misc.deserialize(f_timestamps);
+	public static void edit(String user, long revid) throws IOException, LoginException {
+		@SuppressWarnings("unchecked")
+		var editcodes = (Map<Integer, LinkDiff>) new XStream().fromXML(f_codes.toFile());
+		
+		@SuppressWarnings("unchecked")
+		var timestamps = (Map<String, OffsetDateTime>) new XStream().fromXML(f_timestamps.toFile());
 		
 		System.out.printf("Modificaciones disponibles: %d%n", editcodes.size());
 		
@@ -513,11 +516,11 @@ public final class LinkManager implements Selectorizable {
 		Files.deleteIfExists(f_codes);
 		Files.deleteIfExists(f_timestamps);
 		
-		int stats = Misc.deserialize(f_stats);
+		int stats = Integer.parseInt(Files.readString(f_stats));
 		
 		if (edited != 0) {
 			stats += edited;
-			Misc.serialize(stats, f_stats);
+			Files.writeString(f_stats, Integer.toString(stats));
 			System.out.printf("Nuevo total: %d%n", stats);
 		}
 		
@@ -566,16 +569,16 @@ public final class LinkManager implements Selectorizable {
 		wb.edit(mainpage, worklist, summary, false, false, -2, null);
 	}
 	
-	public static void patrol() throws ClassNotFoundException, IOException, InterruptedException, LoginException {
+	public static void patrol() throws IOException, InterruptedException, LoginException {
 		final int minutes = 5;
 		final long interval = minutes * 60 * 1000;
 		RequestInfo request = null;
 		
 		if (Files.exists(f_request)) {
-			request = Misc.deserialize(f_request);
+			request = (RequestInfo) new XStream().fromXML(f_request.toFile());
 		} else {
 			request = new RequestInfo(0, "", null);
-			Misc.serialize(request, f_request);
+			Files.writeString(f_request, new XStream().toXML(request));
 		}
 		
 		outer:
@@ -643,7 +646,7 @@ public final class LinkManager implements Selectorizable {
 				request.currentTimestamp = endTimestamp;
 			}
 			
-			Misc.serialize(request, f_request);
+			Files.writeString(f_request, new XStream().toXML(request));
 			System.out.printf("Durmiendo... (%d minutos)%n", minutes);
 			Thread.sleep(interval);
 		}

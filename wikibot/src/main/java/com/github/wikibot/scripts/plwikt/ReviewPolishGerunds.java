@@ -107,7 +107,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		Files.write(WORKLIST, List.of(Misc.makeList(worklist)));
 	}
 	
-	public static void review() throws ClassNotFoundException, IOException, LoginException {
+	public static void review() throws IOException, LoginException {
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		Map<String, String> worklist = Misc.readList(Files.readString(WORKLIST));

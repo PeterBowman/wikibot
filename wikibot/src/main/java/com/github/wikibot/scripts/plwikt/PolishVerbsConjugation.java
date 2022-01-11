@@ -78,7 +78,7 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 	}
 	
-	public static void edit() throws ClassNotFoundException, IOException, LoginException {
+	public static void edit() throws IOException, LoginException {
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());
 		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));

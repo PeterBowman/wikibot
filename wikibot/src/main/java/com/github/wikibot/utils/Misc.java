@@ -1,10 +1,5 @@
 package com.github.wikibot.utils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,22 +14,6 @@ import com.github.wikibot.main.Selectorizable;
 public final class Misc {
 	private Misc() {}
 		
-	public static void serialize(Object target, Path path) throws IOException {
-		try (var out = new ObjectOutputStream(Files.newOutputStream(path))) {
-			out.writeObject(target);
-			System.out.printf("Object successfully serialized: %s%n", path);
-		}
-	}
-	
-	public static <T> T deserialize(Path source) throws IOException, ClassNotFoundException {
-		try (var in = new ObjectInputStream(Files.newInputStream(source))) {
-			@SuppressWarnings("unchecked")
-			var target = (T) in.readObject();
-			System.out.printf("Object successfully deserialized: %s%n", source);
-			return target;
-		}
-	}
-	
 	public static void runTimerWithSelector(Selectorizable c) {
 		System.out.print("Introduce el modo de operación: ");
 		

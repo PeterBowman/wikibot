@@ -54,6 +54,8 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.XStreamException;
 
 public final class CitationTypography {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/CitationTypography/");
@@ -359,10 +361,11 @@ public final class CitationTypography {
 			throws IOException {
 		if (dbg) {
 			try {
-				Map<String, Integer> stored = Misc.deserialize(LOCATION.resolve("title_to_page_id.ser"));
+				@SuppressWarnings("unchecked")
+				var stored = (Map<String, Integer>) new XStream().fromXML(LOCATION.resolve("title_to_page_id.xml").toFile());
 				titleToPageId.putAll(stored);
 				titles.removeIf(title -> stored.containsKey(title));
-			} catch (ClassNotFoundException | IOException e) {
+			} catch (XStreamException e) {
 				e.printStackTrace();
 			}
 			
@@ -387,8 +390,8 @@ public final class CitationTypography {
 	}
 	
 	private static void serializeResults(List<Entry> entries, Map<String, Integer> titleToPageId) throws IOException {
-		Misc.serialize(entries, LOCATION.resolve("entries.ser"));
-		Misc.serialize(titleToPageId, LOCATION.resolve("title_to_page_id.ser"));
+		Files.writeString(LOCATION.resolve("entries.xml"), new XStream().toXML(entries));
+		Files.writeString(LOCATION.resolve("title_to_page_id.xml"), new XStream().toXML(titleToPageId));
 		
 		Map<String, String> map = entries.stream()
 			.collect(Collectors.toMap(

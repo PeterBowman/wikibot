@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
@@ -106,17 +107,17 @@ public final class SpanishCanonicalInflectedForms {
 		int newHashCode = list.hashCode();
 		int storedHashCode;
 		
-		Path fHash = LOCATION.resolve("hash.ser");
+		Path fHash = LOCATION.resolve("hash.txt");
 		
 		try {
-			storedHashCode = Misc.deserialize(fHash);
-		} catch (ClassNotFoundException | IOException e) {
+			storedHashCode = Integer.parseInt(Files.readString(fHash));
+		} catch (IOException | NumberFormatException e) {
 			storedHashCode = 0;
 		}
 		
 		if (storedHashCode != newHashCode) {
-			Misc.serialize(newHashCode, fHash);
-			Misc.serialize(list, LOCATION.resolve("list.ser"));
+			Files.writeString(fHash, Integer.toString(newHashCode));
+			Files.write(LOCATION.resolve("list.txt"), list);
 			return true;
 		} else {
 			return false;

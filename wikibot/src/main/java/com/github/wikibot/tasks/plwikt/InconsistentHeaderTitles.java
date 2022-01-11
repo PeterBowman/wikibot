@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -106,10 +107,10 @@ public final class InconsistentHeaderTitles {
 		if (line == null) {
 			return;
 		} else if (line.hasOption("patrol")) {
-			String[] storedTitles = extractStoredTitles();
+			var storedTitles = extractStoredTitles();
 			analyzeRecentChanges(storedTitles);
 		} else if (line.hasOption("dump")) {
-			String[] candidateTitles = readDumpFile(line.getOptionValue("dump"));
+			var candidateTitles = readDumpFile(line.getOptionValue("dump"));
 			analyzeRecentChanges(candidateTitles);
 		} else {
 			System.out.printf("No options specified: %s%n", Arrays.asList(args));
@@ -121,22 +122,22 @@ public final class InconsistentHeaderTitles {
 			return;
 		}
 		
-		Path hash = LOCATION.resolve("hash.ser");
+		Path hash = LOCATION.resolve("hash.txt");
 		
-		if (Files.exists(hash) && (int) Misc.deserialize(hash) == map.hashCode()) {
+		if (Files.exists(hash) && Integer.parseInt(Files.readString(hash)) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
-			Misc.serialize(map.hashCode(), hash);
+			Files.writeString(hash, Integer.toString(map.hashCode()));
 			
-			String[] arr = map.values().stream()
+			var titles = map.values().stream()
 				.flatMap(Collection::stream)
 				.map(item -> item.pageTitle)
 				.distinct()
-				.toArray(String[]::new);
+				.toList();
 			
-			Misc.serialize(arr, LOCATION.resolve("stored_titles.ser"));
-			System.out.printf("%d titles stored.%n", arr.length);
+			Files.write(LOCATION.resolve("stored_titles.txt"), titles);
+			System.out.printf("%d titles stored.%n", titles.size());
 		}
 		
 		com.github.wikibot.parsing.Page page = makePage();
@@ -169,14 +170,9 @@ public final class InconsistentHeaderTitles {
 		}
 	}
 
-	private static void analyzeRecentChanges(String[] bufferedTitles)
-			throws IOException {
-		String[] newTitles = extractRecentChanges();
-		
-		List<String> distinctTitles = Stream.of(newTitles, bufferedTitles)
-			.flatMap(Stream::of)
-			.distinct()
-			.toList();
+	private static void analyzeRecentChanges(List<String> bufferedTitles) throws IOException {
+		var newTitles = extractRecentChanges();
+		var distinctTitles = Stream.concat(newTitles.stream(), bufferedTitles.stream()).distinct().toList();
 		
 		if (distinctTitles.isEmpty()) {
 			return;
@@ -185,7 +181,7 @@ public final class InconsistentHeaderTitles {
 		wb.getContentOfPages(distinctTitles).parallelStream().forEach(InconsistentHeaderTitles::findErrors);
 	}
 
-	private static String[] readDumpFile(String path) throws IOException {
+	private static List<String> readDumpFile(String path) throws IOException {
 		XMLDumpReader reader;
 		
 		if (path.equals("local")) {
@@ -204,11 +200,11 @@ public final class InconsistentHeaderTitles {
 				.filter(InconsistentHeaderTitles::filterSections)
 				.map(section -> section.getContainingPage().get().getTitle())
 				.distinct()
-				.toArray(String[]::new);
+				.toList();
 		}
 	}
 	
-	private static String[] extractRecentChanges() throws IOException {
+	private static List<String> extractRecentChanges() throws IOException {
 		OffsetDateTime earliest;
 		
 		try {
@@ -240,20 +236,15 @@ public final class InconsistentHeaderTitles {
 			logs.stream().map(Wiki.LogEntry::getDetails)
 				.map(details -> details.get("target_title"))
 				.filter(title -> wb.namespace(title) == Wiki.MAIN_NAMESPACE)
-		).distinct().toArray(String[]::new);
+		).distinct().toList();
 	}
 	
-	private static String[] extractStoredTitles() {
-		String[] titles;
-		
+	private static List<String> extractStoredTitles() {
 		try {
-			titles = Misc.deserialize(LOCATION.resolve("stored_titles.ser"));
-			System.out.printf("%d titles extracted.%n", titles.length);
-		} catch (ClassNotFoundException | IOException e) {
-			titles = new String[]{};
+			return Files.readAllLines(LOCATION.resolve("stored_titles.txt"));
+		} catch (IOException e) {
+			return new ArrayList<>();
 		}
-		
-		return titles;
 	}
 	
 	private static void findErrors(PageContainer pc) {

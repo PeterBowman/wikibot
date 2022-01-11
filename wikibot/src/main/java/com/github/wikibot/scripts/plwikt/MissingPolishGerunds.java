@@ -136,7 +136,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 		System.out.printf("Errores: %d\n", errors.size());
 	}
 	
-	public static void getMissing() throws IOException, LoginException, ClassNotFoundException {
+	public static void getMissing() throws IOException, LoginException {
 		List<String> aff = new ArrayList<>(500);
 		List<String> neg = new ArrayList<>(500);
 		

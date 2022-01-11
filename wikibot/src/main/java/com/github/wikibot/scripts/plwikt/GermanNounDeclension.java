@@ -69,7 +69,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		}
 	}
 	
-	public static void getLists() throws IOException, ClassNotFoundException {
+	public static void getLists() throws IOException {
 		PrintWriter pw = null, pw_excl = null;
 		
 		try {
@@ -186,7 +186,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		System.out.println("Tamaño de la lista: " + list.size() + ", excluidos: " + excluded.size() + " (+" + excludesize + ")");
 	}
 	
-	public static void makeLists() throws IOException, ClassNotFoundException {		
+	public static void makeLists() throws IOException {		
 		Path f = LOCATION.resolve("excluded.ser");
 		
 		@SuppressWarnings("unchecked")
@@ -266,7 +266,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		System.out.println("Tamaño de la lista de conjugados: " + decl.size());
 	}
 	
-	public static void edit() throws IOException, LoginException, ClassNotFoundException {
+	public static void edit() throws IOException, LoginException {
 		int newcount = 0;
 		int conflicts = 0;
 		

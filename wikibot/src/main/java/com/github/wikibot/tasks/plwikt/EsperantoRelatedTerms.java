@@ -30,7 +30,6 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class EsperantoRelatedTerms {
@@ -215,13 +214,13 @@ public final class EsperantoRelatedTerms {
 		Path hash = LOCATION.resolve("hash.ser");
 		
 		try {
-			storedHashCode = Misc.deserialize(hash);
-		} catch (ClassNotFoundException | IOException e) {
+			storedHashCode = Integer.parseInt(Files.readString(hash));
+		} catch (IOException | NumberFormatException e) {
 			storedHashCode = 0;
 		}
 		
 		if (storedHashCode != newHashCode) {
-			Misc.serialize(newHashCode, hash);
+			Files.writeString(hash, Integer.toString(newHashCode));
 			return true;
 		} else {
 			return false;

@@ -21,7 +21,6 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class MissingPolishEtymOnWikidata {
@@ -85,13 +84,13 @@ public final class MissingPolishEtymOnWikidata {
 				(a, b) -> a,
 				() -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
 
-		Path hash = LOCATION.resolve("hash.ser");
+		Path hash = LOCATION.resolve("hash.txt");
 
-		if (Files.exists(hash) && (int) Misc.deserialize(hash) == map.hashCode()) {
+		if (Files.exists(hash) && Integer.parseInt(Files.readString(hash)) == map.hashCode()) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
-			Misc.serialize(map.hashCode(), hash);
+			Files.writeString(hash, Integer.toString(map.hashCode()));
 			System.out.printf("%d results stored.%n", map.size());
 		}
 

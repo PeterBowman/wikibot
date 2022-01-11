@@ -1,7 +1,6 @@
 package com.github.wikibot.webapp;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -38,9 +37,9 @@ public class LonelyPages extends HttpServlet {
 	private static final String JSP_DISPATCH_TARGET = "/WEB-INF/includes/weblists/eswikt-lonely-pages.jsp";
 	private static final String DATE_FORMAT = "HH:mm, d MMM yyyy (z)";
 	
-	private static final Path fData = LOCATION.resolve("data.ser");
+	private static final Path fData = LOCATION.resolve("data.txt");
 	private static final Path fCtrl = LOCATION.resolve("UPDATED");
-	private static final Path fCal = LOCATION.resolve("timestamp.ser");
+	private static final Path fCal = LOCATION.resolve("timestamp.txt");
 	
 	private static final List<String> storage = new ArrayList<>(0);
 	private static final Calendar calendar = Calendar.getInstance();
@@ -106,7 +105,7 @@ public class LonelyPages extends HttpServlet {
 	private static synchronized void checkCurrentState(boolean forced, List<String> l, Calendar c) throws IOException {
 		if (forced || !Files.exists(fCtrl)) {
 			try {
-				List<String> list = deserialize(fData);
+				var list = Files.readAllLines(fData);
 				storage.clear();
 				storage.addAll(list);
 			} catch (Exception e) {
@@ -114,7 +113,8 @@ public class LonelyPages extends HttpServlet {
 			}
 			
 			try {
-				OffsetDateTime odt = deserialize(fCal);
+				var str = Files.readString(fCal);
+				var odt = OffsetDateTime.parse(str);
 				calendar.setTime(Date.from(odt.toInstant()));
 			} catch (Exception e) {
 				throw new IOException(e);
@@ -128,13 +128,6 @@ public class LonelyPages extends HttpServlet {
 		if (l != null && c != null) {
 			l.addAll(storage);
 			c.setTime(calendar.getTime());
-		}
-	}
-	
-	@SuppressWarnings("unchecked")
-	private static <T> T deserialize(Path path) throws IOException, ClassNotFoundException {
-		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(path))) {
-			return (T) in.readObject();
 		}
 	}
 	

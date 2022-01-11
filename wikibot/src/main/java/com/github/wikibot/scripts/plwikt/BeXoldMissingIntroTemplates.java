@@ -84,7 +84,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		Files.writeString(LOCATION_SER.resolve("info.xml"), new XStream().toXML(info));
 	}
 	
-	public static void makePreview() throws IOException, ClassNotFoundException {
+	public static void makePreview() throws IOException {
 		BufferedReader br = Files.newBufferedReader(LOCATION.resolve("worklist.txt")); 
 		Map<String, String> pages = new LinkedHashMap<>();
 		String line = null;
@@ -115,7 +115,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		Files.writeString(LOCATION_SER.resolve("preview.xml"), new XStream().toXML(pages));
 	}
 	
-	public static void edit() throws IOException, ClassNotFoundException, LoginException {
+	public static void edit() throws IOException, LoginException {
 		Path f1 = LOCATION_SER.resolve("preview.xml");
 		Path f2 = LOCATION_SER.resolve("info.xml");
 		

@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.MorfeuszRecord;
 import com.ibm.icu.number.LocalizedNumberFormatter;
@@ -67,14 +66,14 @@ public class MissingPolishEntries {
 		System.out.println(stats);
 		
 		int hash = titles.hashCode();
-		Path fHash = LOCATION.resolve("hash.ser");
+		Path fHash = LOCATION.resolve("hash.txt");
 		
-		if (Files.exists(fHash) && (int) Misc.deserialize(fHash) == hash) {
+		if (Files.exists(fHash) && Integer.parseInt(Files.readString(fHash)) == hash) {
 			System.out.println("No changes detected, aborting.");
 			return;
 		} else {
-			Misc.serialize(hash, fHash);
-			Misc.serialize(titles, LOCATION.resolve("titles.ser"));
+			Files.writeString(fHash, Integer.toString(hash));
+			Files.write(LOCATION.resolve("titles.txt"), titles);
 			System.out.printf("%d titles stored.%n", titles.size());
 		}
 

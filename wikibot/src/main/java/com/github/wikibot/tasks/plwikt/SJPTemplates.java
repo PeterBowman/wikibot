@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
@@ -18,7 +19,6 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class SJPTemplates {
@@ -88,22 +88,22 @@ public final class SJPTemplates {
 		
 		if (!errors.isEmpty()) {
 			System.out.printf("%d errors: %s%n", errors.size(), errors);
-			Misc.serialize(errors, LOCATION.resolve("errors.ser"));
+			Files.write(LOCATION.resolve("errors.txt"), errors);
 		}
 	}
 	
 	private static boolean checkStoredData(List<Wiki.Revision> targetRevs) throws IOException {
-		Path hash = LOCATION.resolve("hashcode.ser");
+		Path path = LOCATION.resolve("hashcode.txt");
 		int targetHash = targetRevs.hashCode();
 		
 		try {
-			int storedHash = Misc.deserialize(hash);
+			int storedHash = Integer.parseInt(Files.readString(path));
 			return targetHash != storedHash;
 		} catch (Exception e) {
-			System.out.printf("Exception: " + e.getMessage());
+			System.out.println("Exception: " + e.getMessage());
 			return true;
 		} finally {
-			Misc.serialize(targetHash, hash);
+			Files.writeString(path, Integer.toString(targetHash));
 		}
 	}
 	

@@ -43,8 +43,8 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Inflector;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class PolishSurnamesInflection {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/PolishSurnamesInflection/");
@@ -106,8 +106,8 @@ public final class PolishSurnamesInflection {
 	public static void main(String[] args) throws Exception {
 		wb = Login.createSession("pl.wiktionary.org");
 		
-		Path fStorage = LOCATION.resolve("storage.ser");
-		Path fHistory = LOCATION.resolve("history.ser");
+		Path fStorage = LOCATION.resolve("storage.xml");
+		Path fHistory = LOCATION.resolve("history.xml");
 		
 		Set<Item> storage = deserializeSet(fStorage);
 		Set<Item> history = deserializeSet(fHistory);
@@ -122,8 +122,8 @@ public final class PolishSurnamesInflection {
 		try {
 			pages.forEach(pc -> doWork(pc, storage, history, logs));
 		} finally {
-			Misc.serialize(storage, fStorage);
-			Misc.serialize(history, fHistory);
+			Files.writeString(fStorage, new XStream().toXML(storage));
+			Files.writeString(fHistory, new XStream().toXML(history));
 		}
 		
 		Collator collator = Collator.getInstance(new Locale("pl", "PL"));
@@ -134,9 +134,11 @@ public final class PolishSurnamesInflection {
 	}
 	
 	private static Set<Item> deserializeSet(Path path) {
-		try {
-			return Misc.deserialize(path);
-		} catch (IOException | ClassNotFoundException | ClassCastException e) {
+		if (Files.exists(path)) {
+			@SuppressWarnings("unchecked")
+			var set = (Set<Item>) new XStream().fromXML(path.toFile());
+			return set;
+		} else {
 			return new HashSet<>(5000);
 		}
 	}
@@ -475,8 +477,8 @@ public final class PolishSurnamesInflection {
 	}
 	
 	private static void storeLogs(List<LogEntry> logs) throws Exception {
-		Path fLogsHash = LOCATION.resolve("logs-hash.ser");
-		Path fErrorsHash = LOCATION.resolve("errors-hash.ser");
+		Path fLogsHash = LOCATION.resolve("logs-hash.txt");
+		Path fErrorsHash = LOCATION.resolve("errors-hash.txt");
 		
 		List<? extends LogEntry> errors = logs.stream()
 			.filter(log -> log instanceof ErrorLogEntry)
@@ -486,7 +488,7 @@ public final class PolishSurnamesInflection {
 		
 		final String timestamp = "Ostatnia aktualizacja: ~~~~~.";
 		
-		if (!Files.exists(fLogsHash) || (int) Misc.deserialize(fLogsHash) != logs.hashCode()) {
+		if (!Files.exists(fLogsHash) || Integer.parseInt(Files.readString(fLogsHash)) != logs.hashCode()) {
 			String text = LOG_INTRO + "\n\n" + timestamp + "\n----\n" + logs.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));
@@ -494,10 +496,10 @@ public final class PolishSurnamesInflection {
 			wb.setMarkBot(false);
 			wb.edit(LOG_TARGET_PAGE, text, "aktualizacja");
 			
-			Misc.serialize(logs.hashCode(), fLogsHash);
+			Files.writeString(fLogsHash, Integer.toString(logs.hashCode()));
 		}
 		
-		if (!Files.exists(fErrorsHash) || (int) Misc.deserialize(fErrorsHash) != errors.hashCode()) {
+		if (!Files.exists(fErrorsHash) || Integer.parseInt(Files.readString(fErrorsHash)) != errors.hashCode()) {
 			String text = timestamp + "\n\n" + errors.stream()
 				.map(LogEntry::getWikitext)
 				.collect(Collectors.joining("\n"));
@@ -505,7 +507,7 @@ public final class PolishSurnamesInflection {
 			wb.setMarkBot(true);
 			wb.edit(LOG_TARGET_PAGE + ERROR_SUBPAGE, text, "aktualizacja");
 			
-			Misc.serialize(errors.hashCode(), fErrorsHash);
+			Files.writeString(fErrorsHash, Integer.toString(errors.hashCode()));
 		}
 	}
 	

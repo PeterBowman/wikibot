@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -30,11 +31,11 @@ import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.Transliterator;
 import com.ibm.icu.util.ULocale;
+import com.thoughtworks.xstream.XStream;
 
 public final class AutomatedIndices {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/AutomatedIndices/");
@@ -113,14 +114,10 @@ public final class AutomatedIndices {
 				Collator.getInstance(langToLocale.get(indexToLang.get(e.getKey())))
 			));
 		
-		Path hash = LOCATION.resolve("hash.ser");
-		Map<String, Integer> indexToHash;
+		Path hash = LOCATION.resolve("hash.xml");
 		
-		try {
-			indexToHash = Misc.deserialize(hash);
-		} catch (Exception e1) {
-			indexToHash = new HashMap<>();
-		}
+		@SuppressWarnings("unchecked")
+		var indexToHash = Files.exists(hash) ? (Map<String, Integer>) new XStream().fromXML(hash.toString()) : new HashMap<String, Integer>();
 		
 		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getPathToDump().getFileName());
 		
@@ -141,7 +138,7 @@ public final class AutomatedIndices {
 			}
 		}
 		
-		Misc.serialize(indexToHash, hash);
+		Files.writeString(hash, new XStream().toXML(indexToHash));
 		
 		if (!errors.isEmpty()) {
 			String talkPage = wb.getTalkPage(WORKLIST);

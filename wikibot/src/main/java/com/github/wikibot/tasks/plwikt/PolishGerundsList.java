@@ -42,6 +42,7 @@ import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
+import com.thoughtworks.xstream.XStream;
 
 public class PolishGerundsList implements Selectorizable {
 	private static Wikibot wb;
@@ -194,19 +195,13 @@ public class PolishGerundsList implements Selectorizable {
 		}
 		
 		System.out.printf("Gerundios: %d, sustantivos: %d%n", gers.size(), substs.size());
-		Misc.serialize(gers, locationser.resolve("gers.ser"));
-		Misc.serialize(substs, locationser.resolve("substs.ser"));
+		Files.write(locationser.resolve("gers.txt"), gers);
+		Files.write(locationser.resolve("substs.txt"), substs);
 	}
 	
 	public static void writeFormat() throws IOException, LoginException {
-		List<String[]> list;
-		
-		try {
-			list = Misc.deserialize(locationser.resolve("sin formato.ser"));
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			return;
-		}
+		@SuppressWarnings("unchecked")
+		var list = (List<String[]>) new XStream().fromXML(locationser.resolve("sin formato.xml").toFile());
 		
 		wb.setThrottle(10000);
 		System.out.println("Tamaño de la lista: " + list.size());
@@ -234,7 +229,7 @@ public class PolishGerundsList implements Selectorizable {
 		}
 	}
 	
-	public static void makeLists() throws IOException, InterruptedException, ExecutionException, ClassNotFoundException {
+	public static void makeLists() throws IOException, InterruptedException, ExecutionException {
 		String[] intersection = org.wikipedia.ArrayUtils.intersection(
 			wb.getCategoryMembers("Język polski - rzeczowniki rodzaju nijakiego", Wiki.MAIN_NAMESPACE).toArray(String[]::new),
 			wb.whatTranscludesHere(List.of("Szablon:odczasownikowy od"), Wiki.MAIN_NAMESPACE).get(0).toArray(String[]::new)
@@ -242,12 +237,14 @@ public class PolishGerundsList implements Selectorizable {
 		
 		System.out.printf("Gerundios detectados por transclusión: %d\n", intersection.length);
 		
-		Map<String, String> list = Misc.deserialize(location_old.resolve("list.ser"));
+		@SuppressWarnings("unchecked")
+		var list = (Map<String, String>) new XStream().fromXML(location_old.resolve("list.xml").toFile());
 		
 		System.out.printf("Gerundios extraídos de plantillas de conjugación: %d\n", list.size());
 		
-		Set<String> gers = Misc.deserialize(locationser.resolve("gers.ser"));
-		Set<String> substs = Misc.deserialize(locationser.resolve("substs.ser"));
+		var gers = Files.readAllLines(locationser.resolve("gers.txt"));
+		var substs = Files.readAllLines(locationser.resolve("substs.txt"));
+		
 		Set<String> gerunds = new HashSet<>(list.keySet());
 		Collections.addAll(gerunds, intersection);
 		
@@ -312,36 +309,35 @@ public class PolishGerundsList implements Selectorizable {
 			gerunds.size() - pages.size(), listOnlyDefinitions.size(), listOnlyTemplates.size(), listErrors.size(), listNoDictEntry.size()
 		);
 		
-		Misc.serialize(listOnlyDefinitions, locationser.resolve("sin plantilla.ser"));
-		Misc.serialize(listOnlyTemplates, locationser.resolve("sin definición.ser"));
-		Misc.serialize(listNoDictEntry, locationser.resolve("sin entrada.ser"));
+		Files.write(locationser.resolve("sin plantilla.txt"), listOnlyDefinitions);
+		Files.write(locationser.resolve("sin definición.txt"), listOnlyTemplates);
+		Files.write(locationser.resolve("sin entrada.txt"), listNoDictEntry);
+		Files.write(location.resolve("errores.txt"), listErrors);
 		
 		List<String> listOnlyDefinitions2 = listOnlyDefinitions.stream()
 			.map(gerund -> String.format("%s (%s)", gerund, list.getOrDefault(gerund, "---")))
 			.toList();
 		
-		Files.write(location.resolve("sin plantilla.txt"), listOnlyDefinitions2);
-		Files.write(location.resolve("sin definición.txt"), listOnlyTemplates);
-		Files.write(location.resolve("errores.txt"), listErrors);
-		Files.write(location.resolve("sin entrada.txt"), listNoDictEntry);
+		Files.write(location.resolve("sin plantilla2.txt"), listOnlyDefinitions2);
 		
-		Misc.serialize(String.format(
+		Files.writeString(locationser.resolve("stats.txt"), String.format(
 			"Analizowano %s %s z tabelką odmiany oraz %s %s.",
 			numberFormatPL.format(list.size()), pluralPL.pl(list.size(), "czasownik"),
 			numberFormatPL.format(gerunds.size()), pluralPL.pl(gerunds.size(), "rzeczownik odczasownikowy")
-		), locationser.resolve("stats.ser"));
+		));
 	}
 	
-	public static void writeLists() throws IOException, LoginException, ClassNotFoundException {
-		Map<String, String> list = Misc.deserialize(location_old.resolve("list.ser"));
-		List<String> listOnlyDefinitions = Misc.deserialize(locationser.resolve("sin plantilla.ser"));
-		List<String> listOnlyTemplates = Misc.deserialize(locationser.resolve("sin definición.ser"));
-		List<String> listNoDictEntry = Misc.deserialize(locationser.resolve("sin entrada.ser"));
+	public static void writeLists() throws IOException, LoginException {
+		@SuppressWarnings("unchecked")
+		var list = (Map<String, String>) new XStream().fromXML(location_old.resolve("list.xml").toFile());
+		var listOnlyDefinitions = Files.readAllLines(locationser.resolve("sin plantilla.txt"));
+		var listOnlyTemplates = Files.readAllLines(locationser.resolve("sin definición.txt"));
+		var listNoDictEntry = Files.readAllLines(locationser.resolve("sin entrada.txt"));
 		
 		// Page creation
 		
 		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(wikipage);
-		String stats = Misc.deserialize(locationser.resolve("stats.ser"));
+		String stats = Files.readString(locationser.resolve("stats.txt"));
 		page.setIntro(stats + " Aktualizacja: ~~~~~.");
 		
 		// Only definition

@@ -101,7 +101,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		Files.write(LOCATION.resolve("duplicates.txt"), duplicates);
 	}
 	
-	public static void edit() throws LoginException, IOException, ClassNotFoundException {
+	public static void edit() throws LoginException, IOException {
 		Path path = LOCATION.resolve("missing.xml");
 		@SuppressWarnings("unchecked")
 		var list = (List<String>) new XStream().fromXML(path.toFile());

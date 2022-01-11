@@ -207,7 +207,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		Files.write(Paths.get(LOCATION + "Vc.txt"), List.of(Misc.makeList(map)));
 	}
 
-	public static void edit() throws ClassNotFoundException, IOException {
+	public static void edit() throws IOException {
 		@SuppressWarnings("unchecked")
 		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
