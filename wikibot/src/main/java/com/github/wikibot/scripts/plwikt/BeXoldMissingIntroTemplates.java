@@ -27,6 +27,7 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class BeXoldMissingIntroTemplates implements Selectorizable {
 	private static Wikibot wb;
@@ -80,7 +81,7 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		}
 		
 		pw.close();
-		Misc.serialize(info, LOCATION_SER.resolve("info.ser"));
+		Files.writeString(LOCATION_SER.resolve("info.xml"), new XStream().toXML(info));
 	}
 	
 	public static void makePreview() throws IOException, ClassNotFoundException {
@@ -111,17 +112,17 @@ public final class BeXoldMissingIntroTemplates implements Selectorizable {
 		if (pages.size() == 0)
 			return;
 		
-		Misc.serialize(pages, LOCATION_SER.resolve("preview.ser"));
+		Files.writeString(LOCATION_SER.resolve("preview.xml"), new XStream().toXML(pages));
 	}
 	
 	public static void edit() throws IOException, ClassNotFoundException, LoginException {
-		Map<String, String> pages = new LinkedHashMap<>();
-		Map<String, OffsetDateTime> info = null;
-		Path f1 = LOCATION_SER.resolve("preview.ser");
-		Path f2 = LOCATION_SER.resolve("info.ser");
+		Path f1 = LOCATION_SER.resolve("preview.xml");
+		Path f2 = LOCATION_SER.resolve("info.xml");
 		
-		pages = Misc.deserialize(f1);
-		info = Misc.deserialize(f2);
+		@SuppressWarnings("unchecked")
+		var pages = (Map<String, String>) new XStream().fromXML(f1.toFile());
+		@SuppressWarnings("unchecked")
+		var info = (Map<String, OffsetDateTime>) new XStream().fromXML(f2.toFile());
 		
 		int listsize = pages.size();
 		System.out.println("Tamaño de la lista: " + listsize);

@@ -25,12 +25,11 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.eswikt.Editor;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 
 public final class ScheduledEditor {
 	private static final Path LOCATION = Paths.get("./data/scripts.eswikt/ScheduledEditor/");
-	private static final Path LAST_ENTRY = LOCATION.resolve("last.ser");
+	private static final Path LAST_ENTRY = LOCATION.resolve("last.txt");
 	private static final Path ERROR_LOG = LOCATION.resolve("errors.txt");
 	
 	private static final int BATCH = 500;
@@ -136,15 +135,15 @@ public final class ScheduledEditor {
 	
 	private static String retrieveLastEntry() {
 		try {
-			return Misc.deserialize(LAST_ENTRY);
-		} catch (ClassNotFoundException | IOException e) {
+			return Files.readString(LAST_ENTRY);
+		} catch (IOException e) {
 			return null; // TODO: review
 		}
 	}
 	
 	private static void storeEntry(String entry) {
 		try {
-			Misc.serialize(entry, LAST_ENTRY);
+			Files.writeString(LAST_ENTRY, entry);
 			System.out.printf("Last entry: %s%n", entry);
 		} catch (IOException e) {
 			e.printStackTrace();

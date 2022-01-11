@@ -28,6 +28,7 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class ShortCommas implements Selectorizable {
 	private static Wikibot wb;
@@ -35,7 +36,7 @@ public final class ShortCommas implements Selectorizable {
 	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Path SHORTS = LOCATION.resolve("shorts.txt");
-	private static final Path INFO = LOCATION_SER.resolve("info.ser");
+	private static final Path INFO = LOCATION_SER.resolve("info.xml");
 	private static Pattern patt;
 	
 	static {
@@ -107,11 +108,12 @@ public final class ShortCommas implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
-		Misc.serialize(pages, INFO);
+		Files.writeString(INFO, new XStream().toXML(pages));
 	}
 	
 	public static void stripCommas() throws ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(INFO);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		
 		System.out.printf("Tamaño de la lista: %d%n", pages.size());
 		
@@ -170,11 +172,12 @@ public final class ShortCommas implements Selectorizable {
 		}
 		
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map, "\n\n")));
-		Misc.serialize(pages, INFO);
+		Files.writeString(INFO, new XStream().toXML(pages));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(INFO);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST), "\n\n");
 		List<String> errors = new ArrayList<>();
 		

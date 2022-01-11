@@ -22,6 +22,7 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class ReflexiveVerbRedirects implements Selectorizable {
 	private static Wikibot wb;
@@ -85,7 +86,7 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		System.out.printf("Tamaño de la lista de faltantes: %d%n", missing.size());
 		
 		Files.write(LOCATION.resolve("worklist.txt"), missing);
-		Misc.serialize(missing, LOCATION.resolve("missing.ser"));
+		Files.writeString(LOCATION.resolve("missing.xml"), new XStream().toXML(missing));
 	}
 	
 	public static void getDuplicates() throws IOException {
@@ -101,8 +102,9 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 	}
 	
 	public static void edit() throws LoginException, IOException, ClassNotFoundException {
-		Path path = LOCATION.resolve("missing.ser");
-		List<String> list = Misc.deserialize(path);
+		Path path = LOCATION.resolve("missing.xml");
+		@SuppressWarnings("unchecked")
+		var list = (List<String>) new XStream().fromXML(path.toFile());
 		
 		System.out.printf("Tamaño de la lista extraída: %d%n", list.size());
 		

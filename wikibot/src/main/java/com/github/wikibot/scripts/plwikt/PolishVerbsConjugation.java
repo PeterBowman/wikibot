@@ -24,11 +24,12 @@ import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class PolishVerbsConjugation implements Selectorizable {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsConjugation/");
-	private static final Path SERIALIZED = LOCATION.resolve("targets.ser");
+	private static final Path SERIALIZED = LOCATION.resolve("targets.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 
 	public void selector(char op) throws Exception {
@@ -73,12 +74,13 @@ public final class PolishVerbsConjugation implements Selectorizable {
 		}
 		
 		System.out.printf("Encontrados: %d%n", targets.size());
-		Misc.serialize(targets, SERIALIZED);
+		Files.writeString(SERIALIZED, new XStream().toXML(targets));
 		Files.write(WORKLIST, List.of(Misc.makeList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException, LoginException {
-		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());
 		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));
 		List<String> errors = new ArrayList<>();
 		

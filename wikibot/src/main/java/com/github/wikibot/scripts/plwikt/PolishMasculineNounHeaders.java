@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -32,14 +31,15 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class PolishMasculineNounHeaders implements Selectorizable {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishMasculineNounHeaders/");
 	private static final Path ALL_PAGES = LOCATION.resolve("allpages.txt");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
-	private static final Path SERIALIZED = LOCATION.resolve("info.ser");
-	private static final Path STATS = LOCATION.resolve("stats.ser");
+	private static final Path SERIALIZED = LOCATION.resolve("info.xml");
+	private static final Path STATS = LOCATION.resolve("stats.txt");
 	private static final int LIMIT = 5;
 
 	public void selector(char op) throws Exception {
@@ -53,7 +53,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 				getContents();
 				break;
 			case 's':
-				int stats = Misc.deserialize(STATS);
+				int stats = Integer.parseInt(Files.readString(STATS));
 				System.out.printf("Total editado: %d%n", stats);
 				break;
 			case 'u':
@@ -126,12 +126,13 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			));
 		
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
-		Misc.serialize(pages, SERIALIZED);
+		Files.writeString(SERIALIZED, new XStream().toXML(pages));
 	}
 	
 	public static void edit() throws IOException, ClassNotFoundException, LoginException {
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
-		PageContainer[] pages = Misc.deserialize(SERIALIZED);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
 		
@@ -150,7 +151,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			String[] data = entry.getValue();
 			String definitionsText = data[0];
 			
-			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+			PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			Page p = Page.wrap(page);
 			
 			Optional.of(p)
@@ -179,7 +180,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 			System.out.printf("Errores en: %s%n", errors.toString());
 		}
 		
-		List<String> omitted = Stream.of(pages).map(page -> page.getTitle()).collect(Collectors.toCollection(ArrayList::new));
+		List<String> omitted = pages.stream().map(page -> page.getTitle()).collect(Collectors.toCollection(ArrayList::new));
 		omitted.removeAll(map.keySet());
 		
 		System.out.printf("Editados: %d, errores: %d, omitidos: %d%n", edited.size(), errors.size(), omitted.size());
@@ -197,10 +198,10 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		
 		int stats = 0;
 		
-		stats = Misc.deserialize(STATS);
+		stats = Integer.parseInt(Files.readString(STATS));
 		stats += edited.size();
 		
-		Misc.serialize(stats, STATS);
+		Files.writeString(STATS, Integer.toString(stats));
 		System.out.printf("Estadísticas actualizadas (editados en total: %d)%n", stats);
 		
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);

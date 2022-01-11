@@ -27,12 +27,13 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class PolishVerbsInsertInflection implements Selectorizable {
 	private static Wikibot wb;
 	private static Map<String, Map<String, String>> models = new HashMap<>();
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsInsertInflection/");
-	private static final Path SERIALIZED = LOCATION.resolve("targets.ser");
+	private static final Path SERIALIZED = LOCATION.resolve("targets.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	
 	public void selector(char op) throws Exception {
@@ -107,7 +108,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Misc.serialize(serialized, SERIALIZED);
+		Files.writeString(SERIALIZED, new XStream().toXML(serialized));
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
@@ -163,7 +164,7 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		}
 		
 		System.out.printf("Tamaño de la lista: %d%n", map.size());
-		Misc.serialize(serialized, SERIALIZED);
+		Files.writeString(SERIALIZED, new XStream().toXML(serialized));
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
@@ -207,7 +208,8 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 	}
 
 	public static void edit() throws ClassNotFoundException, IOException {
-		List<PageContainer> pages = Misc.deserialize(SERIALIZED);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(SERIALIZED.toFile());
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
 		List<String> errors = new ArrayList<>();
 		

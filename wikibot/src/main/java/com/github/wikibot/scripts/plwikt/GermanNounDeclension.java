@@ -31,6 +31,7 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class GermanNounDeclension implements Selectorizable {
 	private static Wikibot wb;
@@ -79,14 +80,10 @@ public final class GermanNounDeclension implements Selectorizable {
 			return;
 		}
 		
-		Path f = LOCATION.resolve("excluded.ser");
-		List<String[]> excluded = null;
+		Path f = LOCATION.resolve("excluded.xml");
 		
-		if (Files.exists(f)) {
-			excluded = Misc.deserialize(f);
-		} else {
-			excluded = new ArrayList<>(200);
-		}
+		@SuppressWarnings("unchecked")
+		var excluded = Files.exists(f) ? (List<String[]>) new XStream().fromXML(f.toFile()) : new ArrayList<String[]>(200);
 		
 		int excludesize = 0;
 		int count = 0;
@@ -191,17 +188,13 @@ public final class GermanNounDeclension implements Selectorizable {
 	
 	public static void makeLists() throws IOException, ClassNotFoundException {		
 		Path f = LOCATION.resolve("excluded.ser");
-		List<String[]> excluded = null;
 		
-		if (Files.exists(f)) {
-			excluded = Misc.deserialize(f);
-		} else {
-			excluded = new ArrayList<>(100);
-		}
+		@SuppressWarnings("unchecked")
+		var excluded = Files.exists(f) ? (List<String[]>) new XStream().fromXML(f.toFile()) : new ArrayList<String[]>(100);
 		
 		int excluded_size = excluded.size();
 		
-		PrintWriter pw_decl = new PrintWriter(LOCATION.resolve("decl_list.txt").toFile());
+		PrintWriter pw_decl = new PrintWriter(LOCATION.resolve("decl_list2.txt").toFile());
 		BufferedReader br = new BufferedReader(new FileReader(LOCATION.resolve("work_list.txt").toFile()));
 		String line = null;
 		
@@ -267,7 +260,7 @@ public final class GermanNounDeclension implements Selectorizable {
 			out.close();
 		}
 		
-		Misc.serialize(decl, LOCATION.resolve("decl_list.ser"));
+		Files.writeString(LOCATION.resolve("decl_list.xml"), new XStream().toXML(decl));
 				
 		System.out.println("Tamaño de la lista de excluidos: " + excluded.size() + " (+ " + (excluded.size() - excluded_size) + ")");
 		System.out.println("Tamaño de la lista de conjugados: " + decl.size());
@@ -277,13 +270,14 @@ public final class GermanNounDeclension implements Selectorizable {
 		int newcount = 0;
 		int conflicts = 0;
 		
-		Path f = LOCATION.resolve("editcount.ser");
+		Path f = LOCATION.resolve("editcount.txt");
 		Path f_decl = LOCATION.resolve("decl_list.ser");
 		
-		List<String[]> decl_list = Misc.deserialize(f_decl);
+		@SuppressWarnings("unchecked")
+		var decl_list = (List<String[]>) new XStream().fromXML(f_decl.toFile());
 		
 		final int editcount = Files.exists(f)
-			? Misc.deserialize(f)
+			? Integer.parseInt(Files.readString(f))
 			: 0;
 		
 		if (decl_list.isEmpty()) {
@@ -342,7 +336,7 @@ public final class GermanNounDeclension implements Selectorizable {
 		
 		Files.deleteIfExists(f_decl);
 		
-		Misc.serialize(editcount + newcount, f);
+		Files.writeString(f, String.format("%d", editcount + newcount));
 		
 		System.out.println("Editados: " + newcount + " (total: " + (editcount + newcount) + ")");
 		System.out.println("Conflictos de edición: " + conflicts);

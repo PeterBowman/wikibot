@@ -30,6 +30,7 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class MissingPolishGerunds implements Selectorizable {
 	private static Wikibot wb;
@@ -39,9 +40,9 @@ public final class MissingPolishGerunds implements Selectorizable {
 	private static final Path REFL = LOCATION.resolve("reflexivos.txt");
 	private static final Path MISSING_AFF = LOCATION.resolve("missing aff.txt");
 	private static final Path MISSING_NEG = LOCATION.resolve("missing neg.txt");
-	private static final Path LIST_SER = LOCATION.resolve("list.ser");
-	private static final Path MISSING_AFF_SER = LOCATION.resolve("aff_worklist.ser");
-	private static final Path MISSING_NEG_SER = LOCATION.resolve("neg_worklist.ser");
+	private static final Path LIST_SER = LOCATION.resolve("list.xml");
+	private static final Path MISSING_AFF_SER = LOCATION.resolve("aff_worklist.xml");
+	private static final Path MISSING_NEG_SER = LOCATION.resolve("neg_worklist.xml");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -127,7 +128,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 		Files.write(REFL, refl);
 		Files.write(LIST, gerunds);
 		
-		Misc.serialize(list, LIST_SER);
+		Files.writeString(LIST_SER, new XStream().toXML(list));
 		
 		System.out.printf("Verbos escaneados: %d\n", pages.size());
 		System.out.printf("Encontrados: %d\n", gerunds.size());
@@ -139,7 +140,8 @@ public final class MissingPolishGerunds implements Selectorizable {
 		List<String> aff = new ArrayList<>(500);
 		List<String> neg = new ArrayList<>(500);
 		
-		Map<String, String> list = Misc.deserialize(LIST_SER);
+		@SuppressWarnings("unchecked")
+		var list = (Map<String, String>) new XStream().fromXML(LIST_SER.toFile());
 		
 		Set<String> set_aff = list.keySet();
 		Set<String> set_neg = set_aff.stream()
@@ -188,22 +190,15 @@ public final class MissingPolishGerunds implements Selectorizable {
 			line.substring(line.indexOf(" - ") + 3)
     	}).toList();
 		
-		Misc.serialize(list_aff, MISSING_AFF_SER);
-		Misc.serialize(list_neg, MISSING_NEG_SER);
+		Files.writeString(MISSING_AFF_SER, new XStream().toXML(list_aff));
+		Files.writeString(MISSING_NEG_SER, new XStream().toXML(list_neg));
 		
 		System.out.printf("Formas extraídas: %d (aff), %d (neg)\n", list_aff.size(), list_neg.size());
 	}
 	
 	public static void writeAff() throws LoginException, IOException {
-		List<String[]> list;
-		
-		try {
-			list = Misc.deserialize(MISSING_AFF_SER);
-		}
-		catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-			return;
-		}
+		@SuppressWarnings("unchecked")
+		var list = (List<String[]>) new XStream().fromXML(MISSING_AFF_SER.toFile());
 		
 		wb.setThrottle(2500);
 		
@@ -217,15 +212,8 @@ public final class MissingPolishGerunds implements Selectorizable {
 	}
 	
 	public static void writeNeg() throws LoginException, IOException {
-		List<String[]> list;
-		
-		try {
-			list = Misc.deserialize(MISSING_NEG_SER);
-		}
-		catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-			return;
-		}
+		@SuppressWarnings("unchecked")
+		var list = (List<String[]>) new XStream().fromXML(MISSING_NEG_SER.toFile());
 		
 		wb.setThrottle(2500);
 		

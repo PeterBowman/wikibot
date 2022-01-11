@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Stream;
 import java.util.Optional;
 
 import javax.security.auth.login.FailedLoginException;
@@ -26,6 +25,7 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
@@ -35,7 +35,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingWikiquoteBacklinks/");
 	private static final Path DATA = LOCATION.resolve("data.tsv");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
-	private static final Path PAGES_SER = LOCATION.resolve("pages.ser");
+	private static final Path PAGES_SER = LOCATION.resolve("pages.xml");
 	
 	public void selector(char op) throws Exception {
 		switch (op) {
@@ -104,20 +104,21 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 			map.put(wiktpage.getTitle(), Arrays.asList(data));
 		}
 		
-		Misc.serialize(wiktpages, PAGES_SER);
+		Files.writeString(PAGES_SER, new XStream().toXML(wiktpages));
 		Files.write(WORKLIST, List.of(Misc.makeMultiList(map)));
 	}
 	
 	public static void edit() throws ClassNotFoundException, IOException {
 		Map<String, String[]> map = Misc.readMultiList(Files.readString(WORKLIST));
-		PageContainer[] pages = Misc.deserialize(PAGES_SER);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(PAGES_SER.toFile());
 		List<String> errors = new ArrayList<>();
 		
 		for (Entry<String, String[]> entry : map.entrySet()) {
 			String title = entry.getKey();
 			String[] data = entry.getValue();
 			
-			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+			PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			OffsetDateTime timestamp = page.getTimestamp();
 			
 			Page p = Page.wrap(page);

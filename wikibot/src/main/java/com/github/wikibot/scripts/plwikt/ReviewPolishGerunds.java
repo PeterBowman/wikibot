@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import javax.security.auth.login.LoginException;
 
@@ -27,12 +26,13 @@ import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class ReviewPolishGerunds implements Selectorizable {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReviewPolishGerunds/");
 	private static final Path PAGES = LOCATION.resolve("pages.txt");
-	private static final Path INFO = LOCATION.resolve("info.ser");
+	private static final Path INFO = LOCATION.resolve("info.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Pattern P_RELATED_TERMS = Pattern.compile(": \\{\\{czas\\}\\} \\[\\[.+?\\]\\] \\{\\{n?dk\\}\\}");
 	
@@ -103,18 +103,19 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		
 		System.out.printf("Tamaño de la lista: %d%n", worklist.size());
 		
-		Misc.serialize(pages, INFO);
+		Files.writeString(INFO, new XStream().toXML(pages));
 		Files.write(WORKLIST, List.of(Misc.makeList(worklist)));
 	}
 	
 	public static void review() throws ClassNotFoundException, IOException, LoginException {
-		PageContainer[] pages = Misc.deserialize(INFO);
+		@SuppressWarnings("unchecked")
+		var pages = (List<PageContainer>) new XStream().fromXML(INFO.toFile());
 		Map<String, String> worklist = Misc.readList(Files.readString(WORKLIST));
 		Set<String> titles = worklist.keySet();
 		List<String> errors = new ArrayList<>();
 		
 		for (String title : titles) {
-			PageContainer page = Stream.of(pages).filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+			PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
 			
 			if (page == null) {
 				System.out.printf("Error en \"%s\"%n", title);

@@ -21,6 +21,7 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
+import com.thoughtworks.xstream.XStream;
 
 public final class Replace implements Selectorizable {
 	private static Wikibot wb;
@@ -28,9 +29,9 @@ public final class Replace implements Selectorizable {
 	private static final Path LOCATION = Paths.get("./data/scripts/replace/");
 	private static final Path TITLES = LOCATION.resolve("titles.txt");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
-	private static final Path TARGET = LOCATION.resolve("target.ser");
-	private static final Path REPLACEMENT = LOCATION.resolve("replacement.ser");
-	private static final Path INFO = LOCATION.resolve("info.ser");
+	private static final Path TARGET = LOCATION.resolve("target.txt");
+	private static final Path REPLACEMENT = LOCATION.resolve("replacement.txt");
+	private static final Path INFO = LOCATION.resolve("info.xml");
 	private static final String SUMMARY_FORMAT;
 	
 	static {
@@ -90,8 +91,8 @@ public final class Replace implements Selectorizable {
 			System.out.printf("No se ha encontrado la secuencia deseada en %d entradas: %s%n", found.size(), found.toString());
 		}
 		
-		Misc.serialize(target, TARGET);
-		Misc.serialize(replacement, REPLACEMENT);
+		Files.writeString(TARGET, target);
+		Files.writeString(REPLACEMENT, replacement);
 		
 		Map<String, OffsetDateTime> timestamps = pages.stream()
 			.collect(Collectors.toMap(
@@ -99,14 +100,15 @@ public final class Replace implements Selectorizable {
 				PageContainer::getTimestamp
 			));
 		
-		Misc.serialize(timestamps, INFO);
+		Files.writeString(INFO, new XStream().toXML(timestamps));
 	}
 	
 	public void edit() throws IOException, ClassNotFoundException, LoginException {
-		String target = Misc.deserialize(TARGET);
-		String replacement = Misc.deserialize(REPLACEMENT);
+		String target = Files.readString(TARGET);
+		String replacement = Files.readString(REPLACEMENT);
 		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));
-		Map<String, OffsetDateTime> timestamps = Misc.deserialize(INFO);
+		@SuppressWarnings("unchecked")
+		var timestamps = (Map<String, OffsetDateTime>) new XStream().fromXML(INFO.toFile());
 		
 		System.out.printf("Título: %s%n", target);
 		System.out.printf("Sustitución por: %s%n", replacement);
