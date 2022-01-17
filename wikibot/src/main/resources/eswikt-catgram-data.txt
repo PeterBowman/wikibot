@@ -412,6 +412,13 @@ f sg = de partícula
 m pl = de partículas
 f pl = de partículas
 
+PERFECTIVE
+type = QUALIFIER
+m sg = perfectivo
+f sg = perfectiva
+m pl = perfectivos
+f pl = perfectivas
+
 PERSONAL
 type = QUALIFIER
 m sg = personal
