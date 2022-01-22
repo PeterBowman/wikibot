@@ -55,8 +55,25 @@ public final class AuthorityControl {
 	private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	
 	private static final Pattern P_TEXT = Pattern.compile(
-		"(?:\\{{2}\\s*+(?:SORTUJ|DOMYŚLNIESORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^\\}]*+\\}{2})?+(?:\\s*+\\[{2} *+(?i:Kategoria|Category) *+:[^\\]\\{\\}\n]*+\\]{2})*+(?:\\s*+(?i:__NOINDEX__|__NIEINDEKSUJ__|__NOTOC__|__BEZSPISU__))?+(?:\\s*+\\[{2} *+[a-z-]++ *+:[^\\]\\{\\}\n]*+\\]{2})*+$"
-	);
+		"""
+		# DEFAULTSORT + category + HTML comments (no strict order and optional) 
+		(?:
+			\\s*+\\{{2}\\s*+(?:SORTUJ|DOMYŚLNIESORTUJ|DEFAULTSORT|DEFAULTSORTKEY|DEFAULTCATEGORYSORT):[^}]*+\\}{2}
+			|
+			\\s*+\\[{2}\\ *+(?i:Kategoria|Category)\\ *+:[^]\n]*+\\]{2}
+			|
+			\\s*+<!--.+?-->
+		)*+
+		
+		# __NOINDEX__
+		(?:\\s*+_{2}(?i:NOINDEX|NIEINDEKSUJ|NOTOC|BEZSPISU)_{2})?+
+		
+		# interwiki
+		(?:\\s*+\\[{2}\\ *+[a-z-]++\\ *+:[^]\n]*+\\]{2})*+
+		
+		# end of article
+		$
+		""", Pattern.COMMENTS);
 	
 	static {
 		var patt = Pattern.compile("^(P\\d+) *+(?=#|$)");
