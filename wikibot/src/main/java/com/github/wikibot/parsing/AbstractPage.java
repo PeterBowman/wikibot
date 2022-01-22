@@ -1,7 +1,6 @@
 package com.github.wikibot.parsing;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -76,16 +75,16 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 		this.trailingNewlines = trailingNewlines;
 	}
 	
-	public void appendSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length != 0) {
-			Collections.addAll(this.sections, sections);
+	public void appendSections(List<T> sections) {
+		if (!sections.isEmpty()) {
+			this.sections.addAll(sections);
 			buildSectionTree();
 		}
 	}
 	
-	public void prependSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length != 0) {
-			this.sections.addAll(0, Arrays.asList(sections));
+	public void prependSections(List<T> sections) {
+		if (!sections.isEmpty()) {
+			this.sections.addAll(0, sections);
 			buildSectionTree();
 		}
 	}
@@ -100,9 +99,7 @@ public abstract class AbstractPage<T extends AbstractSection<T>> {
 		}
 		
 		int tocLevel = 1;
-		
-		ObjIntConsumer<List<T>> cons = (sections, level) ->
-			sections.stream().forEach(s -> s.setLevel(level));
+		ObjIntConsumer<List<T>> cons = (sections, level) -> sections.stream().forEach(s -> s.setLevel(level));
 		
 		while (true) {
 			List<T> list = new ArrayList<>();

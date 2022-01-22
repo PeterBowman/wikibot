@@ -282,8 +282,8 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 	}
 	
-	public void appendSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length == 0) {
+	public void appendSections(List<T> sections) {
+		if (sections.isEmpty()) {
 			return;
 		}
 		
@@ -294,7 +294,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 		
 		if (containingPage != null) {
-			List<T> flattened = flattenSubSections(Arrays.asList(sections));
+			var flattened = flattenSubSections(sections);
 			
 			if (!childSections.isEmpty()) {
 				T lastChild = childSections.get(childSections.size() - 1);
@@ -307,12 +307,12 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			
 			containingPage.buildSectionTree();
 		} else {
-			Collections.addAll(childSections, sections);
+			childSections.addAll(sections);
 		}
 	}
 	
-	public void prependSections(@SuppressWarnings("unchecked") T... sections) {
-		if (sections.length == 0) {
+	public void prependSections(List<T> sections) {
+		if (sections.isEmpty()) {
 			return;
 		}
 		
@@ -324,21 +324,21 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		
 		if (containingPage != null) {
 			int index = containingPage.sections.indexOf(this);
-			List<T> flattened = flattenSubSections(Arrays.asList(sections));
+			var flattened = flattenSubSections(sections);
 			containingPage.sections.addAll(index + 1, flattened);
 			containingPage.buildSectionTree();
 		} else {
-			childSections.addAll(0, Arrays.asList(sections));
+			childSections.addAll(0, sections);
 		}
 	}
 	
-	public void insertSectionsAfter(@SuppressWarnings("unchecked") T... sections) {
+	public void insertSectionsAfter(List<T> sections) {
 		// TODO: don't throw if parentSection is non null
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot insert Sections with no containing Page");
 		}
 		
-		if (sections.length == 0) {
+		if (sections.isEmpty()) {
 			return;
 		}
 		
@@ -349,7 +349,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 		
 		int index = siblingSections.indexOf(this);
-		siblingSections.addAll(index + 1, Arrays.asList(sections));
+		siblingSections.addAll(index + 1, sections);
 		
 		if (parentSection != null) {
 			parentSection.propagateTree();
@@ -359,13 +359,13 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 	}
 	
-	public void insertSectionsBefore(@SuppressWarnings("unchecked") T... sections) {
+	public void insertSectionsBefore(List<T> sections) {
 		// TODO: don't throw if parentSection is non null
 		if (containingPage == null) {
 			throw new UnsupportedOperationException("Cannot insert Sections with no containing Page");
 		}
 		
-		if (sections.length == 0) {
+		if (sections.isEmpty()) {
 			return;
 		}
 		
@@ -376,7 +376,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 		
 		int index = siblingSections.indexOf(this);
-		siblingSections.addAll(index, Arrays.asList(sections));
+		siblingSections.addAll(index, sections);
 
 		if (parentSection != null) {
 			parentSection.propagateTree();
@@ -395,7 +395,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 			containingPage.sections.remove(this);
 			
 			if (!childSections.isEmpty()) {
-				List<T> flattened = flattenSubSections(childSections);
+				var flattened = flattenSubSections(childSections);
 				containingPage.sections.removeAll(flattened);
 			}
 			
@@ -436,7 +436,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		}
 		
 		if (!childSections.isEmpty()) {
-			List<T> subSections = flattenSubSections(childSections);
+			var subSections = flattenSubSections(childSections);
 			
 			if (diff > 0) {
 				int highestLevel = subSections.stream()
@@ -510,7 +510,7 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		
 		int index = containingPage.sections.indexOf(this);
 		
-		List<T> flattened = flattenSubSections(childSections);
+		var flattened = flattenSubSections(childSections);
 		containingPage.sections.removeAll(flattened);
 		containingPage.sections.addAll(index + 1, flattened);
 		containingPage.buildSectionTree();
@@ -520,10 +520,10 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 		return flattenSubSections(List.of(section));
 	}
 	
-	public static <U extends AbstractSection<U>> List<U> flattenSubSections(List<? extends U> sections) {
-		List<U> list = new ArrayList<>();
+	public static <U extends AbstractSection<U>> List<U> flattenSubSections(List<U> sections) {
+		var list = new ArrayList<U>();
 		
-		for (U section : sections) {
+		for (var section : sections) {
 			list.add(section);
 			
 			if (!section.childSections.isEmpty()) {

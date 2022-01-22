@@ -190,21 +190,22 @@ public final class Page extends AbstractPage<Section> {
 			return;
 		}
 		
-		List<Section> nonLangSections = new ArrayList<>();
+		var nonLangSections = new ArrayList<Section>();
 		
-		for (Section section : sections) {
+		for (var section : sections) {
 			if (!(section instanceof LangSection) && !section.getLangSectionParent().isPresent()) {
 				nonLangSections.add(section);
 			}
 		}
 		
 		Collections.sort(langSections);
-		sections = new ArrayList<>(AbstractSection.flattenSubSections(langSections));
 		
-		if (!nonLangSections.isEmpty()) {
-			appendSections(nonLangSections.toArray(new Section[nonLangSections.size()]));
-		}
+		var flattable = langSections.stream()
+			.map(s -> (Section)s)
+			.toList();
 		
+		sections = AbstractSection.flattenSubSections(flattable);
+		appendSections(nonLangSections);
 		buildSectionTree();
 	}
 

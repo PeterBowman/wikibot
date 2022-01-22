@@ -1387,7 +1387,7 @@ public class Editor extends AbstractEditor {
 					etymologySection.setIntro(template + ".");
 				}
 				
-				section.prependSections(etymologySection);
+				section.prependSections(List.of(etymologySection));
 				
 				if (!(section instanceof LangSection)) {
 					section.detachOnlySelf();
@@ -1452,7 +1452,7 @@ public class Editor extends AbstractEditor {
 		}
 		
 		// Reattach references Sections
-		page.appendSections(references.toArray(new Section[references.size()]));
+		page.appendSections(references);
 		
 		formatted = page.toString();
 		isOldStructure = false;
@@ -2249,7 +2249,7 @@ public class Editor extends AbstractEditor {
 						etymologySection.setIntro(template + ".");
 					}
 					
-					langSection.prependSections(etymologySection);
+					langSection.prependSections(List.of(etymologySection));
 					set.add("Etimología");
 				});
 		}
@@ -2275,7 +2275,7 @@ public class Editor extends AbstractEditor {
 					Section translationsSection = Section.create("Traducciones", 3);
 					translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
 					translationsSection.setTrailingNewlines(1);
-					spanishSection.appendSections(translationsSection);
+					spanishSection.appendSections(List.of(translationsSection));
 					set.add("Traducciones");
 				}
 			} else if (etymologySections.size() > 1) {
@@ -2289,7 +2289,7 @@ public class Editor extends AbstractEditor {
 						Section translationsSection = Section.create("Traducciones", 4);
 						translationsSection.setIntro(TRANSLATIONS_TEMPLATE);
 						translationsSection.setTrailingNewlines(1);
-						etymologySection.appendSections(translationsSection);
+						etymologySection.appendSections(List.of(translationsSection));
 						set.add("Traducciones");
 					}
 				}

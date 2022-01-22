@@ -146,7 +146,7 @@ public final class SpanishCanonicalInflectedForms {
 				com.github.wikibot.parsing.Section section =
 					com.github.wikibot.parsing.Section.create(letter.toString(), 2);
 				section.setIntro(content);
-				page.appendSections(section);
+				page.appendSections(List.of(section));
 			});
 		
 		String pageText = wb.getPageText(List.of(TARGET_PAGE)).get(0);

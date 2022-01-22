@@ -407,7 +407,7 @@ public class PolishGerundsList implements Selectorizable {
 		
 		// Append all sections
 		
-		page.appendSections(onlyDefinitionSection, onlyTemplateSection, noDictEntrySection, possibleErrors, reflexiveVerbs);
+		page.appendSections(List.of(onlyDefinitionSection, onlyTemplateSection, noDictEntrySection, possibleErrors, reflexiveVerbs));
 		
 		String pageContent = wb.getPageText(List.of(wikipage)).get(0);
 		pageContent = pageContent.substring(0, pageContent.indexOf("-->") + 3);

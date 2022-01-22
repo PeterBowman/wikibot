@@ -329,7 +329,7 @@ public final class InconsistentHeaderTitles {
 		
 		System.out.printf("Found: %d (%d unique)%n", total, unique);
 		
-		com.github.wikibot.parsing.Page page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
+		var page = com.github.wikibot.parsing.Page.create(TARGET_PAGE);
 		
 		page.setIntro(PAGE_INTRO + String.format(
 			"Znaleziono %s %s (%s %s) w %s %s. Aktualizacja: ~~~~~.",
@@ -338,7 +338,7 @@ public final class InconsistentHeaderTitles {
 			NUMBER_FORMAT_PL.format(map.keySet().size()), PLURAL_PL.pl(map.keySet().size(), "języku")
 		));
 		
-		com.github.wikibot.parsing.Section[] sections = map.entrySet().stream()
+		var sections = map.entrySet().stream()
 			.map(entry -> {
 				boolean useColumns = entry.getValue().size() > COLUMN_ELEMENT_THRESHOLD;
 				
@@ -365,7 +365,7 @@ public final class InconsistentHeaderTitles {
 				section.setIntro(sb.toString());
 				return section;
 			})
-			.toArray(com.github.wikibot.parsing.Section[]::new);
+			.toList();
 		
 		page.appendSections(sections);
 		return page;
