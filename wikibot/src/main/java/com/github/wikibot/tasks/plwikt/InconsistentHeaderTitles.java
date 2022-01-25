@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -308,15 +307,7 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	private static String stripWikiLinks(String text) {
-		Matcher m = P_LINK.matcher(text);
-		StringBuilder sb = new StringBuilder(text.length());
-		
-		while (m.find()) {
-			String target = Optional.ofNullable(m.group(2)).orElse(m.group(1));
-			m.appendReplacement(sb, target);
-		}
-		
-		return m.appendTail(sb).toString();
+		return P_LINK.matcher(text).replaceAll(m -> Optional.ofNullable(m.group(2)).orElse(m.group(1)));
 	}
 	
 	private static com.github.wikibot.parsing.Page makePage() {
