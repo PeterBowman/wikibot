@@ -117,7 +117,7 @@ public final class AutomatedIndices {
 		Path hash = LOCATION.resolve("hash.xml");
 		
 		@SuppressWarnings("unchecked")
-		var indexToHash = Files.exists(hash) ? (Map<String, Integer>) new XStream().fromXML(hash.toString()) : new HashMap<String, Integer>();
+		var indexToHash = Files.exists(hash) ? (Map<String, Integer>) new XStream().fromXML(hash.toFile()) : new HashMap<String, Integer>();
 		
 		final String summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getPathToDump().getFileName());
 		
