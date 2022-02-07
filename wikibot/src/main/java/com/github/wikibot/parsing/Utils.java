@@ -10,8 +10,10 @@ import java.util.List;
 import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -165,8 +167,19 @@ public final class Utils {
 		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), biCons);
 	}
 	
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt, Function<MatchResult, String> replacer) {
+		BiConsumer<Matcher, StringBuilder> biCons = (m, sb) -> m.appendReplacement(sb, replacer.apply(m));
+		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), biCons);
+	}
+	
 	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
 			ToIntFunction<Matcher> func, BiConsumer<Matcher, StringBuilder> biCons) {
+		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), func, biCons);
+	}
+	
+	public static String replaceWithStandardIgnoredRanges(String text, Pattern patt,
+			ToIntFunction<Matcher> func, Function<MatchResult, String> replacer) {
+		BiConsumer<Matcher, StringBuilder> biCons = (m, sb) -> m.appendReplacement(sb, replacer.apply(m));
 		return replaceWithIgnoredRanges(text, patt, getStandardIgnoredRanges(text), func, biCons);
 	}
 	
@@ -177,6 +190,12 @@ public final class Utils {
 	
 	public static String replaceWithIgnoredRanges(String text, Pattern patt,
 			List<Range<Integer>> ignoredRanges, BiConsumer<Matcher, StringBuilder> biCons) {
+		return replaceWithIgnoredRanges(text, patt, ignoredRanges, Matcher::start, biCons);
+	}
+	
+	public static String replaceWithIgnoredRanges(String text, Pattern patt,
+			List<Range<Integer>> ignoredRanges, Function<MatchResult, String> replacer) {
+		BiConsumer<Matcher, StringBuilder> biCons = (m, sb) -> m.appendReplacement(sb, replacer.apply(m));
 		return replaceWithIgnoredRanges(text, patt, ignoredRanges, Matcher::start, biCons);
 	}
 	

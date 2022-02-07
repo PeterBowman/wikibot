@@ -33,6 +33,7 @@ import java.util.function.BiFunction;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -690,17 +691,17 @@ public class Editor extends AbstractEditor {
 		Set<String> set = new HashSet<>();
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_PREFIXED_TEMPLATE,
-			(m, sb) -> {
-				String template = m.group();
-				String prefix = m.group(1);
+			mr -> {
+				String template = mr.group();
+				String prefix = mr.group(1);
 				
-				int startOffset = m.start(1) - m.start();
+				int startOffset = mr.start(1) - mr.start();
 				int endOffset = startOffset + prefix.length();
 				
 				template = template.substring(0, startOffset) + template.substring(endOffset);
 				
 				set.add(prefix.trim());
-				m.appendReplacement(sb, Matcher.quoteReplacement(template));
+				return Matcher.quoteReplacement(template);
 			}
 		);
 		
@@ -1017,9 +1018,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void splitLines() {
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_SPLITTER_LEFT,
-			(m, sb) -> m.appendReplacement(sb, "\n$1")
-		);
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_LINE_SPLITTER_LEFT, mr -> "\n$1");
 		
 		final int stringLength = formatted.length();
 		MutableInt lastTrailingPos = new MutableInt(-1);
@@ -1075,12 +1074,12 @@ public class Editor extends AbstractEditor {
 		
 		// sanitize image links
 		
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES, (m, sb) -> {
-			int startOffset = m.start(1) - m.start();
-			int endOffset = startOffset + m.group(1).length();
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_IMAGES, mr -> {
+			int startOffset = mr.start(1) - mr.start();
+			int endOffset = startOffset + mr.group(1).length();
 			
-			String file = m.group();
-			String alias = m.group(1);
+			String file = mr.group();
+			String alias = mr.group(1);
 			
 			if (!alias.equals(preferredFileNSAlias)) {
 				setFileAlias.add(alias + ":");
@@ -1090,7 +1089,7 @@ public class Editor extends AbstractEditor {
 				+ preferredFileNSAlias
 				+ file.substring(endOffset).replaceFirst("^\\s*", "").replaceFirst("^:\\s*", ":");
 			
-			m.appendReplacement(sb, Matcher.quoteReplacement(file));
+			return Matcher.quoteReplacement(file);
 		});
 		
 		if (!setFileAlias.isEmpty()) {
@@ -1611,16 +1610,16 @@ public class Editor extends AbstractEditor {
 		List<String> temp = new ArrayList<>();
 		
 		String topIntro = Utils.replaceWithStandardIgnoredRanges(topSection.getIntro(), P_ETYM_TMPL,
-			(m, sb) -> {
-				String line = m.group(1);
-				String trailingText = m.group(2);
+			mr -> {
+				String line = mr.group(1);
+				String trailingText = mr.group(2);
 				
 				if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-					return;
+					return mr.group();
 				}
 				
 				temp.add(line);
-				m.appendReplacement(sb, "");
+				return "";
 			}
 		);
 		
@@ -1651,16 +1650,16 @@ public class Editor extends AbstractEditor {
 		List<String> temp = new ArrayList<>();
 		
 		etymologyIntro = Utils.replaceWithStandardIgnoredRanges(etymologyIntro, P_ETYM_TMPL,
-			(m, sb) -> {
-				String line = m.group(1);
-				String trailingText = m.group(2);
+			mr -> {
+				String line = mr.group(1);
+				String trailingText = mr.group(2);
 				
 				if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-					return;
+					return mr.group();
 				}
 				
 				temp.add(line);
-				m.appendReplacement(sb, "");
+				return "";
 			}
 		).trim();
 		
@@ -2357,10 +2356,7 @@ public class Editor extends AbstractEditor {
 			}
 			
 			// TODO: handle reference groups
-			temp = Utils.replaceWithStandardIgnoredRanges(intro, pReferenceTags,
-				(m, sb) -> m.appendReplacement(sb, "\n\n")
-			);
-			
+			temp = Utils.replaceWithStandardIgnoredRanges(intro, pReferenceTags, mr -> "\n\n");
 			
 			if (!temp.equals(intro)) {
 				intro = temp;
@@ -3001,13 +2997,13 @@ public class Editor extends AbstractEditor {
 		
 		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TMPL_LINE,
 			m -> m.start(2),
-			(m, sb) -> {
+			mr -> {
 				String line = Optional
-					.ofNullable(processTemplateLine(m, TERM_TMPLS, TERM_TMPLS_ALIAS))
-					.orElse(processTemplateLine(m, PRON_TMPLS, PRON_TMPLS_ALIAS));
+					.ofNullable(processTemplateLine(mr, TERM_TMPLS, TERM_TMPLS_ALIAS))
+					.orElse(processTemplateLine(mr, PRON_TMPLS, PRON_TMPLS_ALIAS));
 				
 				if (line == null) {
-					return;
+					return mr.group();
 				}
 				
 				line = Utils.replaceWithStandardIgnoredRanges(
@@ -3016,8 +3012,8 @@ public class Editor extends AbstractEditor {
 					"{{derivad|"
 				);
 				
-				m.appendReplacement(sb, Matcher.quoteReplacement(line));
-				modified.add(m.group(2).trim());
+				modified.add(mr.group(2).trim());
+				return Matcher.quoteReplacement(line);
 			}
 		);
 		
@@ -3025,12 +3021,12 @@ public class Editor extends AbstractEditor {
 		checkDifferences(formatted, "convertToTemplate", summary);
 	}
 
-	private static String processTemplateLine(Matcher m, List<String> templates, List<String> aliases) {
-		String line = m.group(0);
-		String leadingComments = m.group(1).trim();
-		String name = m.group(2).trim().toLowerCase();
-		String content = m.group(3).trim();
-		String trailingComments = m.group(4).trim();
+	private static String processTemplateLine(MatchResult mr, List<String> templates, List<String> aliases) {
+		String line = mr.group(0);
+		String leadingComments = mr.group(1).trim();
+		String name = mr.group(2).trim().toLowerCase();
+		String content = mr.group(3).trim();
+		String trailingComments = mr.group(4).trim();
 		
 		if (
 			name.isEmpty() || content.isEmpty() ||
@@ -3900,8 +3896,8 @@ public class Editor extends AbstractEditor {
 			return;
 		}
 		
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_CATEGORY_LINKS, (m, sb) -> {
-			String content = m.group(1);
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_CATEGORY_LINKS, mr -> {
+			String content = mr.group(1);
 			String[] pipeSeparator = content.split("\\|", 0);
 			
 			if (pipeSeparator.length > 1) {
@@ -3909,14 +3905,14 @@ public class Editor extends AbstractEditor {
 				
 				if (pipe.equals(title) || pipe.equals("{{PAGENAME}}")) {
 					content = pipeSeparator[0].trim();
-				} else {
-					return;
+					
+					if (targetCategories.contains(content)) {
+						return "";
+					}
 				}
 			}
 			
-			if (targetCategories.contains(content)) {
-				m.appendReplacement(sb, "");
-			}
+			return mr.group();
 		});
 		
 		checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
@@ -4331,10 +4327,7 @@ public class Editor extends AbstractEditor {
 	}
 	
 	private static String removeClearTemplates(Section section) {
-		String intro = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), P_CLEAR_TMPLS,
-			(m, sb) -> m.appendReplacement(sb, "\n\n")
-		);
-		
+		String intro = Utils.replaceWithStandardIgnoredRanges(section.getIntro(), P_CLEAR_TMPLS, mr -> "\n\n");
 		section.setIntro(intro);
 		return intro;
 	}
@@ -4400,13 +4393,13 @@ public class Editor extends AbstractEditor {
 		for (Section section : sections) {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF, (m, sb) -> {
-				String target = m.group(2).trim();
-				String pipe = m.group(3);
-				String trail = m.group(4);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_UCF, mr -> {
+				String target = mr.group(2).trim();
+				String pipe = mr.group(3);
+				String trail = mr.group(4);
 				
 				if (target.contains(":") || capitalize(target).equals(target)) {
-					return;
+					return mr.group();
 				}
 				
 				target = target.replaceFirst("#(Español|es)$", "");
@@ -4415,28 +4408,26 @@ public class Editor extends AbstractEditor {
 				if (target.isEmpty()) {
 					target = title;
 				} else if (target.contains("#")) {
-					return;
+					return mr.group();
 				}
 				
 				if (pipe != null) {
 					pipe = pipe.trim();
 					
 					if (pipe.isEmpty() || !uncapitalize(pipe).equals(target)) {
-						return;
+						return mr.group();
 					}
 				}
 				
 				if (P_LINK_TRAIL.matcher(trail).matches()) {
-					return;
+					return mr.group();
 				}
 				
 				String template = target.equals(title)
 					? "{{plm}}"
 					: String.format("{{plm|%s}}", target);
 				
-				String replacement = intro.substring(m.start(), m.start(1)) + template + trail;
-				
-				m.appendReplacement(sb, replacement);
+				return intro.substring(mr.start(), mr.start(1)) + template + trail;
 			});
 			
 			if (!temp.equals(intro)) {
@@ -4450,25 +4441,25 @@ public class Editor extends AbstractEditor {
 	
 	public void convertDefinitionsToUcfTemplates() {
 		// TODO: allow specific trailing elements, e.g. <ref> tags
-		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TERM, (m, sb) -> {
-			String term = m.group(4).trim();
+		String formatted = Utils.replaceWithStandardIgnoredRanges(text, P_TERM, mr -> {
+			String term = mr.group(4).trim();
 			
 			if (
 				term.isEmpty() || Character.isUpperCase(term.charAt(0)) ||
 				!term.matches("[a-záéíóúüñ]+\\.?")
 			) {
-				return;
+				return mr.group();
 			}
 			
 			term = term.replaceFirst("\\.$", "");
 			String template = String.format(term.equals(title) ? "{{plm}}." : "{{plm|%s}}.", term);
 			
 			String replacement =
-				text.substring(m.start(), m.start(4)) +
+				text.substring(mr.start(), mr.start(4)) +
 				template +
-				text.substring(m.end(4), m.end());
+				text.substring(mr.end(4), mr.end());
 			
-			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+			return Matcher.quoteReplacement(replacement);
 		});
 		
 		checkDifferences(formatted, "convertDefinitionsToUcfTemplates", "convirtiendo definiciones simples a {{plm}}");
@@ -4605,9 +4596,7 @@ public class Editor extends AbstractEditor {
 		
 		page.getAllSections().stream()
 			.filter(Editor::filterTermSections)
-			.forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), patt,
-				(m, sb) -> m.appendReplacement(sb, "")
-			)));
+			.forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), patt, mr -> "")));
 		
 		String formatted = page.toString();
 		checkDifferences(formatted, "removeDefinitionHeaders", "eliminando encabezamientos de definiciones");
@@ -4816,19 +4805,16 @@ public class Editor extends AbstractEditor {
 		).forEach(section -> {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, (m, sb) -> {
-				String template = m.group(2);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, mr -> {
+				String template = mr.group(2);
 				
 				if (template == null || template.startsWith(" ")) {
-					return;
+					return mr.group();
 				}
 				
-				String replacement =
-					intro.substring(m.start(), m.start(2)) +
+				return intro.substring(mr.start(), mr.start(2)) +
 					" " + template +
-					intro.substring(m.end(2), m.end());
-				
-				m.appendReplacement(sb, replacement);
+					intro.substring(mr.end(2), mr.end());
 			});
 			
 			if (!temp.equals(intro)) {
@@ -4909,22 +4895,20 @@ public class Editor extends AbstractEditor {
 		).forEach(section -> {
 			String intro = section.getIntro();
 			
-			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, (m, sb) -> {
-				String number = m.group(1);
-				String colon = m.group(3);
-				String definition = m.group(4);
+			String temp = Utils.replaceWithStandardIgnoredRanges(intro, P_TERM, mr -> {
+				String number = mr.group(1);
+				String colon = mr.group(3);
+				String definition = mr.group(4);
 				
 				if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
-					return;
+					return mr.group();
 				}
 				
-				String replacement =
-					intro.substring(m.start(), m.start(1)) +
+				return
+					intro.substring(mr.start(), mr.start(1)) +
 					number.trim() +
-					intro.substring(m.end(1), m.start(3)) +
+					intro.substring(mr.end(1), mr.start(3)) +
 					colon.trim() + " " + definition.trim();
-				
-				m.appendReplacement(sb, replacement);
 			});
 			
 			if (!temp.equals(intro)) {

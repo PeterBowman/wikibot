@@ -1,13 +1,14 @@
 package com.github.wikibot.scripts.plwiki;
 
-import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -120,11 +121,11 @@ public final class ResolveLinks {
 			.map(Pattern::compile)
 			.toList();
 		
-		BiConsumer<Matcher, StringBuilder> replaceFunc = (m, sb) -> {
-			var link = m.group(1);
-			var fragment = Optional.ofNullable(m.group(2)).orElse("");
-			var text = Optional.ofNullable(m.group(3)).orElse(link);
-			var trail = Optional.ofNullable(m.group(4)).orElse("");
+		Function<MatchResult, String> replacer = mr -> {
+			var link = mr.group(1);
+			var fragment = Optional.ofNullable(mr.group(2)).orElse("");
+			var text = Optional.ofNullable(mr.group(3)).orElse(link);
+			var trail = Optional.ofNullable(mr.group(4)).orElse("");
 			
 			final String replacement;
 			
@@ -138,7 +139,7 @@ public final class ResolveLinks {
 				replacement = String.format("[[%s%s|%s]]", target, fragment, text + trail);
 			}
 			
-			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+			return Matcher.quoteReplacement(replacement);
 		};
 		
 		var props = wb.getPageProps(backlinks);
@@ -185,7 +186,7 @@ public final class ResolveLinks {
 			var newText = page.getText();
 			
 			for (var pattern : patterns) {
-				newText = Utils.replaceWithIgnoredRanges(newText, pattern, combinedRanges, replaceFunc);
+				newText = Utils.replaceWithIgnoredRanges(newText, pattern, combinedRanges, replacer);
 				newText = replaceAdditionalOccurrences(newText, target, sourcesIgnoreCase);
 			}
 			
