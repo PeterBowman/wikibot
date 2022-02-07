@@ -19,7 +19,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -180,13 +179,10 @@ public final class ResolveLinks {
 			
 			ignoredRanges.add(Utils.getStandardIgnoredRanges(page.getText()));
 			
-			@SuppressWarnings("unchecked")
-			var combinedRanges = (List<Range<Integer>>)Utils.getCombinedRanges(ignoredRanges.toArray(new List[0]));
-			
 			var newText = page.getText();
 			
 			for (var pattern : patterns) {
-				newText = Utils.replaceWithIgnoredRanges(newText, pattern, combinedRanges, replacer);
+				newText = Utils.replaceWithIgnoredRanges(newText, pattern, Utils.getCombinedRanges(ignoredRanges), replacer);
 				newText = replaceAdditionalOccurrences(newText, target, sourcesIgnoreCase);
 			}
 			

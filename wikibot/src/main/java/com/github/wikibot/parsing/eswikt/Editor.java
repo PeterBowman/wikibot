@@ -594,12 +594,11 @@ public class Editor extends AbstractEditor {
 	}
 
 	public void removeComments() {
-		var tempArray = COMMENT_PATT_LIST.stream()
+		var tempList = COMMENT_PATT_LIST.stream()
 			.map(patt -> Utils.findRanges(text, patt))
-			.toArray(ArrayList[]::new);
+			.toList();
 		
-		@SuppressWarnings("unchecked")
-		List<Range<Integer>> selectedRanges = Utils.getCombinedRanges(tempArray);
+		List<Range<Integer>> selectedRanges = Utils.getCombinedRanges(tempList);
 		List<Range<Integer>> ignoredRanges = Utils.findRanges(text, "<!--", "-->");
 		Iterator<Range<Integer>> iterator = selectedRanges.iterator();
 		
@@ -895,15 +894,10 @@ public class Editor extends AbstractEditor {
 	}
 	
 	public void joinLines() {
-		var tags = Utils.findRanges(text, P_TAGS);
-		var refs = Utils.findRanges(text, P_REFS);
-		var templates = Utils.findRanges(text, "{{", "}}");
-		var wikitables = Utils.findRanges(text, "{|", "|}");
-		
-		List<Range<Integer>> tagRanges = Utils.getCombinedRanges(tags);
-		List<Range<Integer>> refRanges = Utils.getCombinedRanges(refs);
-		List<Range<Integer>> templateRanges = Utils.getCombinedRanges(templates);
-		List<Range<Integer>> wikitableRanges = Utils.getCombinedRanges(wikitables);
+		var tagRanges = Utils.findRanges(text, P_TAGS);
+		var refRanges = Utils.findRanges(text, P_REFS);
+		var templateRanges = Utils.findRanges(text, "{{", "}}");
+		var wikitableRanges = Utils.findRanges(text, "{|", "|}");
 		
 		// P_LINE_JOINER
 		

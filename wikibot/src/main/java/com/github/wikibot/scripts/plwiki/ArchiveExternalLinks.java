@@ -69,7 +69,7 @@ public final class ArchiveExternalLinks {
 			
 			for (var entry : storage.entrySet()) {
 				var ignoredCiteTemplateRanges = getIgnoredCiteTemplateRanges(newText);
-				var ignoredRanges = Utils.getCombinedRanges(ignoredCiteTemplateRanges, Utils.getStandardIgnoredRanges(newText));
+				var ignoredRanges = Utils.getCombinedRanges(List.of(ignoredCiteTemplateRanges, Utils.getStandardIgnoredRanges(newText)));
 				newText = replaceOccurrences(newText, entry.getKey(), entry.getValue(), ignoredRanges);
 			}
 			

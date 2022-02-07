@@ -17,7 +17,6 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.Range;
 import org.wikiutils.ParseUtils;
@@ -88,16 +87,15 @@ public final class Utils {
 		var pres = findRanges(text, P_PRE);
 		var codes = findRanges(text, P_CODE);
 		
-		return getCombinedRanges(comments, nowikis, pres, codes);
+		return getCombinedRanges(List.of(comments, nowikis, pres, codes));
 	}
 	
-	@SafeVarargs
-	public static List<Range<Integer>> getCombinedRanges(List<Range<Integer>>... ranges) {
-		if (ranges.length == 0) {
+	public static List<Range<Integer>> getCombinedRanges(List<List<Range<Integer>>> ranges) {
+		if (ranges.isEmpty()) {
 			return new ArrayList<>();
 		}
 		
-		var filtered = Stream.of(ranges)
+		var filtered = ranges.stream()
 			.filter(Objects::nonNull)
 			.filter(l -> !l.isEmpty())
 			.toList();
