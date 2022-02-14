@@ -89,6 +89,10 @@ public final class ResolveLinks {
 			throw new IllegalArgumentException("Incompatible useFile option and source/target");
 		}
 		
+		if (line.hasOption("backlinks") && line.hasOption("dry")) {
+			throw new IllegalArgumentException("Incompatible backlinks option and dry run");
+		}
+		
 		var mode = line.getOptionValue("mode");
 		
 		wb = Login.createSession("pl.wikipedia.org");
@@ -161,7 +165,7 @@ public final class ResolveLinks {
 			return;
 		}
 		
-		var backlinkToSources = getBacklinkMap(sourceToTarget);
+		var backlinkToSources = getBacklinkMap(sourceToTarget, line.hasOption("namespaces"));
 		
 		System.out.printf("%d unique backlinks found.%n", backlinkToSources.size());
 		
@@ -170,6 +174,10 @@ public final class ResolveLinks {
 		}
 		
 		Files.write(PATH_BACKLINKS, backlinkToSources.keySet());
+		
+		if (line.hasOption("backlinks")) {
+			return;
+		}
 		
 		var infos = getBacklinkInfo(new ArrayList<>(backlinkToSources.keySet()));
 		
@@ -252,6 +260,8 @@ public final class ResolveLinks {
 		options.addOption("t", "target", true, "target page");
 		options.addOption("f", "useFile", false, "retrieve sources/targets from file (only main namespace!)");
 		options.addOption("d", "dry", false, "dry run");
+		options.addOption("b", "backlinks", false, "retrieve backlinks and exit");
+		options.addOption("n", "namespaces", false, "ignore all namespace restrictions");
 		
 		if (args.length == 0) {
 			System.out.print("Options: ");
@@ -345,7 +355,7 @@ public final class ResolveLinks {
 		}
 	}
 	
-	private static Map<String, List<String>> getBacklinkMap(Map<String, String> sourceToTarget) throws IOException {
+	private static Map<String, List<String>> getBacklinkMap(Map<String, String> sourceToTarget, boolean allNamespaces) throws IOException {
 		var comparator = Comparator.comparing(wb::namespace).thenComparing(Comparator.naturalOrder());
 		var backlinkToSources = new TreeMap<String, List<String>>(comparator);
 		var sources = sourceToTarget.keySet().stream().toList();
@@ -389,17 +399,19 @@ public final class ResolveLinks {
 			}
 		}
 		
-		var bots = wb.allUsersInGroup("bot");
-		
-		backlinkToSources.keySet().removeIf(t -> !TARGET_NAMESPACES.contains(wb.namespace(t)));
-		
-		// retain user sandboxes (no bots)
-		backlinkToSources.keySet().removeIf(t -> wb.namespace(t) == Wiki.USER_NAMESPACE && (
-			wb.getRootPage(t).equals(t) || bots.contains(wb.removeNamespace(wb.getRootPage(t)))
-		));
-		
-		// retain biography notes
-		backlinkToSources.keySet().removeIf(t -> wb.namespace(t) == Wiki.PROJECT_NAMESPACE && !PROJECT_WHITELIST.contains(wb.getRootPage(t)));
+		if (!allNamespaces) {
+			var bots = wb.allUsersInGroup("bot");
+			
+			backlinkToSources.keySet().removeIf(t -> !TARGET_NAMESPACES.contains(wb.namespace(t)));
+			
+			// retain user sandboxes (no bots)
+			backlinkToSources.keySet().removeIf(t -> wb.namespace(t) == Wiki.USER_NAMESPACE && (
+				wb.getRootPage(t).equals(t) || bots.contains(wb.removeNamespace(wb.getRootPage(t)))
+			));
+			
+			// retain biography notes
+			backlinkToSources.keySet().removeIf(t -> wb.namespace(t) == Wiki.PROJECT_NAMESPACE && !PROJECT_WHITELIST.contains(wb.getRootPage(t)));
+		}
 		
 		return backlinkToSources;
 	}
@@ -461,7 +473,7 @@ public final class ResolveLinks {
 	}
 	
 	private static String prepareText(String text, List<String> sources, Map<String, String> sourceToTarget, boolean isRedirMode) {
-		var ignoredRanges = getIgnoredRanges(text);
+		var ignoredRanges = getIgnoredRanges(text, isRedirMode);
 		
 		for (var source : sources) {
 			var regex = String.format(PATT_LINK, Pattern.quote(StringUtils.capitalize(source)), Pattern.quote(StringUtils.uncapitalize(source)));
@@ -497,16 +509,19 @@ public final class ResolveLinks {
 		};
 	}
 	
-	private static List<Range<Integer>> getIgnoredRanges(String text) {
-		var ignoredRanges = IGNORED_REDIR_TEMPLATES.stream()
-			.flatMap(templateName -> ParseUtils.getTemplatesIgnoreCase(templateName, text).stream())
-			.distinct()
-			.map(template -> Pattern.compile(template, Pattern.LITERAL))
-			.map(patt -> Utils.findRanges(text, patt))
-			.collect(Collectors.toCollection(ArrayList::new));
+	private static List<Range<Integer>> getIgnoredRanges(String text, boolean ignoreRedirTemplates) {
+		var ignoredRanges = new ArrayList<List<Range<Integer>>>();
+		
+		if (!ignoreRedirTemplates) {
+			IGNORED_REDIR_TEMPLATES.stream()
+				.flatMap(templateName -> ParseUtils.getTemplatesIgnoreCase(templateName, text).stream())
+				.distinct()
+				.map(template -> Pattern.compile(template, Pattern.LITERAL))
+				.map(patt -> Utils.findRanges(text, patt))
+				.forEach(ignoredRanges::add);
+		}
 		
 		ignoredRanges.add(Utils.getStandardIgnoredRanges(text));
-		
 		return Utils.getCombinedRanges(ignoredRanges);
 	}
 	
