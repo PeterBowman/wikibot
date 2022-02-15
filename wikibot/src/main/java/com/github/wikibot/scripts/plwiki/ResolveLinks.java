@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -130,9 +129,13 @@ public final class ResolveLinks {
 		
 		var isRedirMode = line.getOptionValue("mode").equals("redirsource") || line.getOptionValue("mode").equals("redirtarget");
 		var isDryRunMode = line.getOptionValue("mode").equals("dry");
+		var replaceText = line.hasOption("replaceText");
+		
 		var edited = Collections.synchronizedList(new ArrayList<String>());
 		var errors = new ArrayList<String>();
+		
 		var keepGoing = new MutableBoolean(true);
+		
 		var stream = wb.getContentOfPages(backlinkToSources.keySet()).stream();
 		
 		if (isDryRunMode) {
@@ -144,7 +147,7 @@ public final class ResolveLinks {
 		stream.takeWhile(t -> keepGoing.booleanValue()).forEach(page -> {
 			// Wikipedystka: -> Wikipedysta: (in order to match SQL results)
 			var title = wb.normalize(page.getTitle());
-			var newText = prepareText(page.getText(), new HashSet<>(backlinkToSources.get(title)), sourceToTarget, isRedirMode);
+			var newText = prepareText(page.getText(), backlinkToSources.get(title), sourceToTarget, isRedirMode, replaceText);
 			
 			if (!newText.equals(page.getText())) {
 				try {
@@ -245,6 +248,7 @@ public final class ResolveLinks {
 		options.addOption("d", "dry", false, "dry run");
 		options.addOption("b", "backlinks", false, "retrieve backlinks and exit");
 		options.addOption("n", "namespaces", false, "ignore all namespace restrictions");
+		options.addOption("r", "replaceText", false, "replace link text, if applicable");
 		
 		if (args.length == 0) {
 			System.out.print("Options: ");
@@ -464,7 +468,7 @@ public final class ResolveLinks {
 		return map;
 	}
 	
-	private static String prepareText(String text, Set<String> sources, Map<String, String> sourceToTarget, boolean isRedirMode) {
+	private static String prepareText(String text, List<String> sources, Map<String, String> sourceToTarget, boolean isRedirMode, boolean replaceText) {
 		text = Utils.replaceWithIgnoredRanges(text, PATT_LINK, getIgnoredRanges(text, isRedirMode), mr -> {
 			var link = normalizeTitle(mr.group(1));
 			var source = StringUtils.capitalize(link);
@@ -477,7 +481,7 @@ public final class ResolveLinks {
 				var content = Optional.ofNullable(mr.group(3)).map(s -> s.replaceAll(" {2,}", " ")).orElse(link);
 				var trail = Optional.ofNullable(mr.group(4)).orElse("");
 				
-				if (isRedirMode && source.equals(content + trail)) {
+				if (replaceText && source.equals(content + trail)) {
 					replacement = String.format("[[%s%s]]", target, fragment);
 				} else if (fragment.isEmpty() && target.equals(content + trail)) {
 					replacement = String.format("[[%s]]", target);
