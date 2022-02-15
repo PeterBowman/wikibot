@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,8 +19,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -34,6 +33,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -54,8 +54,8 @@ public final class ResolveLinks {
 	private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 	private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
 		
-	// from Linker::formatLinksInComment in Linker.php
-	private static final String PATT_LINK = "\\[{2} *?:?(%s|%s) *?(#[^\\|\\]]*?)?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?";
+	// from Linker::formatLinksInComment in Linker.php (now CommentParser::doWikiLinks in CommentParser.php)
+	private static final Pattern PATT_LINK = Pattern.compile("\\[{2} *?:?([^\\[\\]\\|]+)(#[^\\|\\]]*?)?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?");
 	
 	private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
 		"Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
@@ -83,79 +83,11 @@ public final class ResolveLinks {
 	
 	public static void main(String[] args) throws Exception {
 		var line = parseArguments(args);
-		var useFile = line.hasOption("useFile");
-		
-		if (useFile && (line.hasOption("source") || line.hasOption("target"))) {
-			throw new IllegalArgumentException("Incompatible useFile option and source/target");
-		}
-		
-		if (line.hasOption("backlinks") && line.hasOption("dry")) {
-			throw new IllegalArgumentException("Incompatible backlinks option and dry run");
-		}
-		
-		var mode = line.getOptionValue("mode");
 		
 		wb = Login.createSession("pl.wikipedia.org");
 		
 		var sourceToTarget = new HashMap<String, String>();
-		final String summary;
-		
-		if (mode.equals("redirsource")) {
-			if (useFile) {
-				var sources = Files.readAllLines(PATH_SOURCES).stream().distinct().toList();
-				
-				getRedirectTargets(sources, sourceToTarget);
-				summary = String.format("podmiana przekierowań");
-			} else {
-				var source = line.getOptionValue("source");
-				Objects.requireNonNull(source, "missing source");
-				var target = wb.resolveRedirects(List.of(source)).get(0);
-				
-				if (target.equals(source)) {
-					throw new IllegalArgumentException("Source page is not a redirect");
-				}
-				
-				sourceToTarget.put(source, target);
-				summary = String.format("zamiana linków z „[[%s]]” na „[[%s]]”", source, target);
-			}
-		} else if (mode.equals("redirtarget")) {
-			if (useFile) {
-				var targets = Files.readAllLines(PATH_TARGETS).stream().distinct().toList();
-				
-				getRedirectSources(targets, sourceToTarget);
-				summary = String.format("podmiana przekierowań");
-			} else {
-				var target = line.getOptionValue("target");
-				Objects.requireNonNull(target, "missing target");
-				var sources = wb.whatLinksHere(List.of(target), true, false, Wiki.MAIN_NAMESPACE).get(0);
-				
-				sources.stream().forEach(source -> sourceToTarget.put(source, target));
-				summary = String.format("podmiana przekierowań do „[[%s]]”", target);
-			}
-		} else if (mode.equals("disamb")) {
-			if (useFile) {
-				var sources = Files.readAllLines(PATH_SOURCES).stream().distinct().toList();
-				var targets = Files.readAllLines(PATH_TARGETS).stream().distinct().toList();
-				
-				if (sources.size() != targets.size()) {
-					throw new IllegalArgumentException("Sources and targets have different sizes after uniq step");
-				}
-				
-				IntStream.range(0, sources.size()).forEach(i -> sourceToTarget.put(sources.get(i), targets.get(i)));
-				summary = String.format("zamiana linków do ujednoznacznień");
-			} else {
-				var source = line.getOptionValue("source");
-				var target = line.getOptionValue("target");
-				
-				Objects.requireNonNull(source, "missing source");
-				Objects.requireNonNull(target, "missing target");
-				
-				sourceToTarget.put(source, target);
-				summary = String.format("zamiana linków z „[[%s]]” na „[[%s]]”", source, target);
-			}
-		} else {
-			throw new IllegalArgumentException("Illegal mode: " + mode);
-		}
+		var summary = prepareSourceMappings(line, sourceToTarget);
 		
 		sourceToTarget.keySet().removeIf(title -> wb.namespace(title) != Wiki.MAIN_NAMESPACE);
 		
@@ -173,74 +105,63 @@ public final class ResolveLinks {
 			return;
 		}
 		
+		var infos = getBacklinkInfo(backlinkToSources.keySet());
+		var isDisambMode = line.getOptionValue("mode").equals("disamb");
+		
+		backlinkToSources.keySet().retainAll(infos.keySet());
+		
+		backlinkToSources.keySet().removeIf(backlink ->
+			infos.get(backlink).isRedirect() ||
+			(isDisambMode && infos.get(backlink).isDisambiguation()) ||
+			(wb.namespace(backlink) == Wiki.USER_NAMESPACE && infos.get(backlink).length() > USER_SUBPAGE_SIZE_LIMIT)
+		);
+		
+		System.out.printf("%d backlinks left after page info filter step.%n", backlinkToSources.size());
+		
+		if (backlinkToSources.isEmpty()) {
+			return;
+		}
+		
 		Files.write(PATH_BACKLINKS, backlinkToSources.keySet());
 		
 		if (line.hasOption("backlinks")) {
 			return;
 		}
 		
-		var infos = getBacklinkInfo(new ArrayList<>(backlinkToSources.keySet()));
-		
-		var edited = new ArrayList<String>();
+		var isRedirMode = line.getOptionValue("mode").equals("redirsource") || line.getOptionValue("mode").equals("redirtarget");
+		var isDryRunMode = line.getOptionValue("mode").equals("dry");
+		var edited = Collections.synchronizedList(new ArrayList<String>());
 		var errors = new ArrayList<String>();
+		var keepGoing = new MutableBoolean(true);
+		var stream = wb.getContentOfPages(backlinkToSources.keySet()).stream();
 		
-		var isRedirMode = mode.equals("redirsource") || mode.equals("redirtarget");
-		var isDisambMode = mode.equals("disamb");
+		if (isDryRunMode) {
+			stream = stream.parallel();
+		}
 		
 		wb.setMarkMinor(true);
 		
-		for (var page : wb.getContentOfPages(backlinkToSources.keySet())) {
+		stream.takeWhile(t -> keepGoing.booleanValue()).forEach(page -> {
 			// Wikipedystka: -> Wikipedysta: (in order to match SQL results)
 			var title = wb.normalize(page.getTitle());
-			
-			if (!infos.containsKey(title)) {
-				System.out.println("Missing info key: " + title);
-				errors.add(title);
-				continue;
-			}
-			
-			if (infos.get(title).isRedirect()) {
-				System.out.println("Page is a redirect: " + title);
-				errors.add(title);
-				continue;
-			}
-			
-			if (isDisambMode && infos.get(title).isDisambiguation()) {
-				System.out.println("Page is a disambiguation: " + title);
-				errors.add(title);
-				continue;
-			}
-			
-			if (
-				wb.namespace(title) == Wiki.USER_NAMESPACE &&
-				infos.get(title).length() > USER_SUBPAGE_SIZE_LIMIT
-			) {
-				System.out.println("User subpage exceeds size limit: " + title);
-				errors.add(title);
-				continue;
-			}
-			
-			var newText = prepareText(page.getText(), backlinkToSources.get(title), sourceToTarget, isRedirMode);
+			var newText = prepareText(page.getText(), new HashSet<>(backlinkToSources.get(title)), sourceToTarget, isRedirMode);
 			
 			if (!newText.equals(page.getText())) {
 				try {
-					if (!line.hasOption("dry")) {
+					if (!isDryRunMode) {
 						wb.edit(page.getTitle(), newText, summary, page.getTimestamp());
 					}
 					
 					edited.add(title);
+				} catch (AssertionError | CredentialExpiredException | AccountLockedException e) {
+					System.out.println(e.getMessage());
+					keepGoing.setFalse();
 				} catch (Throwable t) {
 					System.out.printf("Error in %s: %s%n", title, t.getMessage());
 					errors.add(title);
-					
-					if (t instanceof AssertionError
-							|| t instanceof CredentialExpiredException
-							|| t instanceof AccountLockedException) {
-						break;
-					}
 				}
 			}
-		}
+		});
 		
 		System.out.println("Edited: " + edited.size());
 		System.out.println("Errors: " + errors.size());
@@ -250,6 +171,68 @@ public final class ResolveLinks {
 		
 		if (!errors.isEmpty() && errors.size() < 25) {
 			errors.forEach(System.out::println);
+		}
+	}
+	
+	private static String prepareSourceMappings(CommandLine line, Map<String, String> sourceToTarget) throws IOException, ClassNotFoundException, SQLException {
+		var mode = line.getOptionValue("mode");
+		var useFile = line.hasOption("useFile");
+		
+		if (mode.equals("redirsource")) {
+			if (useFile) {
+				var sources = Files.readAllLines(PATH_SOURCES).stream().distinct().toList();
+				
+				getRedirectTargets(sources, sourceToTarget);
+				return String.format("podmiana przekierowań");
+			} else {
+				var source = line.getOptionValue("source");
+				Objects.requireNonNull(source, "missing source");
+				var target = wb.resolveRedirects(List.of(source)).get(0);
+				
+				if (target.equals(source)) {
+					throw new IllegalArgumentException("Source page is not a redirect");
+				}
+				
+				sourceToTarget.put(source, target);
+				return String.format("zamiana linków z „[[%s]]” na „[[%s]]”", source, target);
+			}
+		} else if (mode.equals("redirtarget")) {
+			if (useFile) {
+				var targets = Files.readAllLines(PATH_TARGETS).stream().distinct().toList();
+				
+				getRedirectSources(targets, sourceToTarget);
+				return String.format("podmiana przekierowań");
+			} else {
+				var target = line.getOptionValue("target");
+				Objects.requireNonNull(target, "missing target");
+				var sources = wb.whatLinksHere(List.of(target), true, false, Wiki.MAIN_NAMESPACE).get(0);
+				
+				sources.stream().forEach(source -> sourceToTarget.put(source, target));
+				return String.format("podmiana przekierowań do „[[%s]]”", target);
+			}
+		} else if (mode.equals("disamb")) {
+			if (useFile) {
+				var sources = Files.readAllLines(PATH_SOURCES).stream().distinct().toList();
+				var targets = Files.readAllLines(PATH_TARGETS).stream().distinct().toList();
+				
+				if (sources.size() != targets.size()) {
+					throw new IllegalArgumentException("Sources and targets have different sizes after uniq step");
+				}
+				
+				IntStream.range(0, sources.size()).forEach(i -> sourceToTarget.put(sources.get(i), targets.get(i)));
+				return String.format("zamiana linków do ujednoznacznień");
+			} else {
+				var source = line.getOptionValue("source");
+				var target = line.getOptionValue("target");
+				
+				Objects.requireNonNull(source, "missing source");
+				Objects.requireNonNull(target, "missing target");
+				
+				sourceToTarget.put(source, target);
+				return String.format("zamiana linków z „[[%s]]” na „[[%s]]”", source, target);
+			}
+		} else {
+			throw new IllegalArgumentException("Illegal mode: " + mode);
 		}
 	}
 	
@@ -268,7 +251,17 @@ public final class ResolveLinks {
 			args = Misc.readArgs();
 		}
 		
-		return new DefaultParser().parse(options, args);
+		var line = new DefaultParser().parse(options, args);
+		
+		if (line.hasOption("useFile") && (line.hasOption("source") || line.hasOption("target"))) {
+			throw new IllegalArgumentException("Incompatible useFile option and source/target");
+		}
+		
+		if (line.hasOption("backlinks") && line.hasOption("dry")) {
+			throw new IllegalArgumentException("Incompatible backlinks option and dry run");
+		}
+		
+		return line;
 	}
 	
 	private static Properties prepareSQLProperties() throws IOException {
@@ -416,13 +409,12 @@ public final class ResolveLinks {
 		return backlinkToSources;
 	}
 	
-	private static Map<String, PageInfo> getBacklinkInfo(List<String> titles) throws IOException {
+	private static Map<String, PageInfo> getBacklinkInfo(Set<String> titles) throws IOException {
 		var map = new HashMap<String, PageInfo>(titles.size());
+		var titleList = new ArrayList<>(titles);
 		
 		try (var connection = getConnection()) {
-			var titleSet = new HashSet<>(titles);
-			
-			var titlesString = titles.stream()
+			var titlesString = titleList.stream()
 				.map(wb::removeNamespace)
 				.map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
 				.distinct()
@@ -446,7 +438,7 @@ public final class ResolveLinks {
 				var ns = rs.getInt("page_namespace");
 				var pagename = wb.normalize(String.format("%s:%s", wb.namespaceIdentifier(ns), title));
 				
-				if (titleSet.contains(pagename)) {
+				if (titles.contains(pagename)) {
 					var length = rs.getInt("page_len");
 					var isRedirect = rs.getBoolean("page_is_redirect");
 					var isDisambiguation = "disambiguation".equals(rs.getString("pp_propname"));
@@ -455,12 +447,12 @@ public final class ResolveLinks {
 				}
 			}
 		} catch (ClassNotFoundException | SQLException e) {
-			var disambs = wb.getPageProps(titles).stream()
+			var disambs = wb.getPageProps(titleList).stream()
 				.filter(prop -> prop.containsKey("disambiguation"))
 				.map(prop -> (String)prop.get("pagename"))
 				.collect(Collectors.toSet());
 			
-			for (var info : wb.getPageInfo(titles)) {
+			for (var info : wb.getPageInfo(titleList)) {
 				var title = (String)info.get("pagename");
 				var isRedir = (Boolean)info.get("redirect");
 				var length = (Integer)info.get("size");
@@ -472,41 +464,45 @@ public final class ResolveLinks {
 		return map;
 	}
 	
-	private static String prepareText(String text, List<String> sources, Map<String, String> sourceToTarget, boolean isRedirMode) {
-		var ignoredRanges = getIgnoredRanges(text, isRedirMode);
+	private static String prepareText(String text, Set<String> sources, Map<String, String> sourceToTarget, boolean isRedirMode) {
+		text = Utils.replaceWithIgnoredRanges(text, PATT_LINK, getIgnoredRanges(text, isRedirMode), mr -> {
+			var link = normalizeTitle(mr.group(1));
+			var source = StringUtils.capitalize(link);
+			
+			final String replacement;
+			
+			if (sources.contains(source)) {
+				var target = sourceToTarget.get(source);
+				var fragment = Optional.ofNullable(mr.group(2)).orElse("");
+				var content = Optional.ofNullable(mr.group(3)).map(s -> s.replaceAll(" {2,}", " ")).orElse(link);
+				var trail = Optional.ofNullable(mr.group(4)).orElse("");
+				
+				if (isRedirMode && source.equals(content + trail)) {
+					replacement = String.format("[[%s%s]]", target, fragment);
+				} else if (fragment.isEmpty() && target.equals(content + trail)) {
+					replacement = String.format("[[%s]]", target);
+				} else if (fragment.isEmpty() && target.equals(content)) {
+					replacement = String.format("[[%s]]%s", target, trail);
+				} else {
+					replacement = String.format("[[%s%s|%s]]", target, fragment, content + trail);
+				}
+			} else {
+				replacement = mr.group();
+			}
+			
+			return Matcher.quoteReplacement(replacement);
+		});
 		
 		for (var source : sources) {
-			var regex = String.format(PATT_LINK, Pattern.quote(StringUtils.capitalize(source)), Pattern.quote(StringUtils.uncapitalize(source)));
 			var target = sourceToTarget.get(source);
-			
-			text = Utils.replaceWithIgnoredRanges(text, Pattern.compile(regex), ignoredRanges, makeReplacer(source, target, isRedirMode));
 			text = replaceAdditionalOccurrences(text, source, target);
 		}
 		
 		return text;
 	}
 	
-	private static Function<MatchResult, String> makeReplacer(String source, String target, boolean isRedirMode) {
-		return mr -> {
-			var link = mr.group(1);
-			var fragment = Optional.ofNullable(mr.group(2)).orElse("");
-			var text = Optional.ofNullable(mr.group(3)).orElse(link);
-			var trail = Optional.ofNullable(mr.group(4)).orElse("");
-			
-			final String replacement;
-			
-			if (isRedirMode && source.equals(text + trail)) {
-				replacement = String.format("[[%s%s]]", target, fragment);
-			} else if (fragment.isEmpty() && target.equals(text + trail)) {
-				replacement = String.format("[[%s]]", target);
-			} else if (fragment.isEmpty() && target.equals(text)) {
-				replacement = String.format("[[%s]]%s", target, trail);
-			} else {
-				replacement = String.format("[[%s%s|%s]]", target, fragment, text + trail);
-			}
-			
-			return Matcher.quoteReplacement(replacement);
-		};
+	private static String normalizeTitle(String title) {
+		return title.replace('_', ' ').replace('\u00A0', ' ').replaceAll(" {2,}", " ").trim();
 	}
 	
 	private static List<Range<Integer>> getIgnoredRanges(String text, boolean ignoreRedirTemplates) {
@@ -537,7 +533,7 @@ public final class ResolveLinks {
 					.filter(e -> StringUtils.equalsAny(templateName, "Zobacz też", "Seealso")
 						? e.getKey().equals("ParamWithoutName1")
 						: e.getKey().startsWith("ParamWithoutName"))
-					.filter(e -> sources.contains(e.getValue()))
+					.filter(e -> sources.contains(normalizeTitle(e.getValue())))
 					.forEach(e -> e.setValue(target));
 				
 				if (params.hashCode() != hash) {
@@ -548,7 +544,7 @@ public final class ResolveLinks {
 		
 		for (var template : ParseUtils.getTemplatesIgnoreCase("Link-interwiki", text)) {
 			var params = ParseUtils.getTemplateParametersWithValue(template);
-			var local = params.getOrDefault("pl", params.getOrDefault("ParamWithoutName1", ""));
+			var local = normalizeTitle(params.getOrDefault("pl", params.getOrDefault("ParamWithoutName1", "")));
 			
 			if (sources.contains(local)) {
 				if (params.containsKey("pl")) {
@@ -571,7 +567,7 @@ public final class ResolveLinks {
 		
 		for (var template : ParseUtils.getTemplatesIgnoreCase("Sort", text)) {
 			var params = ParseUtils.getTemplateParametersWithValue(template);
-			var key = params.getOrDefault("ParamWithoutName1", "");
+			var key = normalizeTitle(params.getOrDefault("ParamWithoutName1", ""));
 			
 			if (sources.contains(key) && !params.containsKey("ParamWithoutName2")) {
 				params.put("ParamWithoutName2", String.format("[[%s|%s]]", target, key));
@@ -583,7 +579,7 @@ public final class ResolveLinks {
 			var params = ParseUtils.getTemplateParametersWithValue(template);
 			
 			if (!params.containsKey("nolink")) {
-				var key = "";
+				final String key;
 				
 				if (params.containsKey("ParamWithoutName3")) {
 					key = params.get("ParamWithoutName3");
@@ -593,7 +589,7 @@ public final class ResolveLinks {
 					key = String.format("%s %s", name, surname);
 				}
 				
-				if (sources.contains(key)) {
+				if (sources.contains(normalizeTitle(key))) {
 					params.put("ParamWithoutName3", target);
 					text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
 				}
