@@ -14,21 +14,19 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki;
 
 import com.github.plural4j.Plural;
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
-public class DevanagariIAST implements Selectorizable {
+public class DevanagariIAST {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
@@ -41,8 +39,7 @@ public class DevanagariIAST implements Selectorizable {
 		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
-	@Override
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 			case '2':
@@ -107,7 +104,9 @@ public class DevanagariIAST implements Selectorizable {
 		return sb.toString();
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new DevanagariIAST());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

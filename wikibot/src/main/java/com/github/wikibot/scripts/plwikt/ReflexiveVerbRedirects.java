@@ -14,21 +14,19 @@ import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class ReflexiveVerbRedirects implements Selectorizable {
+public final class ReflexiveVerbRedirects {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReflexiveVerbRedirects/");
 
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -125,7 +123,9 @@ public final class ReflexiveVerbRedirects implements Selectorizable {
 		Files.delete(path);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new ReflexiveVerbRedirects());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

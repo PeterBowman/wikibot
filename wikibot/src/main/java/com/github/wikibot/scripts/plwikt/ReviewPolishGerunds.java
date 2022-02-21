@@ -17,7 +17,6 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.Wiki.Revision;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -28,7 +27,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class ReviewPolishGerunds implements Selectorizable {
+public final class ReviewPolishGerunds {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReviewPolishGerunds/");
 	private static final Path PAGES = LOCATION.resolve("pages.txt");
@@ -36,7 +35,7 @@ public final class ReviewPolishGerunds implements Selectorizable {
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Pattern P_RELATED_TERMS = Pattern.compile(": \\{\\{czas\\}\\} \\[\\[.+?\\]\\] \\{\\{n?dk\\}\\}");
 	
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -137,7 +136,9 @@ public final class ReviewPolishGerunds implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new ReviewPolishGerunds());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

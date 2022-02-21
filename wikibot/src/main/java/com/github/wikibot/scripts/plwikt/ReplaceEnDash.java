@@ -19,19 +19,18 @@ import javax.security.auth.login.LoginException;
 import org.wikipedia.ArrayUtils;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
-public final class ReplaceEnDash implements Selectorizable {
+public final class ReplaceEnDash {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReplaceEnDash/");
 	private static final Path RENAME_LIST = LOCATION.resolve("rename.txt");
 	private static final Path EDIT_LIST = LOCATION.resolve("edit.txt");
 	private static final Path REVIEWED_LIST = LOCATION.resolve("reviewed.txt");
 	
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -170,8 +169,9 @@ public final class ReplaceEnDash implements Selectorizable {
 		Files.move(EDIT_LIST, EDIT_LIST.resolveSibling("edit_done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new ReplaceEnDash());
-
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

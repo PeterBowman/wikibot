@@ -23,14 +23,13 @@ import org.wikipedia.Wiki;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class ShortCommas implements Selectorizable {
+public final class ShortCommas {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ShortCommas/");
 	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
@@ -62,7 +61,7 @@ public final class ShortCommas implements Selectorizable {
 		patt = Pattern.compile(".*?\\{\\{ *?(?:" + shortlist + ") *?\\}\\}(?:(;) \\{\\{ *?zob *?\\||(,) (?:\\{\\{ *?(?:" + shortlist + ") *?(?:\\}|\\|)|'')).*", Pattern.DOTALL);
 	}
 
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -210,7 +209,9 @@ public final class ShortCommas implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public static void main(String[] args) throws IOException {
-		Misc.runTimerWithSelector(new ShortCommas());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

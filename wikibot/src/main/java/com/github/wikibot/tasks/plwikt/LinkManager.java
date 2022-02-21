@@ -35,7 +35,6 @@ import org.wikipedia.Wiki.User;
 
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -48,7 +47,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 import com.thoughtworks.xstream.XStream;
 
-public final class LinkManager implements Selectorizable {
+public final class LinkManager {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
@@ -85,7 +84,6 @@ public final class LinkManager implements Selectorizable {
 		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 
-	@Override
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':

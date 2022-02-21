@@ -16,7 +16,6 @@ import java.util.Optional;
 
 import javax.security.auth.login.FailedLoginException;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -29,7 +28,7 @@ import com.thoughtworks.xstream.XStream;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
-public final class MissingWikiquoteBacklinks implements Selectorizable {
+public final class MissingWikiquoteBacklinks {
 	private static Wikibot wb;
 	private static Wikibot quote;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingWikiquoteBacklinks/");
@@ -37,7 +36,7 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Path PAGES_SER = LOCATION.resolve("pages.xml");
 	
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -145,7 +144,9 @@ public final class MissingWikiquoteBacklinks implements Selectorizable {
 		Files.deleteIfExists(DATA);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new MissingWikiquoteBacklinks());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

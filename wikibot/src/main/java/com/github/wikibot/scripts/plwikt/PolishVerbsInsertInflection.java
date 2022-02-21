@@ -18,7 +18,6 @@ import org.wikipedia.ArrayUtils;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -29,14 +28,14 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class PolishVerbsInsertInflection implements Selectorizable {
+public final class PolishVerbsInsertInflection {
 	private static Wikibot wb;
 	private static Map<String, Map<String, String>> models = new HashMap<>();
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsInsertInflection/");
 	private static final Path SERIALIZED = LOCATION.resolve("targets.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -335,8 +334,10 @@ public final class PolishVerbsInsertInflection implements Selectorizable {
 		return map;
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new PolishVerbsInsertInflection());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 	
 	static {

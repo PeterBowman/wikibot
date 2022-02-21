@@ -21,18 +21,16 @@ import org.wikipedia.Wiki;
 import org.wikipedia.WikitextUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class MissingPolishGerunds implements Selectorizable {
+public final class MissingPolishGerunds {
 	private static Wikibot wb;
 	public static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingPolishGerunds/");
 	private static final Path LIST = LOCATION.resolve("lista.txt");
@@ -44,7 +42,7 @@ public final class MissingPolishGerunds implements Selectorizable {
 	private static final Path MISSING_AFF_SER = LOCATION.resolve("aff_worklist.xml");
 	private static final Path MISSING_NEG_SER = LOCATION.resolve("neg_worklist.xml");
 	
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -266,7 +264,9 @@ public final class MissingPolishGerunds implements Selectorizable {
 		return sb.toString();
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new MissingPolishGerunds());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

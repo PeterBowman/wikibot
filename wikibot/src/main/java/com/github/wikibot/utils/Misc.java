@@ -9,34 +9,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.exec.CommandLine;
 
-import com.github.wikibot.main.Selectorizable;
-
 public final class Misc {
 	private Misc() {}
 		
-	public static void runTimerWithSelector(Selectorizable c) {
-		System.out.print("Introduce el modo de operación: ");
-		
-		try {
-			char op = (char) System.in.read();
-			long start = System.currentTimeMillis();
-			
-			c.selector(op);
-			
-			int seconds = (int) (System.currentTimeMillis() - start) / 1000;
-			int minutes = (int) Math.floor(seconds/60);
-			
-			System.out.println(String.format(
-				"Tiempo total transcurrido: %dm %ds.%n",
-				minutes,
-				(minutes != 0) ? (seconds % (minutes * 60)) : seconds
-			));
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-	
 	public static String makeList(Map<String, String> map) {
 		return map.keySet().stream()
 			.map(title -> String.format("%s%n%n%s", title, map.get(title)))

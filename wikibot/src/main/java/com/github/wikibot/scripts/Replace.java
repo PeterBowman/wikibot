@@ -16,14 +16,13 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class Replace implements Selectorizable {
+public final class Replace {
 	private static Wikibot wb;
 	private static final String DOMAIN = "pl.wiktionary.org";
 	private static final Path LOCATION = Paths.get("./data/scripts/replace/");
@@ -42,7 +41,7 @@ public final class Replace implements Selectorizable {
 		}
 	}
 
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
 				wb = Login.createSession(DOMAIN);
@@ -57,7 +56,7 @@ public final class Replace implements Selectorizable {
 		}
 	}
 	
-	public void getDiffs() throws IOException {
+	private static void getDiffs() throws IOException {
 		String target = "prettytable";
 		String replacement = "wikitable";
 		List<String> titles = Files.readAllLines(TITLES);
@@ -103,7 +102,7 @@ public final class Replace implements Selectorizable {
 		Files.writeString(INFO, new XStream().toXML(timestamps));
 	}
 	
-	public void edit() throws IOException, LoginException {
+	private static void edit() throws IOException, LoginException {
 		String target = Files.readString(TARGET);
 		String replacement = Files.readString(REPLACEMENT);
 		Map<String, String> map = Misc.readList(Files.readString(WORKLIST));
@@ -140,11 +139,13 @@ public final class Replace implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
-	private String replace(String s, String oldstring, String newstring) {
+	private static String replace(String s, String oldstring, String newstring) {
 		return Pattern.compile(oldstring, Pattern.LITERAL).matcher(s).replaceAll(newstring);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new Replace());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

@@ -21,7 +21,6 @@ import javax.security.auth.login.LoginException;
 
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractEditor;
 import com.github.wikibot.parsing.plwikt.Editor;
@@ -33,7 +32,7 @@ import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
-public final class PolishMasculineNounHeaders implements Selectorizable {
+public final class PolishMasculineNounHeaders {
 	private static Wikibot wb;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishMasculineNounHeaders/");
 	private static final Path ALL_PAGES = LOCATION.resolve("allpages.txt");
@@ -42,7 +41,7 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 	private static final Path STATS = LOCATION.resolve("stats.txt");
 	private static final int LIMIT = 5;
 
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -207,7 +206,9 @@ public final class PolishMasculineNounHeaders implements Selectorizable {
 		Files.move(WORKLIST, WORKLIST.resolveSibling("done.txt"), StandardCopyOption.REPLACE_EXISTING);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new PolishMasculineNounHeaders());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }

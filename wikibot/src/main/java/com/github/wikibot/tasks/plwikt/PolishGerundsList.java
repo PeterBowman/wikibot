@@ -28,14 +28,12 @@ import org.wikipedia.Wiki.Revision;
 
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
-import com.github.wikibot.main.Selectorizable;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
 import com.github.wikibot.scripts.plwikt.MissingPolishGerunds;
 import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.MorfeuszLookup;
 import com.github.wikibot.utils.PageContainer;
 import com.github.wikibot.utils.PluralRules;
@@ -44,7 +42,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 import com.thoughtworks.xstream.XStream;
 
-public class PolishGerundsList implements Selectorizable {
+public class PolishGerundsList {
 	private static Wikibot wb;
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
@@ -64,8 +62,7 @@ public class PolishGerundsList implements Selectorizable {
 		numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
 	}
 	
-	@Override
-	public void selector(char op) throws Exception {
+	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
 				wb = Login.createSession("pl.wiktionary.org");
@@ -416,7 +413,9 @@ public class PolishGerundsList implements Selectorizable {
 		wb.edit(wikipage, page.toString(), "aktualizacja", false, false, -2, null);
 	}
 	
-	public static void main(String[] args) {
-		Misc.runTimerWithSelector(new PolishGerundsList());
+	public static void main(String[] args) throws Exception {
+		System.out.println("Option: ");
+		var op = (char) System.in.read();
+		selector(op);
 	}
 }
