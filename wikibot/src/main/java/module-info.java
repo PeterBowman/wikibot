@@ -29,6 +29,7 @@ module org.github.wikibot {
 	
 	// https://stackoverflow.com/a/41265267
 	opens com.github.wikibot.main;
+	opens com.github.wikibot.scripts.wd;
 	opens com.github.wikibot.tasks.eswikt;
 	opens com.github.wikibot.tasks.plwiki;
 	opens com.github.wikibot.tasks.plwikt;
