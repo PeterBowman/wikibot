@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -73,8 +72,8 @@ public final class SandboxRepublishTagger {
 	private static void applyTag(Wiki.LogEntry log) {
 		try {
 			var getparams = Map.of("action", "tag", "logid", Long.toString(log.getID()), "add", TAG);
-			var postparams = Map.of("token", wb.getToken("csrf"));
-			wb.makeApiCall(new HashMap<>(getparams), new HashMap<>(postparams), "tag");
+			var postparams = Map.of("token", (Object)wb.getToken("csrf"));
+			wb.makeApiCall(getparams, postparams, "tag");
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

@@ -158,7 +158,7 @@ public class Wikibot extends WMFWiki {
 	}
 
 	private List<PageContainer> getGeneratedContent(Map<String, String> getparams, String queryPrefix) throws IOException {
-		return makeListQuery(queryPrefix, new HashMap<>(getparams), null, "getGeneratedContent", -1, this::parseContentLine);
+		return makeListQuery(queryPrefix, getparams, null, "getGeneratedContent", -1, this::parseContentLine);
 	}
 	
 	private void parseContentLine(String line, List<PageContainer> list) {
