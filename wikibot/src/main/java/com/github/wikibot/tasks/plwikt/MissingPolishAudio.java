@@ -33,11 +33,11 @@ import com.github.wikibot.utils.Login;
 public final class MissingPolishAudio {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishAudio/");
 	private static final List<String> REG_CATEGORIES = List.of("Regionalizmy polskie", "Dialektyzmy polskie");
-	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
+		
 		XMLDumpReader reader = getDumpReader(args);
 		
 		Map<String, List<String>> regMap = categorizeRegWords();

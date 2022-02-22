@@ -13,13 +13,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.AbstractPage;
 import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.ParsingException;
 import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
 public final class Page extends AbstractPage<Section> {
@@ -274,9 +274,9 @@ public final class Page extends AbstractPage<Section> {
 	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
-		Wikibot wiki = Login.createSession("es.wiktionary.org");
-		String text = wiki.getPageText(List.of("tamén")).get(0);
-		Page page = Page.store("tamén", text);
+		var wiki = Wiki.newSession("es.wiktionary.org");
+		var text = wiki.getPageText(List.of("tamén")).get(0);
+		var page = Page.store("tamén", text);
 		System.out.println("");
 	}
 }

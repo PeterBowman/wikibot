@@ -38,10 +38,10 @@ public final class EsperantoRelatedTerms {
 	private static final String TARGET_PAGE_EXCLUDED = "Wikipedysta:PBbot/potencjalne błędy w pokrewnych esperanto/wykluczenia";
 	
 	private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)"); // from Linker::formatLinksInComment in Linker.php
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		Map<String, List<String>> morphemToTitle = new HashMap<>(10000);
 		Map<String, List<String>> titleToMorphem = new HashMap<>(15000);

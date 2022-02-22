@@ -16,7 +16,8 @@ import com.github.wikibot.utils.Login;
 
 public class OrphanTalkPages {
 	public static void main(String[] args) throws IOException, LoginException {
-		Wikibot wb = Login.createSession("pl.wiktionary.org");
+		Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
+		Login.login(wb);
 		Map<String, Integer> namespaceIdentifiers = wb.getNamespaces();
 		
 		Integer[] namespaces = new Integer[]{

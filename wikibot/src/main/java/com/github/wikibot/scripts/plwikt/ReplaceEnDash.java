@@ -24,7 +24,7 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
 public final class ReplaceEnDash {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReplaceEnDash/");
 	private static final Path RENAME_LIST = LOCATION.resolve("rename.txt");
 	private static final Path EDIT_LIST = LOCATION.resolve("edit.txt");
@@ -33,19 +33,19 @@ public final class ReplaceEnDash {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getLists();
 				break;
 			case '2':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getEditTargets();
 				break;
 			case 'm':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				rename();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit();
 				break;
 			default:

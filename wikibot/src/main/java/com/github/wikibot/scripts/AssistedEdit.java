@@ -69,7 +69,8 @@ public final class AssistedEdit {
 			default -> new GenericFragmentHandler(line.getOptionValue("section"));
 		};
 		
-		wb = Login.createSession(domain);
+		wb = Wikibot.newSession(domain);
+		Login.login(wb);
 		wb.setThrottle(Integer.parseInt(line.getOptionValue("throttle", "5000")));
 		
 		switch (line.getOptionValue("operation")) {

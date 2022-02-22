@@ -22,10 +22,10 @@ public final class SandboxRepublishTagger {
 	private static final Path PICK_DATE = LOCATION.resolve("pick_date.txt");
 	private static final String TAG = "sandbox-republish";
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wikipedia.org");
+		Login.login(wb);
 		
 		var startTimestamp = extractTimestamp();
 		var earliest = OffsetDateTime.parse(startTimestamp);

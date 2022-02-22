@@ -31,7 +31,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class MissingPolishGerunds {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	public static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingPolishGerunds/");
 	private static final Path LIST = LOCATION.resolve("lista.txt");
 	private static final Path ERRORS = LOCATION.resolve("errores.txt");
@@ -45,22 +45,22 @@ public final class MissingPolishGerunds {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				checkGerunds();
 				break;
 			case '2':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getMissing();
 				break;
 			case '3':
 				makeArrayLists();
 				break;
 			case '8':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				writeAff();
 				break;
 			case '9':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				writeNeg();
 				break;
 			default:

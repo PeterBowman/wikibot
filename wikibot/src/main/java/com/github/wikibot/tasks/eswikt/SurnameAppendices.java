@@ -32,10 +32,10 @@ public final class SurnameAppendices {
 	
 	private static final Map<Character, Character> stressedVowels = Map.of('Á', 'A', 'É', 'E', 'Í', 'I', 'Ó', 'O', 'Ú', 'U');
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("es.wiktionary.org");
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("es.wiktionary.org");
+		Login.login(wb);
 		
 		List<String> subPages = getSubPages();
 		List<String> surnames = getSurnames();

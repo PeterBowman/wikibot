@@ -54,7 +54,8 @@ public final class ProcessLanguageLinks {
 		
 		String domain = line.getOptionValue("domain");
 		interwikis = Files.readAllLines(LANG_LIST);
-		wb = Login.createSession(domain);
+		wb = Wikibot.newSession(domain);
+		Login.login(wb);
 		
 		if (line.hasOption("find")) {
 			XMLDumpReader reader;

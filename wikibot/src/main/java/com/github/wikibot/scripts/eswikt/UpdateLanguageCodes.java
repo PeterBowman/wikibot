@@ -44,7 +44,10 @@ public final class UpdateLanguageCodes {
 
 	public static void main(String[] args) throws IOException, LoginException {
 		Map<String, String> storedLangs = extractStoredLangs();
-		Wikibot wb = Login.createSession("es.wiktionary.org");
+		
+		Wikibot wb = Wikibot.newSession("es.wiktionary.org");
+		Login.login(wb);
+		
 		List<PageContainer> pages = wb.getContentOfCategorymembers(CATEGORY, Wiki.TEMPLATE_NAMESPACE);
 		Map<String, String> fetchedLangs = extractFetchedLangs(pages);
 		

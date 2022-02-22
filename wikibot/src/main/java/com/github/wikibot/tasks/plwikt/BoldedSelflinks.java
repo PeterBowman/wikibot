@@ -55,7 +55,7 @@ public final class BoldedSelflinks {
 	
 	private static final String PAGE_INTRO;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		Map<FieldTypes, List<String>> ignoredFields = new LinkedHashMap<>();
@@ -98,7 +98,7 @@ public final class BoldedSelflinks {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		XMLDumpReader reader = getXMLReader(args);
 		List<Item> list = analyzeDump(reader);

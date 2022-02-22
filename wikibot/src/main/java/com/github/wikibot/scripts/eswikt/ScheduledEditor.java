@@ -36,12 +36,12 @@ public final class ScheduledEditor {
 	private static final int SLEEP_MINS = 5;
 	private static final int THREAD_CHECK_SECS = 5;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("es.wiktionary.org");
 	private static volatile RuntimeException threadExecutionException;
 	private static ExitCode exitCode = ExitCode.SUCCESS;
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("es.wiktionary.org");
+		Login.login(wb);
 		wb.setThrottle(5000);
 		
 		if (args.length == 0) {

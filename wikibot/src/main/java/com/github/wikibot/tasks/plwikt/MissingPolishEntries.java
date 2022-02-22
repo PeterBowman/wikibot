@@ -34,9 +34,9 @@ public class MissingPolishEntries {
 	private static final Collator COLLATOR_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
-	private static Stats stats = new Stats();
+	private static final Stats stats = new Stats();
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		PAGE_INTRO = """
@@ -58,7 +58,7 @@ public class MissingPolishEntries {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		var titles = retrieveNonPolishEntries();
 		retainSgjpEntries(titles);

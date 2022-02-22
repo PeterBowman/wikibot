@@ -29,8 +29,8 @@ import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 
 public final class MissingWikiquoteBacklinks {
-	private static Wikibot wb;
-	private static Wikibot quote;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
+	private static final Wikibot quote = Wikibot.newSession("pl.wikiquote.org");
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/MissingWikiquoteBacklinks/");
 	private static final Path DATA = LOCATION.resolve("data.tsv");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
@@ -39,12 +39,12 @@ public final class MissingWikiquoteBacklinks {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
-				quote = Login.createSession("pl.wikiquote.org");
+				Login.login(wb);
+				Login.login(quote);
 				getList();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit();
 				break;
 			default:

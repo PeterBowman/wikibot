@@ -45,7 +45,7 @@ public final class MaintenanceScript {
 	private static final int THREAD_CHECK_SECS = 5;
 	private static volatile RuntimeException threadExecutionException;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("es.wiktionary.org");
 	
 	public static void main(String[] args) throws Exception {
 		String startTimestamp = extractTimestamp();
@@ -58,7 +58,7 @@ public final class MaintenanceScript {
 			gapHours = 0;
 		}
 		
-		wb = Login.createSession("es.wiktionary.org");
+		Login.login(wb);
 		
 		OffsetDateTime earliest = OffsetDateTime.parse(startTimestamp);
 		OffsetDateTime latest = OffsetDateTime.now(wb.timezone());

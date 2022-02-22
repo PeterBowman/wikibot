@@ -48,14 +48,14 @@ public final class MorfeoDatabase {
 	private static final byte MORPHEM_GRAMMATICAL = 16;
 	private static final byte MORPHEM_UNKNOWN = 32;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		List<PageContainer> pages = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 		Map<String, List<String>> items = retrieveItems(pages);

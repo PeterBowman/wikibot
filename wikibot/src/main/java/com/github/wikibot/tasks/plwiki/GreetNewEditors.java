@@ -24,7 +24,7 @@ public final class GreetNewEditors {
 	private static final int DEFAULT_LAST_DAYS = 1;
 
 	private static final String TEMPLATE_TEXT;
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 	
 	static {
 		TEMPLATE_TEXT = String.format(
@@ -33,7 +33,7 @@ public final class GreetNewEditors {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wikipedia.org");
+		Login.login(wb);
 		
 		String startTimestamp = extractTimestamp();
 		

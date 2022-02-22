@@ -44,10 +44,10 @@ public final class SpanishCanonicalInflectedForms {
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL"))
 			.grouping(GroupingStrategy.MIN2);
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		CommandLine line = readOptions(args);
 		List<String> list = retrieveList();

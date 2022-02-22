@@ -28,21 +28,21 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class BeXoldMissingIntroTemplates {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/BeXoldMissingIntroTemplates/");
 	private static final Path LOCATION_SER = LOCATION.resolve("ser/");
 	
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getList();
 				break;
 			case '2':
 				makePreview();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit();
 				break;
 			default:

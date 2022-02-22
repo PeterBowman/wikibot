@@ -75,7 +75,7 @@ public final class MisusedRegTemplates {
 		"reg-pl", "gw-pl", "reg-es"
 	);
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		var templateList = TEMPLATES.stream()
@@ -105,7 +105,7 @@ public final class MisusedRegTemplates {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		var reader = getXMLReader(args);
 		var list = analyzeDump(reader);

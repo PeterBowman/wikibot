@@ -78,7 +78,7 @@ public final class CitationTypography {
 	private static final String EDIT_SUMMARY = "[[WS:Głosowania/Pozycja odsyłacza przypisu względem kropki]]";
 	private static final int EDIT_THROTTLE_MS = 5000;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		P_REFERENCE = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", Pattern.CASE_INSENSITIVE);
@@ -89,7 +89,7 @@ public final class CitationTypography {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Properties properties = prepareSQLProperties();

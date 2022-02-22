@@ -48,7 +48,7 @@ import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 import com.thoughtworks.xstream.XStream;
 
 public final class LinkManager {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final Path location = Paths.get("./data/tasks.plwikt/LinkManager/");
@@ -87,7 +87,7 @@ public final class LinkManager {
 	public void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getRequest();
 				wb.logout();
 				break;
@@ -99,13 +99,13 @@ public final class LinkManager {
 				Files.writeString(f_stats, Integer.toString(375));
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit(null, 0);
 				wb.logout();
 				break;
 			case 'p':
 				try {
-					wb = Login.createSession("pl.wiktionary.org");
+					Login.login(wb);
 					patrol();
 					wb.logout();
 				} catch (IOException | UncheckedIOException e) {

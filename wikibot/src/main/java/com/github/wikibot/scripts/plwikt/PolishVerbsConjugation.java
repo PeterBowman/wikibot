@@ -26,7 +26,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class PolishVerbsConjugation {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsConjugation/");
 	private static final Path SERIALIZED = LOCATION.resolve("targets.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
@@ -34,11 +34,11 @@ public final class PolishVerbsConjugation {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getLists();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit();
 				break;
 			default:

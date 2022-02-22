@@ -43,7 +43,7 @@ import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 import com.thoughtworks.xstream.XStream;
 
 public class PolishGerundsList {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final Path location = Paths.get("./data/tasks.plwikt/PolishGerundsList/");
@@ -65,26 +65,26 @@ public class PolishGerundsList {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				foreignGerunds();
 				break;
 			case '2':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				//incorrectFormat();
 				break;
 			case '3':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				makeLists();
 				break;
 			case 'm':
 				getMorfeuszList();
 				break;
 			case 'f':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				//writeFormat();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				writeLists();
 				break;
 			default:

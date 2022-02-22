@@ -78,7 +78,7 @@ public final class PolishSurnamesInflection {
 	
 	private static final String LOG_INTRO;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	private static enum SurnameGender {
 		MASCULINE,
@@ -104,7 +104,7 @@ public final class PolishSurnamesInflection {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		Path fStorage = LOCATION.resolve("storage.xml");
 		Path fHistory = LOCATION.resolve("history.xml");

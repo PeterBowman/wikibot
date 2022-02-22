@@ -38,8 +38,8 @@ public class MissingRefsOnPlwiki {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingRefsOnPlwiki/");
 	private static final Map<String, List<String>> TARGET_TEMPLATES = new LinkedHashMap<String, List<String>>();
 
-	private static Wikibot plwikt;
-	private static Wikibot plwiki;
+	private static final Wikibot plwikt = Wikibot.newSession("pl.wiktionary.org");
+	private static final Wikibot plwiki = Wikibot.newSession("pl.wikipedia.org");
 
 	static {
 		TARGET_TEMPLATES.put("Wikisłownik", null);
@@ -85,8 +85,8 @@ public class MissingRefsOnPlwiki {
 	}
 
 	public static void main(String[] args) throws Exception {
-		plwikt = Login.createSession("pl.wiktionary.org");
-		plwiki = Login.createSession("pl.wikipedia.org");
+		Login.login(plwikt);
+		Login.login(plwiki);
 
 		plwiki.setResolveRedirects(true);
 

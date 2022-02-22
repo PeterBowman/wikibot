@@ -27,7 +27,7 @@ import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class DevanagariIAST {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Plural pluralPL;
 	private static final LocalizedNumberFormatter numberFormatPL;
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/DevanagariIAST/");
@@ -43,7 +43,7 @@ public class DevanagariIAST {
 		switch (op) {
 			case '1':
 			case '2':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getList(op == '2');
 				break;
 			default:

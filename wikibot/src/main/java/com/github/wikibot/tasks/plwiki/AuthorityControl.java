@@ -41,6 +41,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
@@ -140,7 +141,9 @@ public final class AuthorityControl {
 		}
 		
 		if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
-			var wb = Login.createSession("pl.wikipedia.org");
+			var wb = Wikibot.newSession("pl.wikipedia.org");
+			Login.login(wb);
+			
 			var warnings = new ArrayList<String>();
 			var errors = new ArrayList<String>();
 			

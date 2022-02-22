@@ -4,7 +4,8 @@ import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.github.wikibot.main.Wikibot;
+import org.wikipedia.Wiki;
+
 import com.github.wikibot.utils.Login;
 
 public final class Purge {
@@ -15,26 +16,27 @@ public final class Purge {
 		}
 		
 		String domain = args[0];
-		Wikibot wb = Login.createSession(domain);
+		Wiki wiki = Wiki.newSession(domain);
+		Login.login(wiki);
 
 		int opts = Integer.parseInt(args[1]);
 		String[] titles = Arrays.copyOfRange(args, 2, args.length);
 
 		switch (opts) {
 		case 1:
-			wb.purge(false, titles);
+			wiki.purge(false, titles);
 			break;
 		case 2:
-			wb.purge(true, titles);
+			wiki.purge(true, titles);
 			break;
 		case 3:
 			for (String title : titles) {
-				wb.purge(true, wb.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
+				wiki.purge(true, wiki.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
 			}
 			break;
 		case 4:
 			for (String title : titles) {
-				wb.purge(false, wb.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
+				wiki.purge(false, wiki.whatTranscludesHere(List.of(title)).get(0).toArray(String[]::new));
 			}
 			break;
 		default:

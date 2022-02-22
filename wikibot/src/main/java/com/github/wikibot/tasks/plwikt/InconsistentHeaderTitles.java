@@ -69,7 +69,7 @@ public final class InconsistentHeaderTitles {
 	private static final Plural PLURAL_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	private static Map<String, Collection<Item>> map;
 	
@@ -96,7 +96,7 @@ public final class InconsistentHeaderTitles {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		Collator collator = Collator.getInstance(new Locale("pl", "PL"));
 		map = new ConcurrentSkipListMap<>(collator);

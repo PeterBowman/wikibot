@@ -23,32 +23,23 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class Replace {
-	private static Wikibot wb;
-	private static final String DOMAIN = "pl.wiktionary.org";
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Path LOCATION = Paths.get("./data/scripts/replace/");
 	private static final Path TITLES = LOCATION.resolve("titles.txt");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
 	private static final Path TARGET = LOCATION.resolve("target.txt");
 	private static final Path REPLACEMENT = LOCATION.resolve("replacement.txt");
 	private static final Path INFO = LOCATION.resolve("info.xml");
-	private static final String SUMMARY_FORMAT;
+	private static final String SUMMARY_FORMAT = "'%s' → '%s'";
 	
-	static {
-		if (DOMAIN.startsWith("pl.")) {
-			SUMMARY_FORMAT = "„%s” → „%s”"; 
-		} else {
-			SUMMARY_FORMAT = "«%s» → «%s»";
-		}
-	}
-
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case 'd':
-				wb = Login.createSession(DOMAIN);
+				Login.login(wb);
 				getDiffs();
 				break;
 			case 'e':
-				wb = Login.createSession(DOMAIN);
+				Login.login(wb);
 				edit();
 				break;
 			default:

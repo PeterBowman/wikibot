@@ -22,14 +22,14 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
 public final class SJPTemplates {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	private static final int SLEEP_MS = 2500;
 	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/SJPTemplates/");
 	private static final String WIKI_PAGE = "Wikipedysta:PBbot/sjp.pl";
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		var titles = wb.whatTranscludesHere(List.of("Szablon:sjp.pl"), Wiki.MAIN_NAMESPACE).get(0);
 		var targetRevs = new ArrayList<Wiki.Revision>(titles.size());

@@ -48,7 +48,7 @@ public final class RefreshWantedArticles {
 	private static final Plural PLURAL_PL;
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		P_LINK = Pattern.compile("\\[\\[([^\\]\n]+?)\\]\\]");
@@ -59,7 +59,7 @@ public final class RefreshWantedArticles {
 	}
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		String content = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 		

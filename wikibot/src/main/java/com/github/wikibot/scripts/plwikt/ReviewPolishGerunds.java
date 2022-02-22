@@ -28,7 +28,7 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class ReviewPolishGerunds {
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/ReviewPolishGerunds/");
 	private static final Path PAGES = LOCATION.resolve("pages.txt");
 	private static final Path INFO = LOCATION.resolve("info.xml");
@@ -38,11 +38,11 @@ public final class ReviewPolishGerunds {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getLists();
 				break;
 			case 'r':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				review();
 				break;
 			default:

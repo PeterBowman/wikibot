@@ -22,6 +22,7 @@ import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
+import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 
 public class LatinInfinitiveBacklinks {
@@ -45,7 +46,9 @@ public class LatinInfinitiveBacklinks {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		var wb = Login.createSession("pl.wiktionary.org");
+		var wb = Wikibot.newSession("pl.wiktionary.org");
+		Login.login(wb);
+		
 		var reader = getXMLReader(args);
 		var occurrences = new TreeMap<String, Set<String>>();
 		

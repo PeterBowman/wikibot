@@ -30,7 +30,8 @@ public final class MassReview {
 	
 	public static void main(String[] args) throws Exception {
 		System.out.print("Username: ");
-		Wikibot wb = Login.createSession("pl.wiktionary.org", Misc.readLine());
+		Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
+		Login.login(wb, Misc.readLine());
 		wb.setThrottle(5000);
 		
 		List<String[]> list = extractList();

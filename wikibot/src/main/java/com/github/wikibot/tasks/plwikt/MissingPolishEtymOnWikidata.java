@@ -47,7 +47,9 @@ public final class MissingPolishEtymOnWikidata {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Wikibot wd = Login.createSession("www.wikidata.org");
+		Wikibot wd = Wikibot.newSession("www.wikidata.org");
+		Login.login(wd);
+		
 		Map<String, Integer> namespaceIds = wd.getNamespaces();
 		List<PageContainer> wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
 
@@ -69,7 +71,8 @@ public final class MissingPolishEtymOnWikidata {
 				)
 			));
 
-		Wikibot plwikt = Login.createSession("pl.wiktionary.org");
+		Wikibot plwikt = Wikibot.newSession("pl.wiktionary.org");
+		Login.login(plwikt);
 		List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktToLexemes.keySet());
 
 		Map<String, String> map = wiktContent.stream()

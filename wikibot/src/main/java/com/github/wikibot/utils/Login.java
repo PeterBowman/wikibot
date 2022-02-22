@@ -16,8 +16,6 @@ import javax.security.auth.login.CredentialException;
 import org.wikipedia.Wiki;
 import org.wikiutils.LoginUtils;
 
-import com.github.wikibot.main.Wikibot;
-
 public class Login {
 	private static final Path LOCATION = Paths.get("./data/sessions/");
 	private static final String LOGIN_FORMAT = "%s@%s";
@@ -130,18 +128,6 @@ public class Login {
 		}
 		
 		login(wiki, username, password);
-	}
-	
-	public static Wikibot createSession(String domain) throws CredentialException {
-		var wb = Wikibot.newSession(domain);
-		login(wb);
-		return wb;
-	}
-	
-	public static Wikibot createSession(String domain, String username) throws CredentialException {
-		var wb = Wikibot.newSession(domain);
-		login(wb, username);
-		return wb;
 	}
 	
 	public static void main(String[] args) throws Exception {

@@ -23,7 +23,7 @@ public final class AddCategory {
 	
 	private static final Pattern PATT_CATEGORIES;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 	
 	static {
 		var aliases = String.join("|", DEFAULSORT_ALIASES);
@@ -40,7 +40,7 @@ public final class AddCategory {
 			category = args[1];
 		}
 		
-		wb = Login.createSession("pl.wikipedia.org");
+		Login.login(wb);
 		category = wb.removeNamespace(category, Wiki.CATEGORY_NAMESPACE);
 		
 		var titles = Files.readAllLines(TITLES);

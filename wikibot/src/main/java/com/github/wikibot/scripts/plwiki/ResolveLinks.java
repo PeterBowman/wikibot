@@ -74,7 +74,7 @@ public final class ResolveLinks {
 	
 	private static final int USER_SUBPAGE_SIZE_LIMIT = 500000;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 
 	static {
 		defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
@@ -83,7 +83,7 @@ public final class ResolveLinks {
 	public static void main(String[] args) throws Exception {
 		var line = parseArguments(args);
 		
-		wb = Login.createSession("pl.wikipedia.org");
+		Login.login(wb);
 		
 		var sourceToTarget = new HashMap<String, String>();
 		var summary = prepareSourceMappings(line, sourceToTarget);

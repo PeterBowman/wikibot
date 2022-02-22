@@ -31,7 +31,7 @@ import com.github.wikibot.utils.WebArchiveLookup;
 public final class ArchiveExternalLinks {
 	private static final List<String> CITE_TEMPLATES = List.of("Cytuj", "Cytuj pismo", "Cytuj stronę");
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 	private static WebArchiveLookup webArchive;
 	
 	public static void main(String[] args) throws Exception {
@@ -40,7 +40,7 @@ public final class ArchiveExternalLinks {
 		final var url = line.getOptionValue("link");
 		final var protocol = line.getOptionValue("protocol", "http");
 		
-		wb = Login.createSession("pl.wikipedia.org");
+		Login.login(wb);
 		webArchive = new WebArchiveLookup();
 		
 		var list = wb.linksearch(url, protocol, Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.CATEGORY_NAMESPACE);

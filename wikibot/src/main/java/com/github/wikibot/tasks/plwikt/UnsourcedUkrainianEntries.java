@@ -45,7 +45,7 @@ public final class UnsourcedUkrainianEntries {
 	private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 	private static final String PAGE_INTRO;
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 	
 	static {
 		PAGE_INTRO = """
@@ -70,7 +70,7 @@ public final class UnsourcedUkrainianEntries {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		var sourceTmpls = wb.getCategoryMembers(SOURCES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
 			.map(wb::removeNamespace)

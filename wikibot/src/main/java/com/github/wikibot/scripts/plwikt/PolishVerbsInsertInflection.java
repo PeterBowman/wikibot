@@ -29,8 +29,8 @@ import com.github.wikibot.utils.PageContainer;
 import com.thoughtworks.xstream.XStream;
 
 public final class PolishVerbsInsertInflection {
-	private static Wikibot wb;
-	private static Map<String, Map<String, String>> models = new HashMap<>();
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
+	private static final Map<String, Map<String, String>> models = new HashMap<>();
 	private static final Path LOCATION = Paths.get("./data/scripts.plwikt/PolishVerbsInsertInflection/");
 	private static final Path SERIALIZED = LOCATION.resolve("targets.xml");
 	private static final Path WORKLIST = LOCATION.resolve("worklist.txt");
@@ -38,19 +38,19 @@ public final class PolishVerbsInsertInflection {
 	private static void selector(char op) throws Exception {
 		switch (op) {
 			case '1':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getLists();
 				break;
 			case '2':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				analyzeConjugationTemplate();
 				break;
 			case '3':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				getModelVc();
 				break;
 			case 'e':
-				wb = Login.createSession("pl.wiktionary.org");
+				Login.login(wb);
 				edit();
 				break;
 			default:

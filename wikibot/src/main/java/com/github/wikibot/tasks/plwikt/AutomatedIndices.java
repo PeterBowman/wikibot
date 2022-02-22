@@ -54,10 +54,10 @@ public final class AutomatedIndices {
 	
 	private static List<String> errors = new ArrayList<>();
 	
-	private static Wikibot wb;
+	private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
 	public static void main(String[] args) throws Exception {
-		wb = Login.createSession("pl.wiktionary.org");
+		Login.login(wb);
 		
 		String pageText = wb.getPageText(List.of(WORKLIST)).get(0);
 		List<String> templates = ParseUtils.getTemplatesIgnoreCase(TEMPLATE, pageText);
