@@ -506,4 +506,39 @@ public class Wikibot extends WMFWiki {
         log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.size() + " titles)");
         return Arrays.asList(props);
     }
+
+	public void createClaim(String entity, String property, String value) throws LoginException, IOException {
+		createClaim(entity, property, value, -1L, null);
+	}
+	
+	public void createClaim(String entity, String property, String value, long baseRevid) throws LoginException, IOException {
+		createClaim(entity, property, value, baseRevid, null);
+	}
+	
+	public synchronized void createClaim(String entity, String property, String value, long baseRevid, String summary) throws IOException, LoginException {
+		requiresExtension("WikibaseRepository");
+		throttle();
+		
+		var getparams = new HashMap<>(Map.of(
+			"action", "wbcreateclaim",
+			"entity", entity,
+			"snaktype", "value",
+			"property", property,
+			"value", value,
+			"bot", isMarkBot() ? "1" : "0"
+		));
+		
+		if (baseRevid != -1L) {
+			getparams.put("baserevid", Long.toString(baseRevid));
+		}
+		
+		if (summary != null) {
+			getparams.put("summary", summary);
+		}
+		
+		var postparams = Map.of("token", (Object)getToken("csrf"));
+		var response = makeApiCall(getparams, postparams, "wbcreateclaim");
+		checkErrorsAndUpdateStatus(response, "wbcreateclaim", null, null);
+		log(Level.INFO, "wbcreateclaim", "Successfully added claim to " + entity);
+	}
 }
