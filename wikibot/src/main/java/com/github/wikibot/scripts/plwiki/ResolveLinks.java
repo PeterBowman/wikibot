@@ -451,17 +451,20 @@ public final class ResolveLinks {
 				}
 			}
 		} catch (ClassNotFoundException | SQLException e) {
-			var disambs = wb.getPageProps(titleList).stream()
-				.filter(prop -> prop.containsKey("disambiguation"))
-				.map(prop -> (String)prop.get("pagename"))
-				.collect(Collectors.toSet());
+			var props = wb.getPageProperties(titleList);
+			var infos = wb.getPageInfo(titleList);
 			
-			for (var info : wb.getPageInfo(titleList)) {
-				var title = (String)info.get("pagename");
-				var isRedir = (Boolean)info.get("redirect");
-				var length = (Integer)info.get("size");
+			for (var i = 0; i < titleList.size(); i++) {
+				if (props.get(i) == null || infos.get(i) == null) {
+					continue;
+				}
 				
-				map.put(title, new PageInfo(isRedir, disambs.contains(title), length));
+				var isDisambig = props.get(i).containsKey("disambiguation");
+				var title = (String)infos.get(i).get("pagename");
+				var isRedir = (Boolean)infos.get(i).get("redirect");
+				var length = (Integer)infos.get(i).get("size");
+				
+				map.put(title, new PageInfo(isRedir, isDisambig, length));
 			}
 		}
 		

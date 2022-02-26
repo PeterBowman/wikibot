@@ -6,7 +6,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -435,78 +434,6 @@ public class Wikibot extends WMFWiki {
 		}
 	}
     
-    public List<Map<String, String>> getPageProps(List<String> pages) throws IOException
-    {
-        var getparams = new HashMap<String, String>();
-        getparams.put("action", "query");
-        getparams.put("prop", "pageprops");
-        var postparams = new HashMap<String, Object>();
-        var metamap = new HashMap<String, Map<String, String>>();
-        // copy because normalization and redirect resolvers overwrites
-        var pages2 = new ArrayList<String>(pages);
-        var chunks = constructTitleString(pages);
-        for (int i = 0; i < chunks.size(); i++)
-        {
-        	var temp = chunks.get(i);
-            postparams.put("titles", temp);
-            var caller = String.format("getPageProps (%d/%d)", i + 1, chunks.size());
-            var line = makeApiCall(getparams, postparams, caller);
-            detectUncheckedErrors(line, null, null);
-            resolveNormalizedParser(pages2, line);
-            if (isResolvingRedirects())
-                resolveRedirectParser(pages2, line);
-
-            // form: <page _idx="353684" pageid="353684" ns="0" title="rescate" ... />
-            for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
-            {
-            	boolean hasprops = false;
-                int x = line.indexOf(" />", j);
-                var item = line.substring(j + "<page ".length(), x);
-                var header = item;
-                if (item.contains("<pageprops "))
-                {
-                    hasprops = true;
-                    header = item.substring(0, item.indexOf("<pageprops "));
-                    item = line.substring(j, line.indexOf("</page>", j));
-                }
-                var parsedtitle = parseAttribute(header, "title", 0);
-                var tempmap = new HashMap<String, String>();
-                tempmap.put("pagename", parsedtitle);
-                if (item.contains("missing=\"\""))
-                    tempmap.put("missing", "");
-                else
-                {
-                    var pageid = parseAttribute(header, "pageid", 0);
-                    tempmap.put("pageid", pageid);
-                    if (hasprops)
-                    {
-                        j = line.indexOf("<pageprops ", j);
-                        item = line.substring(j + "<pageprops ".length(), line.indexOf(" />", j));
-		                for (var attr : item.split("=\\S+\\s*"))
-		                    tempmap.put(attr, parseAttribute(item, attr, 0));
-                    }
-                }
-
-                metamap.put(parsedtitle, tempmap);
-            }
-        }
-
-		@SuppressWarnings("unchecked")
-		Map<String, String>[] props = new HashMap[pages.size()];
-        // Reorder. Make a new HashMap so that inputpagename remains unique.
-        for (int i = 0; i < pages2.size(); i++)
-        {
-            var tempmap = metamap.get(pages2.get(i));
-            if (tempmap != null)
-            {
-                props[i] = new HashMap<>(tempmap);
-                props[i].put("inputpagename", pages.get(i));
-            }
-        }
-        log(Level.INFO, "getPageProps", "Successfully retrieved page properties (" + pages.size() + " titles)");
-        return Arrays.asList(props);
-    }
-
 	public void createClaim(String entity, String property, String value) throws LoginException, IOException {
 		createClaim(entity, property, value, -1L, null);
 	}
