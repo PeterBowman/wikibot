@@ -149,13 +149,9 @@ public final class FetchEpwnBiograms {
 		try {
 			var lastRun = line.hasOption("continue") ? retrieveRun() : null;
 			
-			if (line.hasOption("entry")) {
-				var id = Long.parseLong(line.getOptionValue("entry"));
-				var biogram = parseEntry(id); // only for debug purposes, IOException not handled
-				System.out.println(biogram);
-				
-				if (biogram != null) {
-					storage.add(biogram);
+			if (line.hasOption("all")) {
+				for (var index : INDEXES) {
+					parseIndex(index, storage, lastRun);
 				}
 			} else if (line.hasOption("index")) {
 				var index = Character.toTitleCase(line.getOptionValue("index").charAt(0));
@@ -165,10 +161,16 @@ public final class FetchEpwnBiograms {
 				}
 				
 				parseIndex(index, storage, lastRun);
-			} else {
-				for (var index : INDEXES) {
-					parseIndex(index, storage, lastRun);
+			} else if (line.hasOption("entry")) {
+				var id = Long.parseLong(line.getOptionValue("entry"));
+				var biogram = parseEntry(id); // only for debug purposes, IOException not handled
+				System.out.println(biogram);
+				
+				if (biogram != null) {
+					storage.add(biogram);
 				}
+			} else {
+				throw new IllegalArgumentException("missing option");
 			}
 		} catch (FailedRunException e) {
 			System.out.println(e.getMessage());
@@ -183,9 +185,10 @@ public final class FetchEpwnBiograms {
 	
 	private static CommandLine readOptions(String[] args) throws ParseException {
 		var options = new Options();
-		options.addOption("c", "continue", false, "continue previously stored run");
+		options.addOption("a", "all", false, "inspect all indexes");
 		options.addOption("i", "index", true, "only inspect selected index");
 		options.addOption("e", "entry", true, "only inspect selected entry");
+		options.addOption("c", "continue", false, "continue previously stored run");
 		
 		if (args.length == 0) {
 			System.out.print("Option(s): ");
