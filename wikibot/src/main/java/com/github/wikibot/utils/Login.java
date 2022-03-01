@@ -28,6 +28,10 @@ public class Login {
 	
 	private Login() {}
 	
+	public static String getUserAgent() throws IOException {
+		return Files.readString(LOCATION.resolve(USER_AGENT_FILENAME));
+	}
+	
 	public static void login(Wiki wiki, String username, char[] password) {
 		Objects.requireNonNull(username);
 		Objects.requireNonNull(password);
@@ -35,7 +39,7 @@ public class Login {
 		String userAgent;
 		
 		try {
-			userAgent = Files.readAllLines(LOCATION.resolve(USER_AGENT_FILENAME)).get(0);
+			userAgent = getUserAgent();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Setting basic user agent, please edit " + USER_AGENT_FILENAME);

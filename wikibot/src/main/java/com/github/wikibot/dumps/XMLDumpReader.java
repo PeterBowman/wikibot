@@ -145,7 +145,13 @@ public final class XMLDumpReader {
 			dumpPatt = Pattern.compile("^" + database + "\\b.+?(?<!-multistream)\\.xml\\b.*");
 		}
 		
-		try (var files = Files.list(LOCAL_DUMPS)) {
+		var dumpPath = LOCAL_DUMPS.resolve("public").resolve(database).resolve("latest"); // preferred
+		
+		if (!Files.exists(dumpPath)) {
+			dumpPath = LOCAL_DUMPS;
+		}
+		
+		try (var files = Files.list(dumpPath)) {
 			pathToDumpFile = files
 				.filter(Files::isRegularFile)
 				.filter(path -> dumpPatt.matcher(path.getFileName().toString()).matches())

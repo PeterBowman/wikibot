@@ -26,6 +26,13 @@ module org.github.wikibot {
 	requires transitive xstream;
 	requires transitive org.nibor.autolink;
 	requires transitive java.desktop;
+	requires transitive rdf4j.http.client;
+	requires transitive rdf4j.model;
+	requires transitive rdf4j.model.api;
+	requires transitive rdf4j.query;
+	requires transitive rdf4j.repository.api;
+	requires transitive rdf4j.repository.sparql;
+	requires transitive rdf4j.util;
 	
 	// https://stackoverflow.com/a/41265267
 	opens com.github.wikibot.main;
