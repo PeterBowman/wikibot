@@ -154,6 +154,7 @@ public final class XMLDumpReader {
 		try (var files = Files.list(dumpPath)) {
 			pathToDumpFile = files
 				.filter(Files::isRegularFile)
+				.map(XMLDumpReader::resolveFilePath)
 				.filter(path -> dumpPatt.matcher(path.getFileName().toString()).matches())
 				.findFirst()
 				.orElseThrow(() -> new FileNotFoundException("Dump file not found: " + database));
@@ -172,6 +173,14 @@ public final class XMLDumpReader {
 			System.out.println("Using index: " + pathToIndexFile);
 		}
 	}
+	
+	private static Path resolveFilePath(Path path) {
+		try {
+			return path.toRealPath();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	} 
 	
 	private void maybeRetrieveOffsets() throws IOException {
 		if (!assumeMultiStream || availableChunks != null) {

@@ -58,6 +58,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 public final class MissingWomenBiograms {
 	private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWomenBiograms/");
 	private static final Path HASHCODES = LOCATION.resolve("hashcodes.xml");
+	private static final Path LATEST_DUMP = LOCATION.resolve("latest-dump.txt");
 	private static final String BOT_SUBPAGE = "Wikipedysta:PBbot/brakujące biogramy o kobietach";
 	private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
 	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
@@ -90,6 +91,7 @@ public final class MissingWomenBiograms {
 		var line = readOptions(args);
 		var biogramEntities = new HashSet<>(queryBiogramEntities());
 		var entries = new LinkedHashMap<QueryItem, List<Entry>>();
+		var dumpPath = Paths.get("");
 		
 		if (line.hasOption("dump")) {
 			var reader = new XMLDumpReader("wikidatawiki", true);
@@ -114,6 +116,9 @@ public final class MissingWomenBiograms {
 					xstream.toXML(entry.getValue(), stream);
 				}
 			}
+			
+			dumpPath = reader.getPathToDump();
+			Files.writeString(LATEST_DUMP, dumpPath.toString());
 		} else if (line.hasOption("edit")) {
 			for (var queryItem : QUERY_CONFIG) {
 				var path = LOCATION.resolve(queryItem.subtype() + ".xml.bz2");
@@ -125,6 +130,8 @@ public final class MissingWomenBiograms {
 					System.out.printf("Retrieved %d entries from %s%n", data.size(), path.getFileName());
 				}
 			}
+			
+			dumpPath = Paths.get(Files.readString(LATEST_DUMP));
 		}
 		
 		if (line.hasOption("edit")) {
@@ -147,7 +154,7 @@ public final class MissingWomenBiograms {
 				entry.setValue(portion);
 				
 				if (hashcodes.getOrDefault(entry.getKey().subtype(), 0) != entry.getValue().hashCode()) {
-					writeEntrySubpage(entry.getKey(), entry.getValue());
+					writeEntrySubpage(entry.getKey(), entry.getValue(), dumpPath);
 					hashcodes.put(entry.getKey().subtype(), entry.getValue().hashCode());
 				}
 			}
@@ -381,10 +388,10 @@ public final class MissingWomenBiograms {
 		wb.edit(BOT_SUBPAGE, text, "aktualizacja");
 	}
 	
-	private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data) throws LoginException, IOException {
+	private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, Path dumpPath) throws LoginException, IOException {
 		var format = """
 			<templatestyles src="Wikipedysta:Peter Bowman/autonumber.css" />
-			Aktualizacja: ~~~~~.
+			Aktualizacja: ~~~~~. Dane na podstawie zrzutu %s.
 			----
 			{| class="wikitable sortable autonumber"
 			! artykuł !! opis !! data urodzenia !! data śmierci !! ilustracja !! IW !! inne języki !! item
@@ -393,7 +400,7 @@ public final class MissingWomenBiograms {
 			|}
 			""";
 		
-		var text = String.format(format, data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n")));
+		var text = String.format(format, dumpPath.getFileName(), data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n")));
 		
 		wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja");
 	}
