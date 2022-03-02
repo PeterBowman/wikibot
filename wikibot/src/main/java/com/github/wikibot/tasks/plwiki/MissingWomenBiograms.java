@@ -108,7 +108,7 @@ public final class MissingWomenBiograms {
 			}
 			
 			for (var entry : entries.entrySet()) {
-				Collections.sort(entry.getValue());
+				Collections.sort(entry.getValue(), EntryComparator.prioritizeLanglinks());
 				var path = LOCATION.resolve(entry.getKey().subtype() + ".xml.bz2");
 				System.out.printf("Writing %d entries to %s%n", entry.getValue().size(), path.getFileName());
 				
@@ -148,7 +148,7 @@ public final class MissingWomenBiograms {
 			for (var entry : entries.entrySet()) {
 				var portion = entry.getValue().stream()
 					.limit(MAX_PRINTED_RESULTS)
-					.sorted(Comparator.comparing(e -> e.name, Collator.getInstance(new Locale("pl"))))
+					.sorted(EntryComparator.prioritizeNames())
 					.toList();
 				
 				entry.setValue(portion);
@@ -276,6 +276,7 @@ public final class MissingWomenBiograms {
 			.or(() -> labels.map(obj -> obj.optJSONObject("de")))
 			.or(() -> labels.map(obj -> obj.optJSONObject("fr")))
 			.or(() -> labels.map(obj -> obj.optJSONObject("it")))
+			.or(() -> labels.map(obj -> obj.optJSONObject("es")))
 			.or(() -> labels.map(obj -> obj.optJSONObject(obj.names().optString(0))))
 			.map(label -> label.optString("value"))
 			.orElse(null);
@@ -317,6 +318,7 @@ public final class MissingWomenBiograms {
 			.orElse(null);
 		
 		var langlinks = Optional.ofNullable(json.optJSONObject("sitelinks"))
+			.filter(obj -> !obj.isEmpty())
 			.map(obj -> obj.keySet().stream()
 				.filter(project -> project.endsWith("wiki") && !project.equals("commonswiki"))
 				.sorted()
@@ -408,7 +410,7 @@ public final class MissingWomenBiograms {
 	private record QueryItem(String supertype, String subtype, String property, String entity) {}
 	
 	@XStreamAlias("entry")
-	private static class Entry implements Comparable<Entry> {
+	private static class Entry {
 		final String name;
 		final String description;
 		final TemporalAccessor birthDate;
@@ -416,8 +418,6 @@ public final class MissingWomenBiograms {
 		final String picture;
 		final List<String> langlinks;
 		final String item;
-		
-		final Collator coll = Collator.getInstance(new Locale("pl"));
 		
 		Entry(String name, String description, TemporalAccessor birthDate, TemporalAccessor deathDate, String picture, List<String> langlinks, String item) {
 			this.name = name;
@@ -450,12 +450,6 @@ public final class MissingWomenBiograms {
 			return String.format("Entry[item=%s, name=%s]", item, name);
 		}
 		
-		@Override
-		public int compareTo(Entry e) {
-			var comp = Integer.compare(langlinks.size(), e.langlinks.size());
-			return comp != 0 ? comp : coll.compare(name, e.name);
-		}
-		
 		public String toTemplate() {
 			return String.format(
 				"{{../s|%s|%s|%s|%s|%s|%d|%s|%s}}",
@@ -471,6 +465,76 @@ public final class MissingWomenBiograms {
 					).orElse(""),
 				item
 			);
+		}
+	}
+	
+	private static abstract class EntryComparator implements Comparator<Entry> {
+		private static final Collator PL_COLLATOR = Collator.getInstance(new Locale("pl"));
+		
+		static EntryComparator prioritizeLanglinks() {
+			return new LanglinksFirst();
+		}
+		
+		static EntryComparator prioritizeNames() {
+			return new NamesFirst();
+		}
+		
+		protected static int compareLanglinks(Entry e1, Entry e2) {
+			if (e1.langlinks != null && e2.langlinks != null) {
+				return -Integer.compare(e1.langlinks.size(), e2.langlinks.size());
+			} else if (e1.langlinks == null && e2.langlinks != null) {
+				return 1;
+			} else if (e1.langlinks != null && e2.langlinks == null) {
+				return -1;
+			} else {
+				return 0;
+			}
+		}
+		
+		protected static int compareNames(Entry e1, Entry e2) {
+			if (e1.name != null && e2.name != null) {
+				return PL_COLLATOR.compare(e1.name, e2.name);
+			} else if (e1.name == null && e2.name != null) {
+				return 1;
+			} else if (e1.name != null && e2.name == null) {
+				return -1;
+			} else {
+				return 0;
+			}
+		}
+		
+		private static class LanglinksFirst extends EntryComparator {
+			@Override
+			public int compare(Entry e1, Entry e2) {
+				var comp = compareLanglinks(e1, e2);
+				
+				if (comp == 0) {
+					comp = compareNames(e1, e2);
+					
+					if (comp == 0) {
+						comp = e1.item.compareTo(e2.item);
+					}
+				}
+				
+				return comp;
+			}
+		}
+		
+		private static class NamesFirst extends EntryComparator {
+			@Override
+			public int compare(Entry e1, Entry e2) {
+				var comp = compareNames(e1, e2);
+				
+				if (comp == 0) {
+					comp = compareLanglinks(e1, e2);
+					
+					if (comp == 0) {
+						comp = e1.item.compareTo(e2.item);
+					}
+				}
+				
+				return comp;
+			}
 		}
 	}
 }
