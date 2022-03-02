@@ -185,7 +185,10 @@ public final class XMLDumpReader {
 		}
 		
 		var filteredOffsets = new LinkedHashSet<Long>(10000);
-		var allOffsets = new ArrayList<Long>(1000000);
+		var dumpSize = 0L;
+		var lastOffset = 0L;
+		var accumulator = 0;
+		var addCurrentOffsetSize = false;
 		
 		try (
 			var bufferedInput = new BufferedInputStream(Files.newInputStream(pathToIndexFile));
@@ -204,16 +207,30 @@ public final class XMLDumpReader {
 				var id = Long.parseLong(line.substring(firstSeparator + 1, secondSeparator));
 				var title = line.substring(secondSeparator + 1);
 				
-				if ((filteredTitles == null || filteredTitles.contains(title)) && (filteredIds == null || filteredIds.contains(id))) {
-					filteredOffsets.add(offset);
+				if (offset != lastOffset) {
+					lastOffset = offset;
+					addCurrentOffsetSize = false;
+					accumulator = 0;
 				}
 				
-				allOffsets.add(offset);
+				if ((filteredTitles == null || filteredTitles.contains(title)) && (filteredIds == null || filteredIds.contains(id))) {
+					filteredOffsets.add(offset);
+					
+					if (!addCurrentOffsetSize) {
+						dumpSize += accumulator;
+						addCurrentOffsetSize = true;
+					}
+				}
+				
+				if (addCurrentOffsetSize) {
+					dumpSize++;
+				} else {
+					accumulator++;
+				}
 			}
 		}
 		
-		allOffsets.retainAll(filteredOffsets);
-		dumpSize = allOffsets.size();
+		this.dumpSize = dumpSize;
 		availableChunks = Collections.unmodifiableList(new ArrayList<>(filteredOffsets));
 		System.out.printf("Multistream chunks retrieved: %d (dump size: %d)%n", availableChunks.size(), dumpSize);
 	}
