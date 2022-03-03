@@ -113,6 +113,12 @@
   		<artifactId>json</artifactId>
   		<version>20211205</version>
   	</dependency>
+  	<dependency>
+	    <groupId>org.eclipse.rdf4j</groupId>
+	    <artifactId>rdf4j-client</artifactId>
+	    <version>3.7.4</version>
+	    <type>pom</type>
+	</dependency>
   </dependencies>
   <properties>
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

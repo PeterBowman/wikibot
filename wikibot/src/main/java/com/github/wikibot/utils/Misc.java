@@ -3,6 +3,7 @@ package com.github.wikibot.utils;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -73,7 +74,12 @@ public final class Misc {
 		} else {
 			@SuppressWarnings("resource")
 			var scanner = new Scanner(System.in);
-			return scanner.nextLine();
+			
+			try {
+				return scanner.nextLine();
+			} catch (NoSuchElementException e) {
+				return "";
+			}
 		}
 	}
 	

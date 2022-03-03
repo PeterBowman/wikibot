@@ -466,14 +466,10 @@ class EpwnBiogram {
 	
 	@SuppressWarnings("unused")
 	private EpwnBiogram() {
-		// this exists only for the sake of xstream not complaining about a missing no-args ctor
+		// this exists only for the sake of xstream not complaining about a missing no-args ctor on deserialization
 		id = 0L;
-		entry = null;
-		placeOfBirth = null;
-		placeOfDeath = null;
-		birthDate = null;
-		deathDate = null;
-		definition = null;
+		entry = placeOfBirth = placeOfDeath = definition = null;
+		birthDate = deathDate = null;
 	}
 	
 	EpwnBiogram(long id, String entry, String placeOfBirth, String placeOfDeath, TemporalAccessor birthDate, TemporalAccessor deathDate, String definition) {
