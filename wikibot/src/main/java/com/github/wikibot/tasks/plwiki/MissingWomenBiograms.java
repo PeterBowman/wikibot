@@ -40,6 +40,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
@@ -64,6 +65,7 @@ public final class MissingWomenBiograms {
 	private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 	private static final XStream xstream = new XStream();
 	private static final int MAX_PRINTED_RESULTS = 1000;
+	private static final String STATIC_URL_DUMP_FMT = "//tools-static.wmflabs.org/pbbot/plwiki/missing-women-biograms/%s.xml.bz2";
 	
 	private static final List<QueryItem> QUERY_CONFIG;
 	private static final DateTimeFormatter DATE_FORMATTER;
@@ -116,7 +118,7 @@ public final class MissingWomenBiograms {
 			
 			for (var entry : entries.entrySet()) {
 				Collections.sort(entry.getValue(), EntryComparator.prioritizeLanglinks());
-				var path = LOCATION.resolve(entry.getKey().subtype() + ".xml.bz2");
+				var path = LOCATION.resolve(entry.getKey().filename() + ".xml.bz2");
 				System.out.printf("Writing %d entries to %s%n", entry.getValue().size(), path.getFileName());
 				
 				try (var stream = new BZip2CompressorOutputStream(new BufferedOutputStream(Files.newOutputStream(path)))) {
@@ -128,7 +130,7 @@ public final class MissingWomenBiograms {
 			Files.writeString(LATEST_DUMP, dumpPath.toString());
 		} else if (line.hasOption("edit")) {
 			for (var queryItem : QUERY_CONFIG) {
-				var path = LOCATION.resolve(queryItem.subtype() + ".xml.bz2");
+				var path = LOCATION.resolve(queryItem.filename() + ".xml.bz2");
 				
 				try (var stream = new BZip2CompressorInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
 					@SuppressWarnings("unchecked")
@@ -158,11 +160,9 @@ public final class MissingWomenBiograms {
 					.sorted(EntryComparator.prioritizeNames())
 					.toList();
 				
-				entry.setValue(portion);
-				
-				if (hashcodes.getOrDefault(entry.getKey().subtype(), 0) != entry.getValue().hashCode()) {
-					writeEntrySubpage(entry.getKey(), entry.getValue(), dumpPath);
-					hashcodes.put(entry.getKey().subtype(), entry.getValue().hashCode());
+				if (hashcodes.getOrDefault(entry.getKey().subtype(), 0) != portion.hashCode()) {
+					writeEntrySubpage(entry.getKey(), portion, dumpPath, entry.getValue().size());
+					hashcodes.put(entry.getKey().subtype(), portion.hashCode());
 				}
 			}
 			
@@ -184,7 +184,8 @@ public final class MissingWomenBiograms {
 			for (var subtype : ((JSONObject)supertype).getJSONArray("items")) {
 				var subname = ((JSONObject)subtype).getString("name");
 				var entity = ((JSONObject)subtype).getString("entity");
-				items.add(new QueryItem(supername, subname, property, entity));
+				var filename = StringUtils.replaceChars(subname, "ĄĆĘŁŃÓŚŹŻąćęłńóśźż ", "ACELNOSZZacelnoszz-");
+				items.add(new QueryItem(supername, subname, property, entity, filename));
 			}
 		}
 		
@@ -397,9 +398,11 @@ public final class MissingWomenBiograms {
 		wb.edit(BOT_SUBPAGE, text, "aktualizacja");
 	}
 	
-	private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, Path dumpPath) throws LoginException, IOException {
-		var format = """
+	private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, Path dumpPath, int originalSize) throws LoginException, IOException {
+		var outFmt = """
 			<templatestyles src="Wikipedysta:Peter Bowman/autonumber.css" />
+			Właściwość: {{PID|%s}}. Wartość: {{QID|%s}}. Rozmiar [%s oryginalnej listy]: {{formatnum:%d}}. Ograniczono do {{formatnum:%d}} wyników.
+			
 			Aktualizacja: ~~~~~. Dane na podstawie zrzutu %s.
 			----
 			{| class="wikitable sortable autonumber"
@@ -409,12 +412,20 @@ public final class MissingWomenBiograms {
 			|}
 			""";
 		
-		var text = String.format(format, dumpPath.getFileName(), data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n")));
+		var text = String.format(outFmt,
+				queryItem.property().substring(1),
+				queryItem.entity().substring(1),
+				String.format(STATIC_URL_DUMP_FMT, queryItem.filename()),
+				originalSize,
+				MAX_PRINTED_RESULTS,
+				dumpPath.getFileName(),
+				data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n"))
+			);
 		
 		wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja");
 	}
 	
-	private record QueryItem(String supertype, String subtype, String property, String entity) {}
+	private record QueryItem(String supertype, String subtype, String property, String entity, String filename) {}
 	
 	@XStreamAlias("entry")
 	private static class Entry {
@@ -467,7 +478,7 @@ public final class MissingWomenBiograms {
 		
 		public String toTemplate() {
 			return String.format(
-				"{{../s|%s|%s|%s|%s|%s|%d|%s|%s}}",
+				"{{../s|%s|%s|%s|%s|%s|%s|%s|%s}}",
 				Optional.ofNullable(name).orElse(""),
 				Optional.ofNullable(description).orElse(""),
 				Optional.ofNullable(birthDate).map(Object::toString).orElse(""),
