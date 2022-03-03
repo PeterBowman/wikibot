@@ -72,7 +72,6 @@ public final class MissingWomenBiograms {
 		try {
 			var json = wb.getPageText(List.of(BOT_SUBPAGE + "/konfiguracja.json")).get(0);
 			QUERY_CONFIG = parseQueryConfig(new JSONArray(json));
-			SPARQL_REPO.setAdditionalHttpHeaders(Collections.singletonMap("User-Agent", Login.getUserAgent()));
 			
 			DATE_FORMATTER = new DateTimeFormatterBuilder()
 				.appendValue(ChronoField.YEAR, 4, 4, SignStyle.ALWAYS)
@@ -82,18 +81,26 @@ public final class MissingWomenBiograms {
 				.appendValue(ChronoField.DAY_OF_MONTH, 2)
 				.appendLiteral("T00:00:00Z")
 				.toFormatter();
+
+			SPARQL_REPO.setAdditionalHttpHeaders(Collections.singletonMap("User-Agent", Login.getUserAgent()));
+			
+			xstream.processAnnotations(Entry.class);
+			xstream.allowTypes(new Class[] {Entry.class});
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 	
 	public static void main(String[] args) throws Exception {
+		System.out.println("Configuration:");
+		QUERY_CONFIG.forEach(System.out::println);
+		
 		var line = readOptions(args);
-		var biogramEntities = new HashSet<>(queryBiogramEntities());
 		var entries = new LinkedHashMap<QueryItem, List<Entry>>();
 		var dumpPath = Paths.get("");
 		
 		if (line.hasOption("dump")) {
+			var biogramEntities = new HashSet<>(queryBiogramEntities());
 			var reader = new XMLDumpReader("wikidatawiki", true);
 			
 			try (var stream = reader.seekTitles(biogramEntities).getStAXReaderStream()) {
@@ -268,7 +275,7 @@ public final class MissingWomenBiograms {
 	private static void analyzeEntity(JSONObject json, Map<QueryItem, List<Entry>> entries) {
 		// https://doc.wikimedia.org/Wikibase/master/php/md_docs_topics_json.html
 		var item = json.getString("id");
-		var labels = Optional.ofNullable(json.optJSONObject("claims"));
+		var labels = Optional.ofNullable(json.optJSONObject("labels"));
 		
 		var name = labels
 			.map(obj -> obj.optJSONObject("pl"))
@@ -418,6 +425,14 @@ public final class MissingWomenBiograms {
 		final String picture;
 		final List<String> langlinks;
 		final String item;
+		
+		@SuppressWarnings("unused")
+		Entry() {
+			// this exists only for the sake of xstream not complaining about a missing no-args ctor on deserialization
+			name = description = picture = item = null;
+			birthDate = deathDate = null;
+			langlinks = null;
+		}
 		
 		Entry(String name, String description, TemporalAccessor birthDate, TemporalAccessor deathDate, String picture, List<String> langlinks, String item) {
 			this.name = name;
