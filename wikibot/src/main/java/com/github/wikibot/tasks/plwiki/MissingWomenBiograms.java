@@ -295,6 +295,7 @@ public final class MissingWomenBiograms {
 			.map(obj -> obj.optJSONObject("pl"))
 			.or(() -> descriptions.map(obj -> obj.optJSONObject("en")))
 			.map(lang -> lang.optString("value"))
+			.map(desc -> desc.replace("=", "{{=}}").replace("|", "{{!}}"))
 			.orElse(null);
 		
 		var claims = Optional.ofNullable(json.optJSONObject("claims"));
@@ -326,16 +327,18 @@ public final class MissingWomenBiograms {
 			.orElse(null);
 		
 		var langlinks = Optional.ofNullable(json.optJSONObject("sitelinks"))
-			.filter(obj -> !obj.isEmpty())
 			.map(obj -> obj.keySet().stream()
-				.filter(project -> project.endsWith("wiki") && !project.equals("commonswiki"))
+				.filter(project -> project.endsWith("wiki") && !project.equals("commonswiki") && !project.equals("specieswiki"))
 				.sorted()
+				.map(project -> project.replace('_', '-'))
+				.map(project -> project.replace("be-x-old", "be-taraski"))
 				.map(project -> String.format("%s:%s",
 					project.substring(0, project.length() - 4),
 					obj.getJSONObject(project).getString("title")
 				))
 				.collect(Collectors.toCollection(ArrayList::new))
 			)
+			.filter(list -> !list.isEmpty())
 			.orElse(null);
 		
 		for (var queryItem : QUERY_CONFIG) {
