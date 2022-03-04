@@ -193,11 +193,13 @@ public final class XMLDumpReader {
 			throw new UnsupportedOperationException("unsupported index file extension: " + extension);
 		}
 		
-		var filteredOffsets = new LinkedHashSet<Long>(10000);
+		var filteredOffsets = new LinkedHashSet<Long>(100000);
 		var dumpSize = 0L;
 		var lastOffset = 0L;
 		var accumulator = 0;
 		var addCurrentOffsetSize = false;
+		var offsetCount = 0;
+		var pageCount = 0L;
 		
 		try (
 			var bufferedInput = new BufferedInputStream(Files.newInputStream(pathToIndexFile));
@@ -220,6 +222,7 @@ public final class XMLDumpReader {
 					lastOffset = offset;
 					addCurrentOffsetSize = false;
 					accumulator = 0;
+					offsetCount++;
 				}
 				
 				if ((filteredTitles == null || filteredTitles.contains(title)) && (filteredIds == null || filteredIds.contains(id))) {
@@ -236,12 +239,18 @@ public final class XMLDumpReader {
 				} else {
 					accumulator++;
 				}
+				
+				pageCount++;
 			}
 		}
 		
 		this.dumpSize = dumpSize;
 		availableChunks = Collections.unmodifiableList(new ArrayList<>(filteredOffsets));
-		System.out.printf("Multistream chunks retrieved: %d (dump size: %d)%n", availableChunks.size(), dumpSize);
+		
+		System.out.printf(
+				"Multistream chunks retrieved: %d/%d (dump size: %d/%d)%n",
+				availableChunks.size(), offsetCount, dumpSize, pageCount
+			);
 	}
 	
 	private InputStream getInputStream() throws IOException {
