@@ -26,6 +26,8 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+
 import org.json.JSONObject;
 
 import com.github.wikibot.parsing.Utils;
@@ -389,50 +391,26 @@ public final class DumpWatcher {
 				return false;
 			}
 			
-			MessageDigest digest;
-			
-			try {
-				digest = MessageDigest.getInstance("SHA-1");
-			} catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-				return false;
-			}
-			
-			try (var input = new DigestInputStream(Files.newInputStream(path), digest)) {
+			try (var input = new DigestInputStream(Files.newInputStream(path), MessageDigest.getInstance("SHA-1"))) {
 				var bytes = new byte[8192];
 				
 				while (input.read(bytes) > 0) {}
 				
-				var hex = bytesToHexString(digest.digest());
+				var hex = new HexBinaryAdapter().marshal(input.getMessageDigest().digest()).toLowerCase();
 				
 				if (!hex.equals(sha1checksums.get(filename))) {
 					System.out.println("SHA1 checksum doesn't match for file " + filename);
 					return false;
 				}
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				return false;
 			} catch (IOException e) {
 				System.out.println("Unable to obtain checksum: " + e.getMessage());
 				return false;
 			}
 			
 			return true;
-		}
-		
-		private static String bytesToHexString(byte[] bytes) {
-			var sb = new StringBuilder();
-			
-			for (var b : bytes) {
-				int value = b & 0xFF;
-				
-				if (value < 16) {
-					// if value less than 16, then it's hex String will be only
-					// one character, so we need to append a character of '0'
-					sb.append("0");
-				}
-				
-				sb.append(Integer.toHexString(value).toLowerCase());
-			}
-			
-			return sb.toString();
 		}
 		
 		private void loadData() throws IOException {

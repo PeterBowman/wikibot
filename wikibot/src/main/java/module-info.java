@@ -33,6 +33,7 @@ module org.github.wikibot {
 	requires transitive rdf4j.repository.api;
 	requires transitive rdf4j.repository.sparql;
 	requires transitive rdf4j.util;
+	requires transitive java.xml.bind;
 	
 	// https://stackoverflow.com/a/41265267
 	opens com.github.wikibot.main;
