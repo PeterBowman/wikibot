@@ -37,6 +37,7 @@ public final class DumpWatcher {
 	private static final Path PUBLIC_DUMPS = Paths.get("./data/dumps/public/");
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static final String JOB_LAUNCHER = "jsub %s";
+	private static final long MAX_FILE_SIZE_FOR_CHECKSUM = 2500000000L; // ~2.5 GB 
 	
 	private static final JSONObject DUMP_CONFIG;
 	
@@ -392,6 +393,11 @@ public final class DumpWatcher {
 			}
 			
 			try (var input = new DigestInputStream(Files.newInputStream(path), MessageDigest.getInstance("SHA-1"))) {
+				if (Files.size(path) > MAX_FILE_SIZE_FOR_CHECKSUM) {
+					System.out.println("Maximum size exceeded in checksum test step for file " + filename);
+					return true;
+				}
+				
 				var bytes = new byte[8192];
 				
 				while (input.read(bytes) > 0) {}
