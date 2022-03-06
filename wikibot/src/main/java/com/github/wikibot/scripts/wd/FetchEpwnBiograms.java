@@ -36,6 +36,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,8 +52,8 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 public final class FetchEpwnBiograms {
 	private static final Path LOCATION = Paths.get("./data/scripts.wd/FetchEpwnBiograms/");
 	private static final Path LAST_RUN = LOCATION.resolve("last_run.json");
-	private static final Path STORAGE = LOCATION.resolve("storage.xml");
-	private static final Path STORAGE_FALLBACK = LOCATION.resolve("storage-fallback.txt");
+	private static final Path STORAGE = LOCATION.resolve("storage.xml.bz2");
+	private static final Path STORAGE_FALLBACK = LOCATION.resolve("storage-fallback.txt.bz2");
 	
 	private static final String INDEX_URL_FORMAT = "https://encyklopedia.pwn.pl/lista/%c;%d.html";
 	private static final String ENTRY_URL_FORMAT = "https://encyklopedia.pwn.pl/haslo/;%d.html";
@@ -392,15 +393,13 @@ public final class FetchEpwnBiograms {
 	private static void storeEntries(Set<EpwnBiogram> storage) throws IOException {
 		System.out.println("New storage size: " + storage.size());
 		
-		try (var stream = new BufferedOutputStream(Files.newOutputStream(STORAGE))) {
+		try (var stream = new BZip2CompressorOutputStream(new BufferedOutputStream(Files.newOutputStream(STORAGE)))) {
 			xstream.toXML(storage, stream);
 		} catch (XStreamException e) {
 			System.out.println(e);
 			
-			try (var writer = new PrintWriter(Files.newBufferedWriter(STORAGE_FALLBACK))) {
-				for (var entry : storage) {
-					writer.println(entry);
-				}
+			try (var writer = new PrintWriter(new BZip2CompressorOutputStream(new BufferedOutputStream(Files.newOutputStream(STORAGE_FALLBACK))))) {
+				storage.forEach(writer::println);
 			}
 		}
 	}
