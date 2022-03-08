@@ -1,7 +1,14 @@
 {
+	"articlesmultistreamdumprecombine": {
+		"name": "pages-articles-multistream",
+		"exts": ["xml", "bz2"],
+		"statusfallback": "articlesmultistreamdump"
+	},
 	"articlesmultistreamdump": {
 		"name": "pages-articles-multistream",
-		"exts": ["xml", "bz2"]
+		"exts": ["xml", "bz2"],
+		"multi": true,
+		"dumpfallback": "articlesmultistreamdumprecombine"
 	},
 	"metahistory7zdump": {
 		"name": "pages-meta-history",
