@@ -24,91 +24,91 @@ import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
 public final class MissingPolishEtymOnWikidata {
-	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEtymOnWikidata/");
-	private static final String TARGET_PAGE = "Wikisłownikarz:PBbot/brak polskiej etymologii na Wikidanych";
+    private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEtymOnWikidata/");
+    private static final String TARGET_PAGE = "Wikisłownikarz:PBbot/brak polskiej etymologii na Wikidanych";
 
-	// https://www.wikidata.org/wiki/Q809
-	private static final String POLISH_LANGUAGE_ITEM = "Q809";
+    // https://www.wikidata.org/wiki/Q809
+    private static final String POLISH_LANGUAGE_ITEM = "Q809";
 
-	// https://www.wikidata.org/wiki/Property:P5191
-	// https://www.wikidata.org/wiki/Property:P5238
-	private static final List<String> TARGET_PROPERTIES = List.of("P5191", "P5238");
+    // https://www.wikidata.org/wiki/Property:P5191
+    // https://www.wikidata.org/wiki/Property:P5238
+    private static final List<String> TARGET_PROPERTIES = List.of("P5191", "P5238");
 
-	private static final String TARGET_PAGE_INTRO;
+    private static final String TARGET_PAGE_INTRO;
 
-	static {
-		TARGET_PAGE_INTRO = """
-			Zawartość pola etymologii haseł polskich z brakującą etymologią w Wikidanych. Wygenerowano ~~~~~.
-			----
-			%1$s
-			
-			{{przypisy}}
-			""";
-	}
+    static {
+        TARGET_PAGE_INTRO = """
+            Zawartość pola etymologii haseł polskich z brakującą etymologią w Wikidanych. Wygenerowano ~~~~~.
+            ----
+            %1$s
 
-	public static void main(String[] args) throws Exception {
-		Wikibot wd = Wikibot.newSession("www.wikidata.org");
-		Login.login(wd);
-		
-		Map<String, Integer> namespaceIds = wd.getNamespaces();
-		List<PageContainer> wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
+            {{przypisy}}
+            """;
+    }
 
-		Map<String, Set<String>> wiktToLexemes = wdPages.stream()
-			.map(PageContainer::getText)
-			.map(JSONObject::new)
-			.filter(json -> Optional.ofNullable(json.optJSONObject("claims"))
-				.filter(obj -> !TARGET_PROPERTIES.stream().anyMatch(obj::has))
-				.isPresent()
-			)
-			.filter(json -> json.getJSONObject("lemmas").has("pl")) // e.g. L33443: "polština"
-			.collect(Collectors.groupingBy(
-				json -> json.getJSONObject("lemmas")
-					.getJSONObject("pl")
-					.getString("value"),
-				Collectors.mapping(
-					json -> json.getString("id"),
-					Collectors.toCollection(TreeSet::new)
-				)
-			));
+    public static void main(String[] args) throws Exception {
+        Wikibot wd = Wikibot.newSession("www.wikidata.org");
+        Login.login(wd);
 
-		Wikibot plwikt = Wikibot.newSession("pl.wiktionary.org");
-		Login.login(plwikt);
-		List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktToLexemes.keySet());
+        Map<String, Integer> namespaceIds = wd.getNamespaces();
+        List<PageContainer> wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
 
-		Map<String, String> map = wiktContent.stream()
-			.map(Page::wrap)
-			.map(Page::getPolishSection)
-			.flatMap(Optional::stream)
-			.flatMap(s -> s.getField(FieldTypes.ETYMOLOGY).stream())
-			.filter(f -> !f.isEmpty())
-			.collect(Collectors.toMap(
-				f -> f.getContainingSection().get().getContainingPage().get().getTitle(),
-				Field::getContent,
-				(a, b) -> a,
-				() -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
+        Map<String, Set<String>> wiktToLexemes = wdPages.stream()
+            .map(PageContainer::getText)
+            .map(JSONObject::new)
+            .filter(json -> Optional.ofNullable(json.optJSONObject("claims"))
+                .filter(obj -> !TARGET_PROPERTIES.stream().anyMatch(obj::has))
+                .isPresent()
+            )
+            .filter(json -> json.getJSONObject("lemmas").has("pl")) // e.g. L33443: "polština"
+            .collect(Collectors.groupingBy(
+                json -> json.getJSONObject("lemmas")
+                    .getJSONObject("pl")
+                    .getString("value"),
+                Collectors.mapping(
+                    json -> json.getString("id"),
+                    Collectors.toCollection(TreeSet::new)
+                )
+            ));
 
-		Path hash = LOCATION.resolve("hash.txt");
+        Wikibot plwikt = Wikibot.newSession("pl.wiktionary.org");
+        Login.login(plwikt);
+        List<PageContainer> wiktContent = plwikt.getContentOfPages(wiktToLexemes.keySet());
 
-		if (Files.exists(hash) && Integer.parseInt(Files.readString(hash)) == map.hashCode()) {
-			System.out.println("No changes detected, aborting.");
-			return;
-		} else {
-			Files.writeString(hash, Integer.toString(map.hashCode()));
-			System.out.printf("%d results stored.%n", map.size());
-		}
+        Map<String, String> map = wiktContent.stream()
+            .map(Page::wrap)
+            .map(Page::getPolishSection)
+            .flatMap(Optional::stream)
+            .flatMap(s -> s.getField(FieldTypes.ETYMOLOGY).stream())
+            .filter(f -> !f.isEmpty())
+            .collect(Collectors.toMap(
+                f -> f.getContainingSection().get().getContainingPage().get().getTitle(),
+                Field::getContent,
+                (a, b) -> a,
+                () -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
 
-		String out = map.entrySet().stream()
-			.map(e -> String.format("#[[%s]] (%s)\n%s",
-				e.getKey(),
-				wiktToLexemes.get(e.getKey()).stream()
-					.map(lexeme -> String.format("[[d:Lexeme:%s]]", lexeme))
-					.collect(Collectors.joining(", ")),
-				Pattern.compile("\n").splitAsStream(e.getValue())
-					.map(line -> "#" + (line.startsWith(":") ? "" : ":") + line)
-					.collect(Collectors.joining("\n"))))
-			.collect(Collectors.joining("\n"));
+        Path hash = LOCATION.resolve("hash.txt");
 
-		plwikt.setMarkBot(false);
-		plwikt.edit(TARGET_PAGE, String.format(TARGET_PAGE_INTRO, out), "aktualizacja");
-	}
+        if (Files.exists(hash) && Integer.parseInt(Files.readString(hash)) == map.hashCode()) {
+            System.out.println("No changes detected, aborting.");
+            return;
+        } else {
+            Files.writeString(hash, Integer.toString(map.hashCode()));
+            System.out.printf("%d results stored.%n", map.size());
+        }
+
+        String out = map.entrySet().stream()
+            .map(e -> String.format("#[[%s]] (%s)\n%s",
+                e.getKey(),
+                wiktToLexemes.get(e.getKey()).stream()
+                    .map(lexeme -> String.format("[[d:Lexeme:%s]]", lexeme))
+                    .collect(Collectors.joining(", ")),
+                Pattern.compile("\n").splitAsStream(e.getValue())
+                    .map(line -> "#" + (line.startsWith(":") ? "" : ":") + line)
+                    .collect(Collectors.joining("\n"))))
+            .collect(Collectors.joining("\n"));
+
+        plwikt.setMarkBot(false);
+        plwikt.edit(TARGET_PAGE, String.format(TARGET_PAGE_INTRO, out), "aktualizacja");
+    }
 }

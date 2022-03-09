@@ -1,175 +1,175 @@
 {
-	"articlesmultistreamdumprecombine": {
-		"name": "pages-articles-multistream",
-		"exts": ["xml", "bz2"],
-		"statusfallback": "articlesmultistreamdump"
-	},
-	"articlesmultistreamdump": {
-		"name": "pages-articles-multistream",
-		"exts": ["xml", "bz2"],
-		"multi": true,
-		"dumpfallback": "articlesmultistreamdumprecombine"
-	},
-	"metahistory7zdump": {
-		"name": "pages-meta-history",
-		"exts": ["xml", "7z"],
-		"multi": true
-	},
-	"metahistorybz2dump": {
-		"name": "pages-meta-history",
-		"exts": ["xml", "bz2"],
-		"multi": true
-	},
-	"xmlpagelogsdump": {
-		"name": "pages-logging",
-		"exts": ["xml", "gz"]
-	},
-	"metacurrentdumprecombine": {
-		"name": "pages-meta-current",
-		"exts": ["xml", "bz2"],
-		"statusfallback": "metacurrentdump"
-	},
-	"metacurrentdump": {
-		"name": "pages-meta-current",
-		"exts": ["xml", "bz2"],
-		"multi": true,
-		"dumpfallback": "metacurrentdumprecombine"
-	},
-	"articlesdumprecombine": {
-		"name": "pages-articles",
-		"exts": ["xml", "bz2"],
-		"statusfallback": "articlesdump"
-	},
-	"articlesdump": {
-		"name": "pages-articles",
-		"exts": ["xml", "bz2"],
-		"multi": true,
-		"dumpfallback": "articlesdumprecombine"
-	},
-	"xmlstubsdumprecombine": {
-		"name": "stub-articles",
-		"exts": ["xml", "gz"],
-		"statusfallback": "xmlstubsdump"
-	},
-	"xmlstubsdump": {
-		"name": "stub-articles",
-		"exts": ["xml", "gz"],
-		"multi": true,
-		"dumpfallback": "xmlstubsdumprecombine"
-	},
-	"xmlstubscurrentdumprecombine": {
-		"name": "stub-meta-current",
-		"exts": ["xml", "gz"],
-		"statusfallback": "xmlstubsdump"
-	},
-	"xmlstubscurrentdump": {
-		"name": "stub-meta-current",
-		"exts": ["xml", "gz"],
-		"multi": true,
-		"dumpfallback": "xmlstubscurrentdumprecombine",
-		"statusfallback": "xmlstubsdump"
-	},
-	"xmlstubshistorydumprecombine": {
-		"name": "stub-meta-history",
-		"exts": ["xml", "gz"],
-		"statusfallback": "xmlstubsdump"
-	},
-	"xmlstubshistorydump": {
-		"name": "stub-meta-history",
-		"exts": ["xml", "gz"],
-		"multi": true,
-		"dumpfallback": "xmlstubshistorydumprecombine",
-		"statusfallback": "xmlstubsdump"
-	},
-	"abstractsdumprecombine": {
-		"name": "abstract",
-		"exts": ["xml"],
-		"statusfallback": "abstractsdump"
-	},
-	"abstractsdump": {
-		"name": "abstract",
-		"exts": ["xml"],
-		"multi": true,
-		"dumpfallback": "abstractsdumprecombine"
-	},
-	"allpagetitlesdump": {
-		"name": "all-titles",
-		"exts": ["gz"]
-	},
-	"pagetitlesdump": {
-		"name": "all-titles-in-ns0",
-		"exts": ["gz"]
-	},
-	"changetagstable": {
-		"name": "change_tag",
-		"exts": ["sql", "gz"]
-	},
-	"geotagstable": {
-		"name": "geo_tags",
-		"exts": ["sql", "gz"]
-	},
-	"iwlinkstable": {
-		"name": "iwlinks",
-		"exts": ["sql", "gz"]
-	},
-	"redirecttable": {
-		"name": "redirect",
-		"exts": ["sql", "gz"]
-	},
-	"protectedtitlestable": {
-		"name": "protected_titles",
-		"exts": ["sql", "gz"]
-	},
-	"pagepropstable": {
-		"name": "page_props",
-		"exts": ["sql", "gz"]
-	},
-	"pagerestrictionstable": {
-		"name": "page_restrictions",
-		"exts": ["sql", "gz"]
-	},
-	"pagetable": {
-		"name": "page",
-		"exts": ["sql", "gz"]
-	},
-	"categorytable": {
-		"name": "category",
-		"exts": ["sql", "gz"]
-	},
-	"usergroupstable": {
-		"name": "user_groups",
-		"exts": ["sql", "gz"]
-	},
-	"langlinkstable": {
-		"name": "langlinks",
-		"exts": ["sql", "gz"]
-	},
-	"externallinkstable": {
-		"name": "externallinks",
-		"exts": ["sql", "gz"]
-	},
-	"templatelinkstable": {
-		"name": "templatelinks",
-		"exts": ["sql", "gz"]
-	},
-	"imagelinkstable": {
-		"name": "imagelinks",
-		"exts": ["sql", "gz"]
-	},
-	"categorylinkstable": {
-		"name": "categorylinks",
-		"exts": ["sql", "gz"]
-	},
-	"pagelinkstable": {
-		"name": "pagelinks",
-		"exts": ["sql", "gz"]
-	},
-	"imagetable": {
-		"name": "image",
-		"exts": ["sql", "gz"]
-	},
-	"sitestatstable": {
-		"name": "site_stats",
-		"exts": ["sql", "gz"]
-	}
+    "articlesmultistreamdumprecombine": {
+        "name": "pages-articles-multistream",
+        "exts": ["xml", "bz2"],
+        "statusfallback": "articlesmultistreamdump"
+    },
+    "articlesmultistreamdump": {
+        "name": "pages-articles-multistream",
+        "exts": ["xml", "bz2"],
+        "multi": true,
+        "dumpfallback": "articlesmultistreamdumprecombine"
+    },
+    "metahistory7zdump": {
+        "name": "pages-meta-history",
+        "exts": ["xml", "7z"],
+        "multi": true
+    },
+    "metahistorybz2dump": {
+        "name": "pages-meta-history",
+        "exts": ["xml", "bz2"],
+        "multi": true
+    },
+    "xmlpagelogsdump": {
+        "name": "pages-logging",
+        "exts": ["xml", "gz"]
+    },
+    "metacurrentdumprecombine": {
+        "name": "pages-meta-current",
+        "exts": ["xml", "bz2"],
+        "statusfallback": "metacurrentdump"
+    },
+    "metacurrentdump": {
+        "name": "pages-meta-current",
+        "exts": ["xml", "bz2"],
+        "multi": true,
+        "dumpfallback": "metacurrentdumprecombine"
+    },
+    "articlesdumprecombine": {
+        "name": "pages-articles",
+        "exts": ["xml", "bz2"],
+        "statusfallback": "articlesdump"
+    },
+    "articlesdump": {
+        "name": "pages-articles",
+        "exts": ["xml", "bz2"],
+        "multi": true,
+        "dumpfallback": "articlesdumprecombine"
+    },
+    "xmlstubsdumprecombine": {
+        "name": "stub-articles",
+        "exts": ["xml", "gz"],
+        "statusfallback": "xmlstubsdump"
+    },
+    "xmlstubsdump": {
+        "name": "stub-articles",
+        "exts": ["xml", "gz"],
+        "multi": true,
+        "dumpfallback": "xmlstubsdumprecombine"
+    },
+    "xmlstubscurrentdumprecombine": {
+        "name": "stub-meta-current",
+        "exts": ["xml", "gz"],
+        "statusfallback": "xmlstubsdump"
+    },
+    "xmlstubscurrentdump": {
+        "name": "stub-meta-current",
+        "exts": ["xml", "gz"],
+        "multi": true,
+        "dumpfallback": "xmlstubscurrentdumprecombine",
+        "statusfallback": "xmlstubsdump"
+    },
+    "xmlstubshistorydumprecombine": {
+        "name": "stub-meta-history",
+        "exts": ["xml", "gz"],
+        "statusfallback": "xmlstubsdump"
+    },
+    "xmlstubshistorydump": {
+        "name": "stub-meta-history",
+        "exts": ["xml", "gz"],
+        "multi": true,
+        "dumpfallback": "xmlstubshistorydumprecombine",
+        "statusfallback": "xmlstubsdump"
+    },
+    "abstractsdumprecombine": {
+        "name": "abstract",
+        "exts": ["xml"],
+        "statusfallback": "abstractsdump"
+    },
+    "abstractsdump": {
+        "name": "abstract",
+        "exts": ["xml"],
+        "multi": true,
+        "dumpfallback": "abstractsdumprecombine"
+    },
+    "allpagetitlesdump": {
+        "name": "all-titles",
+        "exts": ["gz"]
+    },
+    "pagetitlesdump": {
+        "name": "all-titles-in-ns0",
+        "exts": ["gz"]
+    },
+    "changetagstable": {
+        "name": "change_tag",
+        "exts": ["sql", "gz"]
+    },
+    "geotagstable": {
+        "name": "geo_tags",
+        "exts": ["sql", "gz"]
+    },
+    "iwlinkstable": {
+        "name": "iwlinks",
+        "exts": ["sql", "gz"]
+    },
+    "redirecttable": {
+        "name": "redirect",
+        "exts": ["sql", "gz"]
+    },
+    "protectedtitlestable": {
+        "name": "protected_titles",
+        "exts": ["sql", "gz"]
+    },
+    "pagepropstable": {
+        "name": "page_props",
+        "exts": ["sql", "gz"]
+    },
+    "pagerestrictionstable": {
+        "name": "page_restrictions",
+        "exts": ["sql", "gz"]
+    },
+    "pagetable": {
+        "name": "page",
+        "exts": ["sql", "gz"]
+    },
+    "categorytable": {
+        "name": "category",
+        "exts": ["sql", "gz"]
+    },
+    "usergroupstable": {
+        "name": "user_groups",
+        "exts": ["sql", "gz"]
+    },
+    "langlinkstable": {
+        "name": "langlinks",
+        "exts": ["sql", "gz"]
+    },
+    "externallinkstable": {
+        "name": "externallinks",
+        "exts": ["sql", "gz"]
+    },
+    "templatelinkstable": {
+        "name": "templatelinks",
+        "exts": ["sql", "gz"]
+    },
+    "imagelinkstable": {
+        "name": "imagelinks",
+        "exts": ["sql", "gz"]
+    },
+    "categorylinkstable": {
+        "name": "categorylinks",
+        "exts": ["sql", "gz"]
+    },
+    "pagelinkstable": {
+        "name": "pagelinks",
+        "exts": ["sql", "gz"]
+    },
+    "imagetable": {
+        "name": "image",
+        "exts": ["sql", "gz"]
+    },
+    "sitestatstable": {
+        "name": "site_stats",
+        "exts": ["sql", "gz"]
+    }
 }

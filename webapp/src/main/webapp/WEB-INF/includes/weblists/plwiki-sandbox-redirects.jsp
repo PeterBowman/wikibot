@@ -15,39 +15,39 @@
 <c:set var="offset" value="${not empty param.offset ? utils:max(param.offset, 0) : 0}" />
 
 <t:template title="${title}" firstHeading="${title}">
-	<jsp:attribute name="contentSub">
-		<a href="${pageContext.request.contextPath}/weblists">Powrót do indeksu</a>
-	</jsp:attribute>
-	<jsp:body>
-		<p>
-			Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:”.
-		</p>
-		<c:choose>
-			<c:when test="${not empty results}">
-				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
-				<ul>
-					<c:forEach var="item" items="${results}">
-						<li>
-							<fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
-							&nbsp;
-							<t:linker
-								hrefPattern="https://pl.wikipedia.org/$1"
-								target="${item['target']}"
-								testMissingPage="${not item['targetExists']}"
-								display="${item['targetDisplay']}" />
-							←
-							<t:linker
-								hrefPattern="https://pl.wikipedia.org/$1"
-								target="${item['source']}"
-								testMissingPage="${not item['sourceExists']}" />
-						</li>
-					</c:forEach>
-				</ul>
-				<t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
-			</c:when>
-			<c:otherwise>
-				<p>Brak wyników.</p>
-			</c:otherwise>
-		</c:choose>
-	</jsp:body>
+    <jsp:attribute name="contentSub">
+        <a href="${pageContext.request.contextPath}/weblists">Powrót do indeksu</a>
+    </jsp:attribute>
+    <jsp:body>
+        <p>
+            Strony przeniesione z przestrzeni głównej do przestrzeni „Wikipedysta:”.
+        </p>
+        <c:choose>
+            <c:when test="${not empty results}">
+                <t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
+                <ul>
+                    <c:forEach var="item" items="${results}">
+                        <li>
+                            <fmt:formatDate value="${item['timestamp']}" pattern="HH:mm, d MMM yyyy" />
+                            &nbsp;
+                            <t:linker
+                                hrefPattern="https://pl.wikipedia.org/$1"
+                                target="${item['target']}"
+                                testMissingPage="${not item['targetExists']}"
+                                display="${item['targetDisplay']}" />
+                            ←
+                            <t:linker
+                                hrefPattern="https://pl.wikipedia.org/$1"
+                                target="${item['source']}"
+                                testMissingPage="${not item['sourceExists']}" />
+                        </li>
+                    </c:forEach>
+                </ul>
+                <t:paginator limit="${limit}" offset="${offset}" hasNext="${hasNext}" />
+            </c:when>
+            <c:otherwise>
+                <p>Brak wyników.</p>
+            </c:otherwise>
+        </c:choose>
+    </jsp:body>
 </t:template>

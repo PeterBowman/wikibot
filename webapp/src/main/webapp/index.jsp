@@ -4,5 +4,5 @@
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
 <t:template firstHeading="Strona główna">
-	<p>W budowie.</p>
+    <p>W budowie.</p>
 </t:template>

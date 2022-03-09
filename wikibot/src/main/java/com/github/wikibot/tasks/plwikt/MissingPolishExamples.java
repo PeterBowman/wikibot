@@ -29,168 +29,168 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public final class MissingPolishExamples {
-	private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
-	private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
-	private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
-	
-	public static void main(String[] args) throws Exception {
-		var reader = getDumpReader(args);
-		var timestamp = extractTimestamp(reader.getPathToDump());
-		
-		final Set<String> titles;
-		
-		try (var stream = reader.getStAXReaderStream()) {
-			titles = stream
-				.filter(XMLRevision::isMainNamespace)
-				.filter(XMLRevision::nonRedirect)
-				.map(Page::wrap)
-				.flatMap(p -> p.getPolishSection().stream())
-				.flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
-				.filter(Field::isEmpty)
-				.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
-				.collect(Collectors.toSet());
-		}
-		
-		System.out.printf("%d titles retrieved\n", titles.size());
-		var titlesToBacklinks = new ConcurrentSkipListMap<String, Set<Backlink>>();
-		
-		try (var stream = reader.getStAXReaderStream()) {
-			stream
-				.filter(XMLRevision::isMainNamespace)
-				.filter(XMLRevision::nonRedirect)
-				.map(Page::wrap)
-				.flatMap(p -> p.getAllSections().stream())
-				.flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
-				.filter(f -> !f.isEmpty())
-				.forEach(f -> Pattern.compile("\n").splitAsStream(f.getContent())
-					.filter(line -> f.getContainingSection().get().isPolishSection()
-						|| (line.contains("→") && !P_REF.matcher(line).find()))
-					.map(line -> line.substring(line.indexOf('→') + 1))
-					.flatMap(line -> P_LINKER.matcher(line).results())
-					.map(m -> m.group(1))
-					.filter(titles::contains)
-					.forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
-						.add(Backlink.makeBacklink(
-							f.getContainingSection().get().getContainingPage().get().getTitle(),
-							f.getContainingSection().get()
-						))
-					)
-				);
-		}
-		
-		System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
-		
-		// XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
-		var list = titlesToBacklinks.entrySet().stream()
-			.map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
-			.collect(Collectors.toList());
-		
-		storeData(list, timestamp);
-	}
-	
-	private static XMLDumpReader getDumpReader(String[] args) throws IOException {
-		if (args.length == 0) {
-			return new XMLDumpReader("plwiktionary");
-		} else {
-			return new XMLDumpReader(Paths.get(args[0].trim()));
-		}
-	}
-	
-	private static LocalDate extractTimestamp(Path path) throws ParseException {
-		var fileName = path.getFileName().toString();
-		var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");		
-		var m = patt.matcher(fileName);
-		
-		if (!m.matches()) {
-			throw new RuntimeException();
-		}
-		
-		var canonicalTimestamp = m.group(1);
-		
-		try {
-			var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
-			var date = originalDateFormat.parse(canonicalTimestamp);
-			return LocalDate.ofInstant(date.toInstant(), ZoneOffset.UTC);
-		} catch (ParseException e) {
-			throw e;
-		}
-	}
-	
-	private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
-		var fEntries = LOCATION.resolve("entries.xml");
-		var fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
-		var fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
-		var fCtrl = LOCATION.resolve("UPDATED");
+    private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
+    private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
+    private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 
-		var xstream = new XStream(new StaxDriver());
-		xstream.processAnnotations(Entry.class);
+    public static void main(String[] args) throws Exception {
+        var reader = getDumpReader(args);
+        var timestamp = extractTimestamp(reader.getPathToDump());
 
-		try (var bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
-			xstream.toXML(list, bos);
-		}
+        final Set<String> titles;
 
-		Files.write(fDumpTimestamp, List.of(xstream.toXML(timestamp)));
-		Files.write(fBotTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
-		
-		Files.deleteIfExists(fCtrl);
-	}
-	
-	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples
-	@XStreamAlias("entry")
-	static class Entry {
-		@XStreamAlias("t")
-		String title;
-		
-		@XStreamAlias("blt")
-		List<String> backlinkTitles = new ArrayList<>();
-		
-		@XStreamAlias("bls")
-		List<String> backlinkSections = new ArrayList<>();
-		
-		public static Entry makeEntry(String title, List<Backlink> backlinks) {
-			var entry = new Entry();
-			entry.title = title;
-			
-			backlinks.forEach(bl -> {
-				entry.backlinkTitles.add(bl.title);
-				entry.backlinkSections.add(bl.langLong);
-			});
-			
-			return entry;
-		} 
-	}
-	
-	// keep in sync with com.github.wikibot.webapp.MissingPolishExamples
-	@XStreamAlias("bl")
-	static class Backlink implements Comparable<Backlink> {
-		@XStreamAlias("t")
-		String title;
-		
-		@XStreamAlias("ls")
-		String langShort;
-		
-		@XStreamAlias("ll")
-		String langLong;
-		
-		public static Backlink makeBacklink(String title, Section section) {
-			var bl = new Backlink();
-			bl.title = title;
-			bl.langShort = section.getLangShort();
-			bl.langLong = section.getLang();
-			return bl;
-		} 
-		
-		@Override
-		public int compareTo(Backlink o) {
-			if (!title.equals(o.title)) {
-				return title.compareTo(o.title);
-			}
-			
-			if (!langShort.equals(o.langShort)) {
-				return langShort.compareTo(o.langShort);
-			}
-			
-			return 0;
-		}
-	}
+        try (var stream = reader.getStAXReaderStream()) {
+            titles = stream
+                .filter(XMLRevision::isMainNamespace)
+                .filter(XMLRevision::nonRedirect)
+                .map(Page::wrap)
+                .flatMap(p -> p.getPolishSection().stream())
+                .flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
+                .filter(Field::isEmpty)
+                .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
+                .collect(Collectors.toSet());
+        }
+
+        System.out.printf("%d titles retrieved\n", titles.size());
+        var titlesToBacklinks = new ConcurrentSkipListMap<String, Set<Backlink>>();
+
+        try (var stream = reader.getStAXReaderStream()) {
+            stream
+                .filter(XMLRevision::isMainNamespace)
+                .filter(XMLRevision::nonRedirect)
+                .map(Page::wrap)
+                .flatMap(p -> p.getAllSections().stream())
+                .flatMap(s -> s.getField(FieldTypes.EXAMPLES).stream())
+                .filter(f -> !f.isEmpty())
+                .forEach(f -> Pattern.compile("\n").splitAsStream(f.getContent())
+                    .filter(line -> f.getContainingSection().get().isPolishSection()
+                        || (line.contains("→") && !P_REF.matcher(line).find()))
+                    .map(line -> line.substring(line.indexOf('→') + 1))
+                    .flatMap(line -> P_LINKER.matcher(line).results())
+                    .map(m -> m.group(1))
+                    .filter(titles::contains)
+                    .forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
+                        .add(Backlink.makeBacklink(
+                            f.getContainingSection().get().getContainingPage().get().getTitle(),
+                            f.getContainingSection().get()
+                        ))
+                    )
+                );
+        }
+
+        System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
+
+        // XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
+        var list = titlesToBacklinks.entrySet().stream()
+            .map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
+            .collect(Collectors.toList());
+
+        storeData(list, timestamp);
+    }
+
+    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
+        if (args.length == 0) {
+            return new XMLDumpReader("plwiktionary");
+        } else {
+            return new XMLDumpReader(Paths.get(args[0].trim()));
+        }
+    }
+
+    private static LocalDate extractTimestamp(Path path) throws ParseException {
+        var fileName = path.getFileName().toString();
+        var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
+        var m = patt.matcher(fileName);
+
+        if (!m.matches()) {
+            throw new RuntimeException();
+        }
+
+        var canonicalTimestamp = m.group(1);
+
+        try {
+            var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
+            var date = originalDateFormat.parse(canonicalTimestamp);
+            return LocalDate.ofInstant(date.toInstant(), ZoneOffset.UTC);
+        } catch (ParseException e) {
+            throw e;
+        }
+    }
+
+    private static void storeData(List<Entry> list, LocalDate timestamp) throws IOException {
+        var fEntries = LOCATION.resolve("entries.xml");
+        var fDumpTimestamp = LOCATION.resolve("dump-timestamp.xml");
+        var fBotTimestamp = LOCATION.resolve("bot-timestamp.xml");
+        var fCtrl = LOCATION.resolve("UPDATED");
+
+        var xstream = new XStream(new StaxDriver());
+        xstream.processAnnotations(Entry.class);
+
+        try (var bos = new BufferedOutputStream(Files.newOutputStream(fEntries))) {
+            xstream.toXML(list, bos);
+        }
+
+        Files.write(fDumpTimestamp, List.of(xstream.toXML(timestamp)));
+        Files.write(fBotTimestamp, List.of(xstream.toXML(OffsetDateTime.now())));
+
+        Files.deleteIfExists(fCtrl);
+    }
+
+    // keep in sync with com.github.wikibot.webapp.MissingPolishExamples
+    @XStreamAlias("entry")
+    static class Entry {
+        @XStreamAlias("t")
+        String title;
+
+        @XStreamAlias("blt")
+        List<String> backlinkTitles = new ArrayList<>();
+
+        @XStreamAlias("bls")
+        List<String> backlinkSections = new ArrayList<>();
+
+        public static Entry makeEntry(String title, List<Backlink> backlinks) {
+            var entry = new Entry();
+            entry.title = title;
+
+            backlinks.forEach(bl -> {
+                entry.backlinkTitles.add(bl.title);
+                entry.backlinkSections.add(bl.langLong);
+            });
+
+            return entry;
+        }
+    }
+
+    // keep in sync with com.github.wikibot.webapp.MissingPolishExamples
+    @XStreamAlias("bl")
+    static class Backlink implements Comparable<Backlink> {
+        @XStreamAlias("t")
+        String title;
+
+        @XStreamAlias("ls")
+        String langShort;
+
+        @XStreamAlias("ll")
+        String langLong;
+
+        public static Backlink makeBacklink(String title, Section section) {
+            var bl = new Backlink();
+            bl.title = title;
+            bl.langShort = section.getLangShort();
+            bl.langLong = section.getLang();
+            return bl;
+        }
+
+        @Override
+        public int compareTo(Backlink o) {
+            if (!title.equals(o.title)) {
+                return title.compareTo(o.title);
+            }
+
+            if (!langShort.equals(o.langShort)) {
+                return langShort.compareTo(o.langShort);
+            }
+
+            return 0;
+        }
+    }
 }
