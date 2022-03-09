@@ -27,11 +27,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import javax.security.auth.login.LoginException;
+
+import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLRevision;
+import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.scripts.wd.FetchEpwnBiograms;
+import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.XStreamException;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -45,16 +56,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import com.github.wikibot.dumps.XMLDumpReader;
-import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.scripts.wd.FetchEpwnBiograms;
-import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.XStreamException;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class MissingWomenBiograms {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWomenBiograms/");
@@ -98,7 +99,7 @@ public final class MissingWomenBiograms {
         QUERY_CONFIG.forEach(System.out::println);
 
         var line = readOptions(args);
-        var entries = new LinkedHashMap<QueryItem, List<Entry>>();
+        var entries = new TreeMap<QueryItem, List<Entry>>((i1, i2) -> Integer.compare(QUERY_CONFIG.indexOf(i1), QUERY_CONFIG.indexOf(i2)));
         var dumpPath = Paths.get("");
 
         if (line.hasOption("dump")) {
