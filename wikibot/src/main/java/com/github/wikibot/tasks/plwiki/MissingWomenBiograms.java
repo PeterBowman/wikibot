@@ -330,10 +330,8 @@ public final class MissingWomenBiograms {
 			.map(obj -> obj.keySet().stream()
 				.filter(project -> project.endsWith("wiki") && !project.equals("commonswiki") && !project.equals("specieswiki"))
 				.sorted()
-				.map(project -> project.replace('_', '-'))
-				.map(project -> project.replace("be-x-old", "be-taraski"))
 				.map(project -> String.format("%s:%s",
-					project.substring(0, project.length() - 4),
+					project.replace('_', '-').replace("be-x-old", "be-tarask").replaceFirst("wiki$", ""),
 					obj.getJSONObject(project).getString("title")
 				))
 				.collect(Collectors.toCollection(ArrayList::new))
