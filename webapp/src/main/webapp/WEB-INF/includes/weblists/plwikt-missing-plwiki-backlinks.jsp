@@ -110,10 +110,10 @@
                     </p>
                     <p>
                         <span id="plwikt-missing-plwiki-backlinks-templates">
-	                        <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
-	                            <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
-	                            <c:out value="${status.last ? '.' : ', '}" />
-	                        </c:forTokens>
+                            <c:forTokens var="template" items="${fn:join(templates, ',')}" delims="," varStatus="status">
+                                <t:linker hrefPattern="https://pl.wikipedia.org/$1" target="Szablon:${template}" display="${template}" />
+                                <c:out value="${status.last ? '.' : ', '}" />
+                            </c:forTokens>
                         </span>
                     </p>
                     <p id="plwikt-missing-plwiki-backlinks-filter">
@@ -121,18 +121,18 @@
                         <a href='<t:replace-param onlyredirs="${param.onlyredirs eq 1 ? 0 : 1}" offset="0" />' class="redirect"
                             style="text-decoration: underline;">przekierowania</a>
                         <span class="plwikt-missing-plwiki-backlinks-filter-switch">
-	                        <c:choose>
-	                            <c:when test="${param.onlyredirs eq 1}"><strong>(włączone)</strong></c:when>
-	                            <c:otherwise>(wyłączone)</c:otherwise>
-	                        </c:choose>
+                            <c:choose>
+                                <c:when test="${param.onlyredirs eq 1}"><strong>(włączone)</strong></c:when>
+                                <c:otherwise>(wyłączone)</c:otherwise>
+                            </c:choose>
                         </span>,
                         <a href='<t:replace-param onlymissing="${param.onlymissing eq 1 ? 0 : 1}" offset="0" />' class="new"
                             style="text-decoration: underline;">brakujące</a>
                         <span class="plwikt-missing-plwiki-backlinks-filter-switch">
-	                        <c:choose>
-	                            <c:when test="${param.onlymissing eq 1}"><strong>(włączone)</strong></c:when>
-	                            <c:otherwise>(wyłączone)</c:otherwise>
-	                        </c:choose>
+                            <c:choose>
+                                <c:when test="${param.onlymissing eq 1}"><strong>(włączone)</strong></c:when>
+                                <c:otherwise>(wyłączone)</c:otherwise>
+                            </c:choose>
                         </span>,
                         <a href='<t:replace-param onlydisambigs="${param.onlydisambigs eq 1 ? 0 : 1}" offset="0" />' class="disambig"
                             style="text-decoration: underline;">ujednoznacznienia</a>
@@ -161,7 +161,7 @@
                                     display="w:${item.plwikiTitle}" testMissingPage="${item.plwikiMissing}"
                                     testDisambiguation="${item.plwikiDisambig}" />
                                 <c:if test="${not empty item.plwiktBacklinks}">
-                                    • <i>linkuje do:</i> 
+                                    • <i>linkuje do:</i>
                                     <c:forEach var="backlink" items="${item.plwiktBacklinks}">
                                         <t:linker hrefPattern="https://pl.wiktionary.org/$1#pl" target="${backlink.key}" sectionName="polski"
                                             testMissingPage="${backlink.value eq false}" />

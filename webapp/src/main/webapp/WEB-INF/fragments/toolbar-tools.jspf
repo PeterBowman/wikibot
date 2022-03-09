@@ -5,10 +5,10 @@
 <li><a href="//tools-info.toolforge.org/" target="_blank">Tools info</a></li>
 
 <li>
-	<a href="//dumps.wikimedia.org/backup-index.html" target="_blank">DB backup dumps</a>
-	<ul>
-		<li><a href="//dumps.wikimedia.org/plwiktionary/" target="_blank">plwiktionary</a></li>
-		<li><a href="//dumps.wikimedia.org/eswiktionary/" target="_blank">eswiktionary</a></li>
-		<li><a href="//dumps.wikimedia.org/plwiki/" target="_blank">plwiki</a></li>
-	</ul>
+    <a href="//dumps.wikimedia.org/backup-index.html" target="_blank">DB backup dumps</a>
+    <ul>
+        <li><a href="//dumps.wikimedia.org/plwiktionary/" target="_blank">plwiktionary</a></li>
+        <li><a href="//dumps.wikimedia.org/eswiktionary/" target="_blank">eswiktionary</a></li>
+        <li><a href="//dumps.wikimedia.org/plwiki/" target="_blank">plwiki</a></li>
+    </ul>
 </li>

@@ -262,7 +262,7 @@
      * @param prefer (string, e.g. 'n', 'sw', 'w') - the direction to prefer
      *        if there are no viewable region edges effecting the tooltip's
      *        gravity. It will try to vary from this minimally, for example,
-     *        if 'sw' is preferred and an element is near the right viewable 
+     *        if 'sw' is preferred and an element is near the right viewable
      *        region edge, but not the top edge, it will set the gravity for
      *        that element's tooltip to be 'se', preserving the southern
      *        component.

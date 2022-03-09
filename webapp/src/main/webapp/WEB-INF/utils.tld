@@ -1,59 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <taglib xmlns="http://java.sun.com/xml/ns/j2ee"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
-	version="2.0">
-	
-	<tlib-version>1.0</tlib-version>
-	<short-name>Utils</short-name>
-	<uri>tld/utils</uri>
-	
-	<function>
-		<name>max</name>
-		<function-class>java.lang.Math</function-class>
-		<function-signature>int max(int, int)</function-signature>
-	</function>
-	
-	<function>
-		<name>min</name>
-		<function-class>java.lang.Math</function-class>
-		<function-signature>int min(int, int)</function-signature>
-	</function>
-	
-	<function>
-		<name>makePluralPL</name>
-		<function-class>com.github.wikibot.webapp.Utils</function-class>
-		<function-signature>java.lang.String makePluralPL(int, java.lang.String, java.lang.String, java.lang.String)</function-signature>
-	</function>
-	
-	<function>
-		<name>bitCompare</name>
-		<function-class>com.github.wikibot.webapp.Utils</function-class>
-		<function-signature>boolean bitCompare(int, int)</function-signature>
-	</function>
-	
-	<function>
-		<name>lastPathPart</name>
-		<function-class>com.github.wikibot.webapp.Utils</function-class>
-		<function-signature>java.lang.String lastPathPart(java.lang.String)</function-signature>
-	</function>
-	
-	<function>
-		<name>getDiff</name>
-		<function-class>com.github.wikibot.webapp.Utils</function-class>
-		<function-signature>java.lang.String getDiff(java.lang.String, java.lang.String)</function-signature>
-	</function>
-	
-	<function>
-		<name>encodeParam</name>
-		<function-class>com.github.wikibot.webapp.Utils</function-class>
-		<function-signature>java.lang.String encodeParam(java.lang.String)</function-signature>
-	</function>
-	
-	<function>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+    version="2.0">
+
+    <tlib-version>1.0</tlib-version>
+    <short-name>Utils</short-name>
+    <uri>tld/utils</uri>
+
+    <function>
+        <name>max</name>
+        <function-class>java.lang.Math</function-class>
+        <function-signature>int max(int, int)</function-signature>
+    </function>
+
+    <function>
+        <name>min</name>
+        <function-class>java.lang.Math</function-class>
+        <function-signature>int min(int, int)</function-signature>
+    </function>
+
+    <function>
+        <name>makePluralPL</name>
+        <function-class>com.github.wikibot.webapp.Utils</function-class>
+        <function-signature>java.lang.String makePluralPL(int, java.lang.String, java.lang.String, java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <name>bitCompare</name>
+        <function-class>com.github.wikibot.webapp.Utils</function-class>
+        <function-signature>boolean bitCompare(int, int)</function-signature>
+    </function>
+
+    <function>
+        <name>lastPathPart</name>
+        <function-class>com.github.wikibot.webapp.Utils</function-class>
+        <function-signature>java.lang.String lastPathPart(java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <name>getDiff</name>
+        <function-class>com.github.wikibot.webapp.Utils</function-class>
+        <function-signature>java.lang.String getDiff(java.lang.String, java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <name>encodeParam</name>
+        <function-class>com.github.wikibot.webapp.Utils</function-class>
+        <function-signature>java.lang.String encodeParam(java.lang.String)</function-signature>
+    </function>
+
+    <function>
         <name>join</name>
         <function-class>com.github.wikibot.webapp.Utils</function-class>
         <function-signature>java.lang.String join(java.lang.Iterable, java.lang.CharSequence)</function-signature>
     </function>
-	
+
 </taglib>

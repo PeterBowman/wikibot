@@ -1,3 +1,3 @@
 $( function () {
-	$( '.wikilink' ).definitionPopups();
+    $( '.wikilink' ).definitionPopups();
 } );

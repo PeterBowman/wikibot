@@ -33,11 +33,11 @@
             ani bezpośrednio, ani za pośrednictwem kategorii Wikinews, w której są zawarte.
         </p>
         <div id="plwikinews-missing-plwiki-backlinks-content">
-        	<c:choose>
+            <c:choose>
                 <c:when test="${not empty results}">
                     <p id="plwikinews-missing-plwiki-backlinks-summary">
-	                    Lista zawiera <strong id="plwikinews-missing-plwiki-backlinks-total">${total}</strong>
-	                    ${utils:makePluralPL(total, 'wynik', 'wyniki', 'wyników')}.
+                        Lista zawiera <strong id="plwikinews-missing-plwiki-backlinks-total">${total}</strong>
+                        ${utils:makePluralPL(total, 'wynik', 'wyniki', 'wyników')}.
                         Poniżej wyświetlono co najwyżej <strong id="plwikinews-missing-plwiki-backlinks-limit">${limit}</strong>
                         ${utils:makePluralPL(limit, 'wynik', 'wyniki', 'wyników')}
                         w zakresie od <strong id="plwikinews-missing-plwiki-backlinks-start">${offset + 1}</strong>

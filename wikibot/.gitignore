@@ -3,5 +3,5 @@
 /target/
 /dist/
 /.settings/
-.classpath
-.project
+/.classpath
+/.project
