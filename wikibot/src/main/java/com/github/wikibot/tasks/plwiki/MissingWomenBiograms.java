@@ -340,6 +340,8 @@ public final class MissingWomenBiograms {
             .filter(list -> !list.isEmpty())
             .orElse(null);
 
+        var entry = new Entry(name, description, birthDate, deathDate, picture, langlinks, item);
+
         for (var queryItem : QUERY_CONFIG) {
             claims
                 .map(obj -> obj.optJSONArray(queryItem.property()))
@@ -353,10 +355,7 @@ public final class MissingWomenBiograms {
                         .isPresent()
                     )
                 )
-                .ifPresent(snaks -> {
-                    var entry = new Entry(name, description, birthDate, deathDate, picture, langlinks, item);
-                    entries.computeIfAbsent(queryItem, k -> new ArrayList<>()).add(entry);
-                });
+                .ifPresent(snaks -> entries.computeIfAbsent(queryItem, k -> new ArrayList<>()).add(entry));
         }
     }
 
