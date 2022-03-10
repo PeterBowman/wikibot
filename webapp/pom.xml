@@ -18,22 +18,22 @@
         </configuration>
       </plugin>
       <plugin>
-      	<groupId>org.apache.maven.plugins</groupId>
-      	<artifactId>maven-war-plugin</artifactId>
-      	<version>3.2.3</version>
-      	<executions>
-      	  <execution>
-      	    <phase>compile</phase>
-      	    <goals>
-      	      <goal>war</goal>
-      	    </goals>
-      	  </execution>
-      	</executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.2.3</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>war</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
-      	<groupId>org.apache.maven.plugins</groupId>
-      	<artifactId>maven-clean-plugin</artifactId>
-      	<version>3.1.0</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>auto-clean</id>
@@ -49,7 +49,7 @@
     <pluginManagement>
       <plugins>
         <!--
-          This plugin's configuration is used to store Eclipse 
+          This plugin's configuration is used to store Eclipse
           m2e settings only. It has no influence on the Maven build itself.
           See also:
           * http://stackoverflow.com/questions/6352208
@@ -84,62 +84,62 @@
   </build>
   <dependencies>
     <dependency>
-    	<groupId>javax.servlet</groupId>
-    	<artifactId>javax.servlet-api</artifactId>
-    	<version>4.0.1</version>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
     </dependency>
     <dependency>
-    	<groupId>org.json</groupId>
-    	<artifactId>json</artifactId>
-    	<version>20211205</version>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20211205</version>
     </dependency>
     <dependency>
-    	<groupId>javax.servlet</groupId>
-    	<artifactId>jstl</artifactId>
-    	<version>1.2</version>
+      <groupId>javax.servlet</groupId>
+      <artifactId>jstl</artifactId>
+      <version>1.2</version>
     </dependency>
     <dependency>
-    	<groupId>org.jsoup</groupId>
-    	<artifactId>jsoup</artifactId>
-    	<version>1.14.3</version>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>1.14.3</version>
     </dependency>
     <dependency>
-    	<groupId>org.bitbucket.cowwoc</groupId>
-    	<artifactId>diff-match-patch</artifactId>
-    	<version>1.2</version>
+      <groupId>org.bitbucket.cowwoc</groupId>
+      <artifactId>diff-match-patch</artifactId>
+      <version>1.2</version>
     </dependency>
     <dependency>
-    	<groupId>mysql</groupId>
-    	<artifactId>mysql-connector-java</artifactId>
-    	<version>8.0.27</version>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.27</version>
     </dependency>
     <dependency>
-    	<groupId>org.apache.commons</groupId>
-    	<artifactId>commons-lang3</artifactId>
-    	<version>3.12.0</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
-    	<groupId>org.wikipedia</groupId>
-    	<artifactId>wiki-java</artifactId>
-    	<version>0.37-SNAPSHOT</version>
+      <groupId>org.wikipedia</groupId>
+      <artifactId>wiki-java</artifactId>
+      <version>0.38-SNAPSHOT</version>
     </dependency>
     <dependency>
-    	<groupId>org.nibor.autolink</groupId>
-    	<artifactId>autolink</artifactId>
-    	<version>0.10.0</version>
+      <groupId>org.nibor.autolink</groupId>
+      <artifactId>autolink</artifactId>
+      <version>0.10.0</version>
     </dependency>
     <dependency>
-    	<groupId>com.thoughtworks.xstream</groupId>
-    	<artifactId>xstream</artifactId>
-    	<version>1.4.18</version>
+      <groupId>com.thoughtworks.xstream</groupId>
+      <artifactId>xstream</artifactId>
+      <version>1.4.18</version>
     </dependency>
     <dependency>
-    	<groupId>com.github.wikibot</groupId>
-    	<artifactId>wikibot</artifactId>
-    	<version>0.0.1-SNAPSHOT</version>
+      <groupId>com.github.wikibot</groupId>
+      <artifactId>wikibot</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
   <properties>
-  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>
