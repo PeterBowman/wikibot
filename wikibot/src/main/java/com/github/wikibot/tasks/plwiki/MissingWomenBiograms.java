@@ -185,7 +185,7 @@ public final class MissingWomenBiograms {
             for (var subtype : ((JSONObject)supertype).getJSONArray("items")) {
                 var subname = ((JSONObject)subtype).getString("name");
                 var entity = ((JSONObject)subtype).getString("entity");
-                var filename = StringUtils.replaceChars(subname, "ĄĆĘŁŃÓŚŹŻąćęłńóśźż ", "ACELNOSZZacelnoszz-");
+                var filename = StringUtils.replaceChars(subname, "ĄĆĘŁŃÓŚŹŻąćęłńóśźż ", "ACELNOSZZacelnoszz-").toLowerCase();
                 items.add(new QueryItem(supername, subname, property, entity, filename));
             }
         }
