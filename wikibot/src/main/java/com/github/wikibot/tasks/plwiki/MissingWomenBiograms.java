@@ -65,7 +65,7 @@ public final class MissingWomenBiograms {
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
     private static final XStream xstream = new XStream();
-    private static final int MAX_PRINTED_RESULTS = 1000;
+    private static final int MAX_PRINTED_RESULTS = 500;
     private static final String STATIC_URL_DUMP_FMT = "//tools-static.wmflabs.org/pbbot/plwiki/missing-women-biograms/%s.xml.bz2";
 
     private static final List<QueryItem> QUERY_CONFIG;
@@ -146,14 +146,9 @@ public final class MissingWomenBiograms {
 
         if (line.hasOption("edit")) {
             Login.login(wb);
+            writeMainSubpage(entries, dumpPath);
 
             var hashcodes = retrieveHashcodes();
-            var initialHash = hashcodes.hashCode();
-
-            if (hashcodes.getOrDefault("config", 0) != QUERY_CONFIG.hashCode()) {
-                writeMainSubpage(entries);
-                hashcodes.put("config", QUERY_CONFIG.hashCode());
-            }
 
             for (var entry : entries.entrySet()) {
                 var portion = entry.getValue().stream()
@@ -165,12 +160,6 @@ public final class MissingWomenBiograms {
                     writeEntrySubpage(entry.getKey(), portion, dumpPath, entry.getValue().size());
                     hashcodes.put(entry.getKey().subtype(), portion.hashCode());
                 }
-            }
-
-            if (hashcodes.hashCode() != initialHash) {
-                Files.writeString(HASHCODES, xstream.toXML(hashcodes));
-            } else {
-                System.out.println("No changes detected");
             }
         }
     }
@@ -329,7 +318,7 @@ public final class MissingWomenBiograms {
 
         var langlinks = Optional.ofNullable(json.optJSONObject("sitelinks"))
             .map(obj -> obj.keySet().stream()
-                .filter(project -> project.endsWith("wiki") && !project.equals("commonswiki") && !project.equals("specieswiki"))
+                .filter(project -> project.endsWith("wiki") && !StringUtils.equalsAny(project, "commonswiki", "specieswiki", "sourceswiki"))
                 .sorted()
                 .map(project -> String.format("%s:%s",
                     project.replace('_', '-').replace("be-x-old", "be-tarask").replaceFirst("wiki$", ""),
@@ -376,13 +365,17 @@ public final class MissingWomenBiograms {
         }
     }
 
-    private static void writeMainSubpage(Map<QueryItem, List<Entry>> entries) throws IOException, LoginException {
-        var text = wb.getPageText(List.of(BOT_SUBPAGE)).get(0);
-        text = text.substring(0, text.indexOf("\n----") + 5) + "\n";
+    private static void writeMainSubpage(Map<QueryItem, List<Entry>> entries, Path dumpPath) throws IOException, LoginException {
+        var outFmt = """
+            {{Układ wielokolumnowy|szerokość=250px|
+            %s
+            |}
+            <small>Ostatnia aktualizacja: ~~~~~. Dane na podstawie zrzutu %s.</small>
+            """;
 
         record Stats(String subname, int size) {}
 
-        text += entries.entrySet().stream().collect(Collectors.groupingBy(
+        var text = entries.entrySet().stream().collect(Collectors.groupingBy(
                 e -> e.getKey().supertype(),
                 LinkedHashMap::new,
                 Collectors.mapping(
@@ -391,12 +384,12 @@ public final class MissingWomenBiograms {
                 )
             )).entrySet().stream()
                 .map(e -> String.format("; %s%n%s", e.getKey(), e.getValue().stream()
-                    .map(stats -> String.format("* [[%1$s/%2$s|%2$s]] ({{formatnum:%3$d}})", BOT_SUBPAGE, stats.subname(), stats.size()))
+                    .map(stats -> String.format("* [[../%s]] ({{formatnum:%d}})", stats.subname(), stats.size()))
                     .collect(Collectors.joining("\n"))
                 ))
                 .collect(Collectors.joining("\n"));
 
-        wb.edit(BOT_SUBPAGE, text, "aktualizacja");
+        wb.edit(BOT_SUBPAGE + "/listy", String.format(outFmt, text, dumpPath.getFileName()), "aktualizacja: " + dumpPath.getFileName());
     }
 
     private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, Path dumpPath, int originalSize) throws LoginException, IOException {
@@ -423,7 +416,7 @@ public final class MissingWomenBiograms {
                 data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n"))
             );
 
-        wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja");
+        wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja: " + dumpPath.getFileName());
     }
 
     private record QueryItem(String supertype, String subtype, String property, String entity, String filename) {}
