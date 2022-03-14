@@ -369,7 +369,7 @@ public final class MissingWomenBiograms {
         var outFmt = """
             {{Układ wielokolumnowy|szerokość=250px|
             %s
-            |}
+            }}
             <small>Ostatnia aktualizacja: ~~~~~. Dane na podstawie zrzutu %s.</small>
             """;
 
@@ -384,7 +384,7 @@ public final class MissingWomenBiograms {
                 )
             )).entrySet().stream()
                 .map(e -> String.format("; %s%n%s", e.getKey(), e.getValue().stream()
-                    .map(stats -> String.format("* [[../%s]] ({{formatnum:%d}})", stats.subname(), stats.size()))
+                    .map(stats -> String.format("* [[%1$s/%2$s|%2$s]] ({{formatnum:%3$d}})", BOT_SUBPAGE, stats.subname(), stats.size()))
                     .collect(Collectors.joining("\n"))
                 ))
                 .collect(Collectors.joining("\n"));
