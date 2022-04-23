@@ -94,11 +94,11 @@ public final class ArchiveThread {
                 var sectionsPerYear = eligibleSections.stream()
                     .collect(Collectors.groupingBy(as -> as.earliest().getYear()));
 
-                var archiveListPage = String.format("%s%s", config.pagename(), config.subpage());
+                var archiveListPage = String.format("%s/%s", config.pagename(), config.subpage());
                 tryEditArchiveListPage(archiveListPage, sectionsPerYear.keySet());
 
                 for (var entry : sectionsPerYear.entrySet()) {
-                    var archiveTitle = String.format("%s%s/%d", config.pagename(), config.subpage(), entry.getKey());
+                    var archiveTitle = String.format("%s/%s/%d", config.pagename(), config.subpage(), entry.getKey());
                     var archiveRev = wb.getTopRevision(archiveTitle);
                     var archiveText = archiveRev != null ? archiveRev.getText() : "";
                     var archiveTimestamp = archiveRev != null ? archiveRev.getTimestamp() : null;
@@ -153,8 +153,8 @@ public final class ArchiveThread {
                 throw new IllegalArgumentException("minDays must be positive or zero: " + minDays);
             }
 
-            if (!subpage.startsWith("/") || subpage.length() == 1) {
-                throw new IllegalArgumentException("subpage must be a string prefixed with '/'': " + subpage);
+            if (subpage.isEmpty()) {
+                throw new IllegalArgumentException("subpage must be a non-empty string: " + subpage);
             }
 
             config.add(new ArchiveConfig(pagename, minDays, subpage, honorLinksInHeader));
@@ -254,15 +254,16 @@ public final class ArchiveThread {
         }
 
         var substring = text.substring(start, end).strip();
+        var pattern = Pattern.compile(String.format("^\\* \\[{2}%s/(\\d+)\\|\\1\\]{2}$", Pattern.quote(pagename)), Pattern.MULTILINE);
 
-        var yearsListed = Pattern.compile("^\\* \\[{2}/(\\d+)\\]{2}$", Pattern.MULTILINE).matcher(substring).results()
+        var yearsListed = pattern.matcher(substring).results()
             .map(mr -> mr.group(1))
             .map(Integer::parseInt)
             .collect(Collectors.toCollection(TreeSet::new));
 
         if (yearsListed.addAll(years)) {
             var newList = yearsListed.stream()
-                .map(year -> String.format("* [[/%d]]", year))
+                .map(year -> String.format("* [[%1$s/%2$d|%2$d]]", pagename, year))
                 .collect(Collectors.joining("\n"));
 
             var newText = String.format("%s\n%s\n%s", text.substring(0, start), newList, text.substring(end));
