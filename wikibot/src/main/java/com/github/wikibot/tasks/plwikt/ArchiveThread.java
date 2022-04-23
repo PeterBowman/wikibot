@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.regex.MatchResult;
@@ -87,49 +88,30 @@ public final class ArchiveThread {
                 .toList();
 
             if (!eligibleSections.isEmpty()) {
+                var usingAdditionalTargets = false;
+
                 if (config.honorLinksInHeader()) {
-                    processLinksInHeader(config, rev, eligibleSections);
+                    usingAdditionalTargets = processLinksInHeader(config, rev, eligibleSections);
                 }
 
-                var sectionsPerYear = eligibleSections.stream()
-                    .collect(Collectors.groupingBy(as -> as.earliest().getYear()));
+                var sectionsPerYear = eligibleSections.stream().collect(Collectors.groupingBy(
+                    as -> as.earliest().getYear(),
+                    TreeMap::new,
+                    Collectors.toList()
+                ));
 
                 var archiveListPage = String.format("%s/%s", config.pagename(), config.subpage());
                 tryEditArchiveListPage(archiveListPage, sectionsPerYear.keySet());
 
                 for (var entry : sectionsPerYear.entrySet()) {
-                    var archiveTitle = String.format("%s/%s/%d", config.pagename(), config.subpage(), entry.getKey());
-                    var archiveRev = wb.getTopRevision(archiveTitle);
-                    var archiveText = archiveRev != null ? archiveRev.getText() : "";
-                    var archiveTimestamp = archiveRev != null ? archiveRev.getTimestamp() : null;
-                    var archive = Page.store(archiveTitle, archiveText);
                     var sectionsToAppend = entry.getValue().stream().map(TimedSection::section).toList();
-
-                    archive.appendSections(sectionsToAppend);
-
-                    var earliestTimestampPerSection = archive.getAllSections().stream()
-                        .collect(Collectors.toMap(
-                            UnaryOperator.identity(),
-                            s -> Optional.of(retrieveTimestamps(s.toString()))
-                                .filter(timestamps -> !timestamps.isEmpty())
-                                .map(SortedSet::first)
-                                .map(OffsetDateTime::toEpochSecond)
-                                .orElse(0L)
-                        ));
-
-                    archive.sortSections((s1, s2) -> Long.compare(
-                        earliestTimestampPerSection.getOrDefault(s1, 0L),
-                        earliestTimestampPerSection.getOrDefault(s2, 0L)
-                    ));
-
-                    wb.edit(archiveTitle, archive.toString(), makeSummary(sectionsToAppend.size()), false, true, -2,
-                            List.of(CHANGE_TAG), archiveTimestamp);
+                    editArchiveSubpage(config, rev.getID(), entry.getKey(), sectionsToAppend);
                 }
 
                 eligibleSections.stream().map(TimedSection::section).forEach(Section::detach);
 
-                wb.edit(config.pagename(), page.toString(), makeSummary(eligibleSections.size()), false, true, -2,
-                        List.of(CHANGE_TAG), rev.getTimestamp());
+                var summary = makeSummaryTo(eligibleSections.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
+                wb.edit(config.pagename(), page.toString(), summary, false, true, -2, List.of(CHANGE_TAG), rev.getTimestamp());
             } else {
                 System.out.println("No eligible sections found for page: " + config.pagename());
             }
@@ -202,7 +184,9 @@ public final class ArchiveThread {
             .anyMatch(param -> !param.equals("-"));
     }
 
-    private static void processLinksInHeader(ArchiveConfig config, Wiki.Revision rev, List<TimedSection> sections) throws LoginException, IOException {
+    private static boolean processLinksInHeader(ArchiveConfig config, Wiki.Revision rev, List<TimedSection> sections) throws LoginException, IOException {
+        var edited = false;
+
         for (var section : sections.stream().map(TimedSection::section).toList()) {
             var targets = P_HEADER_LINK.matcher(section.getHeader()).results()
                 .map(m -> m.group(1).trim())
@@ -217,13 +201,64 @@ public final class ArchiveThread {
                     var summary = String.format(TALK_HEADER_FORMAT, rev.getID(), pageName, rev.getTitle());
 
                     wb.edit(talkPageName, summary, section.getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
+                    edited = true;
                 }
             }
         }
+
+        return edited;
     }
 
-    private static String makeSummary(int numThreads) {
-        return String.format("zarchiwizowano %d %s", numThreads, SUMMARY_FORMATTER.pl(numThreads, "wątek"));
+    private static String makeSummaryFrom(int numThreads, String pagename, long id) {
+        return String.format(
+            "zarchiwizowano %d %s z [[Specjalna:Niezmienny link/%d|%s]]",
+            numThreads, SUMMARY_FORMATTER.pl(numThreads, "wątek"), id, pagename
+        );
+    }
+
+    private static String makeSummaryTo(int numThreads, ArchiveConfig config, SortedSet<Integer> subpages, boolean usingAdditionalTargets) {
+        var targets = String.format("[[%s/%s/%d]]", config.pagename(), config.subpage(), subpages.first());
+
+        if (subpages.size() > 1) {
+            targets += ", " + subpages.tailSet(subpages.first() + 1).stream()
+                .map(subpage -> String.format("[[%1$s/%2$s/%3$d|/%3$d]]", config.pagename(), config.subpage(), subpage))
+                .collect(Collectors.joining(", "));
+        }
+
+        if (usingAdditionalTargets) {
+            targets += " i in.";
+        }
+
+        return String.format("zarchiwizowano %d %s w %s", numThreads, SUMMARY_FORMATTER.pl(numThreads, "wątek"), targets);
+    }
+
+    private static void editArchiveSubpage(ArchiveConfig config, long id, int year, List<Section> sections) throws IOException, LoginException {
+        var archiveTitle = String.format("%s/%s/%d", config.pagename(), config.subpage(), year);
+        var archiveRev = wb.getTopRevision(archiveTitle);
+        var archiveText = archiveRev != null ? archiveRev.getText() : "";
+        var archiveTimestamp = archiveRev != null ? archiveRev.getTimestamp() : null;
+        var archive = Page.store(archiveTitle, archiveText);
+
+        archive.appendSections(sections);
+
+        var earliestTimestampPerSection = archive.getAllSections().stream()
+            .collect(Collectors.toMap(
+                UnaryOperator.identity(),
+                s -> Optional.of(retrieveTimestamps(s.toString()))
+                    .filter(timestamps -> !timestamps.isEmpty())
+                    .map(SortedSet::first)
+                    .map(OffsetDateTime::toEpochSecond)
+                    .orElse(0L)
+            ));
+
+        archive.sortSections((s1, s2) -> Long.compare(
+            earliestTimestampPerSection.getOrDefault(s1, 0L),
+            earliestTimestampPerSection.getOrDefault(s2, 0L)
+        ));
+
+        var summary = makeSummaryFrom(sections.size(), config.pagename(), id);
+
+        wb.edit(archiveTitle, archive.toString(), summary, false, true, -2, List.of(CHANGE_TAG), archiveTimestamp);
     }
 
     private static void tryEditArchiveListPage(String pagename, Set<Integer> years) throws IOException, LoginException {
