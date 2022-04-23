@@ -80,7 +80,7 @@ public final class ArchiveThread {
 
             var eligibleSections = page.getAllSections().stream()
                 .filter(s -> s.getLevel() == 2)
-                .filter(s -> hasDoneTemplate(s.toString()))
+                .filter(s -> !config.triggerOnTemplate() || hasDoneTemplate(s.toString()))
                 .map(TimedSection::of)
                 .filter(Objects::nonNull)
                 .filter(ts -> ts.latest().isBefore(refTimestamp))
@@ -141,12 +141,14 @@ public final class ArchiveThread {
 
         var minDaysGlobal = json.getInt("minDays");
         var subpageGlobal = json.getString("subpage");
+        var triggerGlobal = json.getBoolean("triggerOnTemplate");
 
         for (var obj : json.getJSONArray("entries")) {
             var entry = (JSONObject)obj;
             var pagename = entry.getString("pagename");
             var minDays = entry.optInt("minDays", minDaysGlobal);
             var subpage = entry.optString("subpage", subpageGlobal);
+            var trigger = entry.optBoolean("triggerOnTemplate", triggerGlobal);
             var honorLinksInHeader = entry.optBoolean("honorLinksInHeader");
 
             if (minDays < 0) {
@@ -157,7 +159,7 @@ public final class ArchiveThread {
                 throw new IllegalArgumentException("subpage must be a non-empty string: " + subpage);
             }
 
-            config.add(new ArchiveConfig(pagename, minDays, subpage, honorLinksInHeader));
+            config.add(new ArchiveConfig(pagename, minDays, subpage, trigger, honorLinksInHeader));
         }
 
         return Collections.unmodifiableList(config);
@@ -285,7 +287,7 @@ public final class ArchiveThread {
             .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    private record ArchiveConfig(String pagename, int minDays, String subpage, boolean honorLinksInHeader) {}
+    private record ArchiveConfig(String pagename, int minDays, String subpage, boolean triggerOnTemplate, boolean honorLinksInHeader) {}
 
     private record TimedSection(Section section, OffsetDateTime earliest, OffsetDateTime latest) {
         public static TimedSection of(Section section) {
