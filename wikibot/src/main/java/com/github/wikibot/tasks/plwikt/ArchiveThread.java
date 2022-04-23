@@ -52,13 +52,11 @@ public final class ArchiveThread {
 
     private static final DateTimeFormatter DT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm, d LLL yyyy (z)").withLocale(new Locale("pl"));
 
-    private static final String TALK_HEADER_FORMAT = "Przeniesione z [[Specjalna:Niezmienny link/%d#%s|%s]]";
-
-    private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-
     private static final Plural SUMMARY_FORMATTER = new Plural(PluralRules.POLISH, new WordForms[] {
         new WordForms(new String[] {"wątek", "wątki", "wątków"})
     });
+
+    private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
     public static void main(String[] args) throws Exception {
         var line = readOptions(args);
@@ -198,7 +196,7 @@ public final class ArchiveThread {
                 if ((Boolean)info.get("exists")) {
                     var pageName = (String)info.get("pagename");
                     var talkPageName = wb.getTalkPage(pageName);
-                    var summary = String.format(TALK_HEADER_FORMAT, rev.getID(), pageName, rev.getTitle());
+                    var summary = String.format("Przeniesione z [[Specjalna:Niezmienny link/%d|%s]]", rev.getID(), rev.getTitle());
 
                     wb.edit(talkPageName, summary, section.getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
                     edited = true;
