@@ -516,6 +516,25 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
         containingPage.buildSectionTree();
     }
 
+    public String getFlattenedContent() {
+        var sb = new StringBuilder(1500);
+        sb.append(intro);
+        sb.append("\n".repeat(trailingNewlines));
+
+        if (!childSections.isEmpty()) {
+            sb.append("\n");
+
+            for (T subSection : childSections) {
+                sb.append(subSection);
+                sb.append("\n");
+            }
+
+            sb.deleteCharAt(sb.length() - 1);
+        }
+
+        return sb.toString().trim();
+    }
+
     public static <U extends AbstractSection<U>> List<U> flattenSubSections(U section) {
         return flattenSubSections(List.of(section));
     }
