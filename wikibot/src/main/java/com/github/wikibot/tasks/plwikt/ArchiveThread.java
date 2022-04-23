@@ -2,10 +2,11 @@ package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -34,15 +35,13 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 public final class ArchiveThread {
-    private static final List<String> TARGET_PAGES = List.of(
-            "Wikisłownik:Zgłoś błąd w haśle"
-        );
-
+    private static final String CONFIG_PAGE = "Wikisłownik:Archiwizacja.json";
     private static final String TARGET_TEMPLATE = "załatwione";
 
     // from CommentParser::doWikiLinks()
@@ -54,34 +53,29 @@ public final class ArchiveThread {
     private static final String TALK_HEADER_FORMAT = "Przeniesione z [[Specjalna:Niezmienny link/%d#%s|%s]]";
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-    private static final Plural SUMMARY_FORMATTER;
 
-    static {
-        var threads = new WordForms[] {
-            new WordForms(new String[] {"wątek", "wątki", "wątków"})
-        };
-
-        SUMMARY_FORMATTER = new Plural(PluralRules.POLISH, threads);
-    }
+    private static final Plural SUMMARY_FORMATTER = new Plural(PluralRules.POLISH, new WordForms[] {
+        new WordForms(new String[] {"wątek", "wątki", "wątków"})
+    });
 
     public static void main(String[] args) throws Exception {
         var line = readOptions(args);
-        var days = Period.ofDays(Integer.parseInt(line.getOptionValue("days")));
+        var daysOverride = Optional.ofNullable(line.getOptionValue("days")).map(Integer::parseInt);
+        var json = wb.getPageText(List.of(CONFIG_PAGE)).get(0);
+        var configs = parseArchiveConfig(new JSONObject(json));
 
-        if (days.isNegative()) {
-            throw new IllegalArgumentException("Days must be positive or zero");
-        }
-
-        var refTimestamp = OffsetDateTime.now().minus(days);
-
-        System.out.printf("Archiving pages older than %d days%n", days.getDays());
-        System.out.printf("Reference date-time: %s%n", refTimestamp);
-
+        configs.forEach(System.out::println);
         Login.login(wb);
 
-        for (var title : TARGET_PAGES) {
-            var rev = wb.getTopRevision(title);
-            var page = Page.store(title, rev.getText());
+        for (var config : configs) {
+            System.out.println(config);
+
+            var days = daysOverride.orElse(config.minDays());
+            var refTimestamp = OffsetDateTime.now().minusDays(days);
+            System.out.printf("Reference date-time: %s%n", refTimestamp);
+
+            var rev = wb.getTopRevision(config.pagename());
+            var page = Page.store(config.pagename(), rev.getText());
 
             var eligibleSections = page.getAllSections().stream()
                 .filter(s -> s.getLevel() == 2)
@@ -91,33 +85,19 @@ public final class ArchiveThread {
                 .filter(ts -> ts.latest().isBefore(refTimestamp))
                 .toList();
 
-            for (var section : eligibleSections.stream().map(TimedSection::section).toList()) {
-                var targets = P_HEADER_LINK.matcher(section.getHeader()).results()
-                    .map(m -> m.group(1).trim())
-                    .filter(target -> wb.namespace(target) == Wiki.MAIN_NAMESPACE)
-                    .distinct()
-                    .toList();
-
-                for (var info : wb.getPageInfo(targets)) {
-                    if ((Boolean)info.get("exists")) {
-                        var pageName = (String)info.get("pagename");
-                        var talkPageName = wb.getTalkPage(pageName);
-                        var summary = String.format(TALK_HEADER_FORMAT, rev.getID(), pageName, page.getTitle());
-
-                        wb.newSection(talkPageName, summary, section.getFlattenedContent(), false, true);
-                    }
-                }
-            }
-
             if (!eligibleSections.isEmpty()) {
+                if (config.honorLinksInHeader()) {
+                    processLinksInHeader(config, rev, eligibleSections);
+                }
+
                 var sectionsPerYear = eligibleSections.stream()
                     .collect(Collectors.groupingBy(as -> as.earliest().getYear()));
 
-                var archiveListPage = String.format("%s/Archiwum", title);
+                var archiveListPage = String.format("%s%s", config.pagename(), config.subpage());
                 tryEditArchiveListPage(archiveListPage, sectionsPerYear.keySet());
 
                 for (var entry : sectionsPerYear.entrySet()) {
-                    var archiveTitle = String.format("%s/Archiwum/%d", title, entry.getKey());
+                    var archiveTitle = String.format("%s%s/%d", config.pagename(), config.subpage(), entry.getKey());
                     var archiveText = Optional.ofNullable(wb.getPageText(List.of(archiveTitle)).get(0)).orElse("");
                     var archive = Page.store(archiveTitle, archiveText);
                     var sectionsToAppend = entry.getValue().stream().map(TimedSection::section).toList();
@@ -143,14 +123,43 @@ public final class ArchiveThread {
                 }
 
                 eligibleSections.stream().map(TimedSection::section).forEach(Section::detach);
-                wb.edit(title, page.toString(), makeSummary(eligibleSections.size()), rev.getTimestamp());
+                wb.edit(config.pagename(), page.toString(), makeSummary(eligibleSections.size()), rev.getTimestamp());
+            } else {
+                System.out.println("No eligible sections found for page: " + config.pagename());
             }
         }
     }
 
+    private static List<ArchiveConfig> parseArchiveConfig(JSONObject json) {
+        var config = new ArrayList<ArchiveConfig>();
+
+        var minDaysGlobal = json.getInt("minDays");
+        var subpageGlobal = json.getString("subpage");
+
+        for (var obj : json.getJSONArray("entries")) {
+            var entry = (JSONObject)obj;
+            var pagename = entry.getString("pagename");
+            var minDays = entry.optInt("minDays", minDaysGlobal);
+            var subpage = entry.optString("subpage", subpageGlobal);
+            var honorLinksInHeader = entry.optBoolean("honorLinksInHeader");
+
+            if (minDays < 0) {
+                throw new IllegalArgumentException("minDays must be positive or zero: " + minDays);
+            }
+
+            if (!subpage.startsWith("/") || subpage.length() == 1) {
+                throw new IllegalArgumentException("subpage must be a string prefixed with '/'': " + subpage);
+            }
+
+            config.add(new ArchiveConfig(pagename, minDays, subpage, honorLinksInHeader));
+        }
+
+        return Collections.unmodifiableList(config);
+    }
+
     private static CommandLine readOptions(String[] args) throws ParseException {
         var options = new Options();
-        options.addRequiredOption("d", "days", true, "days to consider for archiving (>= 0)");
+        options.addOption("d", "days", true, "days to consider for archiving (>= 0)");
 
         if (args.length == 0) {
             System.out.print("Option(s): ");
@@ -158,8 +167,14 @@ public final class ArchiveThread {
         }
 
         try {
-            return new DefaultParser().parse(options, args, true);
-        } catch (ParseException e) {
+            var cli = new DefaultParser().parse(options, args, true);
+
+            if (Integer.parseInt(cli.getOptionValue("days", "0")) < 0) {
+                throw new ParseException("days must be positive or zero");
+            }
+
+            return cli;
+        } catch (ParseException | NumberFormatException e) {
             new HelpFormatter().printHelp(ArchiveThread.class.getName(), options);
             throw e;
         }
@@ -177,6 +192,26 @@ public final class ArchiveThread {
             .map(ParseUtils::getTemplateParametersWithValue)
             .map(params -> params.getOrDefault("ParamWithoutName1", ""))
             .anyMatch(param -> !param.equals("-"));
+    }
+
+    private static void processLinksInHeader(ArchiveConfig config, Wiki.Revision rev, List<TimedSection> sections) throws LoginException, IOException {
+        for (var section : sections.stream().map(TimedSection::section).toList()) {
+            var targets = P_HEADER_LINK.matcher(section.getHeader()).results()
+                .map(m -> m.group(1).trim())
+                .filter(target -> wb.namespace(target) == Wiki.MAIN_NAMESPACE)
+                .distinct()
+                .toList();
+
+            for (var info : wb.getPageInfo(targets)) {
+                if ((Boolean)info.get("exists")) {
+                    var pageName = (String)info.get("pagename");
+                    var talkPageName = wb.getTalkPage(pageName);
+                    var summary = String.format(TALK_HEADER_FORMAT, rev.getID(), pageName, rev.getTitle());
+
+                    wb.newSection(talkPageName, summary, section.getFlattenedContent(), false, true);
+                }
+            }
+        }
     }
 
     private static String makeSummary(int numThreads) {
@@ -236,6 +271,8 @@ public final class ArchiveThread {
             .filter(dt -> dt.getYear() >= 2004 && !dt.isAfter(OffsetDateTime.now())) // sanity check
             .collect(Collectors.toCollection(TreeSet::new));
     }
+
+    private record ArchiveConfig(String pagename, int minDays, String subpage, boolean honorLinksInHeader) {}
 
     private record TimedSection(Section section, OffsetDateTime earliest, OffsetDateTime latest) {
         public static TimedSection of(Section section) {
