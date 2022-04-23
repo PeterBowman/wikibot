@@ -7,12 +7,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 
+import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
 import org.wikipedia.WMFWiki;
@@ -467,5 +469,58 @@ public class Wikibot extends WMFWiki {
         var response = makeApiCall(getparams, postparams, "wbcreateclaim");
         checkErrorsAndUpdateStatus(response, "wbcreateclaim", null, null);
         log(Level.INFO, "wbcreateclaim", "Successfully added claim to " + entity);
+    }
+
+    public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
+        int section, List<String> tags, OffsetDateTime basetime) throws IOException, LoginException
+    {
+        throttle();
+
+        // protection
+        Map<String, Object> info = getPageInfo(List.of(title)).get(0);
+        if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
+        {
+            CredentialException ex = new CredentialException("Permission denied: page is protected.");
+            log(Level.WARNING, "edit", "Cannot edit - permission denied. " + ex);
+            throw ex;
+        }
+
+        Wiki.User user = getCurrentUser();
+
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "edit");
+        getparams.put("title", normalize(title));
+
+        // post data
+        Map<String, Object> postparams = new HashMap<>();
+        postparams.put("text", text);
+        // edit summary is created automatically if making a new section
+        if (section != -1)
+            postparams.put("summary", summary);
+        postparams.put("token", getToken("csrf"));
+        if (basetime != null)
+        {
+            postparams.put("starttimestamp", info.get("timestamp"));
+            // I wonder if the time getPageText() was called suffices here
+            postparams.put("basetimestamp", basetime);
+        }
+        if (minor)
+            postparams.put("minor", "1");
+        if (bot && user != null && user.isAllowedTo("bot"))
+            postparams.put("bot", "1");
+        if (section == -1)
+        {
+            postparams.put("section", "new");
+            postparams.put("sectiontitle", summary);
+        }
+        else if (section != -2)
+            postparams.put("section", section);
+        if (tags != null && !tags.isEmpty())
+            postparams.put("tags", String.join("|", tags));
+
+        String response = makeApiCall(getparams, postparams, "edit");
+        checkErrorsAndUpdateStatus(response, "edit", Map.of(
+            "editconflict", desc -> new ConcurrentModificationException(desc + "- [[" + title + "]]")), null);
+        log(Level.INFO, "edit", "Successfully edited " + title);
     }
 }

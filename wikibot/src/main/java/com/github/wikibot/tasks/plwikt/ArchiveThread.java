@@ -43,6 +43,7 @@ import org.wikiutils.ParseUtils;
 public final class ArchiveThread {
     private static final String CONFIG_PAGE = "Wikisłownik:Archiwizacja.json";
     private static final String TARGET_TEMPLATE = "załatwione";
+    private static final String CHANGE_TAG = "archive-threads";
 
     // from CommentParser::doWikiLinks()
     private static final Pattern P_HEADER_LINK = Pattern.compile("\\[{2}\\s*+:?([^\\[\\]\\|]+)(?:\\|((?:]?[^\\]])*+))?\\]{2}");
@@ -98,7 +99,9 @@ public final class ArchiveThread {
 
                 for (var entry : sectionsPerYear.entrySet()) {
                     var archiveTitle = String.format("%s%s/%d", config.pagename(), config.subpage(), entry.getKey());
-                    var archiveText = Optional.ofNullable(wb.getPageText(List.of(archiveTitle)).get(0)).orElse("");
+                    var archiveRev = wb.getTopRevision(archiveTitle);
+                    var archiveText = archiveRev != null ? archiveRev.getText() : "";
+                    var archiveTimestamp = archiveRev != null ? archiveRev.getTimestamp() : null;
                     var archive = Page.store(archiveTitle, archiveText);
                     var sectionsToAppend = entry.getValue().stream().map(TimedSection::section).toList();
 
@@ -119,11 +122,14 @@ public final class ArchiveThread {
                         earliestTimestampPerSection.getOrDefault(s2, 0L)
                     ));
 
-                    wb.edit(archiveTitle, archive.toString(), makeSummary(sectionsToAppend.size()));
+                    wb.edit(archiveTitle, archive.toString(), makeSummary(sectionsToAppend.size()), false, true, -2,
+                            List.of(CHANGE_TAG), archiveTimestamp);
                 }
 
                 eligibleSections.stream().map(TimedSection::section).forEach(Section::detach);
-                wb.edit(config.pagename(), page.toString(), makeSummary(eligibleSections.size()), rev.getTimestamp());
+
+                wb.edit(config.pagename(), page.toString(), makeSummary(eligibleSections.size()), false, true, -2,
+                        List.of(CHANGE_TAG), rev.getTimestamp());
             } else {
                 System.out.println("No eligible sections found for page: " + config.pagename());
             }
@@ -208,7 +214,7 @@ public final class ArchiveThread {
                     var talkPageName = wb.getTalkPage(pageName);
                     var summary = String.format(TALK_HEADER_FORMAT, rev.getID(), pageName, rev.getTitle());
 
-                    wb.newSection(talkPageName, summary, section.getFlattenedContent(), false, true);
+                    wb.edit(talkPageName, summary, section.getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
                 }
             }
         }
@@ -219,9 +225,12 @@ public final class ArchiveThread {
     }
 
     private static void tryEditArchiveListPage(String pagename, Set<Integer> years) throws IOException, LoginException {
-        var text = wb.getPageText(List.of(pagename)).get(0);
+        var rev = wb.getTopRevision(pagename);
+        var basetime = Optional.ofNullable(rev).map(Wiki.Revision::getTimestamp).orElse(null);
 
-        if (text == null) {
+        final String text;
+
+        if (rev == null) {
             text = String.format("""
                 Archiwum strony [[%s]] z podziałem na lata wg daty zgłoszenia.
 
@@ -230,6 +239,8 @@ public final class ArchiveThread {
 
                 [[Kategoria:Archiwum Wikisłownika|%s]]
                 """, pagename, wb.removeNamespace(pagename));
+        } else {
+            text = rev.getText();
         }
 
         var start = text.indexOf("<!-- START ");
@@ -255,7 +266,8 @@ public final class ArchiveThread {
                 .collect(Collectors.joining("\n"));
 
             var newText = String.format("%s\n%s\n%s", text.substring(0, start), newList, text.substring(end));
-            wb.edit(pagename, newText, "uzupełnienie listy podstron archiwum");
+
+            wb.edit(pagename, newText, "uzupełnienie listy podstron archiwum", false, true, -2, List.of(CHANGE_TAG), basetime);
         }
     }
 
