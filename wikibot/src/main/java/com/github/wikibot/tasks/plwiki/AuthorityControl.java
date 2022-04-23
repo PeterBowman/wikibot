@@ -42,6 +42,7 @@ import org.wikiutils.ParseUtils;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.utils.DBUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 
@@ -51,7 +52,7 @@ public final class AuthorityControl {
     private static final List<String> TEMPLATES = List.of("Kontrola autorytatywna", "Authority control", "Ka");
     private static final List<String> PROPERTIES;
 
-    private static final Properties defaultSQLProperties = new Properties();
+    private static final Properties SQL_PROPS;
     private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
     private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
 
@@ -86,11 +87,11 @@ public final class AuthorityControl {
                 .flatMap(Matcher::results)
                 .map(m -> m.group(1))
                 .toList();
+
+            SQL_PROPS = DBUtils.prepareSQLProperties();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
     }
 
     public static void main(String[] args) throws Exception {
@@ -293,7 +294,7 @@ public final class AuthorityControl {
         var wiki = Wiki.newSession("pl.wikipedia.org");
         var backlinks = new HashMap<Long, String>(600000);
 
-        try (var connection = DriverManager.getConnection(SQL_WDWIKI_URI, prepareSQLProperties())) {
+        try (var connection = DriverManager.getConnection(SQL_WDWIKI_URI, SQL_PROPS)) {
             var properties = PROPERTIES.stream()
                 .map(template -> String.format("'%s'", template))
                 .collect(Collectors.joining(","));
@@ -401,27 +402,10 @@ public final class AuthorityControl {
         return results;
     }
 
-    private static Properties prepareSQLProperties() throws IOException {
-        var properties = new Properties(defaultSQLProperties);
-        var patt = Pattern.compile("(.+)='(.+)'");
-        var cnf = Paths.get("./replica.my.cnf");
-
-        if (!Files.exists(cnf)) {
-            cnf = LOCATION.resolve(".my.cnf");
-        }
-
-        Files.readAllLines(cnf).stream()
-            .map(patt::matcher)
-            .filter(Matcher::matches)
-            .forEach(m -> properties.setProperty(m.group(1), m.group(2)));
-
-        return properties;
-    }
-
     private static Set<String> retrieveTemplateTransclusions() throws ClassNotFoundException, SQLException, IOException {
         var transclusions = new HashSet<String>(500000);
 
-        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
             var templates = TEMPLATES.stream()
                 .map(template -> String.format("'%s'", template.replace(' ', '_')))
                 .collect(Collectors.joining(","));
@@ -452,7 +436,7 @@ public final class AuthorityControl {
     private static Set<String> retrieveDisambiguations() throws ClassNotFoundException, SQLException, IOException {
         var disambigs = new HashSet<String>(100000);
 
-        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
             var query = """
                 SELECT
                     page_title
@@ -478,7 +462,7 @@ public final class AuthorityControl {
     private static Set<String> retrieveNonRedirects() throws ClassNotFoundException, SQLException, IOException {
         var articles = new HashSet<String>(2000000);
 
-        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, prepareSQLProperties())) {
+        try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
             var query = """
                 SELECT page_title
                 FROM page

@@ -51,6 +51,7 @@ import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.parsing.plwikt.Section;
+import com.github.wikibot.utils.DBUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
 import com.github.wikibot.utils.PageContainer;
@@ -73,7 +74,6 @@ public final class CitationTypography {
     private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
     private static final String SQL_VC_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_verify_citations";
     private static final String SQL_COMMON_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_common";
-    private static final Properties defaultSQLProperties = new Properties();
 
     private static final String EDIT_SUMMARY = "[[WS:Głosowania/Pozycja odsyłacza przypisu względem kropki]]";
     private static final int EDIT_THROTTLE_MS = 5000;
@@ -84,15 +84,13 @@ public final class CitationTypography {
         P_REFERENCE = Pattern.compile("<ref\\b.*?(?:/ *?>|>.*?</ref *?>)", Pattern.CASE_INSENSITIVE);
         P_OCCURENCE = Pattern.compile("\\. *('{2})?((?i: *" + P_REFERENCE.pattern() + ")+)");
         P_LINE = Pattern.compile("^(.*)" + P_OCCURENCE.pattern() + "(.*)$", Pattern.MULTILINE);
-
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
     }
 
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
         Class.forName("com.mysql.cj.jdbc.Driver");
-        Properties properties = prepareSQLProperties();
+        Properties properties = DBUtils.prepareSQLProperties();
 
         CommandLine line = readOptions(args);
         Set<String> titles = new HashSet<>(0);
@@ -402,23 +400,6 @@ public final class CitationTypography {
             ));
 
         Files.write(LOCATION.resolve("diffs.txt"), List.of(Misc.makeList(map)));
-    }
-
-    private static Properties prepareSQLProperties() throws IOException {
-        Properties properties = new Properties(defaultSQLProperties);
-        Pattern patt = Pattern.compile("(.+)='(.+)'");
-        Path cnf = Paths.get("./replica.my.cnf");
-
-        if (!Files.exists(cnf)) {
-            cnf = LOCATION.resolve(".my.cnf");
-        }
-
-        Files.readAllLines(cnf).stream()
-            .map(patt::matcher)
-            .filter(Matcher::matches)
-            .forEach(m -> properties.setProperty(m.group(1), m.group(2)));
-
-        return properties;
     }
 
     private static void updatePageTitleTable(Connection conn, List<Entry> entries, Map<String, Integer> titleToPageId)

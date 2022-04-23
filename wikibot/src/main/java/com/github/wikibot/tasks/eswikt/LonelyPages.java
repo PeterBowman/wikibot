@@ -6,55 +6,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import com.github.wikibot.utils.DBUtils;
 
 public final class LonelyPages {
     private static final Path LOCATION = Paths.get("./data/tasks.eswikt/LonelyPages/");
-    private static final Properties defaultSQLProperties = new Properties();
     private static final String SQL_ESWIKT_URI = "jdbc:mysql://eswiktionary.analytics.db.svc.wikimedia.cloud:3306/eswiktionary_p";
-
-    static {
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
-    }
 
     public static void main(String[] args) throws Exception {
         Class.forName("com.mysql.cj.jdbc.Driver");
-        Properties properties = prepareSQLProperties();
-        List<String> lonelyPages = new ArrayList<>(75000);
+        var lonelyPages = new ArrayList<String>(75000);
 
-        try (Connection eswiktConn = DriverManager.getConnection(SQL_ESWIKT_URI, properties)) {
-            double start = System.currentTimeMillis();
+        try (var eswiktConn = DriverManager.getConnection(SQL_ESWIKT_URI, DBUtils.prepareSQLProperties())) {
+            var start = System.currentTimeMillis();
             fetchLonelyPages(eswiktConn, lonelyPages);
-            double elapsed = (System.currentTimeMillis() - start) / 1000;
+            var elapsed = (System.currentTimeMillis() - start) / 1000;
             System.out.printf("%d titles fetched in %.3f seconds.%n", lonelyPages.size(), elapsed);
         }
 
         storeData(lonelyPages);
-    }
-
-    private static Properties prepareSQLProperties() throws IOException {
-        Properties properties = new Properties(defaultSQLProperties);
-        Pattern patt = Pattern.compile("(.+)='(.+)'");
-        Path f = Paths.get("./replica.my.cnf");
-
-        if (!Files.exists(f)) {
-            f = Paths.get("./data/sessions/replica.my.cnf");
-        }
-
-        Files.readAllLines(f).stream()
-            .map(patt::matcher)
-            .filter(Matcher::matches)
-            .forEach(m -> properties.setProperty(m.group(1), m.group(2)));
-
-        return properties;
     }
 
     private static void fetchLonelyPages(Connection conn, List<String> list) throws SQLException {
@@ -71,11 +45,11 @@ public final class LonelyPages {
                 tl_namespace IS NULL;
             """;
 
-        Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(query);
+        var stmt = conn.createStatement();
+        var rs = stmt.executeQuery(query);
 
         while (rs.next()) {
-            String title = rs.getString("page_title").replace("_", " ");
+            var title = rs.getString("page_title").replace("_", " ");
             list.add(title);
         }
     }

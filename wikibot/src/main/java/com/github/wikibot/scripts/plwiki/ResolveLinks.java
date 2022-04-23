@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -25,6 +24,12 @@ import java.util.stream.IntStream;
 
 import javax.security.auth.login.AccountLockedException;
 import javax.security.auth.login.CredentialExpiredException;
+
+import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.Utils;
+import com.github.wikibot.utils.DBUtils;
+import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -36,11 +41,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.Utils;
-import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
-
 public final class ResolveLinks {
     private static final Path LOCATION = Paths.get("./data/scripts.plwiki/ResolveLinks/");
     private static final Path PATH_SOURCES = LOCATION.resolve("sources.txt");
@@ -49,7 +49,6 @@ public final class ResolveLinks {
     private static final Path PATH_EDITED = LOCATION.resolve("edited.txt");
     private static final Path PATH_ERRORS = LOCATION.resolve("errors.txt");
 
-    private static final Properties defaultSQLProperties = new Properties();
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
 
@@ -75,10 +74,6 @@ public final class ResolveLinks {
     private static final int USER_SUBPAGE_SIZE_LIMIT = 500000;
 
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
-
-    static {
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
-    }
 
     public static void main(String[] args) throws Exception {
         var line = parseArguments(args);
@@ -268,22 +263,10 @@ public final class ResolveLinks {
         return line;
     }
 
-    private static Properties prepareSQLProperties() throws IOException {
-        var properties = new Properties(defaultSQLProperties);
-        var patt = Pattern.compile("(.+)='(.+)'");
-
-        Files.readAllLines(Paths.get("./data/sessions/replica.my.cnf")).stream()
-            .map(patt::matcher)
-            .filter(Matcher::matches)
-            .forEach(m -> properties.setProperty(m.group(1), m.group(2)));
-
-        return properties;
-    }
-
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
 
-        var props = prepareSQLProperties();
+        var props = DBUtils.prepareSQLProperties();
 
         try {
             return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);

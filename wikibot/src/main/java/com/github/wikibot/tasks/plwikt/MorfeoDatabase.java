@@ -1,9 +1,6 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -18,24 +15,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.wikipedia.Wiki;
-import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
+import com.github.wikibot.utils.DBUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.PageContainer;
 
-public final class MorfeoDatabase {
-    private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MorfeoDatabase/");
-    private static final Properties defaultSQLProperties = new Properties();
+import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
 
+public final class MorfeoDatabase {
     private static final String SQL_PLWIKT_URI = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
     private static final String SQL_EOM_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_eom_backlinks";
     private static final String SQL_COMMON_URI = "jdbc:mysql://tools.db.svc.eqiad.wmflabs:3306/s52584__plwikt_common";
@@ -49,10 +42,6 @@ public final class MorfeoDatabase {
     private static final byte MORPHEM_UNKNOWN = 32;
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-
-    static {
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
-    }
 
     public static void main(String[] args) throws Exception {
         Login.login(wb);
@@ -68,7 +57,7 @@ public final class MorfeoDatabase {
         System.out.printf("%d items retrieved (%d distinct morphems).%n", items.size(), morphems.size());
 
         Class.forName("com.mysql.cj.jdbc.Driver");
-        Properties properties = prepareSQLProperties();
+        Properties properties = DBUtils.prepareSQLProperties();
         Map<String, Byte> morphemInfo;
 
         try (Connection plwiktConn = DriverManager.getConnection(SQL_PLWIKT_URI, properties)) {
@@ -239,23 +228,6 @@ public final class MorfeoDatabase {
                 map.put(morphem, bitmask);
             }
         }
-    }
-
-    private static Properties prepareSQLProperties() throws IOException {
-        Properties properties = new Properties(defaultSQLProperties);
-        Pattern patt = Pattern.compile("(.+)='(.+)'");
-        Path cnf = Paths.get("./replica.my.cnf");
-
-        if (!Files.exists(cnf)) {
-            cnf = LOCATION.resolve(".my.cnf");
-        }
-
-        Files.readAllLines(cnf).stream()
-            .map(patt::matcher)
-            .filter(Matcher::matches)
-            .forEach(m -> properties.setProperty(m.group(1), m.group(2)));
-
-        return properties;
     }
 
     private static int deleteMorfeoItems(Connection conn, Map<String, List<String>> items) throws SQLException {
