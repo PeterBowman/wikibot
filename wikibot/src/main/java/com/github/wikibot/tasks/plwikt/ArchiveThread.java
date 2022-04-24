@@ -190,14 +190,18 @@ public final class ArchiveThread {
         }
 
         var edited = false;
+        var summary = String.format("Przeniesione z [[Specjalna:Niezmienny link/%d|%s]]", revid, config.pagename());
+        var text = sectionInfo.section().getFlattenedContent();
+
+        if (!config.honorLinksInHeader()) {
+            text = String.format(": <small>Tytuł sekcji przed archiwizacją: %s.</small>\n", sectionInfo.section().getStrippedHeader()) + text;
+        }
 
         for (var info : wb.getPageInfo(targets)) {
             if ((Boolean)info.get("exists")) {
                 var pageName = (String)info.get("pagename");
                 var talkPageName = wb.getTalkPage(pageName);
-                var summary = String.format("Przeniesione z [[Specjalna:Niezmienny link/%d|%s]]", revid, config.pagename());
-
-                wb.edit(talkPageName, summary, sectionInfo.section().getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
+                wb.edit(talkPageName, text, summary, false, true, -1, List.of(CHANGE_TAG), null);
                 edited = true;
             }
         }
@@ -275,7 +279,7 @@ public final class ArchiveThread {
                 <!-- END (nie zmieniaj tej linii ani powyższych aż do poprzedniego znacznika) -->
 
                 [[Kategoria:Archiwum Wikisłownika|%s]]
-                """, pagename, wb.removeNamespace(pagename));
+                """, config.pagename(), wb.removeNamespace(pagename));
         } else {
             text = rev.getText();
         }
