@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -77,28 +79,26 @@ public final class ArchiveThread {
             var rev = wb.getTopRevision(config.pagename());
             var page = Page.store(config.pagename(), rev.getText());
 
-            var sectionToTimestamps = page.getAllSections().stream()
+            var sectionInfos = page.getAllSections().stream()
                 .filter(s -> s.getLevel() == 2)
-                .filter(s -> !config.triggerOnTemplate() || hasDoneTemplate(s.toString()))
-                .collect(Collectors.toMap(
-                    UnaryOperator.identity(),
-                    s -> retrieveTimestamps(s.toString())
-                ));
+                .map(SectionInfo::of)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
 
-            sectionToTimestamps.values().removeIf(Set::isEmpty);
-            sectionToTimestamps.values().removeIf(ts -> ts.last().isAfter(refTimestamp));
+            sectionInfos.removeIf(si -> config.triggerOnTemplate() && !si.hasTemplate());
+            sectionInfos.removeIf(si -> si.latest().isAfter(refTimestamp));
 
-            if (!sectionToTimestamps.isEmpty()) {
+            if (!sectionInfos.isEmpty()) {
                 var usingAdditionalTargets = false;
 
-                if (config.honorLinksInHeader()) {
-                    usingAdditionalTargets = processLinksInHeader(config, rev.getID(), sectionToTimestamps.keySet());
+                for (var sectionInfo : sectionInfos) {
+                    usingAdditionalTargets |= processAdditionalTargets(config, rev.getID(), sectionInfo);
                 }
 
-                var sectionsPerYear = sectionToTimestamps.entrySet().stream().collect(Collectors.groupingBy(
-                    e -> e.getValue().first().getYear(),
+                var sectionsPerYear = sectionInfos.stream().collect(Collectors.groupingBy(
+                    si -> si.earliest().getYear(),
                     TreeMap::new,
-                    Collectors.mapping(e -> e.getKey(), Collectors.toList())
+                    Collectors.mapping(SectionInfo::section, Collectors.toList())
                 ));
 
                 tryEditArchiveListPage(config, sectionsPerYear.keySet());
@@ -107,9 +107,9 @@ public final class ArchiveThread {
                     editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
                 }
 
-                sectionToTimestamps.keySet().forEach(Section::detach);
+                sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
 
-                var summary = makeSummaryTo(sectionToTimestamps.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
+                var summary = makeSummaryTo(sectionInfos.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
                 wb.edit(config.pagename(), page.toString(), summary, false, true, -2, List.of(CHANGE_TAG), rev.getTimestamp());
             } else {
                 System.out.println("No eligible sections found for " + config.pagename());
@@ -169,39 +169,32 @@ public final class ArchiveThread {
         }
     }
 
-    private static boolean hasDoneTemplate(String text) {
-        var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
-        doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
-        doc.getElementsByTag("s").remove();
-        doc.getElementsByTag("pre").remove();
-        doc.getElementsByTag("syntaxhighlight").remove();
-        doc.getElementsByTag("source").remove();
+    private static boolean processAdditionalTargets(ArchiveConfig config, long revid, SectionInfo sectionInfo) throws LoginException, IOException {
+        var targets = new ArrayList<String>();
 
-        return ParseUtils.getTemplates(TARGET_TEMPLATE, doc.body().text()).stream()
-            .map(ParseUtils::getTemplateParametersWithValue)
-            .map(params -> params.getOrDefault("ParamWithoutName1", ""))
-            .anyMatch(param -> !param.equals("-"));
-    }
-
-    private static boolean processLinksInHeader(ArchiveConfig config, long revid, Set<Section> sections) throws LoginException, IOException {
-        var edited = false;
-
-        for (var section : sections) {
-            var targets = P_HEADER_LINK.matcher(section.getHeader()).results()
+        if (config.triggerOnTemplate() && !sectionInfo.copyTargets().isEmpty()) {
+            sectionInfo.copyTargets().forEach(targets::add);
+        } else if (config.honorLinksInHeader()) {
+            P_HEADER_LINK.matcher(sectionInfo.section().getHeader()).results()
                 .map(m -> m.group(1).strip())
                 .filter(target -> wb.namespace(target) == Wiki.MAIN_NAMESPACE)
-                .distinct()
-                .toList();
+                .forEach(targets::add);
+        }
 
-            for (var info : wb.getPageInfo(targets)) {
-                if ((Boolean)info.get("exists")) {
-                    var pageName = (String)info.get("pagename");
-                    var talkPageName = wb.getTalkPage(pageName);
-                    var summary = String.format("Przeniesione z [[Specjalna:Niezmienny link/%d|%s]]", revid, config.pagename());
+        if (targets.isEmpty()) {
+            return false;
+        }
 
-                    wb.edit(talkPageName, summary, section.getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
-                    edited = true;
-                }
+        var edited = false;
+
+        for (var info : wb.getPageInfo(targets)) {
+            if ((Boolean)info.get("exists")) {
+                var pageName = (String)info.get("pagename");
+                var talkPageName = wb.getTalkPage(pageName);
+                var summary = String.format("Przeniesione z [[Specjalna:Niezmienny link/%d|%s]]", revid, config.pagename());
+
+                wb.edit(talkPageName, summary, sectionInfo.section().getFlattenedContent(), false, true, -1, List.of(CHANGE_TAG), null);
+                edited = true;
             }
         }
 
@@ -321,4 +314,47 @@ public final class ArchiveThread {
     }
 
     private record ArchiveConfig(String pagename, int minDays, String subpage, boolean triggerOnTemplate, boolean honorLinksInHeader) {}
+
+    private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, boolean hasTemplate, List<String> copyTargets) {
+        private static boolean retrieveTargets(String text, List<String> copyTargets) {
+            var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
+            doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
+            doc.getElementsByTag("s").remove();
+            doc.getElementsByTag("pre").remove();
+            doc.getElementsByTag("syntaxhighlight").remove();
+            doc.getElementsByTag("source").remove();
+
+            var eligibleParams = ParseUtils.getTemplates(TARGET_TEMPLATE, doc.body().text()).stream()
+                .map(ParseUtils::getTemplateParametersWithValue)
+                .filter(params -> !params.getOrDefault("ParamWithoutName1", "").equals("-"))
+                .toList();
+
+            if (!eligibleParams.isEmpty()) {
+                eligibleParams.get(eligibleParams.size() - 1).entrySet().stream()
+                    .filter(e -> e.getKey().matches("^kopiuj_do\\d*$"))
+                    .map(Map.Entry::getValue)
+                    .distinct()
+                    .filter(v -> !v.isEmpty() && wb.namespace(v) >= 0)
+                    .map(v -> wb.namespace(v) % 2 == 1 ? wb.getContentPage(v) : v)
+                    .forEach(copyTargets::add);
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        public static SectionInfo of(Section s) {
+            var text = s.toString();
+            var copyTargets = new ArrayList<String>();
+            var timestamps = retrieveTimestamps(text);
+            var hasTemplate = retrieveTargets(text, copyTargets);
+
+            if (!timestamps.isEmpty()) {
+                return new SectionInfo(s, timestamps.first(), timestamps.last(), hasTemplate, copyTargets);
+            } else {
+                return null;
+            }
+        }
+    }
 }
