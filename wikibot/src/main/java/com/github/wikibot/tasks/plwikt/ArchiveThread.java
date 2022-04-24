@@ -85,7 +85,7 @@ public final class ArchiveThread {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-            sectionInfos.removeIf(si -> config.triggerOnTemplate() && !si.hasTemplate());
+            sectionInfos.removeIf(si -> config.triggerOnTemplate() && si.type() == ArchiveType.NONE);
             sectionInfos.removeIf(si -> si.latest().isAfter(refTimestamp));
 
             if (!sectionInfos.isEmpty()) {
@@ -95,16 +95,20 @@ public final class ArchiveThread {
                     usingAdditionalTargets |= processAdditionalTargets(config, rev.getID(), sectionInfo);
                 }
 
-                var sectionsPerYear = sectionInfos.stream().collect(Collectors.groupingBy(
-                    si -> si.earliest().getYear(),
-                    TreeMap::new,
-                    Collectors.mapping(SectionInfo::section, Collectors.toList())
-                ));
+                var sectionsPerYear = sectionInfos.stream()
+                    .filter(si -> !config.triggerOnTemplate() || si.type() != ArchiveType.MOVE)
+                    .collect(Collectors.groupingBy(
+                        si -> si.earliest().getYear(),
+                        TreeMap::new,
+                        Collectors.mapping(SectionInfo::section, Collectors.toList())
+                    ));
 
-                tryEditArchiveListPage(config, sectionsPerYear.keySet());
+                if (!sectionsPerYear.isEmpty()) {
+                    tryEditArchiveListPage(config, sectionsPerYear.keySet());
 
-                for (var entry : sectionsPerYear.entrySet()) {
-                    editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
+                    for (var entry : sectionsPerYear.entrySet()) {
+                        editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
+                    }
                 }
 
                 sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
@@ -172,8 +176,8 @@ public final class ArchiveThread {
     private static boolean processAdditionalTargets(ArchiveConfig config, long revid, SectionInfo sectionInfo) throws LoginException, IOException {
         var targets = new ArrayList<String>();
 
-        if (config.triggerOnTemplate() && !sectionInfo.copyTargets().isEmpty()) {
-            sectionInfo.copyTargets().forEach(targets::add);
+        if (config.triggerOnTemplate() && !sectionInfo.targets().isEmpty()) {
+            sectionInfo.targets().forEach(targets::add);
         } else if (config.honorLinksInHeader()) {
             P_HEADER_LINK.matcher(sectionInfo.section().getHeader()).results()
                 .map(m -> m.group(1).strip())
@@ -209,19 +213,23 @@ public final class ArchiveThread {
     }
 
     private static String makeSummaryTo(int numThreads, ArchiveConfig config, SortedSet<Integer> subpages, boolean usingAdditionalTargets) {
-        var targets = String.format("[[%s/%s/%d]]", config.pagename(), config.subpage(), subpages.first());
+        var targets = "";
 
-        if (subpages.size() > 1) {
-            targets += ", " + subpages.tailSet(subpages.first() + 1).stream()
-                .map(subpage -> String.format("[[%1$s/%2$s/%3$d|/%3$d]]", config.pagename(), config.subpage(), subpage))
-                .collect(Collectors.joining(", "));
+        if (!subpages.isEmpty()) {
+            targets = String.format(" w [[%s/%s/%d]]", config.pagename(), config.subpage(), subpages.first());
+
+            if (subpages.size() > 1) {
+                targets += ", " + subpages.tailSet(subpages.first() + 1).stream()
+                    .map(subpage -> String.format("[[%1$s/%2$s/%3$d|/%3$d]]", config.pagename(), config.subpage(), subpage))
+                    .collect(Collectors.joining(", "));
+            }
+
+            if (usingAdditionalTargets) {
+                targets += " i in.";
+            }
         }
 
-        if (usingAdditionalTargets) {
-            targets += " i in.";
-        }
-
-        return String.format("zarchiwizowano %d %s w %s", numThreads, SUMMARY_FORMATTER.pl(numThreads, "wątek"), targets);
+        return String.format("zarchiwizowano %d %s", numThreads, SUMMARY_FORMATTER.pl(numThreads, "wątek")) + targets;
     }
 
     private static void editArchiveSubpage(ArchiveConfig config, long revid, int year, List<Section> sections) throws IOException, LoginException {
@@ -315,8 +323,25 @@ public final class ArchiveThread {
 
     private record ArchiveConfig(String pagename, int minDays, String subpage, boolean triggerOnTemplate, boolean honorLinksInHeader) {}
 
-    private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, boolean hasTemplate, List<String> copyTargets) {
-        private static boolean retrieveTargets(String text, List<String> copyTargets) {
+    private enum ArchiveType {
+        NONE,
+        SIMPLE,
+        COPY,
+        MOVE
+    }
+
+    private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, ArchiveType type, List<String> targets) {
+        private static List<String> parseTargets(Map<String, String> params, String regex) {
+            return params.entrySet().stream()
+                .filter(e -> e.getKey().matches(regex))
+                .map(Map.Entry::getValue)
+                .distinct()
+                .filter(v -> !v.isEmpty() && wb.namespace(v) >= 0)
+                .map(v -> wb.namespace(v) % 2 == 1 ? wb.getContentPage(v) : v)
+                .toList();
+        }
+
+        private static ArchiveType retrieveTargets(String text, List<String> targets) {
             var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
             doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
             doc.getElementsByTag("s").remove();
@@ -330,28 +355,28 @@ public final class ArchiveThread {
                 .toList();
 
             if (!eligibleParams.isEmpty()) {
-                eligibleParams.get(eligibleParams.size() - 1).entrySet().stream()
-                    .filter(e -> e.getKey().matches("^kopiuj_do\\d*$"))
-                    .map(Map.Entry::getValue)
-                    .distinct()
-                    .filter(v -> !v.isEmpty() && wb.namespace(v) >= 0)
-                    .map(v -> wb.namespace(v) % 2 == 1 ? wb.getContentPage(v) : v)
-                    .forEach(copyTargets::add);
+                var params = eligibleParams.get(eligibleParams.size() - 1);
 
-                return true;
+                if (targets.addAll(parseTargets(params, "^przenieś_do\\d*$"))) {
+                    return ArchiveType.MOVE;
+                } else if (targets.addAll(parseTargets(params, "^kopiuj_do\\d*$"))) {
+                    return ArchiveType.COPY;
+                } else {
+                    return ArchiveType.SIMPLE;
+                }
             } else {
-                return false;
+                return ArchiveType.NONE;
             }
         }
 
         public static SectionInfo of(Section s) {
             var text = s.toString();
-            var copyTargets = new ArrayList<String>();
             var timestamps = retrieveTimestamps(text);
-            var hasTemplate = retrieveTargets(text, copyTargets);
+            var targets = new ArrayList<String>();
+            var type = retrieveTargets(text, targets);
 
             if (!timestamps.isEmpty()) {
-                return new SectionInfo(s, timestamps.first(), timestamps.last(), hasTemplate, copyTargets);
+                return new SectionInfo(s, timestamps.first(), timestamps.last(), type, targets);
             } else {
                 return null;
             }
