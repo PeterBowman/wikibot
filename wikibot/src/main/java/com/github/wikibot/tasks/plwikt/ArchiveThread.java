@@ -103,6 +103,9 @@ public final class ArchiveThread {
                         Collectors.mapping(SectionInfo::section, Collectors.toList())
                     ));
 
+                // important: first detach (this alters the Section instances), then append to archive subpage
+                sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
+
                 if (!sectionsPerYear.isEmpty()) {
                     tryEditArchiveListPage(config, sectionsPerYear.keySet());
 
@@ -110,8 +113,6 @@ public final class ArchiveThread {
                         editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
                     }
                 }
-
-                sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
 
                 var summary = makeSummaryTo(sectionInfos.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
                 wb.edit(config.pagename(), page.toString(), summary, false, true, -2, List.of(CHANGE_TAG), rev.getTimestamp());
