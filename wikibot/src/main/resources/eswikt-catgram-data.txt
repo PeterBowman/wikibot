@@ -242,6 +242,15 @@ f sg = exclamativa
 m pl = exclamativos
 f pl = exclamativas
 
+EXPRESSION
+type = FEMININE_NOUN
+sing = expresión
+plur = expresiones
+m sg = de expresión
+f sg = de expresión
+m pl = de expresión
+f pl = de expresión
+
 FEMININE
 type = QUALIFIER
 m sg = femenino
