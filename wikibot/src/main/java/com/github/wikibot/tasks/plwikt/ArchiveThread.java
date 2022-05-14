@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -85,7 +86,7 @@ public final class ArchiveThread {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-            sectionInfos.removeIf(si -> config.triggerOnTemplate() && si.type() == ArchiveType.NONE);
+            sectionInfos.removeIf(si -> config.triggerOnTemplate() && si.type().contains(ArchiveType.NONE));
             sectionInfos.removeIf(si -> si.latest().isAfter(refTimestamp));
 
             if (!sectionInfos.isEmpty()) {
@@ -96,7 +97,7 @@ public final class ArchiveThread {
                 }
 
                 var sectionsPerYear = sectionInfos.stream()
-                    .filter(si -> !config.triggerOnTemplate() || si.type() != ArchiveType.MOVE)
+                    .filter(si -> !config.triggerOnTemplate() || !si.type().contains(ArchiveType.MOVE))
                     .collect(Collectors.groupingBy(
                         si -> si.earliest().getYear(),
                         TreeMap::new,
@@ -185,7 +186,7 @@ public final class ArchiveThread {
 
         if (config.triggerOnTemplate() && !sectionInfo.targets().isEmpty()) {
             sectionInfo.targets().forEach(targets::add);
-        } else if (config.honorLinksInHeader()) {
+        } else if (config.honorLinksInHeader() && !sectionInfo.type().contains(ArchiveType.IGNORE_HEADER)) {
             P_HEADER_LINK.matcher(sectionInfo.section().getHeader()).results()
                 .map(m -> m.group(1).strip())
                 .filter(target -> wb.namespace(target) == Wiki.MAIN_NAMESPACE)
@@ -336,12 +337,12 @@ public final class ArchiveThread {
 
     private enum ArchiveType {
         NONE,
-        SIMPLE,
         COPY,
-        MOVE
+        MOVE,
+        IGNORE_HEADER
     }
 
-    private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, ArchiveType type, List<String> targets) {
+    private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, EnumSet<ArchiveType> type, List<String> targets) {
         private static List<String> parseTargets(Map<String, String> params, String regex) {
             return params.entrySet().stream()
                 .filter(e -> e.getKey().matches(regex))
@@ -352,7 +353,7 @@ public final class ArchiveThread {
                 .toList();
         }
 
-        private static ArchiveType retrieveTargets(String text, List<String> targets) {
+        private static EnumSet<ArchiveType> retrieveTargets(String text, List<String> targets) {
             var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
             doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
             doc.getElementsByTag("s").remove();
@@ -365,19 +366,25 @@ public final class ArchiveThread {
                 .filter(params -> !params.getOrDefault("ParamWithoutName1", "").equals("-"))
                 .toList();
 
+            var type = EnumSet.noneOf(ArchiveType.class);
+
             if (!eligibleParams.isEmpty()) {
                 var params = eligibleParams.get(eligibleParams.size() - 1);
 
                 if (targets.addAll(parseTargets(params, "^przenieś_do\\d*$"))) {
-                    return ArchiveType.MOVE;
+                    type.add(ArchiveType.MOVE);
                 } else if (targets.addAll(parseTargets(params, "^kopiuj_do\\d*$"))) {
-                    return ArchiveType.COPY;
-                } else {
-                    return ArchiveType.SIMPLE;
+                    type.add(ArchiveType.COPY);
+                }
+
+                if (params.getOrDefault("ignoruj_nagłówek", "").equals("tak")) {
+                    type.add(ArchiveType.IGNORE_HEADER);
                 }
             } else {
-                return ArchiveType.NONE;
+                type.add(ArchiveType.NONE);
             }
+
+            return type;
         }
 
         public static SectionInfo of(Section s) {
