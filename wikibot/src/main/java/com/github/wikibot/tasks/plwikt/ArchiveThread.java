@@ -80,7 +80,7 @@ public final class ArchiveThread {
             var page = Page.store(config.pagename(), rev.getText());
 
             var sectionInfos = page.getAllSections().stream()
-                .filter(s -> s.getLevel() == 2)
+                .filter(s -> s.getLevel() == config.sectionLevel())
                 .map(SectionInfo::of)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -128,6 +128,7 @@ public final class ArchiveThread {
         var minDaysGlobal = json.getInt("minDays");
         var subpageGlobal = json.getString("subpage");
         var triggerGlobal = json.getBoolean("triggerOnTemplate");
+        var sectionLevelGlobal = json.getInt("sectionLevel");
 
         for (var obj : json.getJSONArray("entries")) {
             var entry = (JSONObject)obj;
@@ -135,6 +136,7 @@ public final class ArchiveThread {
             var minDays = entry.optInt("minDays", minDaysGlobal);
             var subpage = entry.optString("subpage", subpageGlobal);
             var trigger = entry.optBoolean("triggerOnTemplate", triggerGlobal);
+            var sectionLevel = entry.optInt("sectionLevel", sectionLevelGlobal);
             var honorLinksInHeader = entry.optBoolean("honorLinksInHeader");
 
             if (minDays < 0) {
@@ -145,7 +147,11 @@ public final class ArchiveThread {
                 throw new IllegalArgumentException("subpage must be a non-empty string: " + subpage);
             }
 
-            config.add(new ArchiveConfig(pagename, minDays, subpage, trigger, honorLinksInHeader));
+            if (sectionLevel < 2 || sectionLevel > 6) {
+                throw new IllegalArgumentException("sectionLevel must be between 2 and 6: " + sectionLevel);
+            }
+
+            config.add(new ArchiveConfig(pagename, minDays, subpage, trigger, sectionLevel, honorLinksInHeader));
         }
 
         return Collections.unmodifiableList(config);
@@ -326,7 +332,7 @@ public final class ArchiveThread {
             .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    private record ArchiveConfig(String pagename, int minDays, String subpage, boolean triggerOnTemplate, boolean honorLinksInHeader) {}
+    private record ArchiveConfig(String pagename, int minDays, String subpage, boolean triggerOnTemplate, int sectionLevel, boolean honorLinksInHeader) {}
 
     private enum ArchiveType {
         NONE,
