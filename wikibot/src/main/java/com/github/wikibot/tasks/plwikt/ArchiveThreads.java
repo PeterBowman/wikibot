@@ -43,7 +43,7 @@ import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-public final class ArchiveThread {
+public final class ArchiveThreads {
     private static final String CONFIG_PAGE = "Wikisłownik:Archiwizacja.json";
     private static final String TARGET_TEMPLATE = "załatwione";
     private static final String CHANGE_TAG = "archive-threads";
@@ -176,7 +176,7 @@ public final class ArchiveThread {
 
             return cli;
         } catch (ParseException | NumberFormatException e) {
-            new HelpFormatter().printHelp(ArchiveThread.class.getName(), options);
+            new HelpFormatter().printHelp(ArchiveThreads.class.getName(), options);
             throw e;
         }
     }
