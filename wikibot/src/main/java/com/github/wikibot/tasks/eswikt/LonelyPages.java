@@ -24,7 +24,7 @@ public final class LonelyPages {
         try (var eswiktConn = DriverManager.getConnection(SQL_ESWIKT_URI, DBUtils.prepareSQLProperties())) {
             var start = System.currentTimeMillis();
             fetchLonelyPages(eswiktConn, lonelyPages);
-            var elapsed = (System.currentTimeMillis() - start) / 1000;
+            var elapsed = (System.currentTimeMillis() - start) / 1000.0;
             System.out.printf("%d titles fetched in %.3f seconds.%n", lonelyPages.size(), elapsed);
         }
 
