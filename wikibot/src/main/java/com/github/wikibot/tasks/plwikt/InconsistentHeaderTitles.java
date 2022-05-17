@@ -20,16 +20,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
-import org.wikipedia.Wiki;
-import org.wikiutils.ParseUtils;
-
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.dumps.XMLDumpReader;
@@ -45,6 +35,15 @@ import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringUtils;
+import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
 
 public final class InconsistentHeaderTitles {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/InconsistentHeaderTitles/");
@@ -84,7 +83,7 @@ public final class InconsistentHeaderTitles {
             {{TOChorizontal}}
             """;
 
-        WordForms[] polishWords = new WordForms[] {
+        var polishWords = new WordForms[] {
             new WordForms(new String[] {"hasło", "hasła", "haseł"}),
             new WordForms(new String[] {"strona", "strony", "stron"}),
             new WordForms(new String[] {"języku", "językach", "językach"})
@@ -98,10 +97,10 @@ public final class InconsistentHeaderTitles {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        Collator collator = Collator.getInstance(new Locale("pl", "PL"));
+        var collator = Collator.getInstance(new Locale("pl", "PL"));
         map = new ConcurrentSkipListMap<>(collator);
 
-        CommandLine line = readOptions(args);
+        var line = readOptions(args);
 
         if (line == null) {
             return;
@@ -121,7 +120,7 @@ public final class InconsistentHeaderTitles {
             return;
         }
 
-        Path hash = LOCATION.resolve("hash.txt");
+        var hash = LOCATION.resolve("hash.txt");
 
         if (Files.exists(hash) && Integer.parseInt(Files.readString(hash)) == map.hashCode()) {
             System.out.println("No changes detected, aborting.");
@@ -139,7 +138,7 @@ public final class InconsistentHeaderTitles {
             System.out.printf("%d titles stored.%n", titles.size());
         }
 
-        com.github.wikibot.parsing.Page page = makePage();
+        var page = makePage();
         Files.write(LOCATION.resolve("page.txt"), List.of(page.toString()));
 
         wb.setMarkBot(false);
@@ -147,37 +146,38 @@ public final class InconsistentHeaderTitles {
     }
 
     private static CommandLine readOptions(String[] args) {
-        Options options = new Options();
+        var options = new Options();
         options.addOption("p", "patrol", false, "patrol recent changes");
         options.addOption("d", "dump", true, "read from dump file");
 
         if (args.length == 0) {
             System.out.print("Option: ");
-            String input = Misc.readLine();
+            var input = Misc.readLine();
             args = input.split(" ");
         }
 
-        CommandLineParser parser = new DefaultParser();
+        var parser = new DefaultParser();
 
         try {
             return parser.parse(options, args);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
-            HelpFormatter help = new HelpFormatter();
-            help.printHelp(InconsistentHeaderTitles.class.getName(), options);
+            new HelpFormatter().printHelp(InconsistentHeaderTitles.class.getName(), options);
             return null;
         }
     }
 
     private static void analyzeRecentChanges(List<String> bufferedTitles) throws IOException {
         var newTitles = extractRecentChanges();
-        var distinctTitles = Stream.concat(newTitles.stream(), bufferedTitles.stream()).distinct().toList();
 
-        if (distinctTitles.isEmpty()) {
-            return;
+        var distinctTitles = Stream.concat(newTitles.stream(), bufferedTitles.stream())
+            .distinct()
+            .filter(title -> !title.startsWith("Słownik "))
+            .toList();
+
+        if (!distinctTitles.isEmpty()) {
+            wb.getContentOfPages(distinctTitles).stream().forEach(InconsistentHeaderTitles::findErrors);
         }
-
-        wb.getContentOfPages(distinctTitles).parallelStream().forEach(InconsistentHeaderTitles::findErrors);
     }
 
     private static List<String> readDumpFile(String path) throws IOException {
@@ -189,7 +189,7 @@ public final class InconsistentHeaderTitles {
             reader = new XMLDumpReader(Paths.get(path));
         }
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (var stream = reader.getStAXReaderStream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -207,25 +207,25 @@ public final class InconsistentHeaderTitles {
         OffsetDateTime earliest;
 
         try {
-            String timestamp = Files.readAllLines(LOCATION.resolve("timestamp.txt")).get(0);
+            var timestamp = Files.readAllLines(LOCATION.resolve("timestamp.txt")).get(0);
             earliest = OffsetDateTime.parse(timestamp);
         } catch (Exception e) {
             System.out.println("Setting new timestamp reference (-24h).");
             earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
         }
 
-        OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
+        var latest = OffsetDateTime.now(wb.timezone());
 
         if (!latest.isAfter(earliest)) {
             System.out.println("Extracted timestamp is greater than the current time, setting to -24h.");
             earliest = OffsetDateTime.now(wb.timezone()).minusDays(1);
         }
 
-        List<String> rcTypes = List.of("new", "edit");
-        List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
+        var rcTypes = List.of("new", "edit");
+        var revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 
-        Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
-        List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
+        var helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+        var logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 
         // store current timestamp for the next iteration
         Files.write(LOCATION.resolve("timestamp.txt"), List.of(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)));
@@ -258,12 +258,12 @@ public final class InconsistentHeaderTitles {
         page.getAllSections().stream()
             .filter(InconsistentHeaderTitles::filterSections)
             .forEach(section -> {
-                String lang = section.getLangShort();
-                String headerTitle = section.getHeaderTitle();
-                Item item = new Item(pc.getTitle(), headerTitle);
+                var lang = section.getLangShort();
+                var headerTitle = section.getHeaderTitle();
+                var item = new Item(pc.getTitle(), headerTitle);
 
                 // http://stackoverflow.com/a/10743710
-                Collection<Item> coll = map.get(lang);
+                var coll = map.get(lang);
 
                 if (coll == null) {
                     map.putIfAbsent(lang, new ConcurrentSkipListSet<>());
@@ -275,7 +275,7 @@ public final class InconsistentHeaderTitles {
     }
 
     private static boolean filterSections(Section section) {
-        String headerTitle = section.getHeaderTitle();
+        var headerTitle = section.getHeaderTitle();
         headerTitle = ParseUtils.removeCommentsAndNoWikiText(headerTitle);
 
         if (StringUtils.containsAny(headerTitle, '{', '}')) {
@@ -286,7 +286,7 @@ public final class InconsistentHeaderTitles {
             headerTitle = stripWikiLinks(headerTitle);
         }
 
-        String pageTitle = section.getContainingPage().get().getTitle();
+        var pageTitle = section.getContainingPage().get().getTitle();
         pageTitle = pageTitle.replace("ʼ", "'").replace("…", "...");
         headerTitle = headerTitle.replace("ʼ", "'").replace("…", "...");
 
@@ -294,7 +294,7 @@ public final class InconsistentHeaderTitles {
     }
 
     private static String stripHeaderTemplates(String text) {
-        for (String headerTemplate : HEADER_TEMPLATES) {
+        for (var headerTemplate : HEADER_TEMPLATES) {
             text = Utils.replaceTemplates(text, headerTemplate, template ->
                 Optional.of(ParseUtils.getTemplateParametersWithValue(template))
                     .map(params -> params.get("ParamWithoutName1"))
@@ -311,12 +311,12 @@ public final class InconsistentHeaderTitles {
     }
 
     private static com.github.wikibot.parsing.Page makePage() {
-        List<String> values = map.values().stream()
+        var values = map.values().stream()
             .flatMap(coll -> coll.stream().map(item -> item.pageTitle))
             .toList();
 
-        int total = values.size();
-        int unique = (int) values.stream().distinct().count();
+        var total = values.size();
+        var unique = (int)values.stream().distinct().count();
 
         System.out.printf("Found: %d (%d unique)%n", total, unique);
 
@@ -331,12 +331,10 @@ public final class InconsistentHeaderTitles {
 
         var sections = map.entrySet().stream()
             .map(entry -> {
-                boolean useColumns = entry.getValue().size() > COLUMN_ELEMENT_THRESHOLD;
+                var useColumns = entry.getValue().size() > COLUMN_ELEMENT_THRESHOLD;
+                var section = com.github.wikibot.parsing.Section.create(entry.getKey(), 2);
 
-                com.github.wikibot.parsing.Section section =
-                    com.github.wikibot.parsing.Section.create(entry.getKey(), 2);
-
-                StringBuilder sb = new StringBuilder(entry.getValue().size() * 35);
+                var sb = new StringBuilder(entry.getValue().size() * 35);
                 sb.append(String.format("{{język linków|%s}}", entry.getKey()));
 
                 if (useColumns) {
@@ -372,8 +370,8 @@ public final class InconsistentHeaderTitles {
         }
 
         String buildEntry(String simpleTargetFmt, String pipedTargetFmt) {
-            String normalizedPageTitle = normalizeTitle(pageTitle);
-            String normalizedHeaderTitle = normalizeTitle(headerTitle);
+            var normalizedPageTitle = normalizeTitle(pageTitle);
+            var normalizedHeaderTitle = normalizeTitle(headerTitle);
 
             if (normalizedPageTitle.equals(pageTitle)) {
                 return String.format(simpleTargetFmt, normalizedPageTitle, normalizedHeaderTitle);
@@ -383,7 +381,7 @@ public final class InconsistentHeaderTitles {
         }
 
         private static String normalizeTitle(String title) {
-            final String blankCharEntity = "&#9251;";
+            final var blankCharEntity = "&#9251;";
             title = title.replace("&#", "&amp;#");
             title = title.replace("<", "&lt;").replace(">", "&gt;");
             title = P_WHITESPACE.matcher(title).replaceAll(blankCharEntity);
