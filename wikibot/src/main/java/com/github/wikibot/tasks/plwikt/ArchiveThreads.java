@@ -27,6 +27,7 @@ import javax.security.auth.login.LoginException;
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.AbstractSection;
 import com.github.wikibot.parsing.Page;
 import com.github.wikibot.parsing.Section;
 import com.github.wikibot.utils.Login;
@@ -251,7 +252,7 @@ public final class ArchiveThreads {
         var timestamp = rev != null ? rev.getTimestamp() : null;
         var archive = Page.store(pagename, text);
 
-        archive.appendSections(sections);
+        archive.appendSections(AbstractSection.flattenSubSections(sections));
 
         var earliestTimestampPerSection = archive.getAllSections().stream()
             .collect(Collectors.toMap(
