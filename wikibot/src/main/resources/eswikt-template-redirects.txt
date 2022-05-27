@@ -382,3 +382,7 @@ Vivienda = vivienda
 yerbas = hierbas
 Zoología = zoología
 Zootomía = zootomía
+
+# other definition-related templates
+
+provincias = regiones
