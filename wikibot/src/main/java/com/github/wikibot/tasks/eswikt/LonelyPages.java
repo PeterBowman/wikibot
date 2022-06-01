@@ -32,17 +32,23 @@ public final class LonelyPages {
     }
 
     private static void fetchLonelyPages(Connection conn, List<String> list) throws SQLException {
-        String query = """
+        var query = """
             SELECT
                 page_title
             FROM page
-                LEFT JOIN pagelinks ON pl_namespace = page_namespace AND pl_title = page_title
-                LEFT JOIN templatelinks ON tl_namespace = page_namespace AND tl_title = page_title
+                LEFT JOIN linktarget ON
+                    lt_title = page_title AND
+                    lt_namespace = page_title
+                LEFT JOIN pagelinks ON
+                    pl_namespace = page_namespace AND
+                    pl_title = page_title
+                LEFT JOIN templatelinks ON
+                    tl_target_id = lt_id
             WHERE
-                pl_namespace IS NULL AND
                 page_namespace = 0 AND
                 page_is_redirect = 0 AND
-                tl_namespace IS NULL;
+                pl_from IS NULL AND
+                tl_from IS NULL;
             """;
 
         var stmt = conn.createStatement();

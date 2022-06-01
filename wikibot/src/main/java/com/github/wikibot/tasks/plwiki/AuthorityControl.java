@@ -414,11 +414,12 @@ public final class AuthorityControl {
                 SELECT
                     page_title
                 FROM page
-                    INNER JOIN templatelinks on tl_from = page_id
+                    INNER JOIN templatelinks ON tl_from = page_id
+                    INNER JOIN linktarget ON lt_id = tl_target_id
                 WHERE
                     tl_from_namespace = 0 AND
-                    tl_namespace = 10 AND
-                    tl_title in (%s);
+                    lt_namespace = 10 AND
+                    lt_title in (%s);
                 """, templates);
 
             var rs = connection.createStatement().executeQuery(query);
