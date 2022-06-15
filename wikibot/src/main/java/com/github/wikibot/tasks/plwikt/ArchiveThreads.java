@@ -210,8 +210,12 @@ public final class ArchiveThreads {
             if ((Boolean)info.get("exists")) {
                 var pageName = (String)info.get("pagename");
                 var talkPageName = wb.getTalkPage(pageName);
-                wb.edit(talkPageName, text, summary, false, true, -1, List.of(CHANGE_TAG), null);
-                edited = true;
+                var talkPageText = wb.getPageText(List.of(talkPageName)).get(0);
+
+                if (talkPageText == null || !talkPageText.contains(text)) {
+                    wb.edit(talkPageName, text, summary, false, true, -1, List.of(CHANGE_TAG), null);
+                    edited = true;
+                }
             }
         }
 
@@ -249,28 +253,35 @@ public final class ArchiveThreads {
         var pagename = String.format("%s/%s/%d", config.pagename(), config.subpage(), year);
         var rev = wb.getTopRevision(pagename);
         var text = rev != null ? rev.getText() : "";
-        var timestamp = rev != null ? rev.getTimestamp() : null;
-        var archive = Page.store(pagename, text);
 
-        archive.appendSections(AbstractSection.flattenSubSections(sections));
+        sections = sections.stream()
+            .filter(s -> !text.contains(s.toString()))
+            .toList();
 
-        var earliestTimestampPerSection = archive.getAllSections().stream()
-            .collect(Collectors.toMap(
-                UnaryOperator.identity(),
-                s -> Optional.of(retrieveTimestamps(s.toString()))
-                    .filter(timestamps -> !timestamps.isEmpty())
-                    .map(SortedSet::first)
-                    .map(OffsetDateTime::toEpochSecond)
-                    .orElse(0L)
+        if (!sections.isEmpty()) {
+            var timestamp = rev != null ? rev.getTimestamp() : null;
+            var archive = Page.store(pagename, text);
+
+            archive.appendSections(AbstractSection.flattenSubSections(sections));
+
+            var earliestTimestampPerSection = archive.getAllSections().stream()
+                .collect(Collectors.toMap(
+                    UnaryOperator.identity(),
+                    s -> Optional.of(retrieveTimestamps(s.toString()))
+                        .filter(timestamps -> !timestamps.isEmpty())
+                        .map(SortedSet::first)
+                        .map(OffsetDateTime::toEpochSecond)
+                        .orElse(0L)
+                ));
+
+            archive.sortSections((s1, s2) -> Long.compare(
+                earliestTimestampPerSection.getOrDefault(s1, 0L),
+                earliestTimestampPerSection.getOrDefault(s2, 0L)
             ));
 
-        archive.sortSections((s1, s2) -> Long.compare(
-            earliestTimestampPerSection.getOrDefault(s1, 0L),
-            earliestTimestampPerSection.getOrDefault(s2, 0L)
-        ));
-
-        var summary = makeSummaryFrom(sections.size(), config.pagename(), revid);
-        wb.edit(pagename, archive.toString(), summary, false, true, -2, List.of(CHANGE_TAG), timestamp);
+            var summary = makeSummaryFrom(sections.size(), config.pagename(), revid);
+            wb.edit(pagename, archive.toString(), summary, false, true, -2, List.of(CHANGE_TAG), timestamp);
+        }
     }
 
     private static void tryEditArchiveListPage(ArchiveConfig config, Set<Integer> years) throws IOException, LoginException {
