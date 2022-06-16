@@ -66,61 +66,83 @@ public final class ArchiveThreads {
         var daysOverride = Optional.ofNullable(line.getOptionValue("days")).map(Integer::parseInt);
         var json = wb.getPageText(List.of(CONFIG_PAGE)).get(0);
         var configs = parseArchiveConfig(new JSONObject(json));
-        var now = OffsetDateTime.now();
 
         configs.forEach(System.out::println);
         Login.login(wb);
 
+        record Error(ArchiveConfig config, Throwable err) {}
+        var errors = new ArrayList<Error>();
+
         for (var config : configs) {
             System.out.println(config);
 
-            var days = daysOverride.orElse(config.minDays());
-            var refTimestamp = now.minusDays(days);
-            System.out.printf("Reference date-time: %s%n", refTimestamp);
-
-            var rev = wb.getTopRevision(config.pagename());
-            var page = Page.store(config.pagename(), rev.getText());
-
-            var sectionInfos = page.getAllSections().stream()
-                .filter(s -> s.getLevel() == config.sectionLevel())
-                .map(SectionInfo::of)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-
-            sectionInfos.removeIf(si -> config.triggerOnTemplate() && si.type().contains(ArchiveType.NONE));
-            sectionInfos.removeIf(si -> si.latest().isAfter(refTimestamp));
-
-            if (!sectionInfos.isEmpty()) {
-                var usingAdditionalTargets = false;
-
-                for (var sectionInfo : sectionInfos) {
-                    usingAdditionalTargets |= processAdditionalTargets(config, rev.getID(), sectionInfo);
-                }
-
-                var sectionsPerYear = sectionInfos.stream()
-                    .filter(si -> !config.triggerOnTemplate() || !si.type().contains(ArchiveType.MOVE))
-                    .collect(Collectors.groupingBy(
-                        si -> si.earliest().getYear(),
-                        TreeMap::new,
-                        Collectors.mapping(SectionInfo::section, Collectors.toList())
-                    ));
-
-                // important: first detach (this alters the Section instances), then append to archive subpage
-                sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
-
-                if (!sectionsPerYear.isEmpty()) {
-                    tryEditArchiveListPage(config, sectionsPerYear.keySet());
-
-                    for (var entry : sectionsPerYear.entrySet()) {
-                        editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
-                    }
-                }
-
-                var summary = makeSummaryTo(sectionInfos.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
-                wb.edit(config.pagename(), page.toString(), summary, false, true, -2, List.of(CHANGE_TAG), rev.getTimestamp());
-            } else {
-                System.out.println("No eligible sections found for " + config.pagename());
+            try {
+                processEntry(config, daysOverride);
+            } catch (Throwable t) {
+                t.printStackTrace();
+                errors.add(new Error(config, t));
             }
+        }
+
+        if (!errors.isEmpty()) {
+            System.out.printf("Got %d errors:%n", errors.size());
+
+            errors.stream()
+                .map(e -> String.format("%s: %s", e.config().pagename(), e.err().getMessage()))
+                .forEach(System.out::println);
+
+            var pagenames = errors.stream().map(e -> e.config().pagename()).toList();
+            throw new RuntimeException(pagenames.size() + " error(s): " + pagenames);
+        }
+    }
+
+    private static void processEntry(ArchiveConfig config, Optional<Integer> daysOverride) throws Exception {
+        var days = daysOverride.orElse(config.minDays());
+        var refTimestamp = OffsetDateTime.now().minusDays(days);
+        System.out.printf("Reference date-time: %s%n", refTimestamp);
+
+        var rev = wb.getTopRevision(config.pagename());
+        var page = Page.store(config.pagename(), rev.getText());
+
+        var sectionInfos = page.getAllSections().stream()
+            .filter(s -> s.getLevel() == config.sectionLevel())
+            .map(SectionInfo::of)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        sectionInfos.removeIf(si -> config.triggerOnTemplate() && si.type().contains(ArchiveType.NONE));
+        sectionInfos.removeIf(si -> si.latest().isAfter(refTimestamp));
+
+        if (!sectionInfos.isEmpty()) {
+            var usingAdditionalTargets = false;
+
+            for (var sectionInfo : sectionInfos) {
+                usingAdditionalTargets |= processAdditionalTargets(config, rev.getID(), sectionInfo);
+            }
+
+            var sectionsPerYear = sectionInfos.stream()
+                .filter(si -> !config.triggerOnTemplate() || !si.type().contains(ArchiveType.MOVE))
+                .collect(Collectors.groupingBy(
+                    si -> si.earliest().getYear(),
+                    TreeMap::new,
+                    Collectors.mapping(SectionInfo::section, Collectors.toList())
+                ));
+
+            // important: first detach (this alters the Section instances), then append to archive subpage
+            sectionInfos.stream().map(SectionInfo::section).forEach(Section::detach);
+
+            if (!sectionsPerYear.isEmpty()) {
+                tryEditArchiveListPage(config, sectionsPerYear.keySet());
+
+                for (var entry : sectionsPerYear.entrySet()) {
+                    editArchiveSubpage(config, rev.getID(), entry.getKey(), entry.getValue());
+                }
+            }
+
+            var summary = makeSummaryTo(sectionInfos.size(), config, sectionsPerYear.navigableKeySet(), usingAdditionalTargets);
+            wb.edit(config.pagename(), page.toString(), summary, false, true, -2, List.of(CHANGE_TAG), rev.getTimestamp());
+        } else {
+            System.out.println("No eligible sections found for " + config.pagename());
         }
     }
 
