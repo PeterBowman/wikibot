@@ -1609,7 +1609,7 @@ public class Editor extends AbstractEditor {
                 String trailingText = mr.group(2);
 
                 if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 temp.add(line);
@@ -1649,7 +1649,7 @@ public class Editor extends AbstractEditor {
                 String trailingText = mr.group(2);
 
                 if (!trailingText.isEmpty() && !analyzeEtymLine(trailingText)) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 temp.add(line);
@@ -2997,7 +2997,7 @@ public class Editor extends AbstractEditor {
                     .orElse(processTemplateLine(mr, PRON_TMPLS, PRON_TMPLS_ALIAS));
 
                 if (line == null) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 line = Utils.replaceWithStandardIgnoredRanges(
@@ -3906,7 +3906,7 @@ public class Editor extends AbstractEditor {
                 }
             }
 
-            return mr.group();
+            return Matcher.quoteReplacement(mr.group());
         });
 
         checkDifferences(formatted, "removeCategoryLinks", "eliminando categorías redundantes");
@@ -4393,7 +4393,7 @@ public class Editor extends AbstractEditor {
                 String trail = mr.group(4);
 
                 if (target.contains(":") || capitalize(target).equals(target)) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 target = target.replaceFirst("#(Español|es)$", "");
@@ -4402,26 +4402,26 @@ public class Editor extends AbstractEditor {
                 if (target.isEmpty()) {
                     target = title;
                 } else if (target.contains("#")) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 if (pipe != null) {
                     pipe = pipe.trim();
 
                     if (pipe.isEmpty() || !uncapitalize(pipe).equals(target)) {
-                        return mr.group();
+                        return Matcher.quoteReplacement(mr.group());
                     }
                 }
 
                 if (P_LINK_TRAIL.matcher(trail).matches()) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 String template = target.equals(title)
                     ? "{{plm}}"
                     : String.format("{{plm|%s}}", target);
 
-                return intro.substring(mr.start(), mr.start(1)) + template + trail;
+                return Matcher.quoteReplacement(intro.substring(mr.start(), mr.start(1)) + template + trail);
             });
 
             if (!temp.equals(intro)) {
@@ -4442,7 +4442,7 @@ public class Editor extends AbstractEditor {
                 term.isEmpty() || Character.isUpperCase(term.charAt(0)) ||
                 !term.matches("[a-záéíóúüñ]+\\.?")
             ) {
-                return mr.group();
+                return Matcher.quoteReplacement(mr.group());
             }
 
             term = term.replaceFirst("\\.$", "");
@@ -4803,7 +4803,7 @@ public class Editor extends AbstractEditor {
                 String template = mr.group(2);
 
                 if (template == null || template.startsWith(" ")) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 return intro.substring(mr.start(), mr.start(2)) +
@@ -4895,7 +4895,7 @@ public class Editor extends AbstractEditor {
                 String definition = mr.group(4);
 
                 if (!number.startsWith(" ") && !colon.startsWith(" ") && definition.startsWith(" ")) {
-                    return mr.group();
+                    return Matcher.quoteReplacement(mr.group());
                 }
 
                 return
