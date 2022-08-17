@@ -301,7 +301,7 @@ public class PrettyRefServlet extends HttpServlet {
                 .collect(Collectors.joining("\n"));
 
             if (!targetedRefs.isEmpty()) {
-                var replacement = String.format("<references responsive>%n%s%n</references>", targetedRefs);
+                var replacement = String.format("<references>%n%s%n</references>", targetedRefs);
                 var section = normalRefsSections.get(0);
                 var newText = SOURCES_RE.matcher(section.toString()).replaceFirst(Matcher.quoteReplacement(replacement));
 
