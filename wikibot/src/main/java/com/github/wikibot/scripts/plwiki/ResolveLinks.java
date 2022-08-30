@@ -123,7 +123,7 @@ public final class ResolveLinks {
         }
 
         var isRedirMode = line.getOptionValue("mode").equals("redirsource") || line.getOptionValue("mode").equals("redirtarget");
-        var isDryRunMode = line.getOptionValue("mode").equals("dry");
+        var isDryRunMode = line.hasOption("dry");
         var replaceText = line.hasOption("replaceText");
 
         var edited = Collections.synchronizedList(new ArrayList<String>());
