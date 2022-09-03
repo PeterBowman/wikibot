@@ -53,7 +53,7 @@ public final class ResolveLinks {
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
 
     // from Linker::formatLinksInComment in Linker.php (now CommentParser::doWikiLinks in CommentParser.php)
-    private static final Pattern PATT_LINK = Pattern.compile("\\[{2} *?:?([^\\[\\]\\|]+)(#[^\\|\\]]*?)?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?");
+    private static final Pattern PATT_LINK = Pattern.compile("\\[{2} *?:?([^\\[\\]\\|#]+)(#[^\\|\\]]*?)?(?:\\|((?:]?[^\\]])*+))?\\]{2}([a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]+)?");
 
     private static final List<String> SOFT_REDIR_TEMPLATES = List.of(
         "Osobny artykuł", "Osobna strona", "Główny artykuł", "Main", "Mainsec", "Zobacz też", "Seealso"
