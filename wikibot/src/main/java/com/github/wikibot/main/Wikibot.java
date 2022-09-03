@@ -436,6 +436,72 @@ public class Wikibot extends WMFWiki {
         }
     }
 
+    public List<Map<String, String>> getClaims(String entity) throws IOException {
+        return getClaims(entity, null);
+    }
+
+    public List<Map<String, String>> getClaims(String entity, String property) throws IOException {
+        requiresExtension("WikibaseRepository");
+
+        var getparams = new HashMap<String, String>(Map.of(
+            "action", "wbgetclaims",
+            "entity", entity
+        ));
+
+        if (property != null) {
+            getparams.put("property", property);
+        }
+
+        var response = makeApiCall(getparams, null, "wbgetclaims");
+        detectUncheckedErrors(response, null, null);
+
+        var out = new ArrayList<Map<String, String>>();
+        var claims = response.split("<claim ");
+
+        for (var i = 1; i < claims.length; i++) {
+            var map = new HashMap<String, String>();
+            var claim = claims[i];
+            map.put("guid", parseAttribute(claim, "id", 0));
+            map.put("rank", parseAttribute(claim, "rank", 0));
+
+            var mainsnak = claim.substring(claim.indexOf("<mainsnak "), claim.indexOf("</mainsnak>"));
+            map.put("snaktype", parseAttribute(mainsnak, "snaktype", 0));
+            map.put("property", parseAttribute(mainsnak, "property", 0));
+
+            if (map.get("snaktype").equals("value")) {
+                map.put("datatype", parseAttribute(mainsnak, "datatype", 0));
+
+                var start = mainsnak.indexOf("<datavalue ");
+                var end = mainsnak.indexOf("</datavalue>", start);
+
+                if (end == -1) {
+                    end = mainsnak.indexOf(" />", start);
+                }
+
+                var datavalue = mainsnak.substring(start, end);
+                map.put("type", parseAttribute(datavalue, "type", 0));
+
+                if (map.get("type").equals("string")) {
+                    map.put("value", parseAttribute(datavalue, "value", 0));
+                } else {
+                    start = datavalue.indexOf("<value ") + "<value ".length();
+                    end = datavalue.indexOf(" />", start);
+
+                    for (var pair : datavalue.substring(start, end).split(" ")) {
+                        var key = pair.substring(0, pair.indexOf("="));
+                        var value = pair.substring(pair.indexOf("=") + 2, pair.length() - 1);
+                        map.put(key, value);
+                    }
+                }
+            }
+
+            out.add(map);
+        }
+
+        log(Level.INFO, "wbgetclaims", "Successfully retrieved " + out.size() + " claim(s) for entity " + entity + (property != null ? " and property " + property : ""));
+        return out;
+    }
+
     public void createClaim(String entity, String property, String value) throws LoginException, IOException {
         createClaim(entity, property, value, -1L, null);
     }
@@ -469,6 +535,84 @@ public class Wikibot extends WMFWiki {
         var response = makeApiCall(getparams, postparams, "wbcreateclaim");
         checkErrorsAndUpdateStatus(response, "wbcreateclaim", null, null);
         log(Level.INFO, "wbcreateclaim", "Successfully added claim to " + entity);
+    }
+
+    public synchronized void setClaimValue(String claim, String value, String snaktype) throws IOException, LoginException {
+        setClaimValue(claim, value, snaktype, -1L, null);
+    }
+
+    public synchronized void setClaimValue(String claim, String value, String snaktype, long baseRevid) throws IOException, LoginException {
+        setClaimValue(claim, value, snaktype, baseRevid, null);
+    }
+
+    public synchronized void setClaimValue(String claim, String value, String snaktype, long baseRevid, String summary) throws IOException, LoginException {
+        requiresExtension("WikibaseRepository");
+        throttle();
+
+        var getparams = new HashMap<>(Map.of(
+            "action", "wbsetclaimvalue",
+            "claim", claim,
+            "snaktype", snaktype,
+            "value", value,
+            "bot", isMarkBot() ? "1" : "0"
+        ));
+
+        if (baseRevid != -1L) {
+            getparams.put("baserevid", Long.toString(baseRevid));
+        }
+
+        if (summary != null) {
+            getparams.put("summary", summary);
+        }
+
+        var postparams = Map.of("token", (Object)getToken("csrf"));
+        var response = makeApiCall(getparams, postparams, "wbsetclaimvalue");
+        checkErrorsAndUpdateStatus(response, "wbsetclaimvalue", null, null);
+        log(Level.INFO, "wbsetclaimvalue", "Successfully set new claim value for " + claim);
+    }
+
+    public synchronized void removeClaim(String claim) throws IOException, LoginException {
+        removeClaims(List.of(claim), -1L, null);
+    }
+
+    public synchronized void removeClaim(String claim, long baseRevid) throws IOException, LoginException {
+        removeClaims(List.of(claim), baseRevid, null);
+    }
+
+    public synchronized void removeClaim(String claim, long baseRevid, String summary) throws IOException, LoginException {
+        removeClaims(List.of(claim), baseRevid, summary);
+    }
+
+    public synchronized void removeClaims(List<String> claims) throws IOException, LoginException {
+        removeClaims(claims, -1L, null);
+    }
+
+    public synchronized void removeClaims(List<String> claims, long baseRevid) throws IOException, LoginException {
+        removeClaims(claims, baseRevid, null);
+    }
+
+    public synchronized void removeClaims(List<String> claims, long baseRevid, String summary) throws IOException, LoginException {
+        requiresExtension("WikibaseRepository");
+        throttle();
+
+        var getparams = new HashMap<>(Map.of(
+            "action", "wbremoveclaims",
+            "claim", String.join("|", claims),
+            "bot", isMarkBot() ? "1" : "0"
+        ));
+
+        if (baseRevid != -1L) {
+            getparams.put("baserevid", Long.toString(baseRevid));
+        }
+
+        if (summary != null) {
+            getparams.put("summary", summary);
+        }
+
+        var postparams = Map.of("token", (Object)getToken("csrf"));
+        var response = makeApiCall(getparams, postparams, "wbremoveclaims");
+        checkErrorsAndUpdateStatus(response, "wbremoveclaims", null, null);
+        log(Level.INFO, "wbremoveclaims", "Successfully removed " + claims.size() + " claim(s)");
     }
 
     public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
