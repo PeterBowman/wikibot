@@ -50,6 +50,7 @@ public final class BoldedSelflinks {
     private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]([^\\[]*)");
     private static final Pattern P_BOLD = Pattern.compile("'{3}([^\\[\\]\\{\\}]+?)'{3}");
     private static final Pattern P_TRANSL = Pattern.compile("→[^•;]+");
+    private static final Pattern P_TEMPLATE = Pattern.compile("\\{{2}[^\\}\n]+?\\}{2}");
 
     private static final Collator COLL_PL = Collator.getInstance(new Locale("pl"));
 
@@ -166,6 +167,10 @@ public final class BoldedSelflinks {
     private static boolean filterLines(String line, String title, String lang) {
         if (line.contains("→")) {
             line = P_TRANSL.matcher(line).replaceAll("");
+        }
+
+        if (line.contains("{") || line.contains("}")) {
+            line = P_TEMPLATE.matcher(line).replaceAll("");
         }
 
         if (!IGNORED_SELFLINKS.contains(lang)) {
