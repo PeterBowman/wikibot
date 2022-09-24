@@ -34,16 +34,6 @@ import java.util.stream.StreamSupport;
 
 import javax.security.auth.login.LoginException;
 
-import com.github.wikibot.dumps.XMLDumpReader;
-import com.github.wikibot.dumps.XMLRevision;
-import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.scripts.wd.FetchEpwnBiograms;
-import com.github.wikibot.utils.Login;
-import com.github.wikibot.utils.Misc;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.XStreamException;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -55,8 +45,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLRevision;
+import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.scripts.wd.FetchEpwnBiograms;
+import com.github.wikibot.utils.Login;
+import com.github.wikibot.utils.Misc;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.XStreamException;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 public final class MissingWomenBiograms {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWomenBiograms/");
@@ -104,22 +103,14 @@ public final class MissingWomenBiograms {
         var dumpPath = Paths.get("");
 
         if (line.hasOption("dump")) {
-            var biogramEntities = new HashSet<>(queryBiogramEntities());
+            var biogramEntities = queryBiogramEntities();
             var reader = new XMLDumpReader("wikidatawiki", true);
 
             try (var stream = reader.seekTitles(biogramEntities).getStAXReaderStream()) {
                 stream
-                    .filter(XMLRevision::isMainNamespace)
                     .filter(XMLRevision::nonRedirect)
-                    .filter(rev -> biogramEntities.contains(rev.getTitle()))
-                    .<JSONObject>mapMulti((rev, consumer) -> {
-                        try {
-                            var json = new JSONObject(rev.getText());
-                            consumer.accept(json);
-                        } catch (JSONException e) {
-                            System.err.printf("Error parsing JSON for %s: %s%n", rev.getTitle(), e.getMessage());
-                        }
-                    })
+                    .filter(rev -> !rev.getText().isEmpty()) // may happen due to dump corruption (self-closing <text> tag)
+                    .map(rev -> new JSONObject(rev.getText()))
                     .filter(json -> Optional.ofNullable(json.optJSONObject("claims")).filter(MissingWomenBiograms::isWoman).isPresent())
                     .filter(json -> Optional.ofNullable(json.optJSONObject("sitelinks")).filter(sl -> sl.has("plwiki")).isEmpty())
                     .forEach(json -> analyzeEntity(json, entries));
