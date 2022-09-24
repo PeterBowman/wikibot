@@ -55,6 +55,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public final class MissingWomenBiograms {
@@ -111,7 +112,14 @@ public final class MissingWomenBiograms {
                     .filter(XMLRevision::isMainNamespace)
                     .filter(XMLRevision::nonRedirect)
                     .filter(rev -> biogramEntities.contains(rev.getTitle()))
-                    .map(rev -> new JSONObject(rev.getText()))
+                    .<JSONObject>mapMulti((rev, consumer) -> {
+                        try {
+                            var json = new JSONObject(rev.getText());
+                            consumer.accept(json);
+                        } catch (JSONException e) {
+                            System.err.printf("Error parsing JSON for %s: %s%n", rev.getTitle(), e.getMessage());
+                        }
+                    })
                     .filter(json -> Optional.ofNullable(json.optJSONObject("claims")).filter(MissingWomenBiograms::isWoman).isPresent())
                     .filter(json -> Optional.ofNullable(json.optJSONObject("sitelinks")).filter(sl -> sl.has("plwiki")).isEmpty())
                     .forEach(json -> analyzeEntity(json, entries));
