@@ -160,6 +160,8 @@ public final class MissingWomenBiograms {
                     hashcodes.put(entry.getKey().subtype(), portion.hashCode());
                 }
             }
+
+            Files.writeString(HASHCODES, xstream.toXML(hashcodes));
         }
     }
 
