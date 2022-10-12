@@ -113,6 +113,7 @@ fisiología = Fisiología
 flores = Flores
 folclore = Folclore
 fonética = Fonética
+formas = Formas
 fotografía = Fotografía
 fraccionarios = Fraccionarios
 frutas = Frutas
