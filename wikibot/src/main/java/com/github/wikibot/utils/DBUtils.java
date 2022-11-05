@@ -71,7 +71,9 @@ public class DBUtils {
 
 					if (ns == Wiki.CATEGORY_NAMESPACE) {
 						subcats.add(title);
-					} else if (targetNs.isEmpty() || targetNs.contains(ns)) {
+					}
+
+					if (targetNs.isEmpty() || targetNs.contains(ns)) {
 						members.add(title.replace('_', ' '));
 					}
 				}
