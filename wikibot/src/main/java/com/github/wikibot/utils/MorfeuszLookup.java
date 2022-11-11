@@ -25,17 +25,12 @@ import com.univocity.parsers.tsv.TsvParserSettings;
 
 public class MorfeuszLookup {
     private Path pathToDump;
+    private InputStream urlStream;
     private boolean compressed;
+
     final private TsvParserSettings settings;
 
-    public MorfeuszLookup(Path path) throws IOException {
-        this(path, checkExtension(path));
-    }
-
-    public MorfeuszLookup(Path path, boolean useCompression) {
-        pathToDump = Objects.requireNonNull(path);
-        compressed = useCompression;
-
+    {
         settings = new TsvParserSettings();
         // had some issues with copyright notice (uses Windows CRLF, main content is Unix LF)
         settings.setNumberOfRowsToSkip(29);
@@ -46,6 +41,24 @@ public class MorfeuszLookup {
         settings.setReadInputOnSeparateThread(false);
     }
 
+    public static MorfeuszLookup fromPath(Path path) throws IOException {
+        return new MorfeuszLookup(path, checkExtension(path));
+    }
+
+    public static Stream<MorfeuszRecord> fromInputStream(InputStream stream) throws IOException {
+        return new MorfeuszLookup(stream).stream();
+    }
+
+    private MorfeuszLookup(Path path, boolean useCompression) {
+        pathToDump = Objects.requireNonNull(path);
+        compressed = useCompression;
+    }
+
+    private MorfeuszLookup(InputStream is) {
+        urlStream = is;
+        compressed = true;
+    }
+
     private static boolean checkExtension(Path path) throws IOException {
         var contentType = Files.probeContentType(path);
         // there might be no FileTypeDetector installed
@@ -53,24 +66,17 @@ public class MorfeuszLookup {
         return "application/x-gzip".equals(contentType) || extension.equals("gz");
     }
 
-    public boolean isCompressed() {
-        return compressed;
-    }
-
-    public Path getPath() {
-        return pathToDump;
-    }
-
     public Stream<MorfeuszRecord> stream() throws IOException {
+        var source = urlStream != null ? urlStream : Files.newInputStream(pathToDump);
         final InputStream is;
 
         if (compressed) {
-            is = new GzipCompressorInputStream(new BufferedInputStream(Files.newInputStream(pathToDump)));
+            is = new GzipCompressorInputStream(new BufferedInputStream(source));
         } else {
-            is = new BufferedInputStream(Files.newInputStream(pathToDump));
+            is = new BufferedInputStream(source);
         }
 
-        // must create new parser instance on each stream run, otherwise returns nothing once stopped
+        // must create a new parser instance on each stream run, otherwise returns nothing once stopped
         var parser = new TsvParser(settings);
         var iterable = parser.iterate(is, StandardCharsets.UTF_8);
         var iterator = new MorfeuszIterator(iterable.iterator());
@@ -113,18 +119,22 @@ public class MorfeuszLookup {
     }
 
     public static void main(String[] args) throws Exception {
-        var path = Paths.get("./data/dumps/");
-        var morfeuszLookup = new MorfeuszLookup(path.resolve("sgjp-20200607.tab.gz"));
+        try (var fileStream = Files.list(Paths.get("./data/dumps/"))) {
+            var dumpPath = fileStream
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().matches("^sgjp-\\d{8}\\.tab\\.gz$"))
+                .findFirst()
+                .orElseThrow();
 
-        System.out.println(morfeuszLookup.getPath());
-        System.out.println(morfeuszLookup.isCompressed());
+            var morfeuszLookup = MorfeuszLookup.fromPath(dumpPath);
 
-        try (var stream = morfeuszLookup.stream()) {
-            stream.filter(record -> record.getLemma().equals("kotek")).forEach(System.out::println);
-        }
+            try (var stream = morfeuszLookup.stream()) {
+                stream.filter(record -> record.getLemma().equals("kotek")).forEach(System.out::println);
+            }
 
-        try (var stream = morfeuszLookup.stream()) {
-            System.out.println(stream.count());
+            try (var stream = morfeuszLookup.stream()) {
+                System.out.println(stream.count());
+            }
         }
     }
 }

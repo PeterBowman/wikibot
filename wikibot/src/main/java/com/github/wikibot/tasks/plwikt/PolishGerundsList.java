@@ -177,7 +177,7 @@ public class PolishGerundsList {
         Set<String> gers = new HashSet<>(300000);
         Set<String> substs = new HashSet<>(150000);
 
-        MorfeuszLookup morfeuszLookup = new MorfeuszLookup(Paths.get(""));
+        MorfeuszLookup morfeuszLookup = MorfeuszLookup.fromPath(Paths.get(""));
 
         try (var stream = morfeuszLookup.stream()) {
             stream.forEach(record -> {
