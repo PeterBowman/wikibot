@@ -28,13 +28,12 @@ import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
 public class MissingPolishEntries {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishEntries/");
-    private static final Path LATEST_PATH = LOCATION.resolve("latest.txt");
     private static final Path HASH_PATH = LOCATION.resolve("hash.txt");
     private static final Path TITLES_PATH = LOCATION.resolve("titles.txt");
 
     private static final String TARGET_PAGE = "Wikipedysta:PBbot/brakujące polskie";
     private static final String DOWNLOAD_URL = "http://download.sgjp.pl/morfeusz/";
-    private static final String DUMP_FILENAME_FORMAT = "sgjp-%1$s.tab.gz";
+    private static final String DUMP_FILENAME_FORMAT = "sgjp-%s.tab.gz";
 
     private static final String SQL_PLWIKT_URI_SERVER = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
     private static final String SQL_PLWIKT_URI_LOCAL = "jdbc:mysql://localhost:4713/plwiktionary_p";
@@ -61,11 +60,6 @@ public class MissingPolishEntries {
         var latestDumpDir = retrieveLatestDumpDir();
         System.out.println("Latest dump directory: " + latestDumpDir);
 
-        if (Files.exists(LATEST_PATH) && Files.readString(LATEST_PATH).equals(latestDumpDir)) {
-            System.out.println("No new dump available, aborting.");
-            return;
-        }
-
         var titles = retrieveNonPolishEntries();
         retainSgjpEntries(latestDumpDir, titles);
 
@@ -73,7 +67,6 @@ public class MissingPolishEntries {
 
         if (Files.exists(HASH_PATH) && Integer.parseInt(Files.readString(HASH_PATH)) == titles.hashCode()) {
             System.out.println("No changes detected, aborting.");
-            Files.writeString(LATEST_PATH, latestDumpDir);
             return;
         }
 
@@ -84,8 +77,6 @@ public class MissingPolishEntries {
         Login.login(wb);
         wb.setMarkBot(false);
         wb.edit(TARGET_PAGE, getOutput(titles), "aktualizacja");
-
-        Files.writeString(LATEST_PATH, latestDumpDir);
     }
 
     private static String retrieveLatestDumpDir() throws IOException {
