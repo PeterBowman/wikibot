@@ -23,7 +23,6 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.DBUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.MorfeuszLookup;
-import com.github.wikibot.utils.MorfeuszRecord;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 
@@ -171,7 +170,7 @@ public class MissingPolishEntries {
         var url = new URL(DOWNLOAD_URL + dumpDir + "/" + stats.dumpFile);
 
         try (var stream = MorfeuszLookup.fromInputStream(url.openStream())) {
-            var database = stream.map(MorfeuszRecord::getLemma).collect(Collectors.toSet());
+            var database = stream.map(MorfeuszLookup.Record::lemma).collect(Collectors.toSet());
             titles.retainAll(database);
 
             stats.databaseLemmas = database.size();

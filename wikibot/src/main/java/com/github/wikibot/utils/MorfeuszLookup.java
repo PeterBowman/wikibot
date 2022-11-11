@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -45,7 +46,7 @@ public class MorfeuszLookup {
         return new MorfeuszLookup(path, checkExtension(path));
     }
 
-    public static Stream<MorfeuszRecord> fromInputStream(InputStream stream) throws IOException {
+    public static Stream<Record> fromInputStream(InputStream stream) throws IOException {
         return new MorfeuszLookup(stream).stream();
     }
 
@@ -66,7 +67,7 @@ public class MorfeuszLookup {
         return "application/x-gzip".equals(contentType) || extension.equals("gz");
     }
 
-    public Stream<MorfeuszRecord> stream() throws IOException {
+    public Stream<Record> stream() throws IOException {
         var source = urlStream != null ? urlStream : Files.newInputStream(pathToDump);
         final InputStream is;
 
@@ -98,7 +99,7 @@ public class MorfeuszLookup {
         return stream;
     }
 
-    private static class MorfeuszIterator implements Iterator<MorfeuszRecord> {
+    private static class MorfeuszIterator implements Iterator<Record> {
         private ResultIterator<String[], ParsingContext> tsvIterator;
 
         public MorfeuszIterator(ResultIterator<String[], ParsingContext> tsvIterator) {
@@ -111,10 +112,28 @@ public class MorfeuszLookup {
         }
 
         @Override
-        public MorfeuszRecord next() {
+        public Record next() {
             var fields = tsvIterator.next();
-            var record = MorfeuszRecord.fromArray(fields);
+            var record = Record.fromArray(fields);
             return record;
+        }
+    }
+
+    public record Record(String form, String lemma, String tags, String name, String labels) {
+        static Record fromArray(String[] fields) {
+            if (fields.length != 5) {
+                throw new IllegalArgumentException("expected 5 values, got " + fields.length);
+            }
+
+            return new Record(fields[0], fields[1], fields[2], fields[3], fields[4]);
+        }
+
+        public List<String> tagsAsList() {
+            return List.of(tags.split(","));
+        }
+
+        public List<String> labelsAsList() {
+            return List.of(labels.split("|"));
         }
     }
 
@@ -129,7 +148,7 @@ public class MorfeuszLookup {
             var morfeuszLookup = MorfeuszLookup.fromPath(dumpPath);
 
             try (var stream = morfeuszLookup.stream()) {
-                stream.filter(record -> record.getLemma().equals("kotek")).forEach(System.out::println);
+                stream.filter(record -> record.lemma().equals("kotek")).forEach(System.out::println);
             }
 
             try (var stream = morfeuszLookup.stream()) {

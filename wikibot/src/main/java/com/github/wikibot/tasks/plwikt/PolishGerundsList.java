@@ -181,12 +181,12 @@ public class PolishGerundsList {
 
         try (var stream = morfeuszLookup.stream()) {
             stream.forEach(record -> {
-                String firstTag = record.getTags()[0];
+                String firstTag = record.tagsAsList().get(0);
 
                 if (firstTag.equals("ger")) {
-                    gers.add(record.getForm());
-                } else if (firstTag.equals("subst") && !substs.contains(record.getLemma())) {
-                    substs.add(record.getLemma());
+                    gers.add(record.form());
+                } else if (firstTag.equals("subst") && !substs.contains(record.lemma())) {
+                    substs.add(record.lemma());
                 }
             });
         }
