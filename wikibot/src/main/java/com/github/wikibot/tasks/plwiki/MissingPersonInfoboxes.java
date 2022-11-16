@@ -7,10 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -87,6 +91,10 @@ public final class MissingPersonInfoboxes {
 
             writeCompressedOutput(filtered, filename);
         }
+
+        var now = DateTimeFormatter.ISO_DATE_TIME.format(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        var dailyCount = String.format("%s %d%n", now, results.size());
+        Files.writeString(LOCATION.resolve("daily-count.txt"), dailyCount, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
     private static List<String> queryBiograms() {
