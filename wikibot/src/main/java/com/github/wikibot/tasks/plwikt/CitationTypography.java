@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -954,9 +955,7 @@ public final class CitationTypography {
 
         @Override
         public int hashCode() {
-            return
-                title.hashCode() + langSection.hashCode() + fieldType.hashCode() +
-                originalText.hashCode() + newText.hashCode();
+            return Objects.hash(title, langSection, fieldType, originalText, newText);
         }
 
         @Override

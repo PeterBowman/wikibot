@@ -12,11 +12,8 @@ public class PageContainer implements Serializable {
     protected OffsetDateTime timestamp;
 
     public PageContainer(String title, String text, OffsetDateTime timestamp) {
-        Objects.requireNonNull(title);
-        Objects.requireNonNull(text);
-
-        this.title = title;
-        this.text = text;
+        this.title = Objects.requireNonNull(title);
+        this.text = Objects.requireNonNull(text);
         this.timestamp = timestamp;
     }
 
@@ -38,7 +35,7 @@ public class PageContainer implements Serializable {
 
     @Override
     public int hashCode() {
-        return title.hashCode() + text.hashCode() + timestamp.hashCode();
+        return Objects.hash(title.hashCode(), text.hashCode(), timestamp.hashCode());
     }
 
     @Override

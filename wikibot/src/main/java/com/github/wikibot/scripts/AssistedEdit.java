@@ -242,8 +242,7 @@ public final class AssistedEdit {
 
         @Override
         public String getFileFragment() {
-            Objects.requireNonNull(sectionName);
-            return sectionName;
+            return Objects.requireNonNull(sectionName);
         }
 
         @Override

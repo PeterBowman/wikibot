@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -279,7 +280,7 @@ public final class EsperantoRelatedTerms {
 
         @Override
         public int hashCode() {
-            return title.hashCode() + morphem.hashCode();
+            return Objects.hash(title, morphem);
         }
 
         @Override

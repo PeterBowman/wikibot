@@ -396,7 +396,7 @@ public final class InconsistentHeaderTitles {
 
         @Override
         public int hashCode() {
-            return pageTitle.hashCode() + headerTitle.hashCode();
+            return Objects.hash(pageTitle, headerTitle);
         }
 
         @Override

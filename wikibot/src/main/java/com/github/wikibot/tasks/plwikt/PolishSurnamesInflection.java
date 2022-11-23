@@ -21,7 +21,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -585,8 +584,7 @@ public final class PolishSurnamesInflection {
         Integer secondary;
 
         MeaningNumber(Integer primary, Integer secondary) {
-            Objects.requireNonNull(primary);
-            this.primary = primary;
+            this.primary = Objects.requireNonNull(primary);
             this.secondary = secondary;
         }
 
@@ -635,7 +633,7 @@ public final class PolishSurnamesInflection {
 
         @Override
         public int hashCode() {
-            return primary.hashCode() + Optional.ofNullable(secondary).map(v -> v.hashCode()).orElse(-1);
+            return secondary != null ? Objects.hash(primary, secondary) : primary.hashCode();
         }
 
         @Override
@@ -839,7 +837,7 @@ public final class PolishSurnamesInflection {
 
         @Override
         public int hashCode() {
-            return surname.hashCode() + gender.hashCode();
+            return Objects.hash(surname, gender);
         }
 
         @Override
@@ -878,7 +876,7 @@ public final class PolishSurnamesInflection {
 
         @Override
         public int hashCode() {
-            return title.hashCode() + message.hashCode();
+            return Objects.hash(title, message);
         }
 
         @Override

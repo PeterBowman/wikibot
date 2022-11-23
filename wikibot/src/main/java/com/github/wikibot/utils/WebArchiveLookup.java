@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -113,7 +114,7 @@ public class WebArchiveLookup {
 
         @Override
         public int hashCode() {
-            return Boolean.valueOf(available).hashCode() + requestUrl.hashCode() + archivedUrl.hashCode() + timestamp.hashCode();
+            return Objects.hash(available, requestUrl, archivedUrl, timestamp);
         }
 
         @Override
