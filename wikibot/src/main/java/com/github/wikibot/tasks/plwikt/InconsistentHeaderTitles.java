@@ -8,15 +8,15 @@ import java.text.Collator;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -65,13 +65,11 @@ public final class InconsistentHeaderTitles {
     private static final Pattern P_ENTITIES = Pattern.compile("&(nbsp|ensp|emsp|thinsp|zwnj|zwj|lrm|rlm);");
 
     private static final List<String> HEADER_TEMPLATES = List.of("zh", "ko", "ja");
+    private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
+    private static final Map<String, Set<Item>> map = new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")));
 
     private static final Plural PLURAL_PL;
     private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
-
-    private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-
-    private static Map<String, Collection<Item>> map;
 
     static {
         PAGE_INTRO = """
@@ -91,30 +89,21 @@ public final class InconsistentHeaderTitles {
         };
 
         PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
-
         NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
     }
 
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        var collator = Collator.getInstance(new Locale("pl", "PL"));
-        map = new ConcurrentSkipListMap<>(collator);
-
         var line = readOptions(args);
+        var candidateTitles = new ArrayList<String>(5000);
 
-        if (line == null) {
-            return;
-        } else if (line.hasOption("patrol")) {
-            var storedTitles = extractStoredTitles();
-            analyzeRecentChanges(storedTitles);
-        } else if (line.hasOption("dump")) {
-            var candidateTitles = readDumpFile(line.getOptionValue("dump"));
-            analyzeRecentChanges(candidateTitles);
-        } else {
-            System.out.printf("No options specified: %s%n", Arrays.asList(args));
-            return;
+        if (!readDumpFile(line.hasOption("local"), candidateTitles)) {
+            System.out.println("No dump file found, reading from stored titles.");
+            candidateTitles.addAll(extractStoredTitles());
         }
+
+        analyzeWithRecentChanges(candidateTitles);
 
         if (map.isEmpty()) {
             System.out.println("No entries found/extracted.");
@@ -140,16 +129,18 @@ public final class InconsistentHeaderTitles {
         }
 
         var page = makePage();
-        Files.write(LOCATION.resolve("page.txt"), List.of(page.toString()));
+        Files.writeString(LOCATION.resolve("page.txt"), page.toString());
 
-        wb.setMarkBot(false);
-        wb.edit(page.getTitle(), page.toString(), "aktualizacja");
+        if (line.hasOption("edit")) {
+            wb.setMarkBot(false);
+            wb.edit(page.getTitle(), page.toString(), "aktualizacja");
+        }
     }
 
     private static CommandLine readOptions(String[] args) {
         var options = new Options();
-        options.addOption("p", "patrol", false, "patrol recent changes");
-        options.addOption("d", "dump", true, "read from dump file");
+        options.addOption("l", "local", false, "use local dump");
+        options.addOption("e", "edit", false, "perform edit");
 
         if (args.length == 0) {
             System.out.print("Option: ");
@@ -168,7 +159,7 @@ public final class InconsistentHeaderTitles {
         }
     }
 
-    private static void analyzeRecentChanges(List<String> bufferedTitles) throws IOException {
+    private static void analyzeWithRecentChanges(List<String> bufferedTitles) throws IOException {
         var newTitles = extractRecentChanges();
 
         var distinctTitles = Stream.concat(newTitles.stream(), bufferedTitles.stream())
@@ -181,19 +172,28 @@ public final class InconsistentHeaderTitles {
         }
     }
 
-    private static List<String> readDumpFile(String path) {
+    private static boolean readDumpFile(boolean useLocalDump, List<String> titles) throws IOException {
+        var datePath = LOCATION.resolve("last_date.txt");
         var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
-        if (path.equals("local")) {
-            dumpConfig.remote();
-        } else {
+        if (useLocalDump) {
             dumpConfig.local();
+
+            if (Files.exists(datePath)) {
+                dumpConfig.after(Files.readString(datePath));
+            }
+        } else {
+            dumpConfig.remote();
         }
 
-        var dump = dumpConfig.fetch().get();
+        var optDump = dumpConfig.fetch();
 
-        try (var stream = dump.stream()) {
-            return stream
+        if (!optDump.isPresent()) {
+            return false;
+        }
+
+        try (var stream = optDump.get().stream()) {
+            stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
                 .map(Page::wrap)
@@ -201,9 +201,11 @@ public final class InconsistentHeaderTitles {
                 .flatMap(Collection::stream)
                 .filter(InconsistentHeaderTitles::filterSections)
                 .map(section -> section.getContainingPage().get().getTitle())
-                .distinct()
-                .toList();
+                .forEach(titles::add);
         }
+
+        Files.writeString(datePath, optDump.get().getDirectoryName());
+        return true;
     }
 
     private static List<String> extractRecentChanges() throws IOException {
@@ -269,7 +271,7 @@ public final class InconsistentHeaderTitles {
                 var coll = map.get(lang);
 
                 if (coll == null) {
-                    map.putIfAbsent(lang, new ConcurrentSkipListSet<>());
+                    map.putIfAbsent(lang, new TreeSet<>());
                     coll = map.get(lang);
                 }
 
@@ -364,8 +366,8 @@ public final class InconsistentHeaderTitles {
     }
 
     private static class Item implements Comparable<Item> {
-        String pageTitle;
-        String headerTitle;
+        final String pageTitle;
+        final String headerTitle;
 
         Item(String pageTitle, String headerTitle) {
             this.pageTitle = pageTitle;
