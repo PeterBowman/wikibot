@@ -193,12 +193,20 @@ public class XMLDump {
         }
     }
 
-    XMLDump filterTitles(Collection<String> titles) {
+    public XMLDump filterTitles(Collection<String> titles) {
+        if (ids != null) {
+            throw new IllegalStateException("Cannot filter titles on a dump that is already filtered by page IDs");
+        }
+
         this.titles = Collections.unmodifiableSet(new HashSet<>(Objects.requireNonNull(titles)));
         return this;
     }
 
-    XMLDump filterIds(Collection<Long> ids) {
+    public XMLDump filterIds(Collection<Long> ids) {
+        if (titles != null) {
+            throw new IllegalStateException("Cannot filter page IDs on a dump that is already filtered by titles");
+        }
+
         this.ids = Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(ids)));
         return this;
     }
@@ -264,42 +272,19 @@ class MultistreamXMLDump extends XMLDump {
 }
 
 abstract class XMLDumpFactory {
-    private Collection<String> titles;
-    private Collection<Long> ids;
-
-    XMLDump create(DumpHandler handler, String database, String dirName, List<String> filenames) {
-        if (titles != null) {
-            return createInternal(handler, database, dirName, filenames).filterTitles(titles);
-        } else if (ids != null) {
-            return createInternal(handler, database, dirName, filenames).filterIds(ids);
-        } else {
-            return createInternal(handler, database, dirName, filenames);
-        }
-    }
-
-    protected abstract XMLDump createInternal(DumpHandler handler, String database, String dirName, List<String> filenames);
-
-    final XMLDumpFactory useTitles(Collection<String> titles) {
-        this.titles = Objects.requireNonNull(titles);
-        return this;
-    }
-
-    final XMLDumpFactory useIds(Collection<Long> ids) {
-        this.ids = Objects.requireNonNull(ids);
-        return this;
-    }
+    abstract XMLDump create(DumpHandler handler, String database, String dirName, List<String> filenames);
 }
 
 class XMLDumpFactoryImpl extends XMLDumpFactory {
     @Override
-    protected XMLDump createInternal(DumpHandler handler, String database, String dirName, List<String> filenames) {
+    XMLDump create(DumpHandler handler, String database, String dirName, List<String> filenames) {
         return new XMLDump(handler, database, dirName, filenames);
     }
 }
 
 class MultistreamXMLDumpFactoryImpl extends XMLDumpFactory {
     @Override
-    protected MultistreamXMLDump createInternal(DumpHandler handler, String database, String dirName, List<String> filenames) {
+    XMLDump create(DumpHandler handler, String database, String dirName, List<String> filenames) {
         return new MultistreamXMLDump(handler, database, dirName, filenames);
     }
 }

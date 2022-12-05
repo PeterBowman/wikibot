@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,8 +21,6 @@ public final class XMLDumpConfig {
     private LocalDate refDate;
     private boolean useExactDate;
     private XMLDumpTypes type;
-    private Collection<String> titles;
-    private Collection<Long> ids;
 
     public XMLDumpConfig(String database) {
         this.database = Objects.requireNonNull(database);
@@ -82,16 +79,6 @@ public final class XMLDumpConfig {
         return type(XMLDumpTypes.valueOf(Objects.requireNonNull(label)));
     }
 
-    public XMLDumpConfig withTitles(Collection<String> titles) {
-        this.titles = Objects.requireNonNull(titles);
-        return this;
-    }
-
-    public XMLDumpConfig withIds(Collection<Long> ids) {
-        this.ids = Objects.requireNonNull(ids);
-        return this;
-    }
-
     public Optional<XMLDump> fetch() {
         if (type == null) {
             throw new IllegalStateException("No dump type specified");
@@ -128,16 +115,6 @@ public final class XMLDumpConfig {
             factory = new MultistreamXMLDumpFactoryImpl();
         } else {
             factory = new XMLDumpFactoryImpl();
-        }
-
-        if (titles != null && ids != null) {
-            throw new IllegalStateException("Cannot specify both titles and ids");
-        } else if (titles != null) {
-            factory.useTitles(titles);
-        } else if (ids != null) {
-            factory.useIds(ids);
-        } else if (isMultistream) {
-            throw new IllegalStateException("No filter specified for multistream factory");
         }
 
         if (useLatest) {

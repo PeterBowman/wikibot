@@ -62,6 +62,7 @@ public final class MissingWomenBiograms {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWomenBiograms/");
     private static final Path HASHCODES = LOCATION.resolve("hashcodes.xml");
     private static final Path LATEST_DUMP = LOCATION.resolve("latest-dump.txt");
+    private static final Path LATEST_DATE = LOCATION.resolve("latest-date.txt");
     private static final String BOT_SUBPAGE = "Wikipedysta:PBbot/brakujące biogramy o kobietach";
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
@@ -101,12 +102,23 @@ public final class MissingWomenBiograms {
 
         var line = readOptions(args);
         var entries = new TreeMap<QueryItem, List<Entry>>((i1, i2) -> Integer.compare(QUERY_CONFIG.indexOf(i1), QUERY_CONFIG.indexOf(i2)));
-        var dumpPath = Paths.get("");
+        var dumpFilename = "";
 
         if (line.hasOption("dump")) {
-            var biogramEntities = queryBiogramEntities();
-            var dumpConfig = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_ARTICLES_MULTISTREAM_RECOMBINE).withTitles(biogramEntities);
-            var dump = dumpConfig.local().fetch().get();
+            var dumpConfig = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_ARTICLES_MULTISTREAM).local();
+
+            if (Files.exists(LATEST_DATE)) {
+                dumpConfig.after(Files.readString(LATEST_DATE));
+            }
+
+            var optDump = dumpConfig.fetch();
+
+            if (!optDump.isPresent()) {
+                System.out.println("No dump file found.");
+                return;
+            }
+
+            var dump = optDump.get().filterTitles(queryBiogramEntities());
 
             try (var stream = dump.stream()) {
                 stream
@@ -128,7 +140,9 @@ public final class MissingWomenBiograms {
                 }
             }
 
+            dumpFilename = dump.getDescriptiveFilename();
             Files.writeString(LATEST_DUMP, dump.getDescriptiveFilename());
+            Files.writeString(LATEST_DATE, dump.getDirectoryName());
         } else if (line.hasOption("edit")) {
             for (var queryItem : QUERY_CONFIG) {
                 var path = LOCATION.resolve(queryItem.filename() + ".xml.bz2");
@@ -141,12 +155,14 @@ public final class MissingWomenBiograms {
                 }
             }
 
-            dumpPath = Paths.get(Files.readString(LATEST_DUMP));
+            dumpFilename = Files.readString(LATEST_DUMP);
+        } else {
+            throw new IllegalArgumentException("No action specified: either --dump or --edit");
         }
 
         if (line.hasOption("edit")) {
             Login.login(wb);
-            writeMainSubpage(entries, dumpPath);
+            writeMainSubpage(entries, dumpFilename);
 
             var hashcodes = retrieveHashcodes();
 
@@ -157,7 +173,7 @@ public final class MissingWomenBiograms {
                     .toList();
 
                 if (hashcodes.getOrDefault(entry.getKey().subtype(), 0) != portion.hashCode()) {
-                    writeEntrySubpage(entry.getKey(), portion, dumpPath, entry.getValue().size());
+                    writeEntrySubpage(entry.getKey(), portion, dumpFilename, entry.getValue().size());
                     hashcodes.put(entry.getKey().subtype(), portion.hashCode());
                 }
             }
@@ -367,7 +383,7 @@ public final class MissingWomenBiograms {
         }
     }
 
-    private static void writeMainSubpage(Map<QueryItem, List<Entry>> entries, Path dumpPath) throws IOException, LoginException {
+    private static void writeMainSubpage(Map<QueryItem, List<Entry>> entries, String dumpFilename) throws IOException, LoginException {
         var outFmt = """
             {{Układ wielokolumnowy|szerokość=250px|
             %s
@@ -391,10 +407,10 @@ public final class MissingWomenBiograms {
                 ))
                 .collect(Collectors.joining("\n"));
 
-        wb.edit(BOT_SUBPAGE + "/listy", String.format(outFmt, text, dumpPath.getFileName()), "aktualizacja: " + dumpPath.getFileName());
+        wb.edit(BOT_SUBPAGE + "/listy", String.format(outFmt, text, dumpFilename), "aktualizacja: " + dumpFilename);
     }
 
-    private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, Path dumpPath, int originalSize) throws LoginException, IOException {
+    private static void writeEntrySubpage(QueryItem queryItem, List<Entry> data, String dumpFilename, int originalSize) throws LoginException, IOException {
         var outFmt = """
             <templatestyles src="Wikipedysta:Peter Bowman/autonumber.css" />
             Właściwość: {{PID|%s}}. Wartość: {{QID|%s}}. Rozmiar [%s oryginalnej listy]: {{formatnum:%d}}. Ograniczono do {{formatnum:%d}} wyników.
@@ -414,11 +430,11 @@ public final class MissingWomenBiograms {
                 String.format(STATIC_URL_DUMP_FMT, queryItem.filename()),
                 originalSize,
                 MAX_PRINTED_RESULTS,
-                dumpPath.getFileName(),
+                dumpFilename,
                 data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n"))
             );
 
-        wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja: " + dumpPath.getFileName());
+        wb.edit(BOT_SUBPAGE + "/" + queryItem.subtype(), text, "aktualizacja: " + dumpFilename);
     }
 
     private record QueryItem(String supertype, String subtype, String property, String entity, String filename) {}
