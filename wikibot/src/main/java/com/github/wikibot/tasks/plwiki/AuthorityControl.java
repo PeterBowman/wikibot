@@ -2,7 +2,6 @@ package com.github.wikibot.tasks.plwiki;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,13 +12,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -36,13 +33,12 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
-import org.json.JSONPointer;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.AbstractXMLDumpReader;
-import com.github.wikibot.dumps.XMLConcatenatedStreamDumpReader;
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.DBUtils;
@@ -58,6 +54,8 @@ public final class AuthorityControl {
     private static final Properties SQL_PROPS;
     private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
     private static final String SQL_PLWIKI_URI = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
+
+    private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 
     private static final Pattern P_TEXT = Pattern.compile(
         """
@@ -101,51 +99,63 @@ public final class AuthorityControl {
         Class.forName("com.mysql.cj.jdbc.Driver");
 
         var cli = readOptions(args);
-        final List<String> articles;
+        var articles = new HashSet<String>();
 
         if (cli.hasOption("file")) {
             var file = cli.getOptionValue("file");
-            articles = Files.readAllLines(LOCATION.resolve(file));
-            System.out.printf("Retrieved %d articles from list.%n", articles.size());
-        } else if (cli.hasOption("articles")) {
-            var status = cli.getOptionValue("articles");
-            articles = processDumpCollection(Paths.get(status));
+            articles.addAll(Files.readAllLines(LOCATION.resolve(file)));
+            System.out.printf("Retrieved %d articles from stored list.%n", articles.size());
         } else {
-            if (cli.hasOption("cron")) {
-                var cron = cli.getOptionValue("cron");
-                articles = processCronDumps(Paths.get(cron));
-            } else if (cli.hasOption("dump")) {
-                var dump = cli.getOptionValue("dump");
-                var reader = new XMLDumpReader(Files.newInputStream(Paths.get(dump)));
-
-                if (cli.hasOption("stub")) {
-                    var stub = cli.getOptionValue("stub");
-                    var revids = retrieveRevids(Paths.get(stub));
-                    articles = processDumpFile(reader, rev -> revids.contains(rev.getRevid()));
-                } else {
-                    articles = processDumpFile(reader);
-                }
-            } else {
+            if (!cli.hasOption("dump") && !cli.hasOption("incr")) {
                 throw new RuntimeException("missing mandatory CLI parameters");
+            }
+
+            if (cli.hasOption("dump")) {
+                var datePath = LOCATION.resolve("last_dump_date.txt");
+                var config = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_ARTICLES_MULTISTREAM).local();
+
+                if (Files.exists(datePath)) {
+                    config.after(Files.readString(datePath));
+                }
+
+                var optDump = config.fetch();
+
+                if (optDump.isEmpty()) {
+                    System.out.println("No multistream dump found.");
+                } else {
+                    var dump = optDump.get();
+                    articles.addAll(processBiweeklyDump(dump));
+                    Files.writeString(datePath, dump.getDirectoryName());
+                }
+            }
+
+            if (cli.hasOption("incr")) {
+                var datePath = LOCATION.resolve("last_incr_date.txt");
+                var today = LocalDate.now();
+                var refDate = Files.exists(datePath) ? LocalDate.parse(Files.readString(datePath)) : today.minusDays(1);
+
+                articles.addAll(processIncrementalDumps(refDate, today));
+                Files.writeString(datePath, today.format(DateTimeFormatter.BASIC_ISO_DATE));
+            }
+
+            if (articles.isEmpty()) {
+                System.out.println("No articles found.");
+                return;
             }
 
             System.out.printf("Got %d unfiltered articles.%n", articles.size());
             Files.write(LOCATION.resolve("latest-unfiltered.txt"), articles);
 
-            var wiki = Wiki.newSession("pl.wikipedia.org");
             articles.removeAll(retrieveTemplateTransclusions());
             articles.removeAll(retrieveDisambiguations());
             articles.retainAll(retrieveNonRedirects());
-            articles.removeIf(title -> wiki.namespace(title) != Wiki.MAIN_NAMESPACE);
-            System.out.printf("Got %d filtered articles.%n", articles.size());
+            articles.removeIf(title -> wb.namespace(title) != Wiki.MAIN_NAMESPACE);
 
-            if (!articles.isEmpty()) {
-                Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
-            }
+            System.out.printf("Got %d filtered articles.%n", articles.size());
+            Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
         }
 
         if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
-            var wb = Wikibot.newSession("pl.wikipedia.org");
             Login.login(wb);
 
             var warnings = new ArrayList<String>();
@@ -187,12 +197,10 @@ public final class AuthorityControl {
     private static CommandLine readOptions(String[] args) throws ParseException {
         var options = new Options();
 
-        options.addOption("c", "cron", true, "inspect latest daily incr dump");
-        options.addOption("d", "dump", true, "inspect dump file");
-        options.addOption("s", "stub", true, "retrieve unique item identifiers from provided stub file");
-        options.addOption("a", "articles", true, "process full articles dump from provided dumpstatus.json");
-        options.addOption("p", "process", false, "process articles on wiki");
-        options.addOption("f", "file", true, "process list of wiki articles saved on disk");
+        options.addOption("i", "incr", false, "inspect latest daily incr dump");
+        options.addOption("d", "dump", false, "inspect biweekly public dump, if available");
+        options.addOption("e", "edit", false, "edit articles on wiki");
+        options.addOption("f", "file", true, "process list of articles saved on disk");
 
         if (args.length == 0) {
             System.out.print("Option(s): ");
@@ -208,32 +216,37 @@ public final class AuthorityControl {
         }
     }
 
-    private static List<String> processCronDumps(Path base) throws IOException {
-        var date = LocalDate.now().minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
-        var dir = base.resolve(date);
-        var status = dir.resolve("status.txt");
+    private static List<String> processIncrementalDumps(final LocalDate startDate, final LocalDate endDate) {
+        var titles = new ArrayList<String>();
+        var date = startDate;
 
-        if (!Files.readString(status).equals("done:all")) {
-            throw new RuntimeException("daily incr dumps not ready yet");
+        var stubsConfig = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.STUBS_META_HISTORY_INCR).local();
+        var pagesConfig = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_META_HISTORY_INCR).local();
+
+        while (date.isBefore(endDate)) {
+            var optStubsDump = stubsConfig.at(date).fetch();
+            var optPagesDump = pagesConfig.at(date).fetch();
+
+            if (optStubsDump.isPresent() && optPagesDump.isPresent()) {
+                var revids = retrieveRevids(optStubsDump.get());
+                titles.addAll(processDumpFile(optPagesDump.get(), rev -> revids.contains(rev.getRevid())));
+            }
+
+            date = date.plusDays(1);
         }
 
-        var stubs = dir.resolve(String.format("wikidatawiki-%s-stubs-meta-hist-incr.xml.gz", date));
-        var pages = dir.resolve(String.format("wikidatawiki-%s-pages-meta-hist-incr.xml.bz2", date));
-
-        var revids = retrieveRevids(stubs);
-        var reader = new XMLDumpReader(Files.newInputStream(pages));
-
-        return processDumpFile(reader, rev -> revids.contains(rev.getRevid()));
+        return titles;
     }
 
-    private static Set<Long> retrieveRevids(Path path) throws IOException {
+    private static Set<Long> retrieveRevids(XMLDump dump) {
+        final var patt = Pattern.compile("^Q\\d+$");
         final Map<Long, Long> newestRevids;
 
-        try (var stream = new XMLDumpReader(Files.newInputStream(path)).getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             newestRevids = stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
-                .filter(rev -> rev.getTitle().matches("^Q\\d+$"))
+                .filter(rev -> patt.matcher(rev.getTitle()).matches())
                 .collect(Collectors.toMap(
                     XMLRevision::getPageid,
                     XMLRevision::getRevid,
@@ -242,18 +255,18 @@ public final class AuthorityControl {
         }
 
         var revids = new HashSet<>(newestRevids.values());
-        System.out.printf("Retrieved %d revisions.%n", revids.size());
+        System.out.printf("Retrieved %d incr dump revisions.%n", revids.size());
         return revids;
     }
 
-    private static List<String> processDumpFile(AbstractXMLDumpReader reader) throws IOException {
-        return processDumpFile(reader, rev -> true);
+    private static List<String> processDumpFile(XMLDump dump) {
+        return processDumpFile(dump, rev -> true);
     }
 
-    private static List<String> processDumpFile(AbstractXMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
+    private static List<String> processDumpFile(XMLDump dump, Predicate<XMLRevision> pred) {
         final var qPatt = Pattern.compile("^Q\\d+$");
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -292,7 +305,7 @@ public final class AuthorityControl {
         return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
     }
 
-    private static Map<Long, String> retrievePropertyBacklinks() throws ClassNotFoundException, SQLException, IOException {
+    private static Map<Long, String> retrievePropertyBacklinks() {
         var wiki = Wiki.newSession("pl.wikipedia.org");
         var backlinks = new HashMap<Long, String>(600000);
 
@@ -325,88 +338,30 @@ public final class AuthorityControl {
                     backlinks.put(id, sitePage);
                 }
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         System.out.printf("Got %d property backlinks with plwiki usage.%n", backlinks.size());
         return backlinks;
     }
 
-    private static Map<Map.Entry<Path, Path>, SortedSet<Long>> prepareWorklist(Path base, JSONObject files) throws IOException {
-        SortedSet<Long> pageids;
+    private static List<String> processBiweeklyDump(XMLDump dump) throws IOException {
+        var backlinks = retrievePropertyBacklinks();
+        backlinks.values().removeAll(retrieveTemplateTransclusions());
+        backlinks.values().removeAll(retrieveDisambiguations());
+        backlinks.values().retainAll(retrieveNonRedirects());
 
-        try {
-            var backlinks = retrievePropertyBacklinks();
-            backlinks.values().removeAll(retrieveTemplateTransclusions());
-            backlinks.values().retainAll(retrieveNonRedirects());
-            pageids = new TreeSet<>(backlinks.keySet());
-        } catch (ClassNotFoundException | SQLException | IOException e) {
-            throw new RuntimeException(e);
-        }
+        System.out.printf("Got %d backlink candidates with no transclusions on plwiki.%n", backlinks.size());
 
-        System.out.printf("Got %d backlink candidates with no transclusions on plwiki.%n", pageids.size());
-
-        final var patt = Pattern.compile("^.+?\\bindex\\d+\\.txt-p(\\d+)p(\\d+)\\b.+?$");
-
-        var indexes = files.keySet().stream()
-            .map(patt::matcher)
-            .flatMap(Matcher::results)
-            .sorted((mr1, mr2) -> Long.compare(Long.parseLong(mr1.group(1)), Long.parseLong(mr2.group(1))))
-            .toList();
-
-        var worklist = new LinkedHashMap<Map.Entry<Path, Path>, SortedSet<Long>>(indexes.size(), 1.0f);
-
-        for (var mr : indexes) {
-            var subset = pageids.subSet(Long.parseLong(mr.group(1)), Long.parseLong(mr.group(2)) + 1);
-
-            if (!subset.isEmpty()) {
-                var index = mr.group();
-                var dump = index.replaceFirst("-index(\\d+)\\.txt\\b", "$1.xml");
-                worklist.put(Map.entry(base.resolve(dump), base.resolve(index)), subset);
-            }
-        }
-
-        return worklist;
-    }
-
-    private static List<String> processDumpCollection(Path path) throws IOException {
-        var statusText = Files.readString(path);
-        var json = new JSONObject(statusText);
-        var pStatus = new JSONPointer("/jobs/articlesmultistreamdump/status");
-        var pFiles = new JSONPointer("/jobs/articlesmultistreamdump/files");
-
-        if (!"done".equals(pStatus.queryFrom(json))) {
-            throw new RuntimeException("articlesmultistreamdump not ready yet");
-        }
-
-        var files = (JSONObject)pFiles.queryFrom(json);
-        var worklist = prepareWorklist(path.getParent(), files);
-        var results = new ArrayList<String>();
-
-        System.out.printf("Reading from %d dump files.%n", worklist.size());
-
-        for (var dumpEntry : worklist.entrySet()) {
-            var paths = dumpEntry.getKey();
-            var pageids = dumpEntry.getValue();
-            var dumpChannel = FileChannel.open(paths.getKey());
-            var indexStream = Files.newInputStream(paths.getValue());
-            var reader = XMLConcatenatedStreamDumpReader.ofPageIds(dumpChannel, indexStream, pageids);
-
-            try {
-                var batch = processDumpFile(reader);
-                results.addAll(batch);
-                System.out.printf("Got %d articles in last batch.%n", batch.size());
-            } catch (IOException e) {
-                System.out.printf("IOException at file %s: %s.%n", paths.getKey(), e.getMessage());
-                System.out.printf("Caused by: %s.%n", e.getCause());
-            }
-        }
-
-        System.out.printf("Got %d filtered articles.%n", results.size());
+        var results = processDumpFile(dump.filterIds(backlinks.keySet()));
+        System.out.printf("Got %d filtered articles from biweekly dump.%n", results.size());
         Files.write(LOCATION.resolve("articlesdump.txt"), results);
+
         return results;
     }
 
-    private static Set<String> retrieveTemplateTransclusions() throws ClassNotFoundException, SQLException, IOException {
+    private static Set<String> retrieveTemplateTransclusions() {
         var transclusions = new HashSet<String>(500000);
 
         try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
@@ -432,13 +387,15 @@ public final class AuthorityControl {
                 var title = rs.getString("page_title").replace('_', ' ');
                 transclusions.add(title);
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         System.out.printf("Got %d template transclusions on plwiki.%n", transclusions.size());
         return transclusions;
     }
 
-    private static Set<String> retrieveDisambiguations() throws ClassNotFoundException, SQLException, IOException {
+    private static Set<String> retrieveDisambiguations() {
         var disambigs = new HashSet<String>(100000);
 
         try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
@@ -458,13 +415,15 @@ public final class AuthorityControl {
                 var title = rs.getString("page_title").replace('_', ' ');
                 disambigs.add(title);
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         System.out.printf("Got %d disambiguations on plwiki.%n", disambigs.size());
         return disambigs;
     }
 
-    private static Set<String> retrieveNonRedirects() throws ClassNotFoundException, SQLException, IOException {
+    private static Set<String> retrieveNonRedirects() {
         var articles = new HashSet<String>(2000000);
 
         try (var connection = DriverManager.getConnection(SQL_PLWIKI_URI, SQL_PROPS)) {
@@ -480,6 +439,8 @@ public final class AuthorityControl {
                 var title = rs.getString("page_title").replace('_', ' ');
                 articles.add(title);
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         System.out.printf("Got %d non-redirect articles on plwiki.%n", articles.size());
@@ -522,7 +483,7 @@ public final class AuthorityControl {
         return Optional.of(sb.toString().stripTrailing());
     }
 
-    private static void updateWarningsList(List<String> titles) throws ClassNotFoundException, SQLException, IOException {
+    private static void updateWarningsList(List<String> titles) throws IOException {
         var log = LOCATION.resolve("warnings.txt");
         var set = new TreeSet<>(titles);
 
