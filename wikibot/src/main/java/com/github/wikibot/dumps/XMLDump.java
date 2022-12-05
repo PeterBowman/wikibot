@@ -117,6 +117,7 @@ public class XMLDump {
     }
 
     private static Optional<XMLDump> fetchAndParseJsonConfig(DumpHandler handler, String database, String dirName, String content, XMLDumpTypes type, XMLDumpFactory factory) {
+        var sortedFilenames = handler.listDirectoryContents(database, dirName, false);
         var json = new JSONObject(content);
         var jobs = json.getJSONObject("jobs");
         var key = type.optConfigKey().get();
@@ -137,11 +138,12 @@ public class XMLDump {
         if (config.getString("status").equals("done")) {
             var patt = makeFilenamePattern(database, dirName, namingSchemeRegex);
 
-            var filenames = config.getJSONObject("files").keySet().stream()
+            var filteredFilenames = config.getJSONObject("files").keySet().stream()
                 .filter(filename -> patt.matcher(filename).matches())
+                .sorted((f1, f2) -> Integer.compare(sortedFilenames.indexOf(f1), sortedFilenames.indexOf(f2)))
                 .toList();
 
-            return Optional.of(factory.create(handler, database, dirName, filenames));
+            return Optional.of(factory.create(handler, database, dirName, filteredFilenames));
         }
 
         return Optional.empty();
