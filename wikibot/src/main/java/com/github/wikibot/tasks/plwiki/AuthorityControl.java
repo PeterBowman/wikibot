@@ -155,7 +155,7 @@ public final class AuthorityControl {
             Files.write(LOCATION.resolve("latest-filtered.txt"), articles);
         }
 
-        if (!articles.isEmpty() && (cli.hasOption("process") || cli.hasOption("file"))) {
+        if (!articles.isEmpty() && (cli.hasOption("edit") || cli.hasOption("file"))) {
             Login.login(wb);
 
             var warnings = new ArrayList<String>();
