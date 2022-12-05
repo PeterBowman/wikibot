@@ -129,6 +129,7 @@ geología = Geología
 geometría = Geometría
 gimnasia = Gimnasia
 glotónimos = Glotónimos
+gramática = Gramática
 guarismos = Guarismos
 heráldica = Heráldica
 herramientas = Herramientas
