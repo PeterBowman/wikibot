@@ -62,7 +62,7 @@ public final class ScheduledEditor {
                     processAllpages();
                     break;
                 case "-d":
-                    XMLDumpReader reader = new XMLDumpReader(Paths.get(args[1].trim()));
+                    XMLDumpReader reader = new XMLDumpReader(Files.newInputStream(Paths.get(args[1].trim())));
                     processDumpFile(reader);
                     break;
                 default:

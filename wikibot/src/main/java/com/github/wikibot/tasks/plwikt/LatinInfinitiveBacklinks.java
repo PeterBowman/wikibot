@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -20,7 +21,9 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -46,13 +49,21 @@ public class LatinInfinitiveBacklinks {
     }
 
     public static void main(String[] args) throws Exception {
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
         var wb = Wikibot.newSession("pl.wiktionary.org");
         Login.login(wb);
 
-        var reader = getXMLReader(args);
+        var dump = optDump.get();
         var occurrences = new TreeMap<String, Set<String>>();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -76,33 +87,42 @@ public class LatinInfinitiveBacklinks {
 
             Files.write(LOCATION.resolve("results.txt"), list);
 
-            var text = String.format(INTRO, reader.getPathToDump().getFileName().toString()) + String.join("\n", list);
+            var text = String.format(INTRO, dump.getDescriptiveFilename()) + String.join("\n", list);
             wb.edit(TARGET_PAGE, text, "aktualizacja", false, false, -2, null);
 
             Files.writeString(hash, Integer.toString(occurrences.hashCode()));
         } else {
             System.out.println("No changes detected.");
         }
+
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
             var options = new Options();
-            options.addOption("d", "dump", true, "read from dump file");
+            options.addOption("l", "local", false, "use latest local dump");
 
             var parser = new DefaultParser();
             var line = parser.parse(options, args);
 
-            if (line.hasOption("dump")) {
-                var pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
             } else {
                 new HelpFormatter().printHelp(LatinInfinitiveBacklinks.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
     private static void mapOccurrences(String title, String text, Map<String, Set<String>> occurrences) {

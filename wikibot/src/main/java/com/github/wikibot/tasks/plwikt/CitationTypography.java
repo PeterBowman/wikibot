@@ -45,7 +45,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -235,16 +236,20 @@ public final class CitationTypography {
         ).distinct().toArray(String[]::new);
     }
 
-    private static String[] readDumpFile(String path) throws IOException {
-        XMLDumpReader reader;
+    private static String[] readDumpFile(String option) {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
-        if (path.equals("local")) {
-            reader = new XMLDumpReader("plwiktionary");
+        if (option.equals("local")) {
+            dumpConfig.local();
+        } else if (option.equals("remote")) {
+            dumpConfig.remote();
         } else {
-            reader = new XMLDumpReader(Paths.get(path));
+            throw new IllegalArgumentException("Illegal dump option (must be either 'local' or 'remote'): " + option);
         }
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        var dump = dumpConfig.fetch().get();
+
+        try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)

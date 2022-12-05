@@ -114,7 +114,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
 
     @Override
     public int hashCode() {
-        return (int)revid;
+        return Long.hashCode(revid);
     };
 
     @Override

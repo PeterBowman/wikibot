@@ -6,24 +6,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -36,14 +36,21 @@ public final class MissingPolishAudio {
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
     public static void main(String[] args) throws Exception {
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
         Login.login(wb);
 
-        XMLDumpReader reader = getDumpReader(args);
+        var dump = optDump.get();
+        var regMap = categorizeRegWords();
+        var targetMap = new HashMap<String, Set<String>>();
 
-        Map<String, List<String>> regMap = categorizeRegWords();
-        ConcurrentMap<String, Set<String>> targetMap = new ConcurrentHashMap<>();
-
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -55,15 +62,35 @@ public final class MissingPolishAudio {
                 .forEach(title -> categorizeTargets(title, regMap, targetMap));
         }
 
-        writeLists(targetMap, extractTimestamp(reader.getPathToDump()));
+        writeLists(targetMap, extractTimestamp(dump.getDirectoryName()));
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
-        if (args.length == 0) {
-            return new XMLDumpReader("plwiktionary");
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
+        if (args.length != 0) {
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
+
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
+
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
+            } else {
+                new HelpFormatter().printHelp(MissingPolishAudio.class.getName(), options);
+                throw new IllegalArgumentException();
+            }
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
     private static String normalize(String category) {
@@ -71,16 +98,16 @@ public final class MissingPolishAudio {
     }
 
     private static Map<String, List<String>> categorizeRegWords() throws IOException {
-        Map<String, List<String>> map = new HashMap<>();
+        var map = new HashMap<String, List<String>>();
 
-        for (String mainCat : REG_CATEGORIES) {
-            for (String subCat : wb.getCategoryMembers(mainCat, Wiki.CATEGORY_NAMESPACE)) {
-                for (String title : wb.getCategoryMembers(subCat, Wiki.MAIN_NAMESPACE)) {
+        for (var mainCat : REG_CATEGORIES) {
+            for (var subCat : wb.getCategoryMembers(mainCat, Wiki.CATEGORY_NAMESPACE)) {
+                for (var title : wb.getCategoryMembers(subCat, Wiki.MAIN_NAMESPACE)) {
                     map.computeIfAbsent(title, k -> new ArrayList<>()).add(normalize(subCat));
                 }
             }
 
-            for (String title : wb.getCategoryMembers(mainCat, Wiki.MAIN_NAMESPACE)) {
+            for (var title : wb.getCategoryMembers(mainCat, Wiki.MAIN_NAMESPACE)) {
                 map.computeIfAbsent(title, k -> new ArrayList<>()).add(normalize(mainCat));
             }
         }
@@ -88,36 +115,24 @@ public final class MissingPolishAudio {
         return map;
     }
 
-    private static void categorizeTargets(String title, Map<String, List<String>> regMap, ConcurrentMap<String, Set<String>> targetMap) {
+    private static void categorizeTargets(String title, Map<String, List<String>> regMap, Map<String, Set<String>> targetMap) {
         if (!regMap.containsKey(title)) {
-            targetMap.computeIfAbsent("ogólnopolskie", k -> new ConcurrentSkipListSet<>()).add(title);
+            targetMap.computeIfAbsent("ogólnopolskie", k -> new TreeSet<>()).add(title);
         } else {
-            for (String category : regMap.get(title)) {
-                targetMap.computeIfAbsent(category, k -> new ConcurrentSkipListSet<>()).add(title);
+            for (var category : regMap.get(title)) {
+                targetMap.computeIfAbsent(category, k -> new TreeSet<>()).add(title);
             }
         }
     }
 
-    private static String extractTimestamp(Path path) {
-        String fileName = path.getFileName().toString();
-        Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        String errorString = "brak-daty";
-
-        Matcher m = patt.matcher(fileName);
-
-        if (!m.matches()) {
-            return errorString;
-        }
-
-        String canonicalTimestamp = m.group(1);
-
+    private static String extractTimestamp(String canonicalTimestamp) {
         try {
-            SimpleDateFormat originalDateFormat = new SimpleDateFormat("yyyyMMdd");
-            Date date = originalDateFormat.parse(canonicalTimestamp);
-            SimpleDateFormat desiredDateFormat = new SimpleDateFormat("dd-MM-yyyy");
+            var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
+            var date = originalDateFormat.parse(canonicalTimestamp);
+            var desiredDateFormat = new SimpleDateFormat("dd-MM-yyyy");
             return desiredDateFormat.format(date);
         } catch (java.text.ParseException e) {
-            return errorString;
+            return "brak-daty";
         }
     }
 
@@ -129,9 +144,9 @@ public final class MissingPolishAudio {
         }
 
         for (var entry : map.entrySet()) {
-            String filename = String.format("%s-%s.txt", entry.getKey(), timestamp);
-            String output = entry.getValue().stream().map(s -> String.format("#%s", s)).collect(Collectors.joining(" "));
-            Files.write(LOCATION.resolve(filename), Arrays.asList(output));
+            var filename = String.format("%s-%s.txt", entry.getKey(), timestamp);
+            var output = entry.getValue().stream().map(s -> String.format("#%s", s)).collect(Collectors.joining(" "));
+            Files.writeString(LOCATION.resolve(filename), output);
         }
     }
 }

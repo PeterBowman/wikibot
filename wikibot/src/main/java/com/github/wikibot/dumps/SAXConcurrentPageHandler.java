@@ -13,10 +13,12 @@ public final class SAXConcurrentPageHandler extends SAXPageHandler {
         super(cons);
     }
 
+    @Override
     public void startDocument() throws SAXException {
         executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
+    @Override
     public void endDocument() throws SAXException {
         executor.shutdown();
     }

@@ -7,25 +7,23 @@ import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -56,10 +54,8 @@ public final class BoldedSelflinks {
 
     private static final String PAGE_INTRO;
 
-    private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-
     static {
-        Map<FieldTypes, List<String>> ignoredFields = new LinkedHashMap<>();
+        var ignoredFields = new LinkedHashMap<FieldTypes, List<String>>();
         ignoredFields.put(FieldTypes.EXAMPLES, Collections.emptyList());
         ignoredFields.put(FieldTypes.TRANSLATIONS, Collections.emptyList());
         ignoredFields.put(FieldTypes.ETYMOLOGY, Collections.emptyList());
@@ -69,10 +65,10 @@ public final class BoldedSelflinks {
 
         IGNORED_FIELDS = Collections.unmodifiableMap(ignoredFields);
 
-        String excludedSelflinks = IGNORED_SELFLINKS.stream().collect(Collectors.joining(", "));
-        String excludedLangs = IGNORED_LANGS.stream().collect(Collectors.joining(", "));
+        var excludedSelflinks = IGNORED_SELFLINKS.stream().collect(Collectors.joining(", "));
+        var excludedLangs = IGNORED_LANGS.stream().collect(Collectors.joining(", "));
 
-        String excludedFields = IGNORED_FIELDS.entrySet().stream()
+        var excludedFields = IGNORED_FIELDS.entrySet().stream()
             .map(e -> !e.getValue().isEmpty()
                 ? String.format(
                     "%s (wyjątki: %s)",
@@ -99,47 +95,65 @@ public final class BoldedSelflinks {
     }
 
     public static void main(String[] args) throws Exception {
-        Login.login(wb);
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
 
-        XMLDumpReader reader = getXMLReader(args);
-        List<Item> list = analyzeDump(reader);
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
+        var dump = optDump.get();
+        var list = analyzeDump(dump);
 
         if (!checkAndUpdateStoredData(list)) {
             System.out.println("No changes detected, aborting.");
             return;
         }
 
-        String timestamp = extractTimestamp(reader.getPathToDump());
-        String pageText = makePageText(list, timestamp);
+        var wb = Wikibot.newSession("pl.wiktionary.org");
+        Login.login(wb);
+
+        var timestamp = extractTimestamp(dump.getDirectoryName());
+        var pageText = makePageText(list, timestamp);
 
         wb.setMarkBot(false);
         wb.edit(TARGET_PAGE, pageText, "aktualizacja");
+
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws IOException, ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
-            Options options = new Options();
-            options.addOption("d", "dump", true, "read from dump file");
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
 
-            CommandLineParser parser = new DefaultParser();
-            CommandLine line = parser.parse(options, args);
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
 
-            if (line.hasOption("dump")) {
-                String pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
             } else {
                 new HelpFormatter().printHelp(BoldedSelflinks.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
-    private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
-        final Pattern pNewline = Pattern.compile("\n");
+    private static List<Item> analyzeDump(XMLDump dump) {
+        final var pNewline = Pattern.compile("\n");
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::nonRedirect)
                 .filter(XMLRevision::isMainNamespace)
@@ -174,10 +188,10 @@ public final class BoldedSelflinks {
         }
 
         if (!IGNORED_SELFLINKS.contains(lang)) {
-            Matcher m = P_LINK.matcher(line);
+            var m = P_LINK.matcher(line);
 
             while (m.find()) {
-                String target = m.group(1).trim().replaceFirst("#.*", ""); // ignore URL fragments
+                var target = m.group(1).trim().replaceFirst("#.*", ""); // ignore URL fragments
 
                 if (target.equals(title)) {
                     return true;
@@ -185,10 +199,10 @@ public final class BoldedSelflinks {
             }
         }
 
-        Matcher m = P_BOLD.matcher(line);
+        var m = P_BOLD.matcher(line);
 
         while (m.find()) {
-            String target = m.group(1).trim();
+            var target = m.group(1).trim();
 
             if (target.equals(title)) {
                 return true;
@@ -202,8 +216,8 @@ public final class BoldedSelflinks {
         int newHashCode = list.hashCode();
         int storedHashCode;
 
-        Path fHash = LOCATION.resolve("hash.txt");
-        Path fList = LOCATION.resolve("list.xml");
+        var fHash = LOCATION.resolve("hash.txt");
+        var fList = LOCATION.resolve("list.xml");
 
         try {
             storedHashCode = Integer.parseInt(Files.readString(fHash));
@@ -221,31 +235,19 @@ public final class BoldedSelflinks {
         }
     }
 
-    private static String extractTimestamp(Path path) {
-        String fileName = path.getFileName().toString();
-        Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
-
-        Matcher m = patt.matcher(fileName);
-
-        if (!m.matches()) {
-            return errorString;
-        }
-
-        String canonicalTimestamp = m.group(1);
-
+    private static String extractTimestamp(String canonicalTimestamp) {
         try {
-            SimpleDateFormat originalDateFormat = new SimpleDateFormat("yyyyMMdd");
-            Date date = originalDateFormat.parse(canonicalTimestamp);
-            SimpleDateFormat desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
+            var date = originalDateFormat.parse(canonicalTimestamp);
+            var desiredDateFormat = new SimpleDateFormat("dd/MM/yyyy");
             return desiredDateFormat.format(date);
         } catch (java.text.ParseException e) {
-            return errorString;
+            return "(błąd odczytu sygnatury czasowej: ''" + canonicalTimestamp + "'')";
         }
     }
 
     private static String makePageText(List<Item> list, String timestamp) {
-        String output = list.stream()
+        var output = list.stream()
             .collect(Collectors.groupingBy(
                 item -> item.title,
                 () -> new TreeMap<>(COLL_PL),

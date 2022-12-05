@@ -11,14 +11,21 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -29,17 +36,25 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 
 public final class MissingPolishExamples {
+    private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
     private static final Pattern P_LINKER = Pattern.compile("\\[\\[\\s*?([^\\]\\|]+)\\s*?(?:\\|\\s*?((?:]?[^\\]\\|])*+))*\\s*?\\]\\]([^\\[]*)", Pattern.DOTALL);
     private static final Pattern P_REF = Pattern.compile("<\\s*ref\\b", Pattern.CASE_INSENSITIVE);
-    private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 
     public static void main(String[] args) throws Exception {
-        var reader = getDumpReader(args);
-        var timestamp = extractTimestamp(reader.getPathToDump());
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
+        var dump = optDump.get();
+        var timestamp = extractTimestamp(dump.getDirectoryName());
 
         final Set<String> titles;
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             titles = stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -52,9 +67,9 @@ public final class MissingPolishExamples {
         }
 
         System.out.printf("%d titles retrieved\n", titles.size());
-        var titlesToBacklinks = new ConcurrentSkipListMap<String, Set<Backlink>>();
+        var titlesToBacklinks = new HashMap<String, Set<Backlink>>();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -69,7 +84,7 @@ public final class MissingPolishExamples {
                     .flatMap(line -> P_LINKER.matcher(line).results())
                     .map(m -> m.group(1))
                     .filter(titles::contains)
-                    .forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new ConcurrentSkipListSet<>())
+                    .forEach(target -> titlesToBacklinks.computeIfAbsent(target, k -> new TreeSet<>())
                         .add(Backlink.makeBacklink(
                             f.getContainingSection().get().getContainingPage().get().getTitle(),
                             f.getContainingSection().get()
@@ -80,33 +95,42 @@ public final class MissingPolishExamples {
 
         System.out.printf("%d titles mapped to backlinks\n", titlesToBacklinks.size());
 
-        // XStream doesn't provide converters for ConcurrentSkipListMap nor ConcurrentSkipListSet
         var list = titlesToBacklinks.entrySet().stream()
             .map(e -> Entry.makeEntry(e.getKey(), new ArrayList<>(e.getValue())))
             .collect(Collectors.toList());
 
         storeData(list, timestamp);
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
-        if (args.length == 0) {
-            return new XMLDumpReader("plwiktionary");
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws IOException, org.apache.commons.cli.ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
+        if (args.length != 0) {
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
+
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
+
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
+            } else {
+                new HelpFormatter().printHelp(MissingPolishExamples.class.getName(), options);
+                throw new IllegalArgumentException();
+            }
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
-    private static LocalDate extractTimestamp(Path path) throws ParseException {
-        var fileName = path.getFileName().toString();
-        var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        var m = patt.matcher(fileName);
-
-        if (!m.matches()) {
-            throw new RuntimeException();
-        }
-
-        var canonicalTimestamp = m.group(1);
-
+    private static LocalDate extractTimestamp(String canonicalTimestamp) throws ParseException {
         try {
             var originalDateFormat = new SimpleDateFormat("yyyyMMdd");
             var date = originalDateFormat.parse(canonicalTimestamp);
