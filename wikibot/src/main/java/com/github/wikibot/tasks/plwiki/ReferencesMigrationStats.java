@@ -6,10 +6,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -34,7 +37,15 @@ class ReferencesMigrationStats {
     }
 
     public static void main(String[] args) throws Exception {
-        var dump = getDump(args);
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
+        var dump = optDump.get();
         var stats = new Stats();
 
         try (var stream = dump.stream()) {
@@ -45,19 +56,39 @@ class ReferencesMigrationStats {
         }
 
         stats.printResults();
+
         Login.login(wiki);
-        edit(stats, retrieveStats(), dump.getDescriptiveFilename());
+        edit(stats, retrieveStats(), dump);
+
         Files.writeString(STORED_STATS, xstream.toXML(stats));
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDump getDump(String[] args) {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
         var dumpConfig = new XMLDumpConfig("plwiki").type(XMLDumpTypes.PAGES_ARTICLES_RECOMBINE);
 
-        if (args.length == 0) {
-            return dumpConfig.remote().fetch().get();
+        if (args.length != 0) {
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
+
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
+
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
+            } else {
+                new HelpFormatter().printHelp(ReferencesMigrationStats.class.getName(), options);
+                throw new IllegalArgumentException();
+            }
         } else {
-            return dumpConfig.local().fetch().get();
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
     private static void analyze(String text, Stats stats) {
@@ -107,7 +138,7 @@ class ReferencesMigrationStats {
         }
     }
 
-    private static void edit(Stats newstats, Stats oldStats, String dumpFilename) throws IOException, LoginException {
+    private static void edit(Stats newstats, Stats oldStats, XMLDump dump) throws IOException, LoginException {
         var text = wiki.getPageText(List.of(TARGET)).get(0);
         var marker = "<!-- BOTTOM -->";
 
@@ -115,15 +146,10 @@ class ReferencesMigrationStats {
             throw new IllegalStateException("marker not found");
         }
 
-        var date = Pattern.compile("^plwiki-(\\d+)-pages-articles\\.xml(?:\\.bz2)?$").matcher(dumpFilename).results()
-            .map(mr -> mr.group(1))
-            .findAny()
-            .orElseThrow();
-
         var index = text.indexOf(marker);
-        var newText = text.substring(0, index) + newstats.makeRow(date, oldStats) + text.substring(index);
+        var newText = text.substring(0, index) + newstats.makeRow(dump.getDirectoryName(), oldStats) + text.substring(index);
 
-        wiki.edit(TARGET, newText, "aktualizacja: " + dumpFilename);
+        wiki.edit(TARGET, newText, "aktualizacja: " + dump.getDescriptiveFilename());
     }
 
     private static class Stats {

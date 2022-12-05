@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
@@ -19,6 +20,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
@@ -58,6 +63,14 @@ public final class AutomatedIndices {
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
     public static void main(String[] args) throws Exception {
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
         Login.login(wb);
 
         var pageText = wb.getPageText(List.of(WORKLIST)).get(0);
@@ -93,9 +106,9 @@ public final class AutomatedIndices {
 
         System.out.println(langToLocale);
 
-        var dump = getDump(args);
         var indexToTitles = new HashMap<String, List<String>>();
         var indexToLang = new HashMap<String, String>();
+        var dump = optDump.get();
 
         try (var stream = dump.stream()) {
             stream
@@ -143,6 +156,8 @@ public final class AutomatedIndices {
             text = String.format(ERROR_REPORT_TEMPLATE_FMT, String.join("|", MAINTAINERS)) + ":\n" + text + "\n~~~~";
             wb.newSection(talkPage, dump.getDescriptiveFilename(), text, false, false);
         }
+
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
     private static void validateEntries(Set<Entry> entries) throws IOException {
@@ -205,14 +220,31 @@ public final class AutomatedIndices {
         entries.removeIf(e -> e.languageTemplates().isEmpty() || e.templates().isEmpty());
     }
 
-    private static XMLDump getDump(String[] args) {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
         var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
-        if (args.length == 0) {
-            return dumpConfig.remote().fetch().get();
+        if (args.length != 0) {
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
+
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
+
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
+            } else {
+                new HelpFormatter().printHelp(AutomatedIndices.class.getName(), options);
+                throw new IllegalArgumentException();
+            }
         } else {
-            return dumpConfig.local().fetch().get();
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
     private static String stripLanguagePrefix(String lang) {

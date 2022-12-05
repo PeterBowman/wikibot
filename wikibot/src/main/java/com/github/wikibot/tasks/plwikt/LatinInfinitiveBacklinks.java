@@ -1,10 +1,12 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -47,10 +49,18 @@ public class LatinInfinitiveBacklinks {
     }
 
     public static void main(String[] args) throws Exception {
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
         var wb = Wikibot.newSession("pl.wiktionary.org");
         Login.login(wb);
 
-        var dump = getXMLDump(args);
+        var dump = optDump.get();
         var occurrences = new TreeMap<String, Set<String>>();
 
         try (var stream = dump.stream()) {
@@ -84,27 +94,35 @@ public class LatinInfinitiveBacklinks {
         } else {
             System.out.println("No changes detected.");
         }
+
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDump getXMLDump(String[] args) throws ParseException {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
         var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
         if (args.length != 0) {
             var options = new Options();
-            options.addOption("d", "dump", true, "read from dump file");
+            options.addOption("l", "local", false, "use latest local dump");
 
             var parser = new DefaultParser();
             var line = parser.parse(options, args);
 
-            if (line.hasOption("dump")) {
-                return dumpConfig.local().fetch().get();
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
             } else {
                 new HelpFormatter().printHelp(LatinInfinitiveBacklinks.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return dumpConfig.remote().fetch().get();
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 
     private static void mapOccurrences(String title, String text, Map<String, Set<String>> occurrences) {

@@ -236,13 +236,15 @@ public final class CitationTypography {
         ).distinct().toArray(String[]::new);
     }
 
-    private static String[] readDumpFile(String path) {
+    private static String[] readDumpFile(String option) {
         var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
-        if (path.equals("local")) {
+        if (option.equals("local")) {
+            dumpConfig.local();
+        } else if (option.equals("remote")) {
             dumpConfig.remote();
         } else {
-            dumpConfig.local();
+            throw new IllegalArgumentException("Illegal dump option (must be either 'local' or 'remote'): " + option);
         }
 
         var dump = dumpConfig.fetch().get();

@@ -1,15 +1,14 @@
 package com.github.wikibot.tasks.plwikt;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.Collator;
-import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -27,11 +26,18 @@ public final class MissingUkrainianAudio {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingUkrainianAudio/");
 
     public static void main(String[] args) throws Exception {
-        var dump = getXMLDump(args);
-        final List<String> titles;
+        var datePath = LOCATION.resolve("last_date.txt");
+        var optDump = getXMLDump(args, datePath);
+
+        if (!optDump.isPresent()) {
+            System.out.println("No dump file found.");
+            return;
+        }
+
+        var dump = optDump.get();
 
         try (var stream = dump.stream()) {
-            titles = stream
+            var titles = stream
                 .filter(XMLRevision::nonRedirect)
                 .filter(XMLRevision::isMainNamespace)
                 .map(Page::wrap)
@@ -41,32 +47,40 @@ public final class MissingUkrainianAudio {
                 .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
                 .sorted(Collator.getInstance(new Locale("uk")))
                 .toList();
+
+            var titlesPath = LOCATION.resolve("titles.txt");
+
+            Files.writeString(titlesPath, String.format("Generated from %s.%n%s%n", dump.getDescriptiveFilename(), "-".repeat(60)));
+            Files.write(titlesPath, titles, StandardOpenOption.APPEND);
         }
 
-        var path = LOCATION.resolve("titles.txt");
-
-        Files.writeString(path, String.format("Generated from %s.%n%s%n", dump.getDescriptiveFilename(), "-".repeat(60)));
-        Files.write(LOCATION.resolve("titles.txt"), titles, StandardOpenOption.APPEND);
+        Files.writeString(datePath, dump.getDirectoryName());
     }
 
-    private static XMLDump getXMLDump(String[] args) throws ParseException {
+    private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
         var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
         if (args.length != 0) {
-            Options options = new Options();
-            options.addOption("d", "dump", true, "read from dump file");
+            var options = new Options();
+            options.addOption("l", "local", false, "use latest local dump");
 
-            CommandLineParser parser = new DefaultParser();
-            CommandLine line = parser.parse(options, args);
+            var parser = new DefaultParser();
+            var line = parser.parse(options, args);
 
-            if (line.hasOption("dump")) {
-                return dumpConfig.local().fetch().get();
+            if (line.hasOption("local")) {
+                if (Files.exists(path)) {
+                    dumpConfig.after(Files.readString(path));
+                }
+
+                dumpConfig.local();
             } else {
-                new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
+                new HelpFormatter().printHelp(MissingUkrainianAudio.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return dumpConfig.remote().fetch().get();
+            dumpConfig.remote();
         }
+
+        return dumpConfig.fetch();
     }
 }

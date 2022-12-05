@@ -107,6 +107,10 @@ public class XMLDump {
             .replaceFirst("\\d+\\.(\\w+)(?:-p\\d+p\\d+)?", "X.$1"); // partitioned dumps
     }
 
+    public final String getDirectoryName() {
+        return dirName;
+    }
+
     private static Pattern makeFilenamePattern(String database, String dirName, String regex) {
         var stringSub = new StringSubstitutor(Map.of("database", database, "date", dirName));
         return Pattern.compile(stringSub.replace(regex));
