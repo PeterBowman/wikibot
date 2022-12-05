@@ -145,7 +145,7 @@ public final class XMLDumpConfig {
                 .map(dirName -> XMLDump.fetchAndParseConfig(handler, database, dirName, type, factory))
                 .filter(Optional::isPresent)
                 .findFirst()
-                .get();
+                .orElse(Optional.empty());
         }
     }
 
