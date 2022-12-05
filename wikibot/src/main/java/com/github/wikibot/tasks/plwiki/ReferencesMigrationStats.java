@@ -14,7 +14,9 @@ import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.utils.Login;
 import com.thoughtworks.xstream.XStream;
@@ -32,10 +34,10 @@ class ReferencesMigrationStats {
     }
 
     public static void main(String[] args) throws Exception {
-        var reader = getDumpReader(args);
+        var dump = getDump(args);
         var stats = new Stats();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -44,15 +46,17 @@ class ReferencesMigrationStats {
 
         stats.printResults();
         Login.login(wiki);
-        edit(stats, retrieveStats(), reader.getPathToDump().getFileName().toString());
+        edit(stats, retrieveStats(), dump.getDescriptiveFilename());
         Files.writeString(STORED_STATS, xstream.toXML(stats));
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
+    private static XMLDump getDump(String[] args) {
+        var dumpConfig = new XMLDumpConfig("plwiki").type(XMLDumpTypes.PAGES_ARTICLES_RECOMBINE);
+
         if (args.length == 0) {
-            return new XMLDumpReader("plwiki");
+            return dumpConfig.remote().fetch().get();
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            return dumpConfig.local().fetch().get();
         }
     }
 

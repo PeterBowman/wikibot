@@ -2,6 +2,7 @@ package com.github.wikibot.tasks.plwiki;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,8 @@ import org.json.JSONPointer;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.wikibot.dumps.AbstractXMLDumpReader;
+import com.github.wikibot.dumps.XMLConcatenatedStreamDumpReader;
 import com.github.wikibot.dumps.XMLDumpReader;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
@@ -113,7 +116,7 @@ public final class AuthorityControl {
                 articles = processCronDumps(Paths.get(cron));
             } else if (cli.hasOption("dump")) {
                 var dump = cli.getOptionValue("dump");
-                var reader = new XMLDumpReader(Paths.get(dump));
+                var reader = new XMLDumpReader(Files.newInputStream(Paths.get(dump)));
 
                 if (cli.hasOption("stub")) {
                     var stub = cli.getOptionValue("stub");
@@ -218,16 +221,15 @@ public final class AuthorityControl {
         var pages = dir.resolve(String.format("wikidatawiki-%s-pages-meta-hist-incr.xml.bz2", date));
 
         var revids = retrieveRevids(stubs);
-        var reader = new XMLDumpReader(pages);
+        var reader = new XMLDumpReader(Files.newInputStream(pages));
 
         return processDumpFile(reader, rev -> revids.contains(rev.getRevid()));
     }
 
     private static Set<Long> retrieveRevids(Path path) throws IOException {
-        var reader = new XMLDumpReader(path);
         final Map<Long, Long> newestRevids;
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = new XMLDumpReader(Files.newInputStream(path)).getStAXReaderStream()) {
             newestRevids = stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -244,11 +246,11 @@ public final class AuthorityControl {
         return revids;
     }
 
-    private static List<String> processDumpFile(XMLDumpReader reader) throws IOException {
+    private static List<String> processDumpFile(AbstractXMLDumpReader reader) throws IOException {
         return processDumpFile(reader, rev -> true);
     }
 
-    private static List<String> processDumpFile(XMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
+    private static List<String> processDumpFile(AbstractXMLDumpReader reader, Predicate<XMLRevision> pred) throws IOException {
         final var qPatt = Pattern.compile("^Q\\d+$");
 
         try (var stream = reader.getStAXReaderStream()) {
@@ -385,10 +387,12 @@ public final class AuthorityControl {
         for (var dumpEntry : worklist.entrySet()) {
             var paths = dumpEntry.getKey();
             var pageids = dumpEntry.getValue();
-            var reader = new XMLDumpReader(paths.getKey(), paths.getValue());
+            var dumpChannel = FileChannel.open(paths.getKey());
+            var indexStream = Files.newInputStream(paths.getValue());
+            var reader = XMLConcatenatedStreamDumpReader.ofPageIds(dumpChannel, indexStream, pageids);
 
             try {
-                var batch = processDumpFile(reader.seekIds(pageids));
+                var batch = processDumpFile(reader);
                 results.addAll(batch);
                 System.out.printf("Got %d articles in last batch.%n", batch.size());
             } catch (IOException e) {

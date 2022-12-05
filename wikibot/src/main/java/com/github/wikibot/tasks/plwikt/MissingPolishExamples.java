@@ -18,7 +18,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -34,12 +36,12 @@ public final class MissingPolishExamples {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingPolishExamples/");
 
     public static void main(String[] args) throws Exception {
-        var reader = getDumpReader(args);
-        var timestamp = extractTimestamp(reader.getPathToDump());
+        var dump = getDump(args);
+        var timestamp = extractTimestamp(dump.getDescriptiveFilename());
 
         final Set<String> titles;
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             titles = stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -54,7 +56,7 @@ public final class MissingPolishExamples {
         System.out.printf("%d titles retrieved\n", titles.size());
         var titlesToBacklinks = new ConcurrentSkipListMap<String, Set<Backlink>>();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -88,18 +90,19 @@ public final class MissingPolishExamples {
         storeData(list, timestamp);
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
+    private static XMLDump getDump(String[] args) {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length == 0) {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            return dumpConfig.local().fetch().get();
         }
     }
 
-    private static LocalDate extractTimestamp(Path path) throws ParseException {
-        var fileName = path.getFileName().toString();
+    private static LocalDate extractTimestamp(String filename) throws ParseException {
         var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        var m = patt.matcher(fileName);
+        var m = patt.matcher(filename);
 
         if (!m.matches()) {
             throw new RuntimeException();

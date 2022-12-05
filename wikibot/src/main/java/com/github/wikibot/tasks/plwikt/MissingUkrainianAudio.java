@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,7 +16,9 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
@@ -26,10 +27,10 @@ public final class MissingUkrainianAudio {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/MissingUkrainianAudio/");
 
     public static void main(String[] args) throws Exception {
-        var reader = getXMLReader(args);
+        var dump = getXMLDump(args);
         final List<String> titles;
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             titles = stream
                 .filter(XMLRevision::nonRedirect)
                 .filter(XMLRevision::isMainNamespace)
@@ -44,11 +45,13 @@ public final class MissingUkrainianAudio {
 
         var path = LOCATION.resolve("titles.txt");
 
-        Files.writeString(path, String.format("Generated from %s.%n%s%n", reader.getPathToDump().getFileName(), "-".repeat(60)));
+        Files.writeString(path, String.format("Generated from %s.%n%s%n", dump.getDescriptiveFilename(), "-".repeat(60)));
         Files.write(LOCATION.resolve("titles.txt"), titles, StandardOpenOption.APPEND);
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static XMLDump getXMLDump(String[] args) throws ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
             Options options = new Options();
             options.addOption("d", "dump", true, "read from dump file");
@@ -57,14 +60,13 @@ public final class MissingUkrainianAudio {
             CommandLine line = parser.parse(options, args);
 
             if (line.hasOption("dump")) {
-                String pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+                return dumpConfig.local().fetch().get();
             } else {
                 new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         }
     }
 }

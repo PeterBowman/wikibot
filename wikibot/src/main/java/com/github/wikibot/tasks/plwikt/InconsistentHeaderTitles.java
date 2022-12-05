@@ -20,9 +20,19 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringUtils;
+import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
+
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
@@ -35,15 +45,6 @@ import com.github.wikibot.utils.PluralRules;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.NumberFormatter;
 import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
-import org.wikipedia.Wiki;
-import org.wikiutils.ParseUtils;
 
 public final class InconsistentHeaderTitles {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/InconsistentHeaderTitles/");
@@ -180,16 +181,18 @@ public final class InconsistentHeaderTitles {
         }
     }
 
-    private static List<String> readDumpFile(String path) throws IOException {
-        XMLDumpReader reader;
+    private static List<String> readDumpFile(String path) {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
 
         if (path.equals("local")) {
-            reader = new XMLDumpReader("plwiktionary");
+            dumpConfig.remote();
         } else {
-            reader = new XMLDumpReader(Paths.get(path));
+            dumpConfig.local();
         }
 
-        try (var stream = reader.getStAXReaderStream()) {
+        var dump = dumpConfig.fetch().get();
+
+        try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)

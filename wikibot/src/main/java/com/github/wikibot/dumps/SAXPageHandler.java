@@ -8,12 +8,12 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class SAXPageHandler extends DefaultHandler {
-
     protected static final Set<String> CONTENT_TAGS = Set.of(
         "title", "ns", "id", "redirect", "parentid", "timestamp", "username", "ip", "minor", "comment", "text"
     );
 
-    protected Consumer<XMLRevision> cons;
+    protected final Consumer<XMLRevision> cons;
+
     protected XMLRevision revision;
     protected boolean acceptContent;
     protected StringBuilder sb;
@@ -22,6 +22,7 @@ public class SAXPageHandler extends DefaultHandler {
         this.cons = cons;
     }
 
+    @Override
     public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
         if (qName.equals("page")) {
             revision = new XMLRevision();
@@ -37,12 +38,14 @@ public class SAXPageHandler extends DefaultHandler {
         }
     }
 
+    @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         if (acceptContent) {
             sb.append(ch, start, length);
         }
     }
 
+    @Override
     public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
         if (revision == null) {
             return;

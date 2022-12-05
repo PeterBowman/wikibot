@@ -23,7 +23,9 @@ import java.util.stream.Stream;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -38,12 +40,12 @@ public final class MissingPolishAudio {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        XMLDumpReader reader = getDumpReader(args);
+        XMLDump dump = getDump(args);
 
         Map<String, List<String>> regMap = categorizeRegWords();
         ConcurrentMap<String, Set<String>> targetMap = new ConcurrentHashMap<>();
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (Stream<XMLRevision> stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -55,14 +57,16 @@ public final class MissingPolishAudio {
                 .forEach(title -> categorizeTargets(title, regMap, targetMap));
         }
 
-        writeLists(targetMap, extractTimestamp(reader.getPathToDump()));
+        writeLists(targetMap, extractTimestamp(dump.getDescriptiveFilename()));
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
+    private static XMLDump getDump(String[] args) {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length == 0) {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            return dumpConfig.local().fetch().get();
         }
     }
 
@@ -98,12 +102,11 @@ public final class MissingPolishAudio {
         }
     }
 
-    private static String extractTimestamp(Path path) {
-        String fileName = path.getFileName().toString();
+    private static String extractTimestamp(String filename) {
         Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
         String errorString = "brak-daty";
 
-        Matcher m = patt.matcher(fileName);
+        Matcher m = patt.matcher(filename);
 
         if (!m.matches()) {
             return errorString;

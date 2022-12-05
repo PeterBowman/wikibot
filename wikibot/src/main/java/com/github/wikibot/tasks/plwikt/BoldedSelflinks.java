@@ -25,7 +25,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
@@ -101,22 +103,24 @@ public final class BoldedSelflinks {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        XMLDumpReader reader = getXMLReader(args);
-        List<Item> list = analyzeDump(reader);
+        XMLDump dump = getXMLDump(args);
+        List<Item> list = analyzeDump(dump);
 
         if (!checkAndUpdateStoredData(list)) {
             System.out.println("No changes detected, aborting.");
             return;
         }
 
-        String timestamp = extractTimestamp(reader.getPathToDump());
+        String timestamp = extractTimestamp(dump.getDescriptiveFilename());
         String pageText = makePageText(list, timestamp);
 
         wb.setMarkBot(false);
         wb.edit(TARGET_PAGE, pageText, "aktualizacja");
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static XMLDump getXMLDump(String[] args) throws ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
             Options options = new Options();
             options.addOption("d", "dump", true, "read from dump file");
@@ -125,21 +129,20 @@ public final class BoldedSelflinks {
             CommandLine line = parser.parse(options, args);
 
             if (line.hasOption("dump")) {
-                String pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+                return dumpConfig.local().fetch().get();
             } else {
                 new HelpFormatter().printHelp(BoldedSelflinks.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         }
     }
 
-    private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
+    private static List<Item> analyzeDump(XMLDump dump) {
         final Pattern pNewline = Pattern.compile("\n");
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (Stream<XMLRevision> stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::nonRedirect)
                 .filter(XMLRevision::isMainNamespace)
@@ -221,12 +224,11 @@ public final class BoldedSelflinks {
         }
     }
 
-    private static String extractTimestamp(Path path) {
-        String fileName = path.getFileName().toString();
+    private static String extractTimestamp(String filename) {
         Pattern patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
+        String errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", filename);
 
-        Matcher m = patt.matcher(fileName);
+        Matcher m = patt.matcher(filename);
 
         if (!m.matches()) {
             return errorString;

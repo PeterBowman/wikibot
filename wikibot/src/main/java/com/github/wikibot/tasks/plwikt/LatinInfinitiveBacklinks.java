@@ -1,6 +1,5 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,7 +19,9 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.wikiutils.ParseUtils;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -49,10 +50,10 @@ public class LatinInfinitiveBacklinks {
         var wb = Wikibot.newSession("pl.wiktionary.org");
         Login.login(wb);
 
-        var reader = getXMLReader(args);
+        var dump = getXMLDump(args);
         var occurrences = new TreeMap<String, Set<String>>();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -76,7 +77,7 @@ public class LatinInfinitiveBacklinks {
 
             Files.write(LOCATION.resolve("results.txt"), list);
 
-            var text = String.format(INTRO, reader.getPathToDump().getFileName().toString()) + String.join("\n", list);
+            var text = String.format(INTRO, dump.getDescriptiveFilename()) + String.join("\n", list);
             wb.edit(TARGET_PAGE, text, "aktualizacja", false, false, -2, null);
 
             Files.writeString(hash, Integer.toString(occurrences.hashCode()));
@@ -85,7 +86,9 @@ public class LatinInfinitiveBacklinks {
         }
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static XMLDump getXMLDump(String[] args) throws ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
             var options = new Options();
             options.addOption("d", "dump", true, "read from dump file");
@@ -94,14 +97,13 @@ public class LatinInfinitiveBacklinks {
             var line = parser.parse(options, args);
 
             if (line.hasOption("dump")) {
-                var pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+                return dumpConfig.local().fetch().get();
             } else {
                 new HelpFormatter().printHelp(LatinInfinitiveBacklinks.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         }
     }
 

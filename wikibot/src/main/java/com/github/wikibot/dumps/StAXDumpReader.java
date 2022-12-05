@@ -5,15 +5,15 @@ import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 public final class StAXDumpReader implements Iterable<XMLRevision> {
-    private XMLStreamReader streamReader;
+    public static final int BASIC_CHARACTERISTICS = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED | Spliterator.SORTED;
+
+    private final XMLStreamReader streamReader;
     private final long estimateSize;
 
     public StAXDumpReader(XMLStreamReader streamReader) {
@@ -35,22 +35,13 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
         return new StAXIterator();
     }
 
-    public Stream<XMLRevision> stream() {
-        int characteristics = Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED | Spliterator.SORTED;
-
-        if (estimateSize > 0) {
-            characteristics |= Spliterator.SIZED | Spliterator.SUBSIZED;
-        }
-
-        Spliterator<XMLRevision> spliterator;
-
+    @Override
+    public Spliterator<XMLRevision> spliterator() {
         if (estimateSize == 0) {
-            spliterator = Spliterators.spliteratorUnknownSize(iterator(), characteristics);
+            return Spliterators.spliteratorUnknownSize(iterator(), BASIC_CHARACTERISTICS);
         } else {
-            spliterator = Spliterators.spliterator(iterator(), estimateSize, characteristics);
+            return Spliterators.spliterator(iterator(), estimateSize, BASIC_CHARACTERISTICS | Spliterator.SIZED | Spliterator.SUBSIZED);
         }
-
-        return StreamSupport.stream(spliterator, false);
     }
 
     private class StAXIterator implements Iterator<XMLRevision> {
@@ -158,7 +149,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
     }
 
     private static class PageConsumer implements XmlConsumer {
-        private PageInfo page;
+        private final PageInfo page;
 
         PageConsumer(PageInfo pageInfo) {
             this.page = pageInfo;
@@ -187,7 +178,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
     }
 
     private static class RevisionConsumer implements XmlConsumer {
-        private XMLRevision revision;
+        private final XMLRevision revision;
 
         RevisionConsumer(XMLRevision revision) {
             this.revision = revision;

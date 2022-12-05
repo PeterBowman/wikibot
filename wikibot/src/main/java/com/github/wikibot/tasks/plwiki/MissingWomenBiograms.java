@@ -47,7 +47,8 @@ import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.scripts.wd.FetchEpwnBiograms;
@@ -104,9 +105,10 @@ public final class MissingWomenBiograms {
 
         if (line.hasOption("dump")) {
             var biogramEntities = queryBiogramEntities();
-            var reader = new XMLDumpReader("wikidatawiki", true);
+            var dumpConfig = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_ARTICLES_MULTISTREAM_RECOMBINE).withTitles(biogramEntities);
+            var dump = dumpConfig.local().fetch().get();
 
-            try (var stream = reader.seekTitles(biogramEntities).getStAXReaderStream()) {
+            try (var stream = dump.stream()) {
                 stream
                     .filter(XMLRevision::nonRedirect)
                     .filter(rev -> !rev.getText().isEmpty()) // may happen due to dump corruption (self-closing <text> tag)
@@ -126,8 +128,7 @@ public final class MissingWomenBiograms {
                 }
             }
 
-            dumpPath = reader.getPathToDump();
-            Files.writeString(LATEST_DUMP, dumpPath.toString());
+            Files.writeString(LATEST_DUMP, dump.getDescriptiveFilename());
         } else if (line.hasOption("edit")) {
             for (var queryItem : QUERY_CONFIG) {
                 var path = LOCATION.resolve(queryItem.filename() + ".xml.bz2");

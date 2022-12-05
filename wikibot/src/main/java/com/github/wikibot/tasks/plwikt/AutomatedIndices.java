@@ -19,7 +19,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import org.apache.commons.lang3.StringUtils;
+import org.wikiutils.ParseUtils;
+
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -32,9 +37,6 @@ import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.Transliterator;
 import com.ibm.icu.util.ULocale;
 import com.thoughtworks.xstream.XStream;
-
-import org.apache.commons.lang3.StringUtils;
-import org.wikiutils.ParseUtils;
 
 public final class AutomatedIndices {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/AutomatedIndices/");
@@ -91,11 +93,11 @@ public final class AutomatedIndices {
 
         System.out.println(langToLocale);
 
-        var reader = getDumpReader(args);
+        var dump = getDump(args);
         var indexToTitles = new HashMap<String, List<String>>();
         var indexToLang = new HashMap<String, String>();
 
-        try (var stream = reader.getStAXReaderStream()) {
+        try (var stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -118,7 +120,7 @@ public final class AutomatedIndices {
         @SuppressWarnings("unchecked")
         var indexToHash = Files.exists(hash) ? (Map<String, Integer>) new XStream().fromXML(hash.toFile()) : new HashMap<String, Integer>();
 
-        final var summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", reader.getPathToDump().getFileName());
+        final var summary = String.format("aktualizacja na podstawie zrzutu z bazy danych: %s", dump.getDescriptiveFilename());
 
         for (var e : indexToTitles.entrySet()) {
             var index = e.getKey();
@@ -139,7 +141,7 @@ public final class AutomatedIndices {
             var talkPage = wb.getTalkPage(WORKLIST);
             var text = errors.stream().map(err -> String.format("# %s", err)).collect(Collectors.joining("\n"));
             text = String.format(ERROR_REPORT_TEMPLATE_FMT, String.join("|", MAINTAINERS)) + ":\n" + text + "\n~~~~";
-            wb.newSection(talkPage, reader.getPathToDump().getFileName().toString(), text, false, false);
+            wb.newSection(talkPage, dump.getDescriptiveFilename(), text, false, false);
         }
     }
 
@@ -203,11 +205,13 @@ public final class AutomatedIndices {
         entries.removeIf(e -> e.languageTemplates().isEmpty() || e.templates().isEmpty());
     }
 
-    private static XMLDumpReader getDumpReader(String[] args) throws IOException {
+    private static XMLDump getDump(String[] args) {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length == 0) {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         } else {
-            return new XMLDumpReader(Paths.get(args[0].trim()));
+            return dumpConfig.local().fetch().get();
         }
     }
 

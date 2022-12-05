@@ -23,7 +23,9 @@ import org.wikiutils.ParseUtils;
 
 import com.github.plural4j.Plural;
 import com.github.plural4j.Plural.WordForms;
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.plwikt.Field;
@@ -108,8 +110,8 @@ public final class MisusedRegTemplates {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        var reader = getXMLReader(args);
-        var list = analyzeDump(reader);
+        var dump = getXMLDump(args);
+        var list = analyzeDump(dump);
 
         System.out.printf("%d items found%n", list.size());
 
@@ -118,14 +120,16 @@ public final class MisusedRegTemplates {
             return;
         }
 
-        var timestamp = extractTimestamp(reader.getPathToDump());
+        var timestamp = extractTimestamp(dump.getDescriptiveFilename());
         var pageText = makePageText(list, timestamp);
 
         wb.setMarkBot(false);
         wb.edit(TARGET_PAGE, pageText, "aktualizacja");
     }
 
-    private static XMLDumpReader getXMLReader(String[] args) throws ParseException, IOException {
+    private static XMLDump getXMLDump(String[] args) throws ParseException {
+        var dumpConfig = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES);
+
         if (args.length != 0) {
             var options = new Options();
             options.addOption("d", "dump", true, "read from dump file");
@@ -134,19 +138,18 @@ public final class MisusedRegTemplates {
             var line = parser.parse(options, args);
 
             if (line.hasOption("dump")) {
-                var pathToFile = line.getOptionValue("dump");
-                return new XMLDumpReader(Paths.get(pathToFile));
+                return dumpConfig.local().fetch().get();
             } else {
                 new HelpFormatter().printHelp(MisusedRegTemplates.class.getName(), options);
                 throw new IllegalArgumentException();
             }
         } else {
-            return new XMLDumpReader("plwiktionary");
+            return dumpConfig.remote().fetch().get();
         }
     }
 
-    private static List<Item> analyzeDump(XMLDumpReader reader) throws IOException {
-        try (var stream = reader.getStAXReaderStream()) {
+    private static List<Item> analyzeDump(XMLDump dump) {
+        try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
@@ -213,12 +216,11 @@ public final class MisusedRegTemplates {
         }
     }
 
-    private static String extractTimestamp(Path path) {
-        var fileName = path.getFileName().toString();
+    private static String extractTimestamp(String filename) {
         var patt = Pattern.compile("^[a-z]+-(\\d+)-.+");
-        var errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", fileName);
+        var errorString = String.format("(błąd odczytu sygnatury czasowej, plik ''%s'')", filename);
 
-        var m = patt.matcher(fileName);
+        var m = patt.matcher(filename);
 
         if (!m.matches()) {
             return errorString;

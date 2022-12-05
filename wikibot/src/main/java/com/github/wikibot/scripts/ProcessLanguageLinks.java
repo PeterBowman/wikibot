@@ -19,7 +19,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.parsing.Utils;
@@ -39,7 +41,8 @@ public final class ProcessLanguageLinks {
         Options options = new Options();
         options.addOption("f", "find", false, "find remaining language links");
         options.addOption("r", "remove", false, "remove language links");
-        options.addOption("p", "path", true, "path to dump file");
+        options.addOption("d", "database", false, "database name");
+        options.addOption("n", "name", false, "name of date directory of dump file");
         options.addRequiredOption("d", "domain", true, "wiki domain name");
 
         CommandLineParser parser = new DefaultParser();
@@ -58,15 +61,16 @@ public final class ProcessLanguageLinks {
         Login.login(wb);
 
         if (line.hasOption("find")) {
-            XMLDumpReader reader;
+            var database = line.getOptionValue("database");
+            var dumpConfig = new XMLDumpConfig(database).type(XMLDumpTypes.PAGES_ARTICLES);
 
-            if (line.hasOption("path")) {
-                reader = new XMLDumpReader(Paths.get(line.getOptionValue("path")));
+            if (line.hasOption("name")) {
+                dumpConfig.local().at(line.getOptionValue("name"));
             } else {
-                reader = new XMLDumpReader((String)wb.getSiteInfo().get("dbname"));
+                dumpConfig.remote();
             }
 
-            findLanguageLinks(reader);
+            findLanguageLinks(dumpConfig.fetch().get());
         } else if (line.hasOption("remove")) {
             removeLanguageLinks();
         } else {
@@ -75,12 +79,12 @@ public final class ProcessLanguageLinks {
         }
     }
 
-    private static void findLanguageLinks(XMLDumpReader reader) throws IOException {
+    private static void findLanguageLinks(XMLDump reader) throws IOException {
         final Pattern patt = Pattern.compile("\\[\\[\\s*(?:" + interwikis.stream().collect(Collectors.joining("|")) + ")\\s*:[^\\]]*?\\]\\]");
 
         List<String> list;
 
-        try (Stream<XMLRevision> stream = reader.getStAXReaderStream()) {
+        try (Stream<XMLRevision> stream = reader.stream()) {
             list = stream
                 .filter(rev -> rev.getNamespace() != Wiki.USER_NAMESPACE) // https://www.wikidata.org/wiki/Help:Sitelinks#Namespaces
                 .filter(rev -> rev.getNamespace() % 2 == 0) // https://www.mediawiki.org/wiki/Manual:$wgInterwikiMagic

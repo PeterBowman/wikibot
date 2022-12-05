@@ -21,7 +21,9 @@ import java.util.stream.Stream;
 
 import org.wikipedia.Wiki;
 
-import com.github.wikibot.dumps.XMLDumpReader;
+import com.github.wikibot.dumps.XMLDump;
+import com.github.wikibot.dumps.XMLDumpConfig;
+import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
@@ -94,9 +96,9 @@ public final class ShortCommas {
     public static void getList() throws IOException {
         Set<String> wlh = new HashSet<>(wb.whatTranscludesHere(List.of("Szablon:skrót"), Wiki.MAIN_NAMESPACE).get(0));
         List<PageContainer> pages = Collections.synchronizedList(new ArrayList<>(250));
-        XMLDumpReader dumpReader = new XMLDumpReader("plwiktionary");
+        XMLDump dump = new XMLDumpConfig("plwiktionary").type(XMLDumpTypes.PAGES_ARTICLES).remote().fetch().get();
 
-        try (Stream<XMLRevision> stream = dumpReader.getStAXReaderStream()) {
+        try (Stream<XMLRevision> stream = dump.stream()) {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
