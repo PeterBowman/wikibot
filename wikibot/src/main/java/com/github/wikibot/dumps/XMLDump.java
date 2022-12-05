@@ -151,7 +151,7 @@ public class XMLDump {
         if (content.equals("done:all")) {
             var patt = makeFilenamePattern(database, dirName, type.getNamingSchemeRegex());
 
-            var filenames = handler.listDirectoryContents(database, false).stream()
+            var filenames = handler.listDirectoryContents(database, dirName, false).stream()
                 .filter(filename -> patt.matcher(filename).matches())
                 .toList();
 
@@ -163,7 +163,7 @@ public class XMLDump {
 
     static Optional<XMLDump> fetchDirectory(DumpHandler handler, String database, String dirName, XMLDumpTypes type, XMLDumpFactory factory) {
         var patt = makeFilenamePattern(database, dirName, type.getNamingSchemeRegex());
-        var allFilenames = handler.listDirectoryContents(database, false);
+        var allFilenames = handler.listDirectoryContents(database, dirName, false);
 
         var filtered = allFilenames.stream()
             .filter(filename -> patt.matcher(filename).matches())
@@ -291,7 +291,7 @@ class MultistreamXMLDumpFactoryImpl extends XMLDumpFactory {
 
 interface DumpHandler {
     String makePath(String database, String date, String filename);
-    List<String> listDirectoryContents(String database, boolean isDirectory);
+    List<String> listDirectoryContents(String database, String date, boolean isDirectory);
     String getFileContent(String database, String date, String filename);
     InputStream getInputStream(String database, String date, String filename);
 }
@@ -309,8 +309,8 @@ class LocalDumpHandler implements DumpHandler {
     }
 
     @Override
-    public List<String> listDirectoryContents(String database, boolean isDirectory) {
-        try (var paths = Files.walk(path.resolve(database), 1)) {
+    public List<String> listDirectoryContents(String database, String date, boolean isDirectory) {
+        try (var paths = Files.walk(path.resolve(database).resolve(date), 1)) {
             return paths
                 .filter(isDirectory ? Files::isDirectory : Files::isRegularFile)
                 .map(p -> p.getFileName().toString())
@@ -354,9 +354,9 @@ class RemoteDumpHandler implements DumpHandler {
     }
 
     @Override
-    public List<String> listDirectoryContents(String database, boolean isDirectory) {
+    public List<String> listDirectoryContents(String database, String date, boolean isDirectory) {
         try {
-            return Jsoup.connect(baseUrl + "/" + database).get().getElementsByTag("a").stream()
+            return Jsoup.connect(makePath(database, date, "")).get().getElementsByTag("a").stream()
                 .map(Element::text)
                 .filter(text  -> !isDirectory ^ text.endsWith("/"))
                 .map(text -> isDirectory ? text.substring(0, text.length() - 1) : text)

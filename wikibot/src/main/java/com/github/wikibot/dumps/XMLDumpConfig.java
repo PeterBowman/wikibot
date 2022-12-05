@@ -121,7 +121,7 @@ public final class XMLDumpConfig {
             return XMLDump.fetchDirectory(handler, database, "latest", type, factory);
         }
 
-        var dates = handler.listDirectoryContents(database, true).stream()
+        var dates = handler.listDirectoryContents(database, "", true).stream()
             .<TemporalAccessor>mapMulti((dirName, consumer) -> {
                 try {
                     consumer.accept(DateTimeFormatter.BASIC_ISO_DATE.parse(dirName));
