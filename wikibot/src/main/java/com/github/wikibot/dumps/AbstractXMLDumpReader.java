@@ -18,7 +18,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
-public abstract class AbstractXMLDumpReader {
+abstract class AbstractXMLDumpReader {
     public Optional<Long> getSize() {
         return Optional.empty();
     }
