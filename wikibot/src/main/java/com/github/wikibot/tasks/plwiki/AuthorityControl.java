@@ -132,7 +132,10 @@ public final class AuthorityControl {
             if (cli.hasOption("incr")) {
                 var datePath = LOCATION.resolve("last_incr_date.txt");
                 var today = LocalDate.now();
-                var refDate = Files.exists(datePath) ? LocalDate.parse(Files.readString(datePath)) : today.minusDays(1);
+
+                var refDate = Files.exists(datePath)
+                    ? LocalDate.parse(Files.readString(datePath), DateTimeFormatter.BASIC_ISO_DATE)
+                    : today.minusDays(1);
 
                 articles.addAll(processIncrementalDumps(refDate, today));
                 Files.writeString(datePath, today.format(DateTimeFormatter.BASIC_ISO_DATE));
