@@ -35,7 +35,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
 public class XMLDump {
-    private static final Pattern PATT_FILENAME_ID = Pattern.compile("-p(?<start>\\d+)p(?<end>\\d+)");
+    private static final Pattern PATT_FILENAME_ID = Pattern.compile("(?<slice>\\d+)\\.(?:txt|xml)(?:-p(?<start>\\d+)p(?<end>\\d+))?");
 
     private static final String STATUS_JSON = "dumpstatus.json";
     private static final String STATUS_INCR = "status.txt";
@@ -80,11 +80,14 @@ public class XMLDump {
             var m = PATT_FILENAME_ID.matcher(filename);
 
             if (m.find()) {
-                var start = Long.parseLong(m.group("start")); // inclusive
-                var end = Long.parseLong(m.group("end")); // also inclusive
-                var range = Range.between(start, end);
+                var gStart = m.group("start");
+                var gEnd = m.group("end");
 
-                return Range.between(ids.first(), ids.last()).isOverlappedBy(range);
+                if (gStart != null && gEnd != null) {
+                    // inclusive, inclusive
+                    var range = Range.between(Long.parseLong(gStart), Long.parseLong(gEnd));
+                    return Range.between(ids.first(), ids.last()).isOverlappedBy(range);
+                }
             }
         }
 
@@ -117,7 +120,6 @@ public class XMLDump {
     }
 
     private static Optional<XMLDump> fetchAndParseJsonConfig(DumpHandler handler, String database, String dirName, String content, XMLDumpTypes type, XMLDumpFactory factory) {
-        var sortedFilenames = handler.listDirectoryContents(database, dirName, false);
         var json = new JSONObject(content);
         var jobs = json.getJSONObject("jobs");
         var key = type.optConfigKey().get();
@@ -138,15 +140,34 @@ public class XMLDump {
         if (config.getString("status").equals("done")) {
             var patt = makeFilenamePattern(database, dirName, namingSchemeRegex);
 
-            var filteredFilenames = config.getJSONObject("files").keySet().stream()
+            var filenames = config.getJSONObject("files").keySet().stream()
                 .filter(filename -> patt.matcher(filename).matches())
-                .sorted((f1, f2) -> Integer.compare(sortedFilenames.indexOf(f1), sortedFilenames.indexOf(f2)))
+                .sorted(getFilenameComparator()) // sadly, JSONObject doesn't preserve insertion order
                 .toList();
 
-            return Optional.of(factory.create(handler, database, dirName, filteredFilenames));
+            return Optional.of(factory.create(handler, database, dirName, filenames));
         }
 
         return Optional.empty();
+    }
+
+    private static Comparator<String> getFilenameComparator() {
+        return Comparator.comparingInt(filename -> {
+            var m = PATT_FILENAME_ID.matcher(filename);
+
+            if (m.find()) {
+                var slice = m.group("slice");
+                var start = m.group("start");
+
+                if (start != null) {
+                    return Integer.parseInt(start);
+                } else if (slice != null) {
+                    return Integer.parseInt(slice);
+                }
+            }
+
+            return 0;
+        });
     }
 
     private static Optional<XMLDump> fetchAndParseIncrementalConfig(DumpHandler handler, String database, String dirName, String content, XMLDumpTypes type, XMLDumpFactory factory) {
