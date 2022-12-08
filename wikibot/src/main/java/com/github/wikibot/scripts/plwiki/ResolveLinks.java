@@ -336,7 +336,7 @@ public final class ResolveLinks {
     }
 
     private static Map<String, List<String>> getBacklinkMap(Map<String, String> sourceToTarget, boolean allNamespaces) throws IOException {
-        var comparator = Comparator.comparing(wb::namespace).thenComparing(Comparator.naturalOrder());
+        var comparator = Comparator.comparingInt(wb::namespace).thenComparing(Comparator.naturalOrder());
         var backlinkToSources = new TreeMap<String, List<String>>(comparator);
         var sources = sourceToTarget.keySet().stream().toList();
 

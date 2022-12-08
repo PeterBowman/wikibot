@@ -440,9 +440,9 @@ public abstract class AbstractSection<T extends AbstractSection<T>> {
 
             if (diff > 0) {
                 int highestLevel = subSections.stream()
-                    .map(AbstractSection::getLevel)
-                    .max(Integer::max)
-                    .get();
+                    .mapToInt(AbstractSection::getLevel)
+                    .max()
+                    .getAsInt();
 
                 if (highestLevel + diff > 6) {
                     throw new IllegalArgumentException("New level out of accepted range (SectionBase.pushLevels)");
