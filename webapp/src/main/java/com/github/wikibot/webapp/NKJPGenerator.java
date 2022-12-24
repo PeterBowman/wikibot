@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,12 +21,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.nibor.autolink.LinkExtractor;
-import org.nibor.autolink.LinkSpan;
 import org.nibor.autolink.LinkType;
 
 /**
@@ -36,8 +32,8 @@ import org.nibor.autolink.LinkType;
 public class NKJPGenerator extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private static final List<String> templateParams = List.of(
-        "autorzy", "tytuł_pub", "tytuł_art", "data", "hash", "match_start", "match_end"
+    private static final List<String> TEMPLATE_PARAMS = List.of(
+        "autorzy", "tytuł_pub", "tytuł_mag", "tytuł_art", "data", "hash", "match_start", "match_end"
     );
 
     private static final String JSP_DISPATCH_TARGET = "/jsp/nkjp-generator.jsp";
@@ -49,9 +45,9 @@ public class NKJPGenerator extends HttpServlet {
         request.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setHeader("Access-Control-Allow-Origin", "https://pl.wiktionary.org");
 
-        String address = request.getParameter("address");
+        var address = request.getParameter("address");
 
-        ResponseWrapper responseWrapper;
+        final ResponseWrapper responseWrapper;
 
         if (request.getParameter("gui") != null || address == null) {
             responseWrapper = new WebResponse(request, response);
@@ -67,7 +63,7 @@ public class NKJPGenerator extends HttpServlet {
             address = "http://" + address.replace("&amp;", "&").replaceFirst("^https?://", "").replaceFirst("[#\\|].*$", "");
         }
 
-        Map<String, String> resultMap = new TreeMap<>(Comparator.comparingInt(templateParams::indexOf));
+        var resultMap = new TreeMap<String, String>(Comparator.comparingInt(TEMPLATE_PARAMS::indexOf));
 
         try {
             generateTemplateData(address, resultMap);
@@ -87,43 +83,36 @@ public class NKJPGenerator extends HttpServlet {
     }
 
     private static String parseAddressParameter(String address) {
-        LinkExtractor linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
-        Iterator<LinkSpan> i = linkExtractor.extractLinks(address).iterator();
+        var linkExtractor = LinkExtractor.builder().linkTypes(EnumSet.of(LinkType.URL)).build();
+        var i = linkExtractor.extractLinks(address).iterator();
 
         if (!i.hasNext()) {
             throw new RuntimeException("nie wykryto żadnego linku we wskazanym adresie");
         }
 
-        LinkSpan linkSpan = i.next();
-
+        var linkSpan = i.next();
         return address.substring(linkSpan.getBeginIndex(), linkSpan.getEndIndex());
     }
 
     private static Map<String, String> validateUrl(String urlString) throws MalformedURLException {
-        URL url = new URL(urlString);
-        String query = url.getQuery();
+        var url = new URL(urlString);
+        var query = url.getQuery();
 
-        List<String> mandatoryParams = List.of("pid", "match_start", "match_end", "wynik");
-        Map<String, String> params = new HashMap<>();
+        var mandatoryParams = List.of("pid", "match_start", "match_end", "wynik");
+        var params = new HashMap<String, String>();
 
-        for (String paramWithValue : query.split("&")) {
-            String[] tokens = paramWithValue.split("=");
+        for (var paramWithValue : query.split("&")) {
+            var tokens = paramWithValue.split("=");
 
             if (tokens.length != 2) {
                 continue;
             }
 
-            String param = tokens[0];
-            String value = tokens[1];
+            var param = tokens[0];
+            var value = tokens[1];
 
             if (mandatoryParams.contains(param)) {
-                String regex;
-
-                if (param.equals("pid")) {
-                    regex = "[0-9a-f]{32}";
-                } else {
-                    regex = "\\d+";
-                }
+                var regex = param.equals("pid") ? "[0-9a-f]{32}" : "\\d+";
 
                 if (!value.matches(regex)) {
                     throw new RuntimeException("nieprawidłowy format parametru \"" + param + "\" (" + value + ")");
@@ -135,7 +124,7 @@ public class NKJPGenerator extends HttpServlet {
 
         params.keySet().retainAll(mandatoryParams);
 
-        List<String> remainder = new ArrayList<>(mandatoryParams);
+        var remainder = new ArrayList<String>(mandatoryParams);
         remainder.removeAll(params.keySet());
 
         if (!remainder.isEmpty()) {
@@ -144,20 +133,17 @@ public class NKJPGenerator extends HttpServlet {
 
         params.put("hash", params.remove("pid"));
         params.remove("wynik");
-
         return params;
     }
 
     private static void extractNKJPData(Document doc, Map<String, String> resultMap) {
-        List<String> mandatoryParams = List.of("autorzy", "tytuł_pub");
-
-        for (Element tr : doc.body().getElementsByTag("tr")) {
+        for (var tr : doc.body().getElementsByTag("tr")) {
             if (tr.children().size() != 2) {
                 continue;
             }
 
-            String label = tr.children().first().ownText().trim();
-            String value = tr.children().last().ownText().trim();
+            var label = tr.children().first().text().strip();
+            var value = tr.children().last().text().strip();
 
             if (value.isEmpty()) {
                 continue;
@@ -178,35 +164,33 @@ public class NKJPGenerator extends HttpServlet {
                     resultMap.put("data", value);
                     break;
             }
-        }
 
-        for (String mandatoryParam : mandatoryParams) {
-            if (!resultMap.containsKey(mandatoryParam)) {
-                throw new RuntimeException("nie udało się pobrać obowiązkowego parametru \"" + mandatoryParam + "\"");
+            if (resultMap.containsKey("tytuł_pub") && resultMap.containsKey("tytuł_art")) {
+                resultMap.put("tytuł_mag", resultMap.remove("tytuł_pub")); // journal/magazine
             }
         }
     }
 
     private static void generateTemplateData(String address, Map<String, String> resultMap) throws IOException {
-        String urlString = parseAddressParameter(address);
+        var urlString = parseAddressParameter(address);
 
         try {
-            Map<String, String> params = validateUrl(urlString);
+            var params = validateUrl(urlString);
             resultMap.putAll(params);
         } catch (MalformedURLException e) {
             throw new RuntimeException("błąd parsera adresu URL: " + e.getMessage());
         }
 
-        Connection connection = Jsoup.connect(urlString);
-        Document doc = connection.get();
+        var connection = Jsoup.connect(urlString);
+        var doc = connection.get();
 
         extractNKJPData(doc, resultMap);
     }
 
     private static String buildTemplate(Map<String, String> params) {
-        StringBuilder sb = new StringBuilder("{{NKJP|");
+        var sb = new StringBuilder("{{NKJP|");
 
-        for (Map.Entry<String, String> entry : params.entrySet()) {
+        for (var entry : params.entrySet()) {
             sb.append(entry.getKey()).append("=").append(entry.getValue()).append("|");
         }
 
@@ -214,7 +198,7 @@ public class NKJPGenerator extends HttpServlet {
     }
 
     private abstract class ResponseWrapper {
-        HttpServletResponse response;
+        final HttpServletResponse response;
         String format;
 
         ResponseWrapper(HttpServletResponse response) {
@@ -239,14 +223,12 @@ public class NKJPGenerator extends HttpServlet {
         abstract void prepareOutput(Map<String, String> resultMap);
 
         List<String> buildExceptionBacktrace(Exception e) {
-            List<String> backTrace = new ArrayList<>();
+            var backTrace = new ArrayList<String>();
 
-            StackTraceElement[] stackTraceElements = e.getStackTrace();
-            String canonicalName = NKJPGenerator.class.getCanonicalName();
+            var stackTraceElements = e.getStackTrace();
+            var canonicalName = NKJPGenerator.class.getCanonicalName();
 
-            for (int i = 0; i < stackTraceElements.length; i++) {
-                StackTraceElement el = stackTraceElements[i];
-
+            for (var el : stackTraceElements) {
                 if (!el.getClassName().equals(canonicalName)) {
                     break;
                 }
@@ -263,8 +245,8 @@ public class NKJPGenerator extends HttpServlet {
     }
 
     private class WebResponse extends ResponseWrapper {
-        HttpServletRequest request;
-        RequestDispatcher dispatcher;
+        final HttpServletRequest request;
+        final RequestDispatcher dispatcher;
 
         WebResponse(HttpServletRequest request, HttpServletResponse response) {
             super(response);
@@ -280,14 +262,14 @@ public class NKJPGenerator extends HttpServlet {
 
         @Override
         void prepareOutput(Map<String, String> resultMap) {
-            String template = buildTemplate(resultMap);
+            var template = buildTemplate(resultMap);
             request.setAttribute("output", template);
             request.setAttribute("parameters", resultMap);
         }
 
         @Override
         void handleException(Exception e) {
-            List<String> backTrace = buildExceptionBacktrace(e);
+            var backTrace = buildExceptionBacktrace(e);
             request.setAttribute("error", e.toString());
             request.setAttribute("backtrace", backTrace);
         }
@@ -299,7 +281,7 @@ public class NKJPGenerator extends HttpServlet {
     }
 
     private class StructuredResponse extends ResponseWrapper {
-        JSONObject json;
+        final JSONObject json;
 
         StructuredResponse(HttpServletResponse response) {
             super(response);
@@ -316,14 +298,14 @@ public class NKJPGenerator extends HttpServlet {
 
         @Override
         void prepareOutput(Map<String, String> resultMap) {
-            String template = buildTemplate(resultMap);
+            var template = buildTemplate(resultMap);
             json.put("output", template);
 
             // ensure that key order is preserved
-            JSONArray array = new JSONArray();
+            var array = new JSONArray();
 
-            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                JSONObject object = new JSONObject();
+            for (var entry : resultMap.entrySet()) {
+                var object = new JSONObject();
                 object.put("name", entry.getKey());
                 object.put("value", entry.getValue());
                 array.put(object);
@@ -334,7 +316,7 @@ public class NKJPGenerator extends HttpServlet {
 
         @Override
         void handleException(Exception e) {
-            List<String> backTrace = buildExceptionBacktrace(e);
+            var backTrace = buildExceptionBacktrace(e);
             json.put("status", 500);
             json.put("error", e.toString());
             json.put("backtrace", backTrace.toArray(String[]::new));
@@ -344,7 +326,7 @@ public class NKJPGenerator extends HttpServlet {
         void send() throws ServletException, IOException {
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
-            String contentType = getContentType();
+            var contentType = getContentType();
             response.setHeader("Content-Type", contentType);
 
             // might have been previously set by exception handler
@@ -352,7 +334,7 @@ public class NKJPGenerator extends HttpServlet {
                 json.put("status", 200);
             }
 
-            String output = json.toString();
+            var output = json.toString();
             response.getWriter().append(output);
         }
     }

@@ -82,12 +82,12 @@ $( function () {
         }, '', url );
     }
 
-    $submit.add( '#example-link' ).on( 'click', function ( evt ) {
+    $submit.add( '.example-link' ).on( 'click', function ( evt ) {
         var address = $input.val();
 
         evt.preventDefault();
 
-        if ( this.id === 'example-link' ) {
+        if ( this.className === 'example-link' ) {
             address = $( this ).text();
             $input.val( address );
         }
