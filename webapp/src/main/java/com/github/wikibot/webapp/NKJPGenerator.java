@@ -32,8 +32,8 @@ import org.nibor.autolink.LinkType;
 public class NKJPGenerator extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private static final List<String> templateParams = List.of(
-        "autorzy", "tytuł_pub", "tytuł_art", "data", "hash", "match_start", "match_end"
+    private static final List<String> TEMPLATE_PARAMS = List.of(
+        "autorzy", "tytuł_pub", "tytuł_mag", "tytuł_art", "data", "hash", "match_start", "match_end"
     );
 
     private static final String JSP_DISPATCH_TARGET = "/jsp/nkjp-generator.jsp";
@@ -63,7 +63,7 @@ public class NKJPGenerator extends HttpServlet {
             address = "http://" + address.replace("&amp;", "&").replaceFirst("^https?://", "").replaceFirst("[#\\|].*$", "");
         }
 
-        var resultMap = new TreeMap<String, String>(Comparator.comparingInt(templateParams::indexOf));
+        var resultMap = new TreeMap<String, String>(Comparator.comparingInt(TEMPLATE_PARAMS::indexOf));
 
         try {
             generateTemplateData(address, resultMap);
@@ -163,6 +163,10 @@ public class NKJPGenerator extends HttpServlet {
                 case "Data publikacji:":
                     resultMap.put("data", value);
                     break;
+            }
+
+            if (resultMap.containsKey("tytuł_pub") && resultMap.containsKey("tytuł_art")) {
+                resultMap.put("tytuł_mag", resultMap.remove("tytuł_pub")); // journal/magazine
             }
         }
     }
