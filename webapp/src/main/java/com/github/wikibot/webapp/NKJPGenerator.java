@@ -142,8 +142,8 @@ public class NKJPGenerator extends HttpServlet {
                 continue;
             }
 
-            var label = tr.children().first().ownText().trim();
-            var value = tr.children().last().ownText().trim();
+            var label = tr.children().first().text().strip();
+            var value = tr.children().last().text().strip();
 
             if (value.isEmpty()) {
                 continue;
