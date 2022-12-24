@@ -32,7 +32,8 @@ module org.github.wikibot {
     requires transitive rdf4j.query;
     requires transitive rdf4j.repository.api;
     requires transitive rdf4j.repository.sparql;
-    requires transitive rdf4j.util;
+    requires transitive rdf4j.common.exception;
+    requires transitive rdf4j.common.iterator;
     requires transitive java.xml.bind;
 
     // https://stackoverflow.com/a/41265267
