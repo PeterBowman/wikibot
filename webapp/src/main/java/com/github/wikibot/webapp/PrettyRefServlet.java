@@ -593,7 +593,8 @@ public class PrettyRefServlet extends HttpServlet {
                         group = value;
                         var count = groupRefCounter.getOrDefault(group, 0);
                         groupRefCounter.put(group, ++count);
-                        name = group + count;
+                        // `name` might have been already set by the previous case branch, therefore don't overwrite it
+                        if (name == null) name = group + count;
                         break;
                 }
             }
