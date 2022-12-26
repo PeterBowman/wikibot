@@ -99,7 +99,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
             }
         }
 
-        private void parseCurrentElement(XmlConsumer consumer) {
+        private void parseCurrentElement(XMLConsumer consumer) {
             switch (streamReader.getEventType()) {
                 case XMLStreamConstants.START_ELEMENT:
                     buffer.setLength(0);
@@ -143,12 +143,12 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
         }
     }
 
-    private static interface XmlConsumer {
+    private static interface XMLConsumer {
         void acceptStartElement(XMLStreamReader reader);
         void acceptEndElement(XMLStreamReader reader, StringBuilder sb);
     }
 
-    private static class PageConsumer implements XmlConsumer {
+    private static class PageConsumer implements XMLConsumer {
         private final PageInfo page;
 
         PageConsumer(PageInfo pageInfo) {
@@ -177,7 +177,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
         }
     }
 
-    private static class RevisionConsumer implements XmlConsumer {
+    private static class RevisionConsumer implements XMLConsumer {
         private final XMLRevision revision;
 
         RevisionConsumer(XMLRevision revision) {
