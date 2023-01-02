@@ -50,7 +50,7 @@ public final class UnsourcedUkrainianEntries {
     static {
         PAGE_INTRO = """
             Hasła ukraińskie, w których przynajmniej jedno znaczenie nie zostało uźródłowione przy użyciu
-            dowolnego szablonu z [[:Kategoria:Szablony źródeł (ukraiński)]].
+            dowolnego szablonu z [[:Kategoria:Szablony źródeł (ukraiński)]] (i podkategorii).
 
             Znaleziono %s. Aktualizacja: ~~~~~.
             __NOEDITSECTION__
@@ -72,8 +72,10 @@ public final class UnsourcedUkrainianEntries {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        var sourceTmpls = wb.getCategoryMembers(SOURCES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
+        // depth: 10
+        var sourceTmpls = wb.getCategoryMembers(SOURCES_CATEGORY, 10, false, Wiki.TEMPLATE_NAMESPACE).stream()
             .map(wb::removeNamespace)
+            .distinct()
             .toList();
 
         var ignoredHeaderTmpls = wb.getCategoryMembers(IGNORED_DEF_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE).stream()
