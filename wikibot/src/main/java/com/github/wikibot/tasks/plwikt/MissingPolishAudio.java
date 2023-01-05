@@ -78,7 +78,7 @@ public final class MissingPolishAudio {
 
             if (line.hasOption("local")) {
                 if (Files.exists(path)) {
-                    dumpConfig.after(Files.readString(path));
+                    dumpConfig.after(Files.readString(path).strip());
                 }
 
                 dumpConfig.local();

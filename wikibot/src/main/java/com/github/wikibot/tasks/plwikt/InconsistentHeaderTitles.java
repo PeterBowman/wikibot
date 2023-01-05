@@ -180,7 +180,7 @@ public final class InconsistentHeaderTitles {
             dumpConfig.local();
 
             if (Files.exists(datePath)) {
-                dumpConfig.after(Files.readString(datePath));
+                dumpConfig.after(Files.readString(datePath).strip());
             }
         } else {
             dumpConfig.remote();

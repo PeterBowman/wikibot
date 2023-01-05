@@ -115,7 +115,7 @@ public final class AuthorityControl {
                 var config = new XMLDumpConfig("wikidatawiki").type(XMLDumpTypes.PAGES_ARTICLES_MULTISTREAM).local();
 
                 if (Files.exists(datePath)) {
-                    config.after(Files.readString(datePath));
+                    config.after(Files.readString(datePath).strip());
                 }
 
                 var optDump = config.fetch();
@@ -134,7 +134,7 @@ public final class AuthorityControl {
                 var today = LocalDate.now();
 
                 var refDate = Files.exists(datePath)
-                    ? LocalDate.parse(Files.readString(datePath), DateTimeFormatter.BASIC_ISO_DATE)
+                    ? LocalDate.parse(Files.readString(datePath).strip(), DateTimeFormatter.BASIC_ISO_DATE)
                     : today.minusDays(1);
 
                 articles.addAll(processIncrementalDumps(refDate, today));

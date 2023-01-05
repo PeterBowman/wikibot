@@ -45,9 +45,9 @@ public final class NewPageTagger {
         String startTimestamp;
 
         if (Files.exists(LAST_DATE)) {
-            startTimestamp = Files.readAllLines(LAST_DATE).get(0);
+            startTimestamp = Files.readString(LAST_DATE).strip();
         } else if (Files.exists(PICK_DATE)) {
-            startTimestamp = Files.readAllLines(PICK_DATE).get(0);
+            startTimestamp = Files.readString(PICK_DATE).strip();
         } else {
             throw new UnsupportedOperationException("No timestamp file found.");
         }

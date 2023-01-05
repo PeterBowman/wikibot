@@ -113,9 +113,9 @@ public final class GreetNewEditors {
         String startTimestamp;
 
         if (Files.exists(LAST_DATE)) {
-            startTimestamp = Files.readString(LAST_DATE).trim();
+            startTimestamp = Files.readString(LAST_DATE).strip();
         } else if (Files.exists(PICK_DATE)) {
-            startTimestamp = Files.readString(PICK_DATE).trim();
+            startTimestamp = Files.readString(PICK_DATE).strip();
         } else {
             System.out.printf("No timestamp file found, picking last %d days.", DEFAULT_LAST_DAYS);
             var yesterday = OffsetDateTime.now(wb.timezone()).minusDays(DEFAULT_LAST_DAYS);
