@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -43,6 +44,8 @@ public final class MissingPersonInfoboxes {
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
+    private static final int MAX_SPARQL_RETRIES = 5;
+
     private static final JSONArray CATEGORY_MAPPINGS;
 
     static {
@@ -99,7 +102,6 @@ public final class MissingPersonInfoboxes {
 
     private static List<String> queryBiograms() {
         final var uriPrefix = "https://pl.wikipedia.org/wiki/";
-        var entities = new ArrayList<String>(5000000);
 
         try (var connection = SPARQL_REPO.getConnection()) {
             var querySelect = String.format("""
@@ -114,16 +116,22 @@ public final class MissingPersonInfoboxes {
 
             var query = connection.prepareTupleQuery(querySelect);
 
-            try (var result = query.evaluate()) {
-                result.stream()
-                    .map(bs -> ((IRI)bs.getValue("article")))
-                    .map(iri -> iri.stringValue().substring(uriPrefix.length()).replace('_', ' '))
-                    .map(pagename -> URLDecoder.decode(pagename, StandardCharsets.UTF_8))
-                    .forEach(entities::add);
+            for (var retry = 1; ; retry++) {
+                try (var result = query.evaluate()) {
+                    return result.stream()
+                        .map(bs -> ((IRI)bs.getValue("article")))
+                        .map(iri -> iri.stringValue().substring(uriPrefix.length()).replace('_', ' '))
+                        .map(pagename -> URLDecoder.decode(pagename, StandardCharsets.UTF_8))
+                        .collect(Collectors.toCollection(ArrayList::new));
+                } catch (QueryEvaluationException e) {
+                    if (retry > MAX_SPARQL_RETRIES) {
+                        throw e;
+                    }
+
+                    System.out.printf("Query failed with: %s (retry %d)%n", e.getMessage(), retry);
+                }
             }
         }
-
-        return entities;
     }
 
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
