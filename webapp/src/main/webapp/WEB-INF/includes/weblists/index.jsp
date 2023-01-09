@@ -26,6 +26,11 @@
             </a>
         </li>
         <li>
+            <a href="${pageContext.request.contextPath}/weblists/plwikt-missing-ukrainian-audio">
+                (plwiktionary) ukraińskie hasła bez nagrania wymowy
+            </a>
+        </li>
+        <li>
             <a href="${pageContext.request.contextPath}/weblists/plwiki-sandbox-redirects">
                 (plwiki) strony przeniesione do brudnopisu
             </a>

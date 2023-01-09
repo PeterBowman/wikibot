@@ -60,6 +60,10 @@
     </init-param>
   </servlet>
   <servlet>
+    <servlet-name>MissingUkrainianAudio</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MissingUkrainianAudio</servlet-class>
+  </servlet>
+  <servlet>
     <servlet-name>SandboxRedirects</servlet-name>
     <servlet-class>com.github.wikibot.webapp.SandboxRedirects</servlet-class>
   </servlet>
@@ -143,6 +147,12 @@
     <url-pattern>/weblists/plwikt-missing-polish-examples/api</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
+    <servlet-name>MissingUkrainianAudio</servlet-name>
+    <url-pattern>/weblists/plwikt-missing-ukrainian-audio</url-pattern>
+    <url-pattern>/weblists/plwikt-missing-ukrainian-audio/raw</url-pattern>
+    <url-pattern>/weblists/plwikt-missing-ukrainian-audio/download</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
     <servlet-name>SandboxRedirects</servlet-name>
     <url-pattern>/weblists/plwiki-sandbox-redirects</url-pattern>
   </servlet-mapping>
@@ -216,6 +226,11 @@
   </resource-ref>
   <resource-ref>
     <res-ref-name>jdbc/plwikinews-analytics</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+  <resource-ref>
+    <res-ref-name>jdbc/commons-web</res-ref-name>
     <res-type>javax.sql.DataSource</res-type>
     <res-auth>Container</res-auth>
   </resource-ref>
