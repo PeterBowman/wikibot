@@ -1,5 +1,5 @@
 <%@ tag description="Generate a log item for /change-log subpage" pageEncoding="UTF-8"
-	trimDirectiveWhitespaces="true" %>
+    trimDirectiveWhitespaces="true" %>
 
 <%@ attribute name="row" required="true" type="java.util.SortedMap" %>
 
@@ -10,13 +10,13 @@
 <fmt:formatDate value="${row.change_timestamp}" pattern="HH:mm, d MMM yyyy" />
 .&nbsp;.
 <c:choose>
-	<c:when test="${fn:startsWith(row.editor, '@')}">
-		wygenerowano
-	</c:when>
-	<c:otherwise>
-		<a href="?user=${fn:escapeXml(row.editor)}">${row.editor}</a>
-		tworzy
-	</c:otherwise>
+    <c:when test="${fn:startsWith(row.editor, '@')}">
+        wygenerowano
+    </c:when>
+    <c:otherwise>
+        <a href="?user=${fn:escapeXml(row.editor)}">${row.editor}</a>
+        tworzy
+    </c:otherwise>
 </c:choose>
 wersję #${row.change_log_id} wystąpienia
 <a href="?entry=%23${row.entry_id}&showgenerated=on">#${row.entry_id}</a>

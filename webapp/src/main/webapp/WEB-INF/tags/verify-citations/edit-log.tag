@@ -1,5 +1,5 @@
 <%@ tag description="Generate a log item for /edit-log subpage" pageEncoding="UTF-8"
-	trimDirectiveWhitespaces="true" %>
+    trimDirectiveWhitespaces="true" %>
 
 <%@ attribute name="row" required="true" type="java.util.SortedMap" %>
 

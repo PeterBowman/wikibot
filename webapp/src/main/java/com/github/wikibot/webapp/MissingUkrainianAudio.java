@@ -98,50 +98,50 @@ public class MissingUkrainianAudio extends HttpServlet {
 
     private List<String> getUkrainianAudioFiles() throws SQLException {
         var files = new ArrayList<String>();
-		var visitedCats = new HashSet<String>();
-		var targetCategories = List.of(AUDIO_CATEGORY_NAME);
+        var visitedCats = new HashSet<String>();
+        var targetCategories = List.of(AUDIO_CATEGORY_NAME);
 
-		final var queryFmt = """
-			SELECT
+        final var queryFmt = """
+            SELECT
                 page_title,
                 page_namespace
-			FROM page
+            FROM page
                 LEFT JOIN categorylinks ON cl_from = page_id
-			WHERE
+            WHERE
                 page_is_redirect = 0
-			    AND cl_to IN (%s);
-			""";
+                AND cl_to IN (%s);
+            """;
 
-		try (var connection = commonsDataSource.getConnection()) {
-			while (!targetCategories.isEmpty()) {
-				var catArray = targetCategories.stream()
-					.map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
-					.collect(Collectors.joining(","));
+        try (var connection = commonsDataSource.getConnection()) {
+            while (!targetCategories.isEmpty()) {
+                var catArray = targetCategories.stream()
+                    .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
+                    .collect(Collectors.joining(","));
 
-				var query = String.format(queryFmt, catArray);
-				var rs = connection.createStatement().executeQuery(query);
-				var subcats = new ArrayList<String>();
+                var query = String.format(queryFmt, catArray);
+                var rs = connection.createStatement().executeQuery(query);
+                var subcats = new ArrayList<String>();
 
-				while (rs.next()) {
-					var title = rs.getString("page_title");
-					var ns = rs.getInt("page_namespace");
+                while (rs.next()) {
+                    var title = rs.getString("page_title");
+                    var ns = rs.getInt("page_namespace");
 
-					if (ns == 14) { // Category
-						subcats.add(title);
-					} else if (ns == 6) { // File
-						files.add(title);
-					}
-				}
+                    if (ns == 14) { // Category
+                        subcats.add(title);
+                    } else if (ns == 6) { // File
+                        files.add(title);
+                    }
+                }
 
-				visitedCats.addAll(targetCategories);
-				subcats.removeAll(visitedCats);
+                visitedCats.addAll(targetCategories);
+                subcats.removeAll(visitedCats);
 
-				targetCategories = subcats;
-			}
-		}
+                targetCategories = subcats;
+            }
+        }
 
-		return files.stream().distinct().toList();
-	}
+        return files.stream().distinct().toList();
+    }
 
     private List<String> getTargetedEntries(List<String> files) throws SQLException {
         var titles = new ArrayList<String>(10000);

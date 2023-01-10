@@ -217,7 +217,7 @@ $( function () {
 
         searchValues = {
             offset: currentOffset,
-            limit: currentLimit	,
+            limit: currentLimit,
             onlyredirs: currentRedirsOn ? 1 : 0,
             onlymissing : currentRedlinksOn ? 1 : 0,
             onlydisambigs: currentDisambigsOn ? 1 : 0

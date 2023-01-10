@@ -204,7 +204,8 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
                 printResults(writer, sourceProject, targetProject, request, lastRequest);
                 return;
             } else {
-                session.removeAttribute("lastRequest");			}
+                session.removeAttribute("lastRequest");
+            }
         }
 
         try (Connection conn = plwiktDS.getConnection()) {

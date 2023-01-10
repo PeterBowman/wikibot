@@ -1,5 +1,5 @@
 <%@ tag description="Generate an entry item for /entries subpage" pageEncoding="UTF-8"
-	trimDirectiveWhitespaces="true" %>
+    trimDirectiveWhitespaces="true" %>
 
 <%@ attribute name="row" required="true" type="java.util.SortedMap" %>
 
@@ -11,12 +11,12 @@
 .&nbsp;.
 <a href="?user=${fn:escapeXml(row.reviewer)}">${row.reviewer}</a>
 <c:choose>
-	<c:when test="${row.review_status eq true}">
-		zatwierdza
-	</c:when>
-	<c:otherwise>
-		odrzuca
-	</c:otherwise>
+    <c:when test="${row.review_status eq true}">
+        zatwierdza
+    </c:when>
+    <c:otherwise>
+        odrzuca
+    </c:otherwise>
 </c:choose>
 wersję #${row.change_log_id} wystąpienia
 <a href="?entry=%23${row.entry_id}">#${row.entry_id}</a>

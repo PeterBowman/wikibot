@@ -147,57 +147,57 @@ public final class MissingPersonInfoboxes {
     }
 
     private static Set<String> getRecursiveCategoryMembers(String category, int... namespaces) throws SQLException, ClassNotFoundException, IOException {
-		var targetNs = Arrays.stream(namespaces).boxed().toList();
+        var targetNs = Arrays.stream(namespaces).boxed().toList();
         var articles = new HashSet<String>();
-		var visitedCats = new HashSet<String>();
-		var targetCategories = Arrays.asList(category.replace(' ', '_'));
-		var depth = 0;
+        var visitedCats = new HashSet<String>();
+        var targetCategories = Arrays.asList(category.replace(' ', '_'));
+        var depth = 0;
 
-		final var queryFmt = """
-			SELECT DISTINCT page_title AS page_title, page_namespace
-			FROM page LEFT JOIN categorylinks ON cl_from = page_id
-			WHERE page_is_redirect = 0
-			AND cl_to IN (%s);
-			""";
+        final var queryFmt = """
+            SELECT DISTINCT page_title AS page_title, page_namespace
+            FROM page LEFT JOIN categorylinks ON cl_from = page_id
+            WHERE page_is_redirect = 0
+            AND cl_to IN (%s);
+            """;
 
-		try (var connection = getConnection()) {
-			while (!targetCategories.isEmpty()) {
-				var catArray = targetCategories.stream()
-					.map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
-					.collect(Collectors.joining(","));
+        try (var connection = getConnection()) {
+            while (!targetCategories.isEmpty()) {
+                var catArray = targetCategories.stream()
+                    .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
+                    .collect(Collectors.joining(","));
 
-				var query = String.format(queryFmt, catArray);
-				var rs = connection.createStatement().executeQuery(query);
+                var query = String.format(queryFmt, catArray);
+                var rs = connection.createStatement().executeQuery(query);
 
-				var members = new ArrayList<String>();
-				var subcats = new ArrayList<String>();
+                var members = new ArrayList<String>();
+                var subcats = new ArrayList<String>();
 
-				while (rs.next()) {
-					var title = rs.getString("page_title");
-					var ns = rs.getInt("page_namespace");
+                while (rs.next()) {
+                    var title = rs.getString("page_title");
+                    var ns = rs.getInt("page_namespace");
 
-					if (ns == Wiki.CATEGORY_NAMESPACE) {
-						subcats.add(title);
-					}
+                    if (ns == Wiki.CATEGORY_NAMESPACE) {
+                        subcats.add(title);
+                    }
 
-					if (targetNs.isEmpty() || targetNs.contains(ns)) {
-						members.add(title.replace('_', ' '));
-					}
-				}
+                    if (targetNs.isEmpty() || targetNs.contains(ns)) {
+                        members.add(title.replace('_', ' '));
+                    }
+                }
 
-				articles.addAll(members);
-				visitedCats.addAll(targetCategories);
+                articles.addAll(members);
+                visitedCats.addAll(targetCategories);
 
-				System.out.printf("depth = %d, members = %d, subcats = %d%n", depth++, members.size(), subcats.size());
+                System.out.printf("depth = %d, members = %d, subcats = %d%n", depth++, members.size(), subcats.size());
 
-				subcats.removeAll(visitedCats);
-				targetCategories = subcats;
-			}
-		}
+                subcats.removeAll(visitedCats);
+                targetCategories = subcats;
+            }
+        }
 
-		System.out.printf("Got %d category members for category %s%n", articles.size(), category);
-		return articles;
-	}
+        System.out.printf("Got %d category members for category %s%n", articles.size(), category);
+        return articles;
+    }
 
     private static List<String> queryTemplateLinks(Collection<String> templates) throws SQLException, IOException, ClassNotFoundException {
         var links = new ArrayList<String>(400000);
