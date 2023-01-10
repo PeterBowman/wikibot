@@ -19,7 +19,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -50,6 +49,7 @@ public final class AuthorityControl {
 
     private static final List<String> TEMPLATES = List.of("Kontrola autorytatywna", "Authority control", "Ka");
     private static final List<String> PROPERTIES;
+    private static final List<String> PROPERTIES_ENC; // only encyclopaedias, split from above for efficiency
 
     private static final Properties SQL_PROPS;
     private static final String SQL_WDWIKI_URI = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
@@ -79,15 +79,19 @@ public final class AuthorityControl {
         """, Pattern.COMMENTS);
 
     static {
-        var patt = Pattern.compile("^(P\\d+) *+(?=#|$)");
+        record Item(String property, boolean isEncyclopaedia) {}
+
+        var patt = Pattern.compile("^(P\\d+)( ++\\(e\\))? *+(?=#|$)");
 
         try {
             // https://pl.wikipedia.org/wiki/Szablon:Kontrola_autorytatywna#Lista_wspieranych_baz
-            PROPERTIES = Files.readAllLines(LOCATION.resolve("properties.txt")).stream()
-                .map(patt::matcher)
-                .flatMap(Matcher::results)
-                .map(m -> m.group(1))
+            var items = Files.readAllLines(LOCATION.resolve("properties.txt")).stream()
+                .flatMap(text -> patt.matcher(text).results())
+                .map(m -> new Item(m.group(1), m.group(2) != null))
                 .toList();
+
+            PROPERTIES = items.stream().map(Item::property).toList();
+            PROPERTIES_ENC = items.stream().filter(Item::isEncyclopaedia).map(Item::property).toList();
 
             SQL_PROPS = DBUtils.prepareSQLProperties();
         } catch (IOException e) {
@@ -291,9 +295,13 @@ public final class AuthorityControl {
         var count = PROPERTIES.stream().filter(json::has).count();
 
         if (count >= 3) {
-            return true;
-        } else if (count == 0 || !json.has("P31")) {
-            return false;
+            return true; // criterion 1: has at least three identifiers
+        } else if (count == 0) {
+            return false; // fail-fast
+        } else if (PROPERTIES_ENC.stream().anyMatch(json::has)) {
+            return true; // criterion 4: has at least one identifier from the list of encyclopedic identifiers
+        } else if (!json.has("P31")) {
+            return false; // fail-fast
         }
 
         var isHuman = StreamSupport.stream(json.getJSONArray("P31").spliterator(), false)
@@ -304,8 +312,12 @@ public final class AuthorityControl {
             .map(snakvalue -> snakvalue.getJSONObject("value"))
             .anyMatch(value -> value.getString("id").equals("Q5"));
 
-        // P214: VIAF, P1207: NUKAT
-        return isHuman && (count > 1 || json.has("P214") || json.has("P1207"));
+        return isHuman && (
+            // criterion 2: denotes a human and has at least two identifiers
+            count >= 2 ||
+            // criterion 3: denotes a human and has a VIAF (P214) or NUKAT (P1207) identifier
+            json.has("P214") || json.has("P1207")
+        );
     }
 
     private static Map<Long, String> retrievePropertyBacklinks() {
@@ -314,7 +326,7 @@ public final class AuthorityControl {
 
         try (var connection = DriverManager.getConnection(SQL_WDWIKI_URI, SQL_PROPS)) {
             var properties = PROPERTIES.stream()
-                .map(template -> String.format("'%s'", template))
+                .map(property -> String.format("'%s'", property))
                 .collect(Collectors.joining(","));
 
             var query = String.format("""
