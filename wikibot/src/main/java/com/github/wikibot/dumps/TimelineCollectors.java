@@ -25,21 +25,37 @@ public final class TimelineCollectors {
     filtering(OffsetDateTime start, OffsetDateTime end, Period period, Predicate<XMLRevision> condition) {
         return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            (rev, entry) -> entry.combine(condition.test(rev) ? 1L : 0L));
+            (rev, entry) -> {
+                if (condition.test(rev)) {
+                    entry.combine(1L);
+                    return 1L;
+                }
+
+                return 0L;
+            });
     }
 
     public static Collector<XMLRevision, ?, SimpleTimeline>
     mapping(OffsetDateTime start, OffsetDateTime end, Period period, ToLongFunction<XMLRevision> mapper) {
         return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            (rev, entry) -> entry.combine(mapper.applyAsLong(rev)));
+            (rev, entry) -> {
+                var value = mapper.applyAsLong(rev);
+                entry.combine(value);
+                return value;
+            });
     }
 
     public static <E extends Enum<E>> Collector<XMLRevision, ?, CompoundTimeline<E>>
     consuming(OffsetDateTime start, OffsetDateTime end, Period period, Class<E> clazz, BiConsumer<XMLRevision, EnumStats<E>> consumer) {
         return new TimelineCollector<>(
             () -> new CompoundTimeline<>(start, end, period, clazz),
-            (rev, entry) -> { consumer.accept(rev, entry.getValue()); return entry.getValue(); });
+            (rev, entry) -> {
+                var stats = new EnumStats<>(clazz);
+                consumer.accept(rev, stats);
+                entry.combine(stats);
+                return stats;
+            });
     }
 
     private static class TimelineCollector<V, T extends Timeline<V>> implements Collector<XMLRevision, T, T> {

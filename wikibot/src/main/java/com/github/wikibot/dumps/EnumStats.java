@@ -7,37 +7,35 @@ public class EnumStats<E extends Enum<E>> {
     private final E[] constants;
     private final long[] storage;
 
-    public EnumStats(Class<E> clazz) {
+    EnumStats(Class<E> clazz) {
         constants = clazz.getEnumConstants();
         storage = new long[constants.length];
     }
 
-    public long get(E e) {
+    long get(E e) {
         return storage[e.ordinal()];
     }
 
-    public long increment(E e) {
-        return ++storage[e.ordinal()];
+    public void increment(E e) {
+        ++storage[e.ordinal()];
     }
 
-    public long add(E e, long value) {
-        return storage[e.ordinal()] += value;
+    public void add(E e, long value) {
+        storage[e.ordinal()] += value;
     }
 
-    public long transform(E e, LongUnaryOperator operator) {
-        return storage[e.ordinal()] = operator.applyAsLong(storage[e.ordinal()]);
+    public void transform(E e, LongUnaryOperator operator) {
+        storage[e.ordinal()] = operator.applyAsLong(storage[e.ordinal()]);
     }
 
-    public void clear() {
+    void clear() {
         Arrays.fill(storage, 0);
     }
 
-    public EnumStats<E> combine(EnumStats<E> other) {
+    void combine(EnumStats<E> other) {
         for (int i = 0; i < storage.length; i++) {
             storage[i] += other.storage[i];
         }
-
-        return this;
     }
 
     @Override

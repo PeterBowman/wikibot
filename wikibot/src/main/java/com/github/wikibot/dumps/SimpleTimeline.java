@@ -5,12 +5,7 @@ import java.time.Period;
 
 public final class SimpleTimeline extends Timeline<Long> {
     SimpleTimeline(OffsetDateTime start, OffsetDateTime end, Period period) {
-        super(start, end, period);
-    }
-
-    @Override
-    protected Entry makeEntry(OffsetDateTime time) {
-        return new Entry(time, 0L);
+        super(start, end, period, (time) -> new Entry(time, 0L));
     }
 
     public static class Entry extends Timeline.Entry<Long> {
@@ -19,9 +14,8 @@ public final class SimpleTimeline extends Timeline<Long> {
         }
 
         @Override
-        public Long combine(Long other) {
+        public void combine(Long other) {
             value += other;
-            return other;
         }
     }
 }

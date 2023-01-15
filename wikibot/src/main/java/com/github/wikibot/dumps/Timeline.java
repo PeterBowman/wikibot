@@ -6,14 +6,16 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
     private final List<Entry<T>> storage;
 
-    Timeline(OffsetDateTime start, OffsetDateTime end, Period period) {
+    Timeline(OffsetDateTime start, OffsetDateTime end, Period period, Function<OffsetDateTime, Entry<T>> entrySupplier) {
         Objects.requireNonNull(start);
         Objects.requireNonNull(end);
         Objects.requireNonNull(period);
+        Objects.requireNonNull(entrySupplier);
 
         if (!end.isAfter(start)) {
             throw new IllegalArgumentException("end must be after start");
@@ -24,10 +26,10 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
         }
 
         // beware of https://stackoverflow.com/q/13440375/10404307
-        this.storage = initializeStorage(start, end, period);
+        this.storage = initializeStorage(start, end, period, entrySupplier);
     }
 
-    private List<Entry<T>> initializeStorage(OffsetDateTime start, OffsetDateTime end, Period period) {
+    private List<Entry<T>> initializeStorage(OffsetDateTime start, OffsetDateTime end, Period period, Function<OffsetDateTime, Entry<T>> entrySupplier) {
         var storage = new ArrayList<Entry<T>>();
 
         for (int i = 0; ; i++) {
@@ -37,13 +39,11 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
                 break;
             }
 
-            storage.add(makeEntry(time));
+            storage.add(entrySupplier.apply(time));
         }
 
         return storage;
     }
-
-    protected abstract Entry<T> makeEntry(OffsetDateTime time);
 
     @Override
     public Iterator<Entry<T>> iterator() {
@@ -72,11 +72,7 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
             return value;
         }
 
-        public void setValue(T value) {
-            this.value = value;
-        }
-
-        public abstract T combine(T other);
+        public abstract void combine(T other);
 
         @Override
         public int hashCode() {
