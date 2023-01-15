@@ -32,7 +32,7 @@ public class EnumStats<E extends Enum<E>> {
         Arrays.fill(storage, 0);
     }
 
-    public EnumStats<?> merge(EnumStats<?> other) {
+    public EnumStats<E> combine(EnumStats<E> other) {
         for (int i = 0; i < storage.length; i++) {
             storage[i] += other.storage[i];
         }
@@ -51,7 +51,7 @@ public class EnumStats<E extends Enum<E>> {
             sb.append(storage[i]);
 
             if (i < constants.length - 1) {
-                sb.append(',');
+                sb.append(", ");
             }
         }
 

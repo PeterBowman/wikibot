@@ -9,7 +9,19 @@ public final class SimpleTimeline extends Timeline<Long> {
     }
 
     @Override
-    protected Entry<Long> makeEntry(OffsetDateTime time) {
-        return new Entry<>(time, Long.valueOf(0));
+    protected Entry makeEntry(OffsetDateTime time) {
+        return new Entry(time, 0L);
+    }
+
+    public static class Entry extends Timeline.Entry<Long> {
+        Entry(OffsetDateTime time, long value) {
+            super(time, value);
+        }
+
+        @Override
+        public Long combine(Long other) {
+            value += other;
+            return other;
+        }
     }
 }

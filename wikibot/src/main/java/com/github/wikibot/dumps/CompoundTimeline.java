@@ -13,7 +13,18 @@ public final class CompoundTimeline<E extends Enum<E>> extends Timeline<EnumStat
     }
 
     @Override
-    protected Entry<EnumStats<E>> makeEntry(OffsetDateTime time) {
+    protected Entry<E> makeEntry(OffsetDateTime time) {
         return new Entry<>(time, new EnumStats<>(clazz));
+    }
+
+    public static class Entry<E extends Enum<E>> extends Timeline.Entry<EnumStats<E>> {
+        Entry(OffsetDateTime time, EnumStats<E> value) {
+            super(time, value);
+        }
+
+        @Override
+        public EnumStats<E> combine(EnumStats<E> other) {
+            return value.combine(other);
+        }
     }
 }

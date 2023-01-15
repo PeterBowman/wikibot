@@ -23,6 +23,7 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
             throw new IllegalArgumentException("period must be positive");
         }
 
+        // beware of https://stackoverflow.com/q/13440375/10404307
         this.storage = initializeStorage(start, end, period);
     }
 
@@ -54,7 +55,7 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
         return storage.toString();
     }
 
-    static class Entry<T> implements Comparable<OffsetDateTime> {
+    static abstract class Entry<T> implements Comparable<OffsetDateTime> {
         private final OffsetDateTime time;
         protected T value;
 
@@ -75,6 +76,8 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
             this.value = value;
         }
 
+        public abstract T combine(T other);
+
         @Override
         public int hashCode() {
             return time.hashCode();
@@ -93,7 +96,7 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
 
         @Override
         public String toString() {
-            return String.format("[%s,%s]", time.toString(), value.toString());
+            return String.format("[%s, %s]", time.toString(), value.toString());
         }
 
         @Override
