@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -22,49 +23,49 @@ public final class TimelineCollectors {
 
     public static Collector<XMLRevision, ?, SimpleTimeline>
     filtering(OffsetDateTime start, OffsetDateTime end, Period period, Predicate<XMLRevision> condition) {
-        return new SimpleTimelineCollector(
+        return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            rev -> condition.test(rev) ? 1L : 0L);
+            (rev, acc) -> condition.test(rev) ? acc + 1 : acc);
     }
 
     public static Collector<XMLRevision, ?, SimpleTimeline>
     filtering(OffsetDateTime start, OffsetDateTime end, Period period, ToLongFunction<XMLRevision> mapper) {
-        return new SimpleTimelineCollector(
+        return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            rev -> mapper.applyAsLong(rev));
+            (rev, acc) -> mapper.applyAsLong(rev));
     }
 
     public static <E extends Enum<E>> Collector<XMLRevision, ?, CompoundTimeline<E>>
     filtering(OffsetDateTime start, OffsetDateTime end, Period period, Class<E> clazz, BiConsumer<XMLRevision, EnumStats<E>> consumer) {
-        return new CompoundTimelineCollector<>(
+        return new TimelineCollector<>(
             () -> new CompoundTimeline<>(start, end, period, clazz),
-            consumer);
+            (rev, acc) -> { consumer.accept(rev, acc); return acc; });
     }
 
-    private static class SimpleTimelineCollector implements Collector<XMLRevision, SimpleTimeline, SimpleTimeline> {
-        private final Supplier<SimpleTimeline> supplier;
-        private final Function<XMLRevision, Long> mapper;
+    private static class TimelineCollector<V, T extends Timeline<V>> implements Collector<XMLRevision, T, T> {
+        private final Supplier<T> supplier;
+        private final BiFunction<XMLRevision, V, V> bifunction;
 
         private XMLRevision previousRev;
-        private Iterator<SimpleTimeline.Entry> iterator;
-        private SimpleTimeline.Entry referenceEntry;
+        private Iterator<Timeline.Entry<V>> iterator;
+        private Timeline.Entry<V> referenceEntry;
 
-        public SimpleTimelineCollector(Supplier<SimpleTimeline> supplier, Function<XMLRevision, Long> mapper) {
+        public TimelineCollector(Supplier<T> supplier, BiFunction<XMLRevision, V, V> bifunction) {
             this.supplier = Objects.requireNonNull(supplier);
-            this.mapper = Objects.requireNonNull(mapper);
+            this.bifunction = Objects.requireNonNull(bifunction);
         }
 
         @Override
-        public Supplier<SimpleTimeline> supplier() {
+        public Supplier<T> supplier() {
             return supplier;
         }
 
         @Override
-        public BiConsumer<SimpleTimeline, XMLRevision> accumulator() {
+        public BiConsumer<T, XMLRevision> accumulator() {
             return (timeline, rev) -> {
                 if (previousRev == null || previousRev.getPageid() != rev.getPageid()) {
                     if (referenceEntry != null && previousRev != null) {
-                        referenceEntry.setValue(referenceEntry.getValue() + mapper.apply(previousRev));
+                        referenceEntry.setValue(bifunction.apply(rev, referenceEntry.getValue()));
                     }
 
                     previousRev = rev;
@@ -85,7 +86,7 @@ public final class TimelineCollectors {
                     var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
 
                     if (referenceEntry != null && thisTimestamp.isAfter(referenceEntry.getTime())) {
-                        referenceEntry.setValue(referenceEntry.getValue() + mapper.apply(previousRev));
+                        referenceEntry.setValue(bifunction.apply(rev, referenceEntry.getValue()));
 
                         if (iterator.hasNext()) {
                             referenceEntry = iterator.next();
@@ -100,94 +101,15 @@ public final class TimelineCollectors {
         }
 
         @Override
-        public BinaryOperator<SimpleTimeline> combiner() {
+        public BinaryOperator<T> combiner() {
             // should never be called on sequential streams
             return null;
         }
 
         @Override
-        public Function<SimpleTimeline, SimpleTimeline> finisher() {
+        public Function<T, T> finisher() {
             if (referenceEntry != null && previousRev != null) {
-                referenceEntry.setValue(referenceEntry.getValue() + mapper.apply(previousRev));
-            }
-
-            return UnaryOperator.identity();
-        }
-
-        @Override
-        public Set<Characteristics> characteristics() {
-            return Collections.emptySet();
-        }
-    }
-
-    private static class CompoundTimelineCollector<E extends Enum<E>> implements Collector<XMLRevision, CompoundTimeline<E>, CompoundTimeline<E>> {
-        private final Supplier<CompoundTimeline<E>> supplier;
-        private final BiConsumer<XMLRevision, EnumStats<E>> consumer;
-
-        private XMLRevision previousRev;
-        private Iterator<CompoundTimeline.Entry<E>> iterator;
-        private CompoundTimeline.Entry<E> referenceEntry;
-
-        public CompoundTimelineCollector(Supplier<CompoundTimeline<E>> supplier, BiConsumer<XMLRevision, EnumStats<E>> consumer) {
-            this.supplier = Objects.requireNonNull(supplier);
-            this.consumer = Objects.requireNonNull(consumer);
-        }
-
-        @Override
-        public Supplier<CompoundTimeline<E>> supplier() {
-            return supplier;
-        }
-
-        @Override
-        public BiConsumer<CompoundTimeline<E>, XMLRevision> accumulator() {
-            return (timeline, rev) -> {
-                if (previousRev == null || previousRev.getPageid() != rev.getPageid()) {
-                    if (referenceEntry != null && previousRev != null) {
-                        consumer.accept(rev, referenceEntry.getValue());
-                    }
-
-                    previousRev = rev;
-                    iterator = timeline.iterator();
-                    referenceEntry = null;
-
-                    var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
-
-                    while (iterator.hasNext()) {
-                        var entry = iterator.next();
-
-                        if (entry.getTime().isAfter(thisTimestamp)) {
-                            referenceEntry = entry;
-                            break;
-                        }
-                    }
-                } else {
-                    var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
-
-                    if (referenceEntry != null && thisTimestamp.isAfter(referenceEntry.getTime())) {
-                        consumer.accept(rev, referenceEntry.getValue());
-
-                        if (iterator.hasNext()) {
-                            referenceEntry = iterator.next();
-                        } else {
-                            referenceEntry = null;
-                        }
-                    }
-
-                    previousRev = rev;
-                }
-            };
-        }
-
-        @Override
-        public BinaryOperator<CompoundTimeline<E>> combiner() {
-            // should never be called on sequential streams
-            return null;
-        }
-
-        @Override
-        public Function<CompoundTimeline<E>, CompoundTimeline<E>> finisher() {
-            if (referenceEntry != null && previousRev != null) {
-                consumer.accept(previousRev, referenceEntry.getValue());
+                referenceEntry.setValue(bifunction.apply(previousRev, referenceEntry.getValue()));
             }
 
             return UnaryOperator.identity();
