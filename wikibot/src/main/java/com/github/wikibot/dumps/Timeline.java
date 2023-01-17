@@ -6,9 +6,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Spliterator;
 import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
+public abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
     private final List<Entry<T>> storage;
 
     Timeline(OffsetDateTime start, OffsetDateTime end, Period period, Function<OffsetDateTime, Entry<T>> entrySupplier) {
@@ -51,11 +54,20 @@ abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
     }
 
     @Override
+    public Spliterator<Entry<T>> spliterator() {
+        return storage.spliterator();
+    }
+
+    public Stream<Entry<T>> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
+    @Override
     public String toString() {
         return storage.toString();
     }
 
-    static abstract class Entry<T> implements Comparable<OffsetDateTime> {
+    public static abstract class Entry<T> implements Comparable<OffsetDateTime> {
         private final OffsetDateTime time;
         protected T value;
 

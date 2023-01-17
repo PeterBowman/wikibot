@@ -12,7 +12,7 @@ public class EnumStats<E extends Enum<E>> {
         storage = new long[constants.length];
     }
 
-    long get(E e) {
+    public long get(E e) {
         return storage[e.ordinal()];
     }
 
@@ -28,11 +28,11 @@ public class EnumStats<E extends Enum<E>> {
         storage[e.ordinal()] = operator.applyAsLong(storage[e.ordinal()]);
     }
 
-    void clear() {
+    public void clear() {
         Arrays.fill(storage, 0);
     }
 
-    void combine(EnumStats<E> other) {
+    public void combine(EnumStats<E> other) {
         for (int i = 0; i < storage.length; i++) {
             storage[i] += other.storage[i];
         }
