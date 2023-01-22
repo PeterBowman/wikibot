@@ -78,17 +78,7 @@ public final class TimelineCollectors {
 
                     iterator = timeline.iterator();
 
-                    var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
-
-                    while (iterator.hasNext()) {
-                        // advance the iterator until the closest timeline entry after this revision
-                        var entry = iterator.next();
-
-                        if (entry.getTime().isAfter(thisTimestamp)) {
-                            referenceEntry = entry;
-                            break;
-                        }
-                    }
+                    advanceReference(OffsetDateTime.parse(rev.getTimestamp()));
                 } else if (referenceEntry != null) {
                     // the same page as the previous revision, and still within the targeted timeline range
                     var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
@@ -131,7 +121,14 @@ public final class TimelineCollectors {
         private void applyValue(XMLRevision rev, OffsetDateTime refTime) {
             var value = processor.apply(rev);
             referenceEntry.combine(value);
+            advanceReference(refTime, value);
+        }
 
+        private void advanceReference(OffsetDateTime refTime) {
+            advanceReference(refTime, null);
+        }
+
+        private void advanceReference(OffsetDateTime refTime, V value) {
             while (iterator.hasNext()) {
                 // advance the iterator until the closest timeline entry after this revision
                 referenceEntry = iterator.next();
@@ -140,8 +137,10 @@ public final class TimelineCollectors {
                     return; // preserve this entry for later
                 }
 
-                // apply the same value to all intermediate timeline entries
-                referenceEntry.combine(value);
+                if (value != null) {
+                    // apply the same value to all intermediate timeline entries
+                    referenceEntry.combine(value);
+                }
             }
 
             referenceEntry = null; // timeline depleted, no eligible entries left
