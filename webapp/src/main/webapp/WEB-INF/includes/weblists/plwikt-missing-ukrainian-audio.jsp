@@ -18,7 +18,7 @@
     </jsp:attribute>
     <jsp:body>
         <p>
-            Spìs
+            Spis
             <a href="https://pl.wiktionary.org/wiki/S%C5%82ownik_j%C4%99zyka_ukrai%C5%84skiego" target="_blank">ukraińskich haseł</a>
             bez
             <a href="https://commons.wikimedia.org/wiki/Category:Ukrainian_pronunciation" target="_blank">nagrania wymowy</a>.
