@@ -88,7 +88,6 @@ public final class TimelineCollectors {
                     }
 
                     iterator = timeline.iterator();
-                    referenceEntry = null;
 
                     var thisTimestamp = OffsetDateTime.parse(rev.getTimestamp());
 
@@ -107,11 +106,7 @@ public final class TimelineCollectors {
 
                     if (thisTimestamp.isAfter(referenceEntry.getTime())) {
                         // this revision is newer than the last timeline entry, therefore process it
-                        applyValue(rev, thisTimestamp);
-
-                        if (thisTimestamp.isAfter(referenceEntry.getTime())) {
-                            referenceEntry = null; // no eligible entries left
-                        }
+                        applyValue(previousRev, thisTimestamp);
                     }
                 }
 
@@ -146,18 +141,21 @@ public final class TimelineCollectors {
 
         private void applyValue(XMLRevision rev, OffsetDateTime refTime) {
             var value = bifunction.apply(rev, referenceEntry);
+            referenceEntry.combine(value);
 
             while (iterator.hasNext()) {
                 // advance the iterator until the closest timeline entry after this revision
                 referenceEntry = iterator.next();
 
                 if (refTime != null && referenceEntry.getTime().isAfter(refTime)) {
-                    break;
+                    return; // preserve this entry for later
                 }
 
                 // apply the same value to all intermediate timeline entries
                 referenceEntry.combine(value);
             }
+
+            referenceEntry = null; // timeline depleted, no eligible entries left
         }
     }
 }
