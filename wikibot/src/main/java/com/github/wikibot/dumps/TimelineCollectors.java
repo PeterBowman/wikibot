@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -25,50 +24,40 @@ public final class TimelineCollectors {
     filtering(OffsetDateTime start, OffsetDateTime end, Period period, Predicate<XMLRevision> condition) {
         return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            (rev, entry) -> {
-                if (condition.test(rev)) {
-                    entry.combine(1L);
-                    return 1L;
-                }
-
-                return 0L;
-            });
+            rev  -> condition.test(rev) ? 1L : 0L
+        );
     }
 
     public static Collector<XMLRevision, ?, SimpleTimeline>
     mapping(OffsetDateTime start, OffsetDateTime end, Period period, ToLongFunction<XMLRevision> mapper) {
         return new TimelineCollector<>(
             () -> new SimpleTimeline(start, end, period),
-            (rev, entry) -> {
-                var value = mapper.applyAsLong(rev);
-                entry.combine(value);
-                return value;
-            });
+            rev -> mapper.applyAsLong(rev)
+        );
     }
 
     public static <E extends Enum<E>> Collector<XMLRevision, ?, CompoundTimeline<E>>
     consuming(OffsetDateTime start, OffsetDateTime end, Period period, Class<E> clazz, BiConsumer<XMLRevision, EnumStats<E>> consumer) {
         return new TimelineCollector<>(
             () -> new CompoundTimeline<>(start, end, period, clazz),
-            (rev, entry) -> {
+            rev -> {
                 var stats = new EnumStats<>(clazz);
                 consumer.accept(rev, stats);
-                entry.combine(stats);
                 return stats;
             });
     }
 
     private static class TimelineCollector<V, T extends Timeline<V>> implements Collector<XMLRevision, T, T> {
         private final Supplier<T> supplier;
-        private final BiFunction<XMLRevision, Timeline.Entry<V>, V> bifunction;
+        private final Function<XMLRevision, V> processor;
 
         private XMLRevision previousRev;
         private Iterator<Timeline.Entry<V>> iterator;
         private Timeline.Entry<V> referenceEntry;
 
-        public TimelineCollector(Supplier<T> supplier, BiFunction<XMLRevision, Timeline.Entry<V>, V> bifunction) {
+        public TimelineCollector(Supplier<T> supplier, Function<XMLRevision, V> bifunction) {
             this.supplier = Objects.requireNonNull(supplier);
-            this.bifunction = Objects.requireNonNull(bifunction);
+            this.processor = Objects.requireNonNull(bifunction);
         }
 
         @Override
@@ -140,7 +129,7 @@ public final class TimelineCollectors {
         }
 
         private void applyValue(XMLRevision rev, OffsetDateTime refTime) {
-            var value = bifunction.apply(rev, referenceEntry);
+            var value = processor.apply(rev);
             referenceEntry.combine(value);
 
             while (iterator.hasNext()) {
