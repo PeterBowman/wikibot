@@ -87,10 +87,6 @@ public final class XMLDumpConfig {
         var isIncr = type.optConfigKey().isEmpty(); // TODO: move to XMLDump?
         var isMultistream = type.optConfigKey().filter(key -> key.contains("multistream")).isPresent();
 
-        if (isIncr && baseUrl != null) {
-            throw new IllegalStateException("Incremental dumps are not available remotely");
-        }
-
         if (isMultistream && baseUrl != null) {
             throw new IllegalStateException("Multistream dumps are not available remotely");
         }
@@ -106,7 +102,8 @@ public final class XMLDumpConfig {
             var resolvedPath = isIncr ? path.resolve("incr") : path.resolve("public");
             handler = new LocalDumpHandler(resolvedPath);
         } else if (baseUrl != null) {
-            handler = new RemoteDumpHandler(baseUrl);
+            var resolvedUrl = isIncr ? baseUrl + "/other/incr" : baseUrl;
+            handler = new RemoteDumpHandler(resolvedUrl);
         } else {
             throw new IllegalStateException("No source (local or remote) specified");
         }
