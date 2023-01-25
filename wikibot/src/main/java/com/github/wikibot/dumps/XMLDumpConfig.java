@@ -84,10 +84,7 @@ public final class XMLDumpConfig {
             throw new IllegalStateException("No dump type specified");
         }
 
-        var isIncr = type.optConfigKey().isEmpty(); // TODO: move to XMLDump?
-        var isMultistream = type.optConfigKey().filter(key -> key.contains("multistream")).isPresent();
-
-        if (isMultistream && baseUrl != null) {
+        if (type.isMultistream() && baseUrl != null) {
             throw new IllegalStateException("Multistream dumps are not available remotely");
         }
 
@@ -99,16 +96,16 @@ public final class XMLDumpConfig {
         final XMLDumpFactory factory;
 
         if (path != null) {
-            var resolvedPath = isIncr ? path.resolve("incr") : path.resolve("public");
+            var resolvedPath = type.isIncremental() ? path.resolve("incr") : path.resolve("public");
             handler = new LocalDumpHandler(resolvedPath);
         } else if (baseUrl != null) {
-            var resolvedUrl = isIncr ? baseUrl + "/other/incr" : baseUrl;
+            var resolvedUrl = type.isIncremental() ? baseUrl + "/other/incr" : baseUrl;
             handler = new RemoteDumpHandler(resolvedUrl);
         } else {
             throw new IllegalStateException("No source (local or remote) specified");
         }
 
-        if (isMultistream) {
+        if (type.isMultistream()) {
             factory = new MultistreamXMLDumpFactoryImpl();
         } else {
             factory = new XMLDumpFactoryImpl();

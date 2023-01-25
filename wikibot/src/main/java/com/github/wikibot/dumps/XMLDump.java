@@ -209,10 +209,10 @@ public class XMLDump {
     }
 
     static Optional<XMLDump> fetchAndParseConfig(DumpHandler handler, String database, String dirName, XMLDumpTypes type, XMLDumpFactory factory) {
-        if (type.optConfigKey().isPresent()) {
-            return fetchAndParseJsonConfig(handler, database, dirName, handler.getFileContent(database, dirName, STATUS_JSON), type, factory);
-        } else {
+        if (type.isIncremental()) {
             return fetchAndParseIncrementalConfig(handler, database, dirName, handler.getFileContent(database, dirName, STATUS_INCR), type, factory);
+        } else {
+            return fetchAndParseJsonConfig(handler, database, dirName, handler.getFileContent(database, dirName, STATUS_JSON), type, factory);
         }
     }
 

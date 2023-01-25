@@ -73,7 +73,10 @@ public enum XMLDumpTypes {
     private final String configKey;
     private final String namingSchemeRegex;
 
-    private XMLDumpTypes fallback; // can't be final
+    // these can't be final
+    private XMLDumpTypes fallback;
+    private boolean isIncremental;
+    private boolean isMultistream;
 
     static {
         STUBS_META_HISTORY.fallback = STUBS_META_HISTORY_RECOMBINE;
@@ -91,6 +94,12 @@ public enum XMLDumpTypes {
         PAGES_ARTICLES_RECOMBINE.fallback = PAGES_ARTICLES;
         PAGES_ARTICLES_MULTISTREAM_RECOMBINE.fallback = PAGES_ARTICLES_MULTISTREAM;
         ABSTRACTS_RECOMBINE.fallback = ABSTRACTS;
+
+        PAGES_ARTICLES_MULTISTREAM.isMultistream = true;
+        PAGES_ARTICLES_MULTISTREAM_RECOMBINE.isMultistream = true;
+
+        PAGES_META_HISTORY_INCR.isIncremental = true;
+        STUBS_META_HISTORY_INCR.isIncremental = true;
     }
 
     private XMLDumpTypes(String namingSchemeRegex) {
@@ -108,6 +117,14 @@ public enum XMLDumpTypes {
 
     public String getNamingSchemeRegex() {
         return namingSchemeRegex;
+    }
+
+    public boolean isIncremental() {
+        return isIncremental;
+    }
+
+    public boolean isMultistream() {
+        return isMultistream;
     }
 
     public Optional<XMLDumpTypes> optFallback() {
