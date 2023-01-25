@@ -46,7 +46,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
 
     private class StAXIterator implements Iterator<XMLRevision> {
         private final StringBuilder buffer;
-        private PageInfo pageInfo;
+        private final PageInfo pageInfo;
         private boolean appendable;
 
         public StAXIterator() {
@@ -58,21 +58,19 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
         @Override
         public boolean hasNext() {
             try {
-                var parsePageElement = false;
-                var consumer = new PageConsumer(pageInfo);
-                pageInfo.clear();
+                XMLConsumer consumer = null;
 
                 while (streamReader.hasNext() && streamReader.next() != XMLStreamConstants.END_DOCUMENT) {
                     if (streamReader.getEventType() == XMLStreamConstants.START_ELEMENT) {
                         if (streamReader.getLocalName().equals("page")) {
-                            parsePageElement = true;
+                            consumer = new PageConsumer(pageInfo);
                             continue;
                         } else if (streamReader.getLocalName().equals("revision")) {
                             return true;
                         }
                     }
 
-                    if (parsePageElement) {
+                    if (consumer != null) {
                         parseCurrentElement(consumer);
                     }
                 }
@@ -153,6 +151,7 @@ public final class StAXDumpReader implements Iterable<XMLRevision> {
 
         PageConsumer(PageInfo pageInfo) {
             this.page = pageInfo;
+            pageInfo.clear();
         }
 
         @Override
