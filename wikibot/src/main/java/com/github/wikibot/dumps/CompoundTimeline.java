@@ -5,10 +5,10 @@ import java.time.Period;
 
 public final class CompoundTimeline<E extends Enum<E>> extends Timeline<EnumStats<E>> {
     CompoundTimeline(OffsetDateTime start, OffsetDateTime end, Period period, Class<E> clazz) {
-        super(start, end, period, (time) -> new Entry<>(time, new EnumStats<>(clazz)));
+        super(start, end, period, time -> new Entry<>(time, new EnumStats<>(clazz)));
     }
 
-    public static class Entry<E extends Enum<E>> extends Timeline.Entry<EnumStats<E>> {
+    static class Entry<E extends Enum<E>> extends Timeline.Entry<EnumStats<E>> {
         Entry(OffsetDateTime time, EnumStats<E> value) {
             super(time, value);
         }

@@ -67,7 +67,7 @@ public abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
         return storage.toString();
     }
 
-    public static abstract class Entry<T> implements Comparable<OffsetDateTime> {
+    public static abstract class Entry<T> implements Comparable<Entry<T>> {
         private final OffsetDateTime time;
         protected T value;
 
@@ -108,8 +108,8 @@ public abstract class Timeline<T> implements Iterable<Timeline.Entry<T>> {
         }
 
         @Override
-        public int compareTo(OffsetDateTime other) {
-            return time.compareTo(other);
+        public int compareTo(Entry<T> other) {
+            return time.compareTo(other.time);
         }
     }
 }
