@@ -62,7 +62,7 @@ public class Editor extends AbstractEditor {
     private static final Pattern P_LINE_SPLITTER_BOTH;
     private static final Pattern P_TEMPLATE = Pattern.compile("\\{\\{(.+?)(\\|(?:\\{\\{.+?\\}\\}|.*?)+)?\\}\\}", Pattern.DOTALL);
     private static final Pattern P_XX_ES_TEMPLATE = Pattern.compile("\\{\\{ *?((Chono|[A-Z-]+?)-ES)( *?\\| *?(\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}", Pattern.DOTALL);
-    private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANS|TRANSLIT|lengua|translit)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
+    private static final Pattern P_OLD_STRUCT_HEADER = Pattern.compile("^(.*?)(\\{\\{ *?(?:ES|[\\w-]+?-ES|TRANS|TRANSLIT|lengua)(?: *?\\| *?(?:\\{\\{.+?\\}\\}|.*?)+)*?\\}\\}) *(.*)$", Pattern.MULTILINE);
     private static final Pattern P_INFLECT_TMPLS = Pattern.compile("\\{\\{(inflect\\..+?)[\\|\\}]");
     private static final Pattern P_ADAPT_PRON_TMPL;
     private static final Pattern P_AMBOX_TMPLS;
@@ -359,7 +359,7 @@ public class Editor extends AbstractEditor {
 
     static {
         REDUCED_SECTION_CHECK = section -> {
-            if (section instanceof LangSection s && s.langCodeEqualsTo("trans")) {
+            if (section instanceof LangSection ls && (ls.langCodeEqualsTo("trans") || ls.isTransliteration())) {
                 return true;
             }
 
@@ -1488,7 +1488,7 @@ public class Editor extends AbstractEditor {
                     return;
                 }
 
-                if (name.equals("lengua") || name.equals("translit")) {
+                if (name.equals("lengua")) {
                     m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
                     currentSectionLang.replace(0, currentSectionLang.length(),
                         params.get("ParamWithoutName1").toLowerCase()
@@ -1499,23 +1499,29 @@ public class Editor extends AbstractEditor {
                 String altGraf = params.getOrDefault("ParamWithoutName1", "");
 
                 if (name.equals("TRANSLIT")) {
-                    name = params.get("ParamWithoutName2");
-                    params.put("templateName", "translit");
+                    name = Page.CODE_TO_LANG.entrySet().stream()
+                        .filter(e -> e.getValue().equalsIgnoreCase(params.get("ParamWithoutName2")))
+                        .map(Map.Entry::getKey)
+                        .findAny()
+                        .orElse(null);
+
+                    params.put("escritura", "transliteración");
                 } else if (name.equals("TRANS")) {
                     name = "trans";
-                    params.put("templateName", "lengua");
-                    params.put("ParamWithoutName1", name);
-                    params.remove("ParamWithoutName2");
-                    params.remove("num");
-                    params.remove("núm");
                 } else {
                     name = name.replace("-ES", "").toLowerCase();
-                    params.put("templateName", "lengua");
-                    params.put("ParamWithoutName1", name);
-                    params.remove("ParamWithoutName2");
-                    params.remove("num");
-                    params.remove("núm");
                 }
+
+                if (name == null) {
+                    return;
+                }
+
+                params.put("templateName", "lengua");
+                params.put("ParamWithoutName1", name);
+                params.remove("ParamWithoutName2");
+                params.remove("ParamWithoutName3");
+                params.remove("num");
+                params.remove("núm");
 
                 if (
                     !altGraf.isEmpty() && !altGraf.equals("{{PAGENAME}}") &&

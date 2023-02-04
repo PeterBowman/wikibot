@@ -2,7 +2,6 @@ package com.github.wikibot.parsing.eswikt;
 
 import java.text.Collator;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -17,17 +16,17 @@ import com.github.wikibot.parsing.ParsingException;
 public class LangSection extends Section {
     private String langCode;
     private String langName;
-    private String templateType;
     private Map<String, String> templateParams;
-    private static final Pattern P_HEADER = Pattern.compile("^\\{\\{ *?(?:lengua|translit) *?\\|.+?\\}\\}$");
+    private boolean isTransliteration;
+    private static final Pattern P_HEADER = Pattern.compile("^\\{\\{ *?lengua *?\\|.+?\\}\\}$");
 
     LangSection() {
         super(null);
 
         this.langCode = "";
         this.langName = "";
-        this.templateType = "";
         this.templateParams = new LinkedHashMap<>();
+        this.isTransliteration = false;
     }
 
     LangSection(String text) {
@@ -115,23 +114,12 @@ public class LangSection extends Section {
         updateHeader();
     }
 
-    public String getTemplateType() {
-        return templateType;
-    }
-
-    public void setTemplateType(String templateType) {
-        Objects.requireNonNull(templateType);
-
-        if (templateType.isBlank()) {
-            throw new UnsupportedOperationException("The passed argument cannot be blank.");
-        }
-
-        this.templateType = templateType;
-        updateHeader();
-    }
-
     public Map<String, String> getTemplateParams() {
         return new LinkedHashMap<>(templateParams);
+    }
+
+    public boolean isTransliteration() {
+        return isTransliteration;
     }
 
     public void setTemplateParams(Map<String, String> templateParams) {
@@ -157,20 +145,23 @@ public class LangSection extends Section {
             throw new ParsingException("Invalid header format: " + header);
         }
 
-        HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(header);
-
-        templateType = params.remove("templateName");
+        var params = ParseUtils.getTemplateParametersWithValue(header);
+        params.remove("templateName");
         langCode = params.remove("ParamWithoutName1");
 
         Objects.requireNonNull(langCode);
 
         langName = Page.CODE_TO_LANG.getOrDefault(langCode.toLowerCase(), "");
         templateParams = params;
+
+        isTransliteration = params.entrySet().stream()
+            .filter(e -> e.getKey().startsWith("escritura"))
+            .anyMatch(e -> e.getValue().equalsIgnoreCase("transliteración"));
     }
 
     private void updateHeader() {
-        HashMap<String, String> params = new LinkedHashMap<>();
-        params.put("templateName", templateType);
+        var params = new LinkedHashMap<String, String>();
+        params.put("templateName", "lengua");
         params.put("ParamWithoutName1", langCode);
 
         templateParams.forEach(params::putIfAbsent);
@@ -198,34 +189,32 @@ public class LangSection extends Section {
 
     @Override
     public int compareTo(Section s) {
-        LangSection ls = (LangSection) s;
-        String targetTemplate = ls.getTemplateType();
-        String targetLang = ls.getLangName();
+        var ls = (LangSection) s;
 
-        if (langName.equals(targetLang)) {
+        if (langName.equals(ls.langName)) {
             return 0;
         }
 
         if (langName.equals("translingüístico")) {
             return -1;
-        } else if (targetLang.equals("translingüístico")) {
+        } else if (ls.langName.equals("translingüístico")) {
             return 1;
         }
 
         if (langName.equals("español")) {
             return -1;
-        } else if (targetLang.equals("español")) {
+        } else if (ls.langName.equals("español")) {
             return 1;
         }
 
-        if (templateType.equals("lengua") && targetTemplate.equals("translit")) {
+        if (!isTransliteration && ls.isTransliteration) {
             return -1;
-        } else if (templateType.equals("translit") && targetTemplate.equals("lengua")) {
+        } else if (isTransliteration && !ls.isTransliteration) {
             return 1;
-        } else if (!langName.isEmpty() && !targetLang.isEmpty()) {
+        } else if (!langName.isEmpty() && !ls.langName.isEmpty()) {
             Collator collator = Collator.getInstance(new Locale("es"));
             collator.setStrength(Collator.SECONDARY);
-            return collator.compare(langName, targetLang);
+            return collator.compare(langName, ls.langName);
         }
 
         return 0;
