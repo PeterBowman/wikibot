@@ -436,6 +436,25 @@ public class Wikibot extends WMFWiki {
         }
     }
 
+    public synchronized String shortenUrl(String url) throws IOException {
+        requiresExtension("UrlShortener");
+        throttle();
+
+        var user = getCurrentUser();
+
+        if (user == null || !user.isAllowedTo("urlshortener-create-url")) {
+            throw new SecurityException("Permission denied: cannot shorten URLs.");
+        }
+
+        var response = makeApiCall(Map.of("action", "shortenurl"), Map.of("url", (Object)url), "review");
+        detectUncheckedErrors(response, null, null);
+        System.out.println(response);
+
+        var result = parseAttribute(response, "shorturl", 0);
+        log(Level.INFO, "shortenUrl", "Successfully shortened URL: " + result);
+        return result;
+    }
+
     public List<Map<String, String>> getClaims(String entity) throws IOException {
         return getClaims(entity, null);
     }
