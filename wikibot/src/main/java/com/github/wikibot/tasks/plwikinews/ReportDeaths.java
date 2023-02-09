@@ -108,7 +108,7 @@ public final class ReportDeaths {
             var image = items.stream()
                 .filter(i -> i.optImage().isPresent())
                 .findAny()
-                .map(i -> String.format("[[Plik:%s|thumb|upright|%s]]",
+                .map(i -> String.format("[[Plik:%s|thumb|%s]]",
                     i.optImage().get(),
                     i.optLabel().orElse(i.sanitizedArticle()) +
                         i.optYearOfBirth().map(year -> String.format(" (%d–%d)", year, refDate.getYear())).orElse("")
