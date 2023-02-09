@@ -152,7 +152,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
         }
 
         headerTitle = m.group(1);
-        lang = m.group(2);
+        lang = m.group(2).strip();
         langShort = lang.replaceFirst("^język ", "");
     }
 
