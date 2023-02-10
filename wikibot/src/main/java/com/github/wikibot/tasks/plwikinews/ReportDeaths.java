@@ -68,6 +68,7 @@ public final class ReportDeaths {
         {{Podziel się boczny}}
         }}
 
+        [[Kategoria:Archiwalne]]
         [[Kategoria:Nekrologi %d]]
         """;
 
@@ -117,7 +118,11 @@ public final class ReportDeaths {
 
             var localizedDate = formatter.format(refDate);
             var title = String.format("Zmarli %s", localizedDate);
-            var text = String.format(ARTICLE_TEMPLATE, isoDate, image, localizedDate, String.join("\n", list), shortenedUrl, refDate.getYear()).stripLeading();
+            var text = String.format(ARTICLE_TEMPLATE, isoDate, image, localizedDate, String.join("\n", list), shortenedUrl, refDate.getYear());
+
+            if (n == LATEST_OFFSET_DAYS) {
+                text = text.replace("[[Kategoria:Archiwalne]]\n", "");
+            }
 
             wb.edit(title, text, "nekrolog na podstawie " + shortenedUrl);
         }
