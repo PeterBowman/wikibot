@@ -1,26 +1,36 @@
 package com.github.wikibot.tasks.plwikt;
 
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 
 public class WordOfTheDayCycle {
-    private static String TARGET = "Moduł:słowo dnia/dane/ukraiński";
+    private static Path LOCATION = Path.of("./data/tasks.plwikt/WordOfTheDayCycle/");
+    private static String TARGET_BASE = "Moduł:słowo dnia/dane/";
     private static Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
     public static void main(String[] args) throws Exception {
-        var page = wb.getContentOfPages(List.of(TARGET)).get(0);
-
-        var current = Pattern.compile("aktualne *+= *+\"(.+?)\"").matcher(page.getText()).results()
-            .map(mr -> mr.group(1))
-            .findAny().get();
-
-        var newText = Pattern.compile("poprzednie *+= *+\"(.+?)\"").matcher(page.getText())
-            .replaceFirst(mr -> mr.group().replace(mr.group(1), current));
-
         Login.login(wb);
-        wb.edit(page.getTitle(), newText, "rotacja słowa dnia", page.getTimestamp());
+
+        var pattCurrent = Pattern.compile("aktualne *+= *+\"(.+?)\"");
+        var pattPrevious = Pattern.compile("poprzednie *+= *+\"(.+?)\"");
+
+        var targets = Files.readAllLines(LOCATION.resolve("targets.txt")).stream()
+            .map(s -> TARGET_BASE + s)
+            .toList();
+
+        for (var page : wb.getContentOfPages(targets)) {
+            var current = pattCurrent.matcher(page.getText()).results()
+                .map(mr -> mr.group(1))
+                .findAny().get();
+
+            var newText = pattPrevious.matcher(page.getText())
+                .replaceFirst(mr -> mr.group().replace(mr.group(1), current));
+
+            wb.edit(page.getTitle(), newText, "rotacja słowa dnia", page.getTimestamp());
+        }
     }
 }
