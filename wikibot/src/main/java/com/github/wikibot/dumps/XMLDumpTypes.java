@@ -29,7 +29,7 @@ public enum XMLDumpTypes {
     ),
     PAGES_META_HISTORY (
         "metahistorybz2dump",
-        "${database}-${date}-pages-meta-history\\d+\\.xml-p\\d+p\\d+(\\.bz2)?"
+        "${database}-${date}-pages-meta-history(\\d+\\.xml-p\\d+p\\d+|\\.xml)(\\.bz2)?" // no recombine pair
     ),
     PAGES_META_CURRENT (
         "metacurrentdump",
