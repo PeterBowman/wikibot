@@ -35,7 +35,7 @@ import com.ibm.icu.number.NumberFormatter.GroupingStrategy;
 public final class RefreshWantedArticles {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/RefreshWantedArticles/");
     private static final String TARGET_PAGE = "Szablon:Potrzebne";
-    private static final String REFILL_PAGE = "Wikipedysta:AlkamidBot/listy/Najbardziej potrzebne";
+    private static final String REFILL_PAGE = "Wikisłownikarz:Tsca/Najpotrzebniejsze polskie hasła na podstawie istniejących łączy";
 
     private static final int MAX_LENGHT = 100;
     private static final int REFILL_SIZE = 10;
@@ -53,7 +53,7 @@ public final class RefreshWantedArticles {
     static {
         P_LINK = Pattern.compile("\\[\\[([^\\]\n]+?)\\]\\]");
         P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
-        P_OCCURRENCES_REFILL = Pattern.compile("^\\| *" + P_LINK.pattern() + " *\\|\\|.+", Pattern.MULTILINE);
+        P_OCCURRENCES_REFILL = Pattern.compile("^\\* '{3}" + P_LINK.pattern() + "'{3}$", Pattern.MULTILINE);
         PLURAL_PL = new Plural(PluralRules.POLISH, "utworzone,utworzone,utworzonych");
         NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
     }
