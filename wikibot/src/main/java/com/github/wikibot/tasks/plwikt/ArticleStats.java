@@ -153,7 +153,13 @@ public class ArticleStats {
 
                     stats.definitions += canonicalDefs;
 
-                    if (!Jsoup.parseBodyFragment(s.toString()).getElementsByTag("references").isEmpty()) {
+                    if (
+                        !Jsoup.parse(s.toString()).getElementsByTag("ref").isEmpty() &&
+                        s.getField(FieldTypes.SOURCES)
+                            .filter(f -> !f.isEmpty())
+                            .filter(f -> !Jsoup.parse(f.getContent()).getElementsByTag("references").isEmpty())
+                            .isPresent()
+                    ) {
                         stats.withReferences++;
                     }
 
