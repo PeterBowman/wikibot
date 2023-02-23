@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -19,6 +20,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
+import org.wikipedia.Wiki;
 
 import com.github.wikibot.dumps.XMLDump;
 import com.github.wikibot.dumps.XMLDumpConfig;
@@ -47,6 +49,8 @@ public class ArticleStats {
     }
 
     public static void main(String[] args) throws Exception {
+        Login.login(wb);
+
         var datePath = LOCATION.resolve("last_date.txt");
         var statsPath = LOCATION.resolve("stats.xml");
         var jsonPath = LOCATION.resolve("stats.json");
@@ -62,6 +66,13 @@ public class ArticleStats {
         var stats = analyzeDump(dump);
         var prevStats = retrieveStats(statsPath);
 
+        var supportedLanguages = wb.getCategoryMembers("Indeks słów wg języków", Wiki.CATEGORY_NAMESPACE).stream()
+            .map(wb::removeNamespace)
+            .map(category -> category.replaceFirst(" \\(indeks\\)$", ""))
+            .collect(Collectors.toSet());
+
+        stats.keySet().retainAll(supportedLanguages);
+
         var json = makeJson(stats, prevStats);
         json.put("currentDate", dump.getDirectoryName());
 
@@ -69,7 +80,6 @@ public class ArticleStats {
             json.put("previousDate", Files.readString(datePath).strip());
         }
 
-        Login.login(wb);
         wb.edit(MODULE_PAGE, json.toString(), "aktualizacja: " + dump.getDescriptiveFilename());
 
         Files.writeString(statsPath, xstream.toXML(stats));
