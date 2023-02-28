@@ -105,9 +105,13 @@ public class XMLDump {
     }
 
     public final String getDescriptiveFilename() {
-        return filenames.get(0)
-            .replaceFirst("-index\\d+", "") // index files in multistream dumps
-            .replaceFirst("\\d+\\.(\\w+)(?:-p\\d+p\\d+)?", "X.$1"); // partitioned dumps
+        var patt = Pattern.compile("\\.xml\\b");
+
+        return filenames.stream()
+            .filter(filename -> patt.matcher(filename).find()) // discard index files in multistream dumps
+            .map(filename -> filename.replaceFirst("\\d+\\.(\\w+)(?:-p\\d+p\\d+)?", "X.$1")) // partitioned dumps
+            .findAny()
+            .get();
     }
 
     public final String getDirectoryName() {
