@@ -91,6 +91,11 @@
         <param-value>yes</param-value>
     </init-param>
   </servlet>
+  <servlet>
+    <servlet-name>PlwiktStatisticsService</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.PlwiktStatisticsService</servlet-class>
+  </servlet>
+
   <servlet-mapping>
     <servlet-name>VerifyCitations</servlet-name>
     <url-pattern>/verify-citations/*</url-pattern>
@@ -174,6 +179,11 @@
     <url-pattern>/weblists/eswikt-lonely-pages/api</url-pattern>
     <url-pattern>/eswikt-lonely-pages/api</url-pattern>
   </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>PlwiktStatisticsService</servlet-name>
+    <url-pattern>/plwikt-stats-api</url-pattern>
+  </servlet-mapping>
+
   <resource-ref>
     <res-ref-name>jdbc/meta</res-ref-name>
     <res-type>javax.sql.DataSource</res-type>
@@ -234,13 +244,15 @@
     <res-type>javax.sql.DataSource</res-type>
     <res-auth>Container</res-auth>
   </resource-ref>
+
   <jsp-config>
     <jsp-property-group>
       <url-pattern>*.jspf</url-pattern>
-    <page-encoding>UTF-8</page-encoding>
-    <trim-directive-whitespaces>true</trim-directive-whitespaces>
+      <page-encoding>UTF-8</page-encoding>
+      <trim-directive-whitespaces>true</trim-directive-whitespaces>
     </jsp-property-group>
   </jsp-config>
+
   <error-page>
     <error-code>404</error-code>
     <location>/jsp/error.jsp</location>
