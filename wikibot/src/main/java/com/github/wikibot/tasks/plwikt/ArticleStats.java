@@ -10,8 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -21,12 +23,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
+import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDump;
 import com.github.wikibot.dumps.XMLDumpConfig;
 import com.github.wikibot.dumps.XMLDumpTypes;
 import com.github.wikibot.dumps.XMLRevision;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.plwikt.Field;
 import com.github.wikibot.parsing.plwikt.FieldTypes;
 import com.github.wikibot.parsing.plwikt.Page;
 import com.github.wikibot.utils.Login;
@@ -40,6 +44,9 @@ public class ArticleStats {
     private static final String STATS_PAGE = "Wikisłownik:Statystyka";
     private static final Pattern P_DEF = Pattern.compile("^: *\\(\\d+\\.\\d+(?:\\.\\d+)?\\)");
     private static final Pattern P_FILE = Pattern.compile("\\[{2} *(?i:Plik|File|Image):.+?\\]{2}");
+    private static final Pattern P_LINK = Pattern.compile("\\[{2}:?([^\\]|]+)(?:\\|((?:.(?!\\[{2}.+?\\]{2}))+?))*\\]{2}");
+    private static final Pattern P_TEMPLATE = Pattern.compile("\\{{2}([^<>\n\\{\\}\\[\\]\\|]+)(?:.(?!\\{{2}.+?\\}{2}))*?\\}{2}", Pattern.DOTALL);
+    private static final Pattern P_LIST = Pattern.compile("^[:;#\\*]\\s*", Pattern.MULTILINE);
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
     private static final XStream xstream = new XStream();
 
@@ -180,6 +187,18 @@ public class ArticleStats {
                     if (P_FILE.matcher(s.getIntro()).find()) {
                         stats.withFiles++;
                     }
+
+                    stats.combinedLength += Stream.concat(
+                            Stream.of(s.getIntro())
+                                .filter(intro -> !intro.isBlank()),
+                            s.getAllFields().stream()
+                                .filter(f -> f.getFieldType() != FieldTypes.TRANSLATIONS)
+                                .filter(f -> !f.isEmpty())
+                                .map(Field::getContent)
+                        )
+                        .map(ArticleStats::stripFieldContents)
+                        .mapToInt(String::length)
+                        .sum();
                 });
         }
 
@@ -219,6 +238,51 @@ public class ArticleStats {
         return StringUtils.containsAny(header, "forma fleksyjna", "forma odmieniona", "{{forma ");
     }
 
+    private static String stripFieldContents(String text) {
+        text = ParseUtils.removeCommentsAndNoWikiText(text);
+        text = text.replaceAll("\\{\\|.+?\\|\\}", ""); // nuke all tables in wiki markup
+
+        while (true) {
+            var temp = P_TEMPLATE.matcher(text).replaceAll(mr -> ParseUtils.getTemplates(mr.group(1).strip(), mr.group()).stream()
+                .map(ParseUtils::getTemplateParametersWithValue)
+                .map(params -> params.size() == 1
+                    ? params.get("templateName") // no template params
+                    : params.entrySet().stream()
+                        .filter(e -> !e.getKey().equals("templateName"))
+                        .map(Map.Entry::getValue)
+                        .collect(Collectors.joining(" "))
+                )
+                .map(Matcher::quoteReplacement)
+                .collect(Collectors.joining("")) // should have only one template at most, anyway
+            );
+
+            if (temp.equals(text)) {
+                break;
+            } else {
+                text = temp;
+            }
+        }
+
+        while (true) {
+            // accounts for file links with nested links in captions
+            var temp = P_LINK.matcher(text).replaceAll(mr -> Matcher.quoteReplacement(Optional.ofNullable(mr.group(2)).orElse(mr.group(1)).strip()));
+
+            if (temp.equals(text)) {
+                break;
+            } else {
+                text = temp;
+            }
+        }
+
+        text = P_LIST.matcher(text).replaceAll("");
+        text = Jsoup.parse(text).text(); // remove HTML entities
+
+        return text
+            .replace("'''", "") // bolds
+            .replace("''", "") // italics
+            .replaceAll("\\s{2,}", " "); // multiple consecutive whitespaces
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, Stats> retrieveStats(Path path) {
         try {
@@ -254,7 +318,7 @@ public class ArticleStats {
                 var map = json.toMap();
                 var diffMap = e.getValue().toJsonDifference(prevStats.get(e.getKey())).toMap();
 
-                diffMap.values().removeIf(sum -> (int)sum == 0); // save some space
+                diffMap.values().removeIf(diff -> ((Number)diff).longValue() == 0L); // save some space
                 map.putAll(diffMap);
                 json = new JSONObject(map);
             }
@@ -266,15 +330,16 @@ public class ArticleStats {
         return out;
     }
 
-    private static Map<String, Integer> accumulateStats(Collection<Stats> stats) {
+    private static Map<String, Long> accumulateStats(Collection<Stats> stats) {
         return Map.of(
-            "entries", stats.stream().mapToInt(s -> s.entries).sum(),
-            "canonical", stats.stream().mapToInt(s -> s.canonical).sum(),
-            "nonCanonical", stats.stream().mapToInt(s -> s.nonCanonical).sum(),
-            "definitions", stats.stream().mapToInt(s -> s.definitions).sum(),
-            "withReferences", stats.stream().mapToInt(s -> s.withReferences).sum(),
-            "withAudio", stats.stream().mapToInt(s -> s.withAudio).sum(),
-            "withFiles", stats.stream().mapToInt(s -> s.withFiles).sum()
+            "entries", stats.stream().mapToLong(s -> s.entries).sum(),
+            "canonical", stats.stream().mapToLong(s -> s.canonical).sum(),
+            "nonCanonical", stats.stream().mapToLong(s -> s.nonCanonical).sum(),
+            "definitions", stats.stream().mapToLong(s -> s.definitions).sum(),
+            "withReferences", stats.stream().mapToLong(s -> s.withReferences).sum(),
+            "withAudio", stats.stream().mapToLong(s -> s.withAudio).sum(),
+            "withFiles", stats.stream().mapToLong(s -> s.withFiles).sum(),
+            "combinedLength", stats.stream().mapToLong(s -> s.combinedLength).sum()
         );
     }
 
@@ -287,6 +352,7 @@ public class ArticleStats {
         int withReferences; // has <references>
         int withAudio; // has {{audio}} or similar
         int withFiles; // has file transclusions
+        long combinedLength; // combined normalized length of all entries
 
         JSONObject toJson() {
             return new JSONObject(Map.of(
@@ -296,7 +362,8 @@ public class ArticleStats {
                 "definitions", definitions,
                 "withReferences", withReferences,
                 "withAudio", withAudio,
-                "withFiles", withFiles
+                "withFiles", withFiles,
+                "combinedLength", combinedLength
             ));
         }
 
@@ -308,7 +375,8 @@ public class ArticleStats {
                 "definitionsDiff", definitions - other.definitions,
                 "withReferencesDiff", withReferences - other.withReferences,
                 "withAudioDiff", withAudio - other.withAudio,
-                "withFilesDiff", withFiles - other.withFiles
+                "withFilesDiff", withFiles - other.withFiles,
+                "combinedLengthDiff", combinedLength - other.combinedLength
             ));
         }
     }
