@@ -2,6 +2,7 @@ package com.github.wikibot.webapp;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 import javax.naming.Context;
@@ -19,6 +20,10 @@ import org.json.JSONObject;
 public class PlwiktStatisticsService extends HttpServlet {
     private static final String TARGET_CATEGORY = "Indeks słów wg języków";
     private static final int EXPIRY_TIME_MSECS = 1000 * 60 * 5; // 5 minutes
+
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+        "https://pl.wiktionary.org", "https://pl.m.wiktionary.org"
+    );
 
     private int cachedResult;
     private long lastUpdate;
@@ -38,8 +43,13 @@ public class PlwiktStatisticsService extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        var origin = request.getHeader("origin");
+
+        if (origin != null && ALLOWED_ORIGINS.contains(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+        }
+
         response.setContentType("application/json");
-        response.setHeader("Access-Control-Allow-Origin", "https://pl.wiktionary.org");
 
         var now = System.currentTimeMillis();
 
