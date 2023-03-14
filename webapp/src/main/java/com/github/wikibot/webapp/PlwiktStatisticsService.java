@@ -2,6 +2,9 @@ package com.github.wikibot.webapp;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +23,7 @@ import org.json.JSONObject;
 public class PlwiktStatisticsService extends HttpServlet {
     private static final String TARGET_CATEGORY = "Indeks słów wg języków";
     private static final int EXPIRY_TIME_MSECS = 1000 * 60 * 5; // 5 minutes
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneOffset.UTC);
 
     private static final List<String> ALLOWED_ORIGINS = List.of(
         "https://pl.wiktionary.org", "https://pl.m.wiktionary.org"
@@ -117,11 +121,13 @@ public class PlwiktStatisticsService extends HttpServlet {
         throw new RuntimeException("no results");
     }
 
-    private JSONObject makeOutput(int value, boolean isCached,long timestamp) {
+    private JSONObject makeOutput(int value, boolean isCached, long timestamp) {
+        var instant = Instant.ofEpochMilli(timestamp);
+
         return new JSONObject(Map.of(
             "canonical", value,
             "cached", isCached,
-            "timestamp", timestamp
+            "timestamp", Long.parseLong(DATE_TIME_FORMATTER.format(instant))
         ));
     }
 
