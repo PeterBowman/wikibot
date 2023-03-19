@@ -39,7 +39,7 @@ public class LatinInfinitiveBacklinks {
     private static final Pattern P_LINK = Pattern.compile("\\[\\[:?([^\\]|]+)(?:\\|((?:]?[^\\]|])*+))*\\]\\]");
 
     private static final String[] LATIN_SHORTS = {"łac", "łaciński", "łacińskie", "łacina", "stłac"};
-    private static final String[] LATIN_DESINENCES = {"are", "āre", "ere", "ēre", "ĕre", "ire", "īre"};
+    private static final String[] LATIN_DESINENCES = {"are", "āre", "ari", "ārī", "ere", "ēre", "ĕre", "eri", "ērī", "ire", "īre", "iri", "īrī"};
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
@@ -211,7 +211,6 @@ public class LatinInfinitiveBacklinks {
                 .flatMap(p -> p.getSection("łaciński", true).stream())
                 .<Item>mapMulti((s, cons) -> {
                     var infinitives = s.getAllFields().stream()
-                        .filter(f -> f.getFieldType() != FieldTypes.INFLECTION)
                         .filter(f -> !f.isEmpty())
                         .map(Field::getContent)
                         .map(content -> patt.matcher(content).replaceAll(""))
