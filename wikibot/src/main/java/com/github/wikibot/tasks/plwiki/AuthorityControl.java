@@ -329,7 +329,7 @@ public final class AuthorityControl {
                 .map(property -> String.format("'%s'", property))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     DISTINCT(page_id),
                     ips_site_page
@@ -341,7 +341,7 @@ public final class AuthorityControl {
                     ips_site_id = 'plwiki' AND
                     pl_namespace = 120 AND
                     pl_title in (%s);
-                """, properties);
+                """.formatted(properties);
 
             var rs = connection.createStatement().executeQuery(query);
 
@@ -384,7 +384,7 @@ public final class AuthorityControl {
                 .map(template -> String.format("'%s'", template.replace(' ', '_')))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title
                 FROM page
@@ -394,7 +394,7 @@ public final class AuthorityControl {
                     tl_from_namespace = 0 AND
                     lt_namespace = 10 AND
                     lt_title in (%s);
-                """, templates);
+                """.formatted(templates);
 
             var rs = connection.createStatement().executeQuery(query);
 

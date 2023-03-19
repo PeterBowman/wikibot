@@ -104,7 +104,7 @@ public final class MissingPersonInfoboxes {
         final var uriPrefix = "https://pl.wikipedia.org/wiki/";
 
         try (var connection = SPARQL_REPO.getConnection()) {
-            var querySelect = String.format("""
+            var querySelect = """
                 SELECT ?article
                 WHERE
                 {
@@ -112,7 +112,7 @@ public final class MissingPersonInfoboxes {
                     ?article schema:about ?item ;
                              schema:isPartOf <https://%s/> .
                 }
-                """, wb.getDomain());
+                """.formatted(wb.getDomain());
 
             var query = connection.prepareTupleQuery(querySelect);
 
@@ -207,7 +207,7 @@ public final class MissingPersonInfoboxes {
                 .map(title -> String.format("'%s'", title.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     DISTINCT(page_title)
                 FROM page
@@ -217,7 +217,7 @@ public final class MissingPersonInfoboxes {
                     page_namespace = %d AND
                     lt_namespace = %d AND
                     lt_title IN (%s);
-                """, Wiki.MAIN_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, templatesStr);
+                """.formatted(Wiki.MAIN_NAMESPACE, Wiki.TEMPLATE_NAMESPACE, templatesStr);
 
             var result = connection.createStatement().executeQuery(query);
 

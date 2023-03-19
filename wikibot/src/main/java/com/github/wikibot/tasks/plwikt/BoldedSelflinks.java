@@ -78,7 +78,7 @@ public final class BoldedSelflinks {
                 : e.getKey().localised())
             .collect(Collectors.joining(", "));
 
-        PAGE_INTRO = String.format("""
+        PAGE_INTRO = """
             Zestawienie wystąpień pogrubionych selflinków, czyli linków prowadzących do strony, w której
             się znajdują. Automatyczne pogrubianie takich linków, wymuszone przez oprogramowanie MediaWiki,
             jest zazwyczaj tłumione za sprawą lokalnego [[MediaWiki:Gadget-section-links.js|skryptu JS]],
@@ -91,7 +91,7 @@ public final class BoldedSelflinks {
 
             Dane na podstawie zrzutu z bazy danych z dnia $1. Aktualizacja: ~~~~~.
             ----
-            """, excludedSelflinks, excludedLangs, excludedFields);
+            """.formatted(excludedSelflinks, excludedLangs, excludedFields);
     }
 
     public static void main(String[] args) throws Exception {

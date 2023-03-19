@@ -151,7 +151,7 @@ public class MissingUkrainianAudio extends HttpServlet {
                 .map(s -> String.format("'%s'", s.replace("'", "\\'")))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title
                 FROM page
@@ -161,7 +161,7 @@ public class MissingUkrainianAudio extends HttpServlet {
                     page_namespace = 0 AND
                     cl_to = '%s' AND
                     il_from IS NULL;
-                """, filesStr, ENTRIES_CATEGORY_NAME);
+                """.formatted(filesStr, ENTRIES_CATEGORY_NAME);
 
             var rs = connection.createStatement().executeQuery(query);
 

@@ -314,14 +314,14 @@ public final class ArchiveThreads {
         final String text;
 
         if (rev == null) {
-            text = String.format("""
+            text = """
                 Archiwum strony [[%s]] z podziałem na lata wg daty zgłoszenia.
 
                 <!-- START (nie zmieniaj tej linii ani poniższych aż do następnego znacznika) -->
                 <!-- END (nie zmieniaj tej linii ani powyższych aż do poprzedniego znacznika) -->
 
                 [[Kategoria:Archiwum Wikisłownika|%s]]
-                """, config.pagename(), wb.removeNamespace(pagename));
+                """.formatted(config.pagename(), wb.removeNamespace(pagename));
         } else {
             text = rev.getText();
         }

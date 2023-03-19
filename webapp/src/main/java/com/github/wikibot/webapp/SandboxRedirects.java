@@ -54,7 +54,7 @@ public class SandboxRedirects extends HttpServlet {
         var hasNext = false;
 
         try (var conn = dataSource.getConnection()) {
-            var query = String.format("""
+            var query = """
                 SELECT
                     p_source.page_id AS source_id,
                     log_title,
@@ -77,7 +77,7 @@ public class SandboxRedirects extends HttpServlet {
                     %d
                 OFFSET
                     %d;
-                """, limit + 1, offset);
+                """.formatted(limit + 1, offset);
 
             var stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             stmt.setFetchSize(Integer.MIN_VALUE);

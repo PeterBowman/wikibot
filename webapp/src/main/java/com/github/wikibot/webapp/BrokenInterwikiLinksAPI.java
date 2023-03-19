@@ -63,7 +63,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
         try (Connection conn = dataSource.getConnection()) {
             String escaped = searchParam.trim().replaceFirst("^https?://([^/]+).*$", "$1").replace("'", "\\'");
 
-            String query = String.format("""
+            String query = """
                 SELECT
                     dbname, url
                 FROM
@@ -80,7 +80,7 @@ public class BrokenInterwikiLinksAPI extends HttpServlet {
                     is_closed
                 LIMIT
                     %2$d;
-                """, escaped, limit);
+                """.formatted(escaped, limit);
 
             ResultSet rs = conn.createStatement().executeQuery(query);
             JSONArray ja = new JSONArray();

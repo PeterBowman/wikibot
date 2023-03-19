@@ -340,7 +340,7 @@ public final class CitationTypography {
             .map(title -> String.format("'%s'", title.replace("'", "\\'").replace(" ", "_")))
             .collect(Collectors.joining(", "));
 
-        String query = String.format("""
+        String query = """
             SELECT
                 page_title,
                 page_id
@@ -349,7 +349,7 @@ public final class CitationTypography {
             WHERE
                 page_namespace = 0 AND
                 page_title IN (%s);
-            """, values);
+            """.formatted(values);
 
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(query);
@@ -415,12 +415,12 @@ public final class CitationTypography {
             .distinct()
             .collect(Collectors.joining(", "));
 
-        String query = String.format("""
+        String query = """
             INSERT INTO page_title (page_id, page_title)
             VALUES %s
             ON DUPLICATE KEY
             UPDATE page_title = VALUES(page_title);
-            """, values);
+            """.formatted(values);
 
         Statement stmt = conn.createStatement();
         int updatedRows = stmt.executeUpdate(query);
@@ -466,7 +466,7 @@ public final class CitationTypography {
             .map(title -> String.format("'%s'", title.replace("'", "\\'")))
             .collect(Collectors.joining(","));
 
-        String query = String.format("""
+        String query = """
             SELECT
                 entry_id,
                 page_title,
@@ -480,7 +480,7 @@ public final class CitationTypography {
                 all_entries
             WHERE
                 page_title IN (%s);
-            """, titles);
+            """.formatted(titles);
 
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(query);
@@ -624,12 +624,12 @@ public final class CitationTypography {
             .map(id -> String.format("(%d)", id))
             .collect(Collectors.joining(", "));
 
-        String query = String.format("""
+        String query = """
             INSERT INTO pending (entry_id)
             VALUES %s
             ON DUPLICATE KEY
             UPDATE entry_id = VALUES(entry_id);
-            """, values);
+            """.formatted(values);
 
         Statement stmt = conn.createStatement();
         int insertedRows = stmt.executeUpdate(query);
@@ -739,7 +739,7 @@ public final class CitationTypography {
     }
 
     private static Map<Integer, Entry> queryVerifiedEntries(Connection conn, String gapTimestamp) throws SQLException {
-        String query = String.format("""
+        String query = """
             SELECT
                 entry_id,
                 page_title,
@@ -753,7 +753,7 @@ public final class CitationTypography {
                 is_pending IS TRUE AND
                 review_status = 1 AND
                 review_timestamp <= %s;
-            """, gapTimestamp);
+            """.formatted(gapTimestamp);
 
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(query);
@@ -768,7 +768,7 @@ public final class CitationTypography {
     }
 
     private static int deleteRejectedEntries(Connection conn, String gapTimestamp) throws SQLException {
-        String query = String.format("""
+        String query = """
             DELETE
                 pending
             FROM pending
@@ -777,7 +777,7 @@ public final class CitationTypography {
             WHERE
                 review_log.review_status = 0 AND
                 review_log.timestamp <= %s;
-            """, gapTimestamp);
+            """.formatted(gapTimestamp);
 
         return conn.createStatement().executeUpdate(query);
     }
@@ -786,7 +786,7 @@ public final class CitationTypography {
             throws SQLException {
         Statement queryRevisionLog = conn.createStatement();
 
-        ResultSet rs = queryRevisionLog.executeQuery(String.format("""
+        ResultSet rs = queryRevisionLog.executeQuery("""
             SELECT
                 review_log.user,
                 review_log.timestamp
@@ -794,7 +794,7 @@ public final class CitationTypography {
                 reviewed INNER JOIN review_log ON review_log.review_log_id = reviewed.review_log_id
             WHERE
                 reviewed.entry_id = %d;
-            """, entryId));
+            """.formatted(entryId));
 
         if (!rs.next()) {
             System.out.printf("Entry not found: %s.%n", entry.title);
@@ -875,7 +875,7 @@ public final class CitationTypography {
             Timestamp revTimestamp = Timestamp.from(revision.getTimestamp().toInstant());
 
             // 'edit_timestamp' may be omitted thanks to declaring CURRENT_TIMESTAMP as the default value.
-            PreparedStatement st = conn.prepareStatement(String.format("""
+            PreparedStatement st = conn.prepareStatement("""
                 INSERT INTO
                     edit_log (change_log_id, rev_id, edit_timestamp)
                 SELECT
@@ -888,7 +888,7 @@ public final class CitationTypography {
                 ORDER BY
                     change_log_id DESC
                 LIMIT 1;
-                """, entryId, gapTimestamp));
+                """.formatted(entryId, gapTimestamp));
 
             st.setInt(1, (int) revId);
             st.setTimestamp(2, revTimestamp);
@@ -901,12 +901,12 @@ public final class CitationTypography {
     }
 
     private static void updateTimestampTable(Connection conn, String type) throws SQLException {
-        String query = String.format("""
+        String query = """
             INSERT INTO execution_log (type)
             VALUES ('%s')
             ON DUPLICATE KEY
             UPDATE timestamp = NOW();
-            """, type);
+            """.formatted(type);
 
         conn.createStatement().executeUpdate(query);
     }

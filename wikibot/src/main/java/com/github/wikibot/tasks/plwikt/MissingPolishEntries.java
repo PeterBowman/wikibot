@@ -139,12 +139,12 @@ public class MissingPolishEntries {
         var titles = new ArrayList<String>(1000000);
 
         try (var connection = getConnection()) {
-            var query = String.format("""
+            var query = """
                 SELECT page_title
                 FROM page
                 INNER JOIN categorylinks ON cl_from = page_id
                 WHERE page_namespace = 0 AND page_is_redirect = 0 AND cl_to = '%s';
-                """, category.replace(' ', '_').replace("'", "\\'"));
+                """.formatted(category.replace(' ', '_').replace("'", "\\'"));
 
             var resultSet = connection.createStatement().executeQuery(query);
 
@@ -221,7 +221,7 @@ public class MissingPolishEntries {
 
         @Override
         public String toString() {
-            return String.format("""
+            return """
                 Stats for the current run:
                 * reading from: %s
                 * total worklist size: %d
@@ -230,11 +230,11 @@ public class MissingPolishEntries {
                 * polish entries (inflected): %d
                 * database lemmas: %d
                 * database overall size: %d
-                """,
-                dumpFile,
-                worklistSize, allEntries, polishLemmas, polishInflected,
-                databaseLemmas, databaseOverall
-            ).stripTrailing();
+                """.formatted(
+                    dumpFile,
+                    worklistSize, allEntries, polishLemmas, polishInflected,
+                    databaseLemmas, databaseOverall
+                ).stripTrailing();
         }
     }
 }

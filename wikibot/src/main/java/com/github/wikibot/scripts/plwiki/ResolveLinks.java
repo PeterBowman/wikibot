@@ -282,7 +282,7 @@ public final class ResolveLinks {
                 .map(target -> String.format("'%s'", target.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title, pl_title
                 FROM page
@@ -292,7 +292,7 @@ public final class ResolveLinks {
                     page_is_redirect = 1 AND
                     pl_namespace = 0 AND
                     pl_title IN (%s);
-                """, targetsString);
+                """.formatted(targetsString);
 
             var rs = connection.createStatement().executeQuery(query);
 
@@ -312,7 +312,7 @@ public final class ResolveLinks {
                 .map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title, pl_title
                 FROM page
@@ -322,7 +322,7 @@ public final class ResolveLinks {
                     page_is_redirect = 1 AND
                     page_title IN (%s) AND
                     pl_namespace = 0;
-                """, sourcesString);
+                """.formatted(sourcesString);
 
             var rs = connection.createStatement().executeQuery(query);
 
@@ -345,7 +345,7 @@ public final class ResolveLinks {
                 .map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title, page_namespace, pl_title
                 FROM page
@@ -354,7 +354,7 @@ public final class ResolveLinks {
                     page_is_redirect = 0 AND
                     pl_namespace = 0 AND
                     pl_title IN (%s);
-                """, sourcesString);
+                """.formatted(sourcesString);
 
             var rs = connection.createStatement().executeQuery(query);
 
@@ -407,7 +407,7 @@ public final class ResolveLinks {
                 .distinct()
                 .collect(Collectors.joining(","));
 
-            var query = String.format("""
+            var query = """
                 SELECT
                     page_title, page_namespace, page_len, page_is_redirect, pp_propname
                 FROM page
@@ -416,7 +416,7 @@ public final class ResolveLinks {
                         pp_propname = "disambiguation"
                 WHERE
                     page_title IN (%s);
-                """, titlesString);
+                """.formatted(titlesString);
 
             var rs = connection.createStatement().executeQuery(query);
 

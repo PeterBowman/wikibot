@@ -83,7 +83,7 @@ public final class MisusedRegTemplates {
             .map(template -> String.format("{{s|%s}}", template))
             .collect(Collectors.joining(", "));
 
-        PAGE_INTRO = String.format("""
+        PAGE_INTRO = """
             Lista nieprawidłowo użytych [[:Kategoria:Szablony dialektów i gwar|szablonów regionalizmów]].
             Wskazane tutaj wystąpienia skutkują zwykle niezamierzonym umieszczeniem strony w kategorii,
             często w wyniku pominięcia pierwszego parametru w polu innym niż „znaczenia”
@@ -93,7 +93,7 @@ public final class MisusedRegTemplates {
 
             Dane na podstawie zrzutu z bazy danych z dnia $1. Znaleziono $2 na $3. Aktualizacja: ~~~~~.
             ----
-            """, templateList);
+            """.formatted(templateList);
 
         var polishWords = new WordForms[] {
             new WordForms(new String[] {"wystąpienie", "wystąpienia", "wystąpień"}),

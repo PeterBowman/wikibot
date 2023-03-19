@@ -132,7 +132,7 @@ public final class MorfeoDatabase {
             .map(morphem -> String.format("'%s'", morphem.replace("'", "\\'")))
             .collect(Collectors.joining(","));
 
-        String query = String.format("""
+        String query = """
             SELECT
                 CONVERT(page_title USING utf8) AS page_title
             FROM
@@ -140,7 +140,7 @@ public final class MorfeoDatabase {
             WHERE
                 page_namespace = 0 AND
                 page_title IN (%s);
-            """, values);
+            """.formatted(values);
 
         ResultSet rs = conn.createStatement().executeQuery(query);
         Set<String> set = new HashSet<>(morphems.size());

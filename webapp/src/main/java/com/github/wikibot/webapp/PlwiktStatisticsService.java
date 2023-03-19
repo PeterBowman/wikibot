@@ -99,7 +99,7 @@ public class PlwiktStatisticsService extends HttpServlet {
 
     private int getStats() throws SQLException {
         try (var connection = dataSource.getConnection()) {
-            var query = String.format("""
+            var query = """
                 SELECT
                     SUM(cat_pages - cat_subcats - cat_files) AS total_entries
                 FROM page
@@ -108,7 +108,7 @@ public class PlwiktStatisticsService extends HttpServlet {
                 WHERE
                     cl_to = '%s'
                     AND page_namespace = 14;
-                """, TARGET_CATEGORY.replace(' ', '_'));
+                """.formatted(TARGET_CATEGORY.replace(' ', '_'));
 
             var statement = connection.createStatement();
             var resultSet = statement.executeQuery(query);
