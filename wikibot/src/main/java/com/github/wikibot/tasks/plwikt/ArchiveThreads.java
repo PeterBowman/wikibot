@@ -301,6 +301,8 @@ public final class ArchiveThreads {
                 earliestTimestampPerSection.getOrDefault(s2, 0L)
             ));
 
+            archive.getAllSections().forEach(s -> s.setTrailingNewlines(1)); // cleanup, sometimes it was 0
+
             var summary = makeSummaryFrom(sections.size(), config.pagename(), revid);
             wb.edit(pagename, archive.toString(), summary, false, true, -2, List.of(CHANGE_TAG), timestamp);
         }
