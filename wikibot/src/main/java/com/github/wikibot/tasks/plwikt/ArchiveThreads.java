@@ -393,6 +393,8 @@ public final class ArchiveThreads {
             var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
             doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
             doc.getElementsByTag("s").remove();
+            doc.getElementsByTag("strike").remove();
+            doc.getElementsByTag("del").remove();
             doc.getElementsByTag("pre").remove();
             doc.getElementsByTag("syntaxhighlight").remove();
             doc.getElementsByTag("source").remove();
