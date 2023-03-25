@@ -32,26 +32,26 @@ public final class ReportDeaths {
 
     private static final String SPARQL_QUERY_TEMPLATE = """
         # Humans who died on a specific date on Polish Wikipedia, ordered by label
-        SELECT ?item ?articlename ?image ?dateOfBirth ?itemLabel ?itemDescription
+        SELECT ?item (MIN(?name) AS ?articlename) (MIN(?img) AS ?image) (MIN(?dob) AS ?dateOfBirth) (MIN(?itemLabel) AS ?label) (MIN(?itemDescription) AS ?description)
         WHERE {
             VALUES ?dod {"+%s"^^xsd:dateTime}
             ?dod ^wdt:P570 ?item .
             ?item ^schema:about ?article .
             ?article schema:isPartOf <https://pl.wikipedia.org/> ;
-                        schema:name ?articlename .
+                     schema:name ?name .
             OPTIONAL {
-                ?item wdt:P18 ?image .
+                ?item wdt:P18 ?img .
             }
             OPTIONAL {
-                ?item wdt:P569 ?dateOfBirth .
+                ?item wdt:P569 ?dob .
             }
             SERVICE wikibase:label {
                 bd:serviceParam wikibase:language "pl" .
                 ?item rdfs:label ?itemLabel ;
-                        schema:description ?itemDescription .
+                      schema:description ?itemDescription .
             }
             BIND(REPLACE(?itemLabel, "^.*(?<! [Vv][ao]n| [Dd][aeiu]| [Dd][e][lns]| [Ll][ae]) (?!([SJ]r\\\\.?|[XVI]+)$)", "") AS ?sortname)
-        } ORDER BY ASC(UCASE(?sortname)) ASC(UCASE(?itemLabel))
+        } GROUP BY ?item ORDER BY ASC(?dateOfBirth) ASC(UCASE(?sortname))
         """;
 
     private static final String ARTICLE_TEMPLATE = """
@@ -144,10 +144,10 @@ public final class ReportDeaths {
                             Optional.ofNullable(((SimpleLiteral)bs.getValue("dateOfBirth")))
                                 .map(SimpleLiteral::stringValue)
                                 .flatMap(ReportDeaths::parseYear),
-                            Optional.ofNullable(((SimpleLiteral)bs.getValue("itemLabel")))
+                            Optional.ofNullable(((SimpleLiteral)bs.getValue("label")))
                                 .map(SimpleLiteral::stringValue)
                                 .filter(label -> !label.matches("^Q\\d+$")),
-                            Optional.ofNullable(((SimpleLiteral)bs.getValue("itemDescription")))
+                            Optional.ofNullable(((SimpleLiteral)bs.getValue("description")))
                                 .map(SimpleLiteral::stringValue)
                         ))
                         .toList();
