@@ -28,8 +28,8 @@ public final class UnpairedSectionTags {
     private static final Wikibot wb = Wikibot.newSession("pl.wikisource.org");
 
     private static final String INTRO_FMT = """
-        Strony, w których występuje znacznik <code><nowiki><section begin="nazwa"></nowiki></code> bez pary <code><nowiki><section end="nazwa"></nowiki></code> lub odwrotnie.
-        Mogą występować błędne zgłoszenia, jeżeli w wikikodzie występują niesparowane znaczniki HTML.
+        Strony, w których występuje znacznik <code>&lt;section begin="nazwa"&gt;</code> bez pary <code>&lt;section end="nazwa"&gt;</code> lub odwrotnie.
+        Algorytm może nie być w pełni dokładny, jeżeli w wikikodzie występują niesparowane znaczniki HTML.
 
         Wygenerowano na podstawie zrzutu %s. Aktualizacja: ~~~~~.
         ----
