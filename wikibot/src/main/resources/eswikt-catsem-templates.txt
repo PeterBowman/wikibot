@@ -44,6 +44,7 @@ botánica = Botánica
 cactos = Cactos
 cardiología = Cardiología
 carpintería = Carpintería
+casos gramaticales = Casos gramaticales
 cereales = Cereales
 cerrajería = Cerrajería
 cetrería = Cetrería
