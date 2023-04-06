@@ -274,7 +274,7 @@ public final class ArchiveThreads {
     private static void editArchiveSubpage(ArchiveConfig config, long revid, int year, List<Section> sections) throws IOException, LoginException {
         var pagename = String.format("%s/%s/%d", config.pagename(), config.subpage(), year);
         var rev = wb.getTopRevision(pagename);
-        var text = rev != null ? rev.getText() : "";
+        var text = rev != null ? rev.getText() : "__ARCHIVEDTALK__";
 
         sections = sections.stream()
             .filter(s -> !text.contains(s.toString()))
