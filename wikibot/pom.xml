@@ -35,7 +35,7 @@
     <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.22</version>
+        <version>1.23.0</version>
     </dependency>
     <dependency>
         <groupId>org.wikipedia</groupId>
@@ -45,7 +45,7 @@
     <dependency>
         <groupId>org.jsoup</groupId>
         <artifactId>jsoup</artifactId>
-        <version>1.15.3</version>
+        <version>1.15.4</version>
     </dependency>
     <dependency>
         <groupId>org.apache.commons</groupId>
@@ -106,12 +106,12 @@
     <dependency>
         <groupId>org.nibor.autolink</groupId>
         <artifactId>autolink</artifactId>
-        <version>0.10.1</version>
+        <version>0.11.0</version>
     </dependency>
     <dependency>
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
-        <version>20220924</version>
+        <version>20230227</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.rdf4j</groupId>
