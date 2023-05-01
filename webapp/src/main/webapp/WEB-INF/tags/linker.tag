@@ -8,6 +8,7 @@
 <%@ attribute name="testDisambiguation" %>
 <%@ attribute name="sectionName" %>
 <%@ attribute name="display" %>
+<%@ attribute name="customClasses" %>
 
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -55,7 +56,7 @@
     </c:otherwise>
 </c:choose>
 
-<c:set var="classVar" value="wikilink ${classVar}" />
+<c:set var="classVar" value="wikilink ${classVar} ${customClasses}" />
 
 <a href="${fn:replace(hrefPattern, '$1', href)}"
         class="${fn:trim(classVar)}"

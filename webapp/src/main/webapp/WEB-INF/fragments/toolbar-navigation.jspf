@@ -4,5 +4,6 @@
 <li><a href="${pageContext.request.contextPath}/eom-backlinks">Morfemy esperanto</a></li>
 <li><a href="${pageContext.request.contextPath}/pretty-ref">Pretty ref (plwiki)</a></li>
 <li><a href="${pageContext.request.contextPath}/nkjp-generator">Generator {{NKJP}}</a></li>
+<li><a href="${pageContext.request.contextPath}/recursive-category-contribs">Aktywność w drzewie kategorii (plwiki)</a></li>
 <li><a href="${pageContext.request.contextPath}/weblists">Listy automatyczne</a></li>
 <li><a href="//tools-static.wmflabs.org/pbbot/" target="_blank">Serwer plików statycznych</a></li>

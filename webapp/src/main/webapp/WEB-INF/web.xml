@@ -95,6 +95,10 @@
     <servlet-name>PlwiktStatisticsService</servlet-name>
     <servlet-class>com.github.wikibot.webapp.PlwiktStatisticsService</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>RecursiveCategoryContribs</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.RecursiveCategoryContribs</servlet-class>
+  </servlet>
 
   <servlet-mapping>
     <servlet-name>VerifyCitations</servlet-name>
@@ -182,6 +186,10 @@
   <servlet-mapping>
     <servlet-name>PlwiktStatisticsService</servlet-name>
     <url-pattern>/plwikt-stats-api</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>RecursiveCategoryContribs</servlet-name>
+    <url-pattern>/recursive-category-contribs</url-pattern>
   </servlet-mapping>
 
   <resource-ref>
