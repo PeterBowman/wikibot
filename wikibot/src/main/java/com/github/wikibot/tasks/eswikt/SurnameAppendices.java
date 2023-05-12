@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -20,18 +19,13 @@ import com.github.wikibot.main.Wikibot;
 import com.github.wikibot.utils.Login;
 
 public final class SurnameAppendices {
-    private static final String TARGET_PARENT_PAGE = "Apéndice:Personas/Apellidos/";
-    private static final String OTHER_SURNAMES_PAGE = "Apéndice:Personas/Apellidos/otros";
+    private static final String TARGET_PARENT_PAGE = "Apéndice:Antropónimos/Apellidos/";
     private static final String SURNAME_TEMPLATE = "Plantilla:apellido";
-
     private static final char SPECIAL_LETTER = '#';
-
     private static final int COLUMNS = 5;
-
-    private static final Collator collator = Collator.getInstance(new Locale("es"));
-
+    private static final Locale locale = new Locale("es");
+    private static final Collator collator = Collator.getInstance(locale);
     private static final Map<Character, Character> stressedVowels = Map.of('Á', 'A', 'É', 'E', 'Í', 'I', 'Ó', 'O', 'Ú', 'U');
-
     private static final Wikibot wb = Wikibot.newSession("es.wiktionary.org");
 
     public static void main(String[] args) throws Exception {
@@ -43,30 +37,22 @@ public final class SurnameAppendices {
         Set<Character> letters = filterTargetLetters(subPages);
         Map<Character, List<String>> groupedSurnames = groupSurnames(surnames, letters);
 
-        wb.setThrottle(5000);
-        wb.setMarkBot(true);
-        wb.setMarkMinor(false);
-
-        for (Map.Entry<Character, List<String>> entry : groupedSurnames.entrySet()) {
+        for (var entry : groupedSurnames.entrySet()) {
             Character firstLetter = entry.getKey();
             List<String> surnameList = entry.getValue();
 
-            final String targetPage;
-            final String header;
-
             if (firstLetter == SPECIAL_LETTER) {
-                targetPage = OTHER_SURNAMES_PAGE;
-                header = "otros";
-            } else {
-                targetPage = TARGET_PARENT_PAGE + firstLetter;
-                header = firstLetter.toString();
+                continue;
             }
 
-            List<String> links = getLinksOnPage(targetPage);
+            var targetPage = TARGET_PARENT_PAGE + firstLetter;
+            var header = firstLetter.toString();
+
+            List<String> links = getLinksOnPage(targetPage, header);
 
             if (!links.containsAll(surnameList)) {
                 List<String> mergedList = mergeLists(links, surnameList);
-                String pageText = prepareOutput(header, mergedList);
+                String pageText = prepareOutput(header.toUpperCase(locale), header.toLowerCase(locale), mergedList);
 
                 wb.edit(targetPage, pageText, "actualización");
             }
@@ -74,8 +60,8 @@ public final class SurnameAppendices {
     }
 
     private static List<String> getSubPages() throws IOException {
-        int ns = wb.namespace(TARGET_PARENT_PAGE);
-        String prefix = wb.removeNamespace(TARGET_PARENT_PAGE, ns);
+        var ns = wb.namespace(TARGET_PARENT_PAGE);
+        var prefix = wb.removeNamespace(TARGET_PARENT_PAGE, ns);
         return wb.listPages(prefix, null, ns);
     }
 
@@ -100,15 +86,16 @@ public final class SurnameAppendices {
 
     private static Function<? super String, ? extends Character> getClassifier(Set<Character> letters) {
         return surname -> {
-            Character firstLetter = surname.charAt(0);
-            firstLetter = Optional.ofNullable(stressedVowels.get(firstLetter)).orElse(firstLetter);
+            var firstLetter = surname.charAt(0);
+            firstLetter = stressedVowels.getOrDefault(firstLetter, firstLetter);
             return letters.contains(firstLetter) ? firstLetter : SPECIAL_LETTER;
         };
     }
 
-    private static List<String> getLinksOnPage(String page) throws IOException {
+    private static List<String> getLinksOnPage(String page, String header) throws IOException {
         return wb.getLinksOnPage(page).stream()
             .filter(link -> wb.namespace(link) == Wiki.MAIN_NAMESPACE)
+            .filter(link -> !link.equals(header) && !link.equals("apellido"))
             .toList();
     }
 
@@ -120,41 +107,47 @@ public final class SurnameAppendices {
             .toList();
     }
 
-    private static String prepareOutput(String header, List<String> surnames) {
-        StringBuilder sb = new StringBuilder(surnames.size() * 20);
+    private static String prepareOutput(String headerUpper, String headerLower, List<String> surnames) {
+        var sb = new StringBuilder(surnames.size() * 20);
 
         sb.append("{{Abecedario|").append(TARGET_PARENT_PAGE.replaceFirst("/$", "")).append("}}");
-        sb.append("\n\n==").append(header).append("==\n\n");
+        sb.append("\n\n");
+        sb.append(String.format("<strong>Lista de {{l|es|apellido|apellidos}} que comienzan por la letra {{l|es|%s}}</strong>:", headerUpper));
+        sb.append("\n\n");
 
         sb.append("{| border=0  width=100%").append("\n");
         sb.append("|-").append("\n");
 
         List<List<String>> splitList = splitList(surnames, COLUMNS);
-        final int width = (int) Math.floor(100 / COLUMNS);
+        final var width = (int) Math.floor(100 / COLUMNS);
 
         for (List<String> chunk : splitList) {
             sb.append("|valign=top width=").append(width).append("%|").append("\n");
             sb.append("{|").append("\n");
 
             chunk.stream()
-                .map(link -> String.format("*[[%s]]", link))
+                .map(link -> String.format("* {{l|es|%s}}", link))
                 .forEach(item -> sb.append(item).append("\n"));
 
             sb.append("|}").append("\n");
         }
 
         sb.append("|}");
+        sb.append("\n\n");
+
+        sb.append(String.format("[[Categoría:ES:Apellidos| %s]]", headerLower)).append("\n");
+        sb.append(String.format("[[Categoría:Wikcionario:Apéndices|Apellidos %s]]", headerLower));
 
         return sb.toString();
     }
 
     private static List<List<String>> splitList(List<String> original, int chunks) {
-        int chunkSize = (int) Math.ceil((double) original.size() / (double) chunks);
-        List<List<String>> list = new ArrayList<>(chunks);
-        int cursor = 0;
+        var chunkSize = (int) Math.ceil((double) original.size() / (double) chunks);
+        var list = new ArrayList<List<String>>(chunks);
+        var cursor = 0;
 
-        for (int i = 0; i < chunks; i++) {
-            List<String> subList = original.subList(cursor, Math.min(original.size(), cursor + chunkSize));
+        for (var i = 0; i < chunks; i++) {
+            var subList = original.subList(cursor, Math.min(original.size(), cursor + chunkSize));
             list.add(subList);
             cursor += chunkSize;
         }
