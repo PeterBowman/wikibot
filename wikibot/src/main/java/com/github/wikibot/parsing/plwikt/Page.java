@@ -59,6 +59,8 @@ public final class Page extends AbstractPage<Section> implements Serializable {
         if (sections.size() == 2 || sections.size() == 3) {
             intro += "\n__TOC__";
         }
+
+        intro = intro.strip();
     }
 
     public Optional<Section> getSection(String lang) {
