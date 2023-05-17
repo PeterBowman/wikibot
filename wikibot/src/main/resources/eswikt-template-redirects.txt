@@ -276,6 +276,7 @@ glotónimo = glotónimos
 Gramática = lingüística
 Halconería = cetrería
 Heráldica = heráldica
+hípica = equitación
 Hípica = equitación
 Historia = historia
 Historieta = historieta
