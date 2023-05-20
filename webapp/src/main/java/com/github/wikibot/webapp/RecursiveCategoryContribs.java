@@ -184,9 +184,23 @@ public class RecursiveCategoryContribs extends HttpServlet {
                 cl_to IN (%%s) AND
                 page_id NOT IN (%%s) AND
                 (page_namespace != 0 OR user_id NOT IN (
-                    SELECT ug_user
-                    FROM user_groups
-                    WHERE ug_group = "bot"
+                    SELECT user_id
+                    FROM user
+                        LEFT JOIN user_groups ON ug_user = user_id
+                        LEFT JOIN user_former_groups ON ufg_user = user_id
+                    WHERE
+                        ug_user IN (
+                            SELECT ug_user
+                            FROM user_groups
+                            WHERE ug_group = "bot"
+                        ) OR
+                        ufg_user IN (
+                            SELECT ufg_user
+                            FROM user_former_groups
+                            WHERE ufg_group = "bot"
+                        )
+                    GROUP BY
+                        user_id
                 ))
             GROUP BY
                 actor_id,
