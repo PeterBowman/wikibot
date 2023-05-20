@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.text.Collator;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -80,14 +81,16 @@ public class RecursiveCategoryContribs extends HttpServlet {
                 return;
             }
 
-            var optStartDate = Optional.ofNullable(request.getParameter("startDate")).filter(v -> !v.isBlank()).map(v -> v + "000000");
-            var optEndDate = Optional.ofNullable(request.getParameter("endDate")).filter(v -> !v.isBlank()).map(v -> v + "235959");
+            var optStartDateStr = Optional.ofNullable(request.getParameter("startDate")).filter(v -> !v.isBlank()); // inclusive
+            var optEndDateStr = Optional.ofNullable(request.getParameter("endDate")).filter(v -> !v.isBlank()); // inclusive
+
+            Optional<LocalDateTime> optStartDateTime, optEndDateTime;
 
             try {
-                var start = optStartDate.map(v -> LocalDateTime.parse(v, DATE_FORMAT));
-                var end = optEndDate.map(v -> LocalDateTime.parse(v, DATE_FORMAT));
+                optStartDateTime = optStartDateStr.map(LocalDate::parse).map(LocalDate::atStartOfDay);
+                optEndDateTime = optEndDateStr.map(LocalDate::parse).map(LocalDate::atStartOfDay).map(d -> d.plusDays(1));
 
-                if (start.isPresent() && end.isPresent() && !end.get().isAfter(start.get())) {
+                if (optStartDateTime.isPresent() && optEndDateTime.isPresent() && !optEndDateTime.get().isAfter(optStartDateTime.get())) {
                     throw new IllegalArgumentException("data zakończenia wcześniejsza niż data początku");
                 }
             } catch (DateTimeParseException e) {
@@ -116,7 +119,7 @@ public class RecursiveCategoryContribs extends HttpServlet {
 
             var sysops = new HashSet<String>();
             var contribsPerUser = new TreeMap<String, Integer>(POLISH_COLLATOR);
-            var stats = doRecursiveQuery(optMainCategory.get(), optMaxDepth, optIgnoredCategories, optStartDate, optEndDate, sysops, contribsPerUser);
+            var stats = doRecursiveQuery(optMainCategory.get(), optMaxDepth, optIgnoredCategories, optStartDateTime, optEndDateTime, sysops, contribsPerUser);
 
             var entries = new ArrayList<>(contribsPerUser.entrySet());
             entries.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
@@ -144,7 +147,7 @@ public class RecursiveCategoryContribs extends HttpServlet {
     }
 
     private Stats doRecursiveQuery(String mainCategory, Optional<Integer> optMaxDepth, Optional<List<String>> optIgnoredCategories,
-                                   Optional<String> optStartDate, Optional<String> optEndDate,
+                                   Optional<LocalDateTime> optStartDateTime, Optional<LocalDateTime> optEndDateTime,
                                    Set<String> sysops, Map<String, Integer> contribsPerUser)
     throws SQLException {
         var stats = new Stats();
@@ -189,8 +192,14 @@ public class RecursiveCategoryContribs extends HttpServlet {
                 actor_id,
                 page_id;
             """.formatted(
-                optStartDate.map(v -> "rev_timestamp >= " + v).orElse("TRUE"),
-                optEndDate.map(v -> "rev_timestamp <= " + v).orElse("TRUE")
+                optStartDateTime
+                    .map(DATE_FORMAT::format)
+                    .map(v -> "rev_timestamp >= " + v) // inclusive
+                    .orElse("TRUE"),
+                optEndDateTime
+                    .map(DATE_FORMAT::format)
+                    .map(v -> "rev_timestamp < " + v) // exclusive
+                    .orElse("TRUE")
             );
 
         try (var connection = plwikiDataSource.getConnection()) {

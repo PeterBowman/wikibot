@@ -31,11 +31,11 @@
                     <input id="main-category" name="mainCategory" size="71" value="${param.mainCategory}">
                 </p>
                 <p class="mw-input-with-label">
-                    (Opcjonalnie, data w formacie yyyyMMdd)
-                    <label for="start-date">początek:</label>
-                    <input id="start-date" name="startDate" size="8" value="${param.startDate}">
-                    <label for="end-date">koniec (włącznie):</label>
-                    <input id="end-date" name="endDate" size="8" value="${param.endDate}">
+                    (opcjonalnie)
+                    <label for="start-date">Początek:</label>
+                    <input id="start-date" name="startDate" type="date" value="${param.startDate}">
+                    <label for="end-date">Koniec (włącznie):</label>
+                    <input id="end-date" name="endDate" type="date" value="${param.endDate}">
                 </p>
                 <p class="mw-input-with-label">
                     <label for="ignored-categories">Wykluczenia (każda kategoria w osobnym wierszu):</label>
@@ -43,7 +43,7 @@
                 </p>
                 <p class="mw-input-with-label">
                     <label for="max-depth">Maksymalna głębokość (0: tylko główna kategoria, puste: bez ograniczenia):</label>
-                    <input id="max-depth" name="maxDepth" size="2" value="${param.maxDepth}">
+                    <input id="max-depth" name="maxDepth" type="number" min="0" size="3" value="${param.maxDepth}">
                 </p>
                 <input type="submit" value="Wyślij zapytanie" >
             </fieldset>
