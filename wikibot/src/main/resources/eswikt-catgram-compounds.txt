@@ -1,5 +1,4 @@
 adjetivo cardinal = ADJECTIVE, CARDINAL
-adjetivo comparativo = ADJECTIVE, COMPARATIVE
 adjetivo demostrativo = ADJECTIVE, DEMONSTRATIVE
 adjetivo indefinido = ADJECTIVE, INDEFINITE
 adjetivo indeterminado = ADJECTIVE, INDETERMINATE
