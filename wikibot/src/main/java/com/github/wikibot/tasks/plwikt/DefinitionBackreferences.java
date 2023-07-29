@@ -66,9 +66,17 @@ public final class DefinitionBackreferences {
 			.map(title -> String.format("#[[%s]]", title))
 			.collect(Collectors.joining("\n"));
 
+        var outPath = LOCATION.resolveSibling("out.txt");
+
+        if (Files.exists(outPath) && Files.readString(outPath).strip().equals(pageText)) {
+            System.out.println("No changes detected, aborting...");
+            return;
+        }
+
         wb.setMarkBot(false);
         wb.edit(TARGET_PAGE, String.format(PAGE_INTRO, dump.getDescriptiveFilename(), pageText), "aktualizacja");
 
+        Files.writeString(outPath, pageText);
         Files.writeString(datePath, dump.getDirectoryName());
     }
 
