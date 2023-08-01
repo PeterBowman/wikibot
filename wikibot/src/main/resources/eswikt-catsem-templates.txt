@@ -198,6 +198,7 @@ neurología = Neurología
 números = Números
 numismática = Numismática
 nutrición = Nutrición
+océanos = Océanos
 ocultismo = Ocultismo
 ocupaciones = Ocupaciones
 odontología = Odontología
