@@ -32,8 +32,8 @@ public final class DefinitionBackreferences {
     private static final String TARGET_PAGE = "Wikipedysta:PBbot/wzajemne odwołania w znaczeniach";
 
     private static final Pattern P_REF = Pattern.compile("<ref\\b.*?(?<!/)>.*?</ref>", Pattern.CASE_INSENSITIVE);
-	private static final Pattern P_NEWLINE = Pattern.compile("\n");
-	private static final Pattern P_NUM = Pattern.compile("(?<!\\p{Alnum}[ \u00a0]|: ?)\\((?:(?:\\d+|\\d+-\\d+|\\d+\\.\\d+(?:-\\d+)?)(?:, *)?)+\\)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern P_NEWLINE = Pattern.compile("\n");
+    private static final Pattern P_NUM = Pattern.compile("(?<!\\p{Alnum}[ \u00a0]|: ?)\\((?:(?:\\d+|\\d+-\\d+|\\d+\\.\\d+(?:-\\d+)?)(?:, *)?)+\\)", Pattern.UNICODE_CHARACTER_CLASS);
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
@@ -61,12 +61,12 @@ public final class DefinitionBackreferences {
 
         var pageStream = wb.getContentOfPages(candidateTitles).stream().map(Page::wrap);
 
-		var pageText = doFilter(pageStream).stream()
+        var pageText = doFilter(pageStream).stream()
             .sorted()
-			.map(title -> String.format("#[[%s]]", title))
-			.collect(Collectors.joining("\n"));
+            .map(title -> String.format("#[[%s]]", title))
+            .collect(Collectors.joining("\n"));
 
-        var outPath = LOCATION.resolveSibling("out.txt");
+        var outPath = LOCATION.resolve("out.txt");
 
         if (Files.exists(outPath) && Files.readString(outPath).strip().equals(pageText)) {
             System.out.println("No changes detected, aborting...");
@@ -108,33 +108,33 @@ public final class DefinitionBackreferences {
     }
 
     private static String sanitize(String text) {
-		for (var template : ParseUtils.getTemplatesIgnoreCase("wikipedia", text)) {
-			text = StringUtils.remove(text, template);
-		}
+        for (var template : ParseUtils.getTemplatesIgnoreCase("wikipedia", text)) {
+            text = StringUtils.remove(text, template);
+        }
 
-		return P_REF.matcher(text).replaceAll("");
-	}
+        return P_REF.matcher(text).replaceAll("");
+    }
 
     private static List<String> doFilter(Stream<Page> stream) {
-		return stream
-			.flatMap(p -> p.getPolishSection().stream())
-				.flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
-				.filter(f -> P_NEWLINE.splitAsStream(sanitize(f.getContent()))
-					.map(P_NUM::matcher)
-					.anyMatch(Matcher::find)
-				)
-				.map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
-				.toList();
-	}
+        return stream
+            .flatMap(p -> p.getPolishSection().stream())
+                .flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
+                .filter(f -> P_NEWLINE.splitAsStream(sanitize(f.getContent()))
+                    .map(P_NUM::matcher)
+                    .anyMatch(Matcher::find)
+                )
+                .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
+                .toList();
+    }
 
     private static List<String> analyzeDump(XMLDump dump) {
         try (var xmlStream = dump.stream()) {
-			var pageStream = xmlStream
-				.filter(XMLRevision::isMainNamespace)
-				.filter(XMLRevision::nonRedirect)
-				.map(Page::wrap);
+            var pageStream = xmlStream
+                .filter(XMLRevision::isMainNamespace)
+                .filter(XMLRevision::nonRedirect)
+                .map(Page::wrap);
 
-			return doFilter(pageStream);
-		}
+            return doFilter(pageStream);
+        }
     }
 }
