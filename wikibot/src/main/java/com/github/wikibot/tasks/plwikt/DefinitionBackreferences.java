@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Collator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -33,7 +33,8 @@ public final class DefinitionBackreferences {
 
     private static final Pattern P_REF = Pattern.compile("<ref\\b.*?(?<!/)>.*?</ref>", Pattern.CASE_INSENSITIVE);
     private static final Pattern P_NEWLINE = Pattern.compile("\n");
-    private static final Pattern P_NUM = Pattern.compile("(?<!\\p{Alnum}[ \u00a0]|: ?)\\((?:(?:\\d+|\\d+-\\d+|\\d+\\.\\d+(?:-\\d+)?)(?:, *)?)+\\)", Pattern.UNICODE_CHARACTER_CLASS);
+    // was: private static final Pattern P_NUM = Pattern.compile("(?<!\\p{Alnum}[ \u00a0]|: ?)\\((?:(?:\\d+|\\d+-\\d+|\\d+\\.\\d+(?:-\\d+)?)(?:, *)?)+\\)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern P_NUM = Pattern.compile("\\[{2}[^\\|\\]]+?(?:\\|[^\\]]+?)?\\]{2}[a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]*[ \u00a0]+\\((?:(?:\\d+|\\d+[-\u2013]\\d+|\\d+\\.\\d+(?:[-\u2013]\\d+)?)(?:, *)?)+\\)");
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
 
@@ -55,28 +56,20 @@ public final class DefinitionBackreferences {
         }
 
         var dump = optDump.get();
-        var candidateTitles = analyzeDump(dump);
-
-        Login.login(wb);
-
-        var pageStream = wb.getContentOfPages(candidateTitles).stream().map(Page::wrap);
-
-        var pageText = doFilter(pageStream).stream()
-            .sorted()
-            .map(title -> String.format("#[[%s]]", title))
-            .collect(Collectors.joining("\n"));
-
+        var titles = analyzeDump(dump);
         var outPath = LOCATION.resolve("out.txt");
 
-        if (Files.exists(outPath) && Files.readString(outPath).strip().equals(pageText)) {
+        if (Files.exists(outPath) && Files.readAllLines(outPath).equals(titles)) {
             System.out.println("No changes detected, aborting...");
             return;
         }
 
-        wb.setMarkBot(false);
-        wb.edit(TARGET_PAGE, String.format(PAGE_INTRO, dump.getDescriptiveFilename(), pageText), "aktualizacja");
+        Login.login(wb);
 
-        Files.writeString(outPath, pageText);
+        wb.setMarkBot(false);
+        wb.edit(TARGET_PAGE, String.format(PAGE_INTRO, dump.getDescriptiveFilename(), String.join("\n", titles)), "aktualizacja");
+
+        Files.write(outPath, titles);
         Files.writeString(datePath, dump.getDirectoryName());
     }
 
@@ -108,33 +101,35 @@ public final class DefinitionBackreferences {
     }
 
     private static String sanitize(String text) {
+        text = ParseUtils.removeCommentsAndNoWikiText(text);
+
         for (var template : ParseUtils.getTemplatesIgnoreCase("wikipedia", text)) {
+            text = StringUtils.remove(text, template);
+        }
+
+        for (var template : ParseUtils.getTemplates("Gloger", text)) {
             text = StringUtils.remove(text, template);
         }
 
         return P_REF.matcher(text).replaceAll("");
     }
 
-    private static List<String> doFilter(Stream<Page> stream) {
-        return stream
-            .flatMap(p -> p.getPolishSection().stream())
+    private static List<String> analyzeDump(XMLDump dump) {
+        try (var stream = dump.stream()) {
+            return stream
+                .filter(XMLRevision::isMainNamespace)
+                .filter(XMLRevision::nonRedirect)
+                .map(Page::wrap)
+                .flatMap(p -> p.getPolishSection().stream())
                 .flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
                 .filter(f -> P_NEWLINE.splitAsStream(sanitize(f.getContent()))
                     .map(P_NUM::matcher)
                     .anyMatch(Matcher::find)
                 )
                 .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
+                .sorted(Collator.getInstance(new Locale("pl")))
+                .map(title -> String.format("#[[%s]]", title))
                 .toList();
-    }
-
-    private static List<String> analyzeDump(XMLDump dump) {
-        try (var xmlStream = dump.stream()) {
-            var pageStream = xmlStream
-                .filter(XMLRevision::isMainNamespace)
-                .filter(XMLRevision::nonRedirect)
-                .map(Page::wrap);
-
-            return doFilter(pageStream);
         }
     }
 }
