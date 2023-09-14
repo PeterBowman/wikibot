@@ -37,7 +37,7 @@ public final class RefreshWantedArticles {
     private static final String TARGET_PAGE = "Szablon:Potrzebne";
     private static final String REFILL_PAGE = "Wikisłownikarz:Tsca/Najpotrzebniejsze polskie hasła na podstawie istniejących łączy";
 
-    private static final int MAX_LENGHT = 100;
+    private static final int MAX_LENGHT = 115;
     private static final int REFILL_SIZE = 10;
     private static final int REFILL_THRESHOLD = 30;
 
