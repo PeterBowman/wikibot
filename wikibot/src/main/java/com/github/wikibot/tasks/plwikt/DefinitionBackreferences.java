@@ -5,17 +5,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.security.auth.login.CredentialException;
 
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDump;
@@ -30,6 +36,7 @@ import com.github.wikibot.utils.Login;
 public final class DefinitionBackreferences {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/DefinitionBackreferences/");
     private static final String TARGET_PAGE = "Wikipedysta:PBbot/wzajemne odwołania w znaczeniach";
+    private static final String TARGET_SUBPAGE_PART = "/obce";
 
     private static final Pattern P_REF = Pattern.compile("<ref\\b.*?(?<!/)>.*?</ref>", Pattern.CASE_INSENSITIVE);
     private static final Pattern P_NEWLINE = Pattern.compile("\n");
@@ -40,8 +47,17 @@ public final class DefinitionBackreferences {
 
     private static final String PAGE_INTRO = """
         Znaczenia odwołujące się do innych znaczeń w hasłach polskich, odbiegając od zaleceń stylistycznych zapisanych w [[WS:ZTH#Numeracja znaczeń]].
+        Zob. też: [[%s]].
 
-        Dane na podstawie zrzutu %s. Aktualizacja: ~~~~~.{{język linków|polski}}
+        Dane na podstawie zrzutu %%s. Aktualizacja: ~~~~~.{{język linków|polski}}
+        ----
+        %%s
+        """.formatted(TARGET_SUBPAGE_PART);
+
+    private static final String SUBPAGE_INTRO = """
+        Znaczenia odwołujące się do innych znaczeń w hasłach niepolskich, odbiegając od zaleceń stylistycznych zapisanych w [[WS:ZTH#Numeracja znaczeń]].
+
+        Dane na podstawie zrzutu %s. Aktualizacja: ~~~~~.
         ----
         %s
         """;
@@ -56,20 +72,36 @@ public final class DefinitionBackreferences {
         }
 
         var dump = optDump.get();
-        var titles = analyzeDump(dump);
-        var outPath = LOCATION.resolve("out.txt");
 
-        if (Files.exists(outPath) && Files.readAllLines(outPath).equals(titles)) {
-            System.out.println("No changes detected, aborting...");
-            return;
+        var polishTitles = new ArrayList<String>();
+        var foreignTitles = new ArrayList<String>();
+
+        analyzeDump(dump, polishTitles, foreignTitles);
+
+        polishTitles.sort(Collator.getInstance(new Locale("pl")));
+        foreignTitles.sort(Comparator.naturalOrder());
+
+        var outPolishPath = LOCATION.resolve("out-polish.txt");
+        var outForeignPath = LOCATION.resolve("out-foreign.txt");
+
+        if (!Files.exists(outPolishPath) || !Files.readAllLines(outPolishPath).equals(polishTitles)) {
+            tryLogin(wb);
+            var out = polishTitles.stream().map(t -> String.format("#[[%s]]", t)).collect(Collectors.joining("\n"));
+            wb.edit(TARGET_PAGE, String.format(PAGE_INTRO, dump.getDescriptiveFilename(), out), "aktualizacja");
+            Files.write(outPolishPath, polishTitles);
+        } else {
+            System.out.println("No changes detected on Polish list");
         }
 
-        Login.login(wb);
+        if (!Files.exists(outForeignPath) || !Files.readAllLines(outForeignPath).equals(foreignTitles)) {
+            tryLogin(wb);
+            var out = foreignTitles.stream().map(t -> String.format("#[[%s]]", t)).collect(Collectors.joining("\n"));
+            wb.edit(TARGET_PAGE + TARGET_SUBPAGE_PART, String.format(SUBPAGE_INTRO, dump.getDescriptiveFilename(), out), "aktualizacja");
+            Files.write(outForeignPath, foreignTitles);
+        } else {
+            System.out.println("No changes detected on foreign list");
+        }
 
-        wb.setMarkBot(false);
-        wb.edit(TARGET_PAGE, String.format(PAGE_INTRO, dump.getDescriptiveFilename(), String.join("\n", titles)), "aktualizacja");
-
-        Files.write(outPath, titles);
         Files.writeString(datePath, dump.getDirectoryName());
     }
 
@@ -114,22 +146,35 @@ public final class DefinitionBackreferences {
         return P_REF.matcher(text).replaceAll("");
     }
 
-    private static List<String> analyzeDump(XMLDump dump) {
+    private static void analyzeDump(XMLDump dump, List<String> polishTitles, List<String> foreignTitles) {
         try (var stream = dump.stream()) {
-            return stream
+            stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
                 .map(Page::wrap)
-                .flatMap(p -> p.getPolishSection().stream())
+                .flatMap(p -> p.getAllSections().stream())
                 .flatMap(s -> s.getField(FieldTypes.DEFINITIONS).stream())
                 .filter(f -> P_NEWLINE.splitAsStream(sanitize(f.getContent()))
                     .map(P_NUM::matcher)
                     .anyMatch(Matcher::find)
                 )
-                .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
-                .sorted(Collator.getInstance(new Locale("pl")))
-                .map(title -> String.format("#[[%s]]", title))
-                .toList();
+                .map(f -> f.getContainingSection().get())
+                .forEach(s ->  {
+                    var title = s.getContainingPage().get().getTitle();
+
+                    if (s.isPolishSection()) {
+                        polishTitles.add(title);
+                    } else {
+                        foreignTitles.add(title);
+                    }
+                });
+        }
+    }
+
+    private static void tryLogin(Wiki wiki) throws CredentialException {
+        if (wiki.getCurrentUser() == null) {
+            Login.login(wiki);
+            wiki.setMarkBot(false);
         }
     }
 }
