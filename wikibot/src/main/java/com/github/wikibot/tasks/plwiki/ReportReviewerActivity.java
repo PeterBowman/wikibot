@@ -110,9 +110,11 @@ public final class ReportReviewerActivity {
             var stored = Long.parseLong(Files.readString(path).trim());
 
             if (stored < endTimestamp) {
-                System.out.printf("Already reported on %s; reference date: %s", stored, ref);
+                System.out.printf("Already reported on %s; reference date: %s%n", stored, ref);
                 return;
             }
+        } else {
+            System.out.println("Reporting: " + ref);
         }
 
         var rows = queryReviewers(startTimestamp, endTimestamp);
