@@ -94,7 +94,8 @@ public final class ReportReviewerActivity {
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 
     public static void main(String[] args) throws Exception {
-        var ref = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Warsaw")).minusWeeks(1);
+        var now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Warsaw"));
+        var ref = now.minusWeeks(1);
 
         var startDate = ref.with(DayOfWeek.MONDAY).with(LocalTime.MIN);
         var endDate = ref.with(DayOfWeek.SUNDAY).with(LocalTime.MAX);
@@ -128,7 +129,7 @@ public final class ReportReviewerActivity {
         var pc = wb.getContentOfPages(List.of(TARGET_PAGE)).get(0);
         var page = Page.wrap(pc);
         var firstSection = page.getAllSections().get(0);
-        var header = HEADER_FORMATTER.format(LocalDate.now());
+        var header = HEADER_FORMATTER.format(now);
         var summary = makeSummary(startDate.toLocalDate(), endDate.toLocalDate(), rows, stats);
 
         if (firstSection.getHeader().equals(header)) {
