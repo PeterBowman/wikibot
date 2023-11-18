@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -28,19 +29,29 @@ import org.wikipedia.Wiki;
 import com.github.wikibot.utils.DBUtils;
 import com.github.wikibot.utils.Login;
 
-public final class MissingEPWNBiograms {
-    private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingEPWNBiograms/");
+public final class MissingWikidataBiograms {
+    private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWikidataBiograms/");
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
     private static final int MAX_SPARQL_RETRIES = 5;
     private static final String SQL_WDWIKI_URI_SERVER = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
     private static final String SQL_WDWIKI_URI_LOCAL = "jdbc:mysql://localhost:4750/wikidatawiki_p";
-    private static final String TARGET = "Wikipedysta:PBbot/brakujące biogramy na podstawie ePWN i WD";
+    private static final String TARGET = "Wikipedysta:PBbot/brakujące biogramy na podstawie WD";
     private static final Collator PL_COLLATOR = Collator.getInstance(Locale.forLanguageTag("pl-PL"));
 
-    private static final String INTRO = """
-        Elementy spełniające {{PID|31}} = {{QID|5}} oraz {{PID|27}} = {{QID|36}} z podanym {{PID|7305}} bez artykułu w polskojęzycznej Wikipedii.
+    private static final List<String> PROPERTY_IDS = List.of(
+        "P7305", // identyfikator internetowej Encyklopedii PWN
+        "P7982" // identyfikator EFIS
+    );
 
-        Aktualizacja: ~~~~~
+    private static final Map<String, String> PROPERTY_URLS = Map.of(
+        "P7305", "https://encyklopedia.pwn.pl/haslo/;%s",
+        "P7982", "https://www.enciklopedija.hr/Natuknica.aspx?ID=%s"
+    );
+
+    private static final String INTRO = """
+        Elementy spełniające {{PID|31}} = {{QID|5}} oraz {{PID|27}} = {{QID|36}} ze wskazanym niżej identyfikatorem i bez artykułu w polskojęzycznej Wikipedii.
+
+        Aktualizacja: ~~~~~. __FORCETOC__
         """;
 
     private static final Wiki wiki = Wiki.newSession("pl.wikipedia.org");
@@ -54,35 +65,51 @@ public final class MissingEPWNBiograms {
     }
 
     public static void main(String[] args) throws Exception {
+        var results = new ArrayList<List<Item>>();
+
+        for (var pid : PROPERTY_IDS) {
+            System.out.printf("Querying for PID = %s%n", pid);
+
+            var items = queryBiograms(pid);
+            System.out.println("Got %d items.".formatted(items.size()));
+
+            querySitelinks(items);
+            Collections.sort(items, Comparator.<Item, Integer>comparing(i -> i.sitelinks).reversed().thenComparing(i -> i.label, PL_COLLATOR));
+            items.forEach(System.out::println);
+
+            results.add(items);
+        }
+
+        var sections = new ArrayList<String>();
+
+        for (var i = 0; i < PROPERTY_IDS.size(); i++) {
+            var text = makeText(results.get(i), PROPERTY_IDS.get(i));
+            sections.add(text);
+        }
+
+        var pageText = INTRO + "\n" + String.join("\n", sections);
         var hashPath = LOCATION.resolve("hash.txt");
-        var items = queryBiograms();
 
-        System.out.println("Got %d items.".formatted(items.size()));
-        querySitelinks(items);
-        Collections.sort(items, Comparator.<Item, Integer>comparing(i -> i.sitelinks).reversed().thenComparing(i -> i.label, PL_COLLATOR));
-
-        if (Files.exists(hashPath) && Integer.parseInt(Files.readString(hashPath).trim()) == items.hashCode()) {
+        if (Files.exists(hashPath) && Integer.parseInt(Files.readString(hashPath).trim()) == pageText.hashCode()) {
             System.out.println("No changes.");
             return;
         }
 
-        items.forEach(System.out::println);
-
         Login.login(wiki);
-        wiki.edit(TARGET, INTRO + "\n" + makeText(items), "aktualizacja (%d)".formatted(items.size()));
+        wiki.edit(TARGET, pageText, "aktualizacja");
 
-        Files.writeString(hashPath, String.valueOf(items.hashCode()));
+        Files.writeString(hashPath, String.valueOf(pageText.hashCode()));
     }
 
-    private static List<Item> queryBiograms() {
+    private static List<Item> queryBiograms(String pid) {
         try (var connection = SPARQL_REPO.getConnection()) {
             var querySelect = """
-                SELECT DISTINCT ?item ?itemLabel ?epwn
+                SELECT DISTINCT ?item ?itemLabel ?source
                 WHERE
                 {
                 ?item wdt:P31 wd:Q5 ;
                       wdt:P27 wd:Q36 ;
-                      wdt:P7305 ?epwn .
+                      wdt:%s ?source .
                 MINUS
                 {
                     ?article schema:about ?item ;
@@ -90,13 +117,15 @@ public final class MissingEPWNBiograms {
                 }
                 SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pl,en". }
                 }
-                """;
+                """.formatted(pid);
 
             var query = connection.prepareTupleQuery(querySelect);
 
             for (var retry = 1; ; retry++) {
                 try (var result = query.evaluate()) {
-                    return result.stream().map(Item::fromQuarryResult).collect(Collectors.toCollection(ArrayList::new)); // mutable
+                    return result.stream()
+                        .map(Item::fromQuarryResult)
+                        .collect(Collectors.toCollection(ArrayList::new)); // mutable
                 } catch (QueryEvaluationException e) {
                     if (retry > MAX_SPARQL_RETRIES) {
                         throw e;
@@ -147,40 +176,43 @@ public final class MissingEPWNBiograms {
         }
     }
 
-    private static String makeText(List<Item> items) {
+    private static String makeText(List<Item> items, String pid) {
         var rows = items.stream()
-            .map(Item::makeRow)
+            .map(i -> i.makeRow(PROPERTY_URLS.get(pid)))
             .collect(Collectors.joining("\n|-\n"));
 
         return """
+            == {{PID|%s}} ==
+
             {| class="wikitable"
-            ! element WD !! hasło w ePWN !! # projektów
+            ! element WD !! hasło w źródle !! # projektów
             |-
             %s
             |}
-            """.formatted(rows);
+            """.formatted(pid.substring(1), rows);
     }
 
     private static class Item {
         String qid;
         String label;
-        int pwn;
+        String id;
         int sitelinks;
 
         static Item fromQuarryResult(BindingSet bs) {
             var i = new Item();
             i.qid = ((IRI)bs.getValue("item")).getLocalName();
             i.label = ((Literal)bs.getValue("itemLabel")).stringValue();
-            i.pwn = ((Literal)bs.getValue("epwn")).intValue();
+            i.id = ((Literal)bs.getValue("source")).stringValue();
             return i;
         }
 
-        String makeRow() {
-            return String.format("| [[d:%s]] || [https://encyklopedia.pwn.pl/haslo/;%d %s] || %d", qid, pwn, label, sitelinks);
+        String makeRow(String urlFormat) {
+            var url = String.format(urlFormat, id);
+            return String.format("| [[d:%s]] || [%s %s] || %d", qid, url, label, sitelinks);
         }
 
         public String toString() {
-            return String.format("[%s,%s,%d,%d]", qid, label, pwn, sitelinks);
+            return String.format("[%s,%s,%s,%d]", qid, label, id, sitelinks);
         }
 
         public int hashCode() {
