@@ -44,7 +44,7 @@ public final class MissingPersonInfoboxes {
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
-    private static final int MAX_SPARQL_RETRIES = 5;
+    private static final int MAX_SPARQL_RETRIES = 15;
 
     private static final JSONArray CATEGORY_MAPPINGS;
 

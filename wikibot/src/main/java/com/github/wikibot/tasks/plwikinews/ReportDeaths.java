@@ -24,7 +24,7 @@ import com.github.wikibot.utils.Login;
 public final class ReportDeaths {
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
 
-    private static final int MAX_SPARQL_RETRIES = 5;
+    private static final int MAX_SPARQL_RETRIES = 15;
     private static final int LATEST_OFFSET_DAYS = 1;
     private static final int TIME_SPAN_DAYS = 7;
 

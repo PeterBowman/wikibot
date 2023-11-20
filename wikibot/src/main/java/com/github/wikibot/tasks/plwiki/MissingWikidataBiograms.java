@@ -32,7 +32,7 @@ import com.github.wikibot.utils.Login;
 public final class MissingWikidataBiograms {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/MissingWikidataBiograms/");
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
-    private static final int MAX_SPARQL_RETRIES = 5;
+    private static final int MAX_SPARQL_RETRIES = 15;
     private static final String SQL_WDWIKI_URI_SERVER = "jdbc:mysql://wikidatawiki.analytics.db.svc.wikimedia.cloud:3306/wikidatawiki_p";
     private static final String SQL_WDWIKI_URI_LOCAL = "jdbc:mysql://localhost:4750/wikidatawiki_p";
     private static final String TARGET = "Wikipedysta:PBbot/brakujące biogramy na podstawie WD";
