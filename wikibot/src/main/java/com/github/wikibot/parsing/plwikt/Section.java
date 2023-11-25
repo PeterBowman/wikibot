@@ -83,7 +83,12 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
     public void setLang(String lang) {
         this.lang = lang;
         this.langShort = lang.replaceAll("^język ", "");
+
         updateHeader();
+
+        if (containingPage != null && containingPage instanceof Page page) {
+            page.sortSections();
+        }
     }
 
     public boolean isPolishSection() {
