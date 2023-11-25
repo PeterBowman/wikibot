@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -16,6 +15,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +40,8 @@ public final class ReportReviewerActivity {
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
     private static final String TARGET_PAGE = "Wikipedia:Tablica ogłoszeń/Ogłoszenia";
+    private static final String WIKINEWS_TEMPLATE = "Wikireporter:PBbot/szablon statystyk wersji przejrzanych Wikipedii";
+    private static final String WIKINEWS_PAGENAME = "Statystyki wersji przejrzanych Wikipedii - %d tydzień %d";
 
     private static final Map<Long, String> MONTH_NAMES_GENITIVE = Map.ofEntries(
         Map.entry(1L, "stycznia"),
@@ -91,7 +93,8 @@ public final class ReportReviewerActivity {
         "Wersje przejrzane mamy w %s%% artykułów. [https://tools.wikimedia.pl/~masti/review.html#reviewers168h Ponad %s edycji] udostępnili%s: %s. " +
         "Dziękujemy przeglądającym! ~~~~";
 
-    private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
+    private static final Wikibot plwiki = Wikibot.newSession("pl.wikipedia.org");
+    private static final Wikibot plwikinews = Wikibot.newSession("pl.wikinews.org");
 
     public static void main(String[] args) throws Exception {
         var now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Warsaw"));
@@ -124,25 +127,33 @@ public final class ReportReviewerActivity {
         var stats = queryStats();
         System.out.println(stats);
 
-        Login.login(wb);
+        Login.login(plwiki);
 
-        var pc = wb.getContentOfPages(List.of(TARGET_PAGE)).get(0);
+        var pc = plwiki.getContentOfPages(List.of(TARGET_PAGE)).get(0);
         var page = Page.wrap(pc);
         var firstSection = page.getAllSections().get(0);
         var header = HEADER_FORMATTER.format(now);
-        var summary = makeSummary(startDate.toLocalDate(), endDate.toLocalDate(), rows, stats);
+        var summary = makeSummary(startDate, rows, stats);
+        var wikipediaSummary = makeWikipediaSummary(startDate, endDate, rows, summary);
 
         if (firstSection.getHeader().equals(header)) {
-            firstSection.setIntro(summary + "\n" + firstSection.getIntro());
+            firstSection.setIntro(wikipediaSummary + "\n" + firstSection.getIntro());
         } else {
             var newSection = Section.create(header, 2);
-            newSection.setIntro(summary);
+            newSection.setIntro(wikipediaSummary);
             page.prependSections(List.of(newSection));
         }
 
-        wb.edit(TARGET_PAGE, page.toString(), "raport oznaczania artykułów", pc.getTimestamp());
+        plwiki.edit(TARGET_PAGE, page.toString(), "raport oznaczania artykułów", pc.getTimestamp());
 
         Files.writeString(path, TIMESTAMP_FORMATTER.format(ref));
+
+        Login.login(plwikinews);
+
+        var wikinewsSummary = makeWikinewsSummary(startDate, endDate, rows, summary, plwikinews.getCurrentUser().getUsername());
+        var wikinewsTitle = String.format(WIKINEWS_PAGENAME, summary.week(), summary.year());
+
+        plwikinews.edit(wikinewsTitle, wikinewsSummary, "nowy raport");
     }
 
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
@@ -242,8 +253,19 @@ public final class ReportReviewerActivity {
         return NUMBER_FORMAT_PL.format(num).toString().replace(" ", "&nbsp;");
     }
 
-    private static String makeSummary(LocalDate startDate, LocalDate endDate, List<Row> rows, Stats stats) {
-        // https://stackoverflow.com/a/34936891
+    private static Summary makeSummary(ZonedDateTime startDate, List<Row> rows, Stats stats) {
+        return new Summary(
+            startDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR),
+            startDate.getYear(),
+            rows.stream().mapToInt(Row::total).sum(),
+            rows.size(),
+            stats.reviewed() - stats.synced(),
+            stats.total() - stats.reviewed(),
+            String.format(LOCALE_PL, "%.2f", 100.0 * stats.synced() / stats.total())
+        );
+    }
+
+    private static String makeWikipediaSummary(ZonedDateTime startDate, ZonedDateTime endDate, List<Row> rows, Summary summary) {
         var topUsers = rows.stream()
             .filter(r -> r.total() > REVIEW_COUNT_THRESHOLD)
             .limit(REVIEWER_SUMMARY_LIMIT)
@@ -252,38 +274,84 @@ public final class ReportReviewerActivity {
 
         var wasLimited = rows.stream().filter(r -> r.total() > REVIEW_COUNT_THRESHOLD).count() > REVIEWER_SUMMARY_LIMIT;
 
+        // https://stackoverflow.com/a/34936891
         var last = topUsers.size() - 1;
         var top = String.join(" i ", String.join(", ", topUsers.subList(0, last)), topUsers.get(last));
 
-        var reviews = rows.stream().mapToInt(Row::total).sum();
+        return String.format(SUMMARY_FMT, String.format("%d.%d", startDate.getDayOfMonth(), startDate.getMonthValue()),
+                                          String.format("%d.%d", endDate.getDayOfMonth(), endDate.getMonthValue()),
+                                          PLURAL_PL.pl(summary.editors(), "zaakceptował"),
+                                          formatNum(summary.editors()),
+                                          PLURAL_PL.pl(summary.editors(), "redaktor"),
+                                          PLURAL_PL.pl(summary.edits(), "Przejrzana"),
+                                          PLURAL_PL.pl(summary.edits(), "została"),
+                                          formatNum(summary.edits()),
+                                          PLURAL_PL.pl(summary.edits(), "edycja"),
+                                          PLURAL_PL.pl(summary.changes(), "oczekuje"),
+                                          formatNum(summary.changes()),
+                                          PLURAL_PL.pl(summary.changes(), "zmieniony"),
+                                          formatNum(summary.creations()),
+                                          PLURAL_PL.pl(summary.creations(), "nowy"),
+                                          PLURAL_PL.pl(summary.creations(), "artykuł"),
+                                          summary.percentage(),
+                                          formatNum(REVIEW_COUNT_THRESHOLD),
+                                          wasLimited ? " m.in." : "",
+                                          top
+                                          );
+    }
 
-        var pending = stats.reviewed() - stats.synced();
-        var unreviewed = stats.total() - stats.reviewed();
+    private static String makeWikinewsSummary(ZonedDateTime startDate, ZonedDateTime endDate, List<Row> rows, Summary summary, String bot) {
+        var topUsers = rows.stream()
+            .filter(r -> r.total() > REVIEW_COUNT_THRESHOLD)
+            .limit(REVIEWER_SUMMARY_LIMIT)
+            .map(r -> String.format("{{w|User:%1$s|%1$s}}", r.user()))
+            .toList();
 
-        return String.format(SUMMARY_FMT,
-                             String.format("%d.%d", startDate.getDayOfMonth(), startDate.getMonthValue()),
-                             String.format("%d.%d", endDate.getDayOfMonth(), endDate.getMonthValue()),
-                             PLURAL_PL.pl(rows.size(), "zaakceptował"),
-                             formatNum(rows.size()),
-                             PLURAL_PL.pl(rows.size(), "redaktor"),
-                             PLURAL_PL.pl(reviews, "Przejrzana"),
-                             PLURAL_PL.pl(reviews, "została"),
-                             formatNum(reviews),
-                             PLURAL_PL.pl(reviews, "edycja"),
-                             PLURAL_PL.pl(pending, "oczekuje"),
-                             formatNum(pending),
-                             PLURAL_PL.pl(pending, "zmieniony"),
-                             formatNum(unreviewed),
-                             PLURAL_PL.pl(unreviewed, "nowy"),
-                             PLURAL_PL.pl(unreviewed, "artykuł"),
-                             String.format(LOCALE_PL, "%.2f", 100.0 * stats.synced() / stats.total()),
-                             formatNum(REVIEW_COUNT_THRESHOLD),
-                             wasLimited ? " m.in." : "",
-                             top
-                            );
+        var wasLimited = rows.stream().filter(r -> r.total() > REVIEW_COUNT_THRESHOLD).count() > REVIEWER_SUMMARY_LIMIT;
+
+        final String top;
+
+        if (!wasLimited) {
+            // https://stackoverflow.com/a/34936891
+            var last = topUsers.size() - 1;
+            top = String.join(" i ", String.join(", ", topUsers.subList(0, last)), topUsers.get(last));
+        } else {
+            top = String.join(", ", topUsers) + " i inni";
+        }
+
+        return """
+            {{subst:%s
+              | tydzień = %d
+              | rok = %d
+              | liczba edycji = %d
+              | liczba redaktorów = %d
+              | początek = %s
+              | koniec = %s
+              | zmienione artykuły = %d
+              | nowe artykuły = %d
+              | procent przejrzanych = %s
+              | pułap = %d
+              | top redaktorów = %s
+              | bot = %s
+            }}
+            """.formatted(WIKINEWS_TEMPLATE,
+                          summary.week(),
+                          summary.year(),
+                          summary.edits(),
+                          summary.editors(),
+                          HEADER_FORMATTER.format(startDate),
+                          HEADER_FORMATTER.format(endDate),
+                          summary.changes(),
+                          summary.creations(),
+                          summary.percentage(),
+                          REVIEW_COUNT_THRESHOLD,
+                          top,
+                          bot);
     }
 
     private record Row(String user, int total, int create, int other, int unapprove) {}
 
     private record Stats(int total, int reviewed, int synced) {}
+
+    private record Summary(int week, int year, int edits, int editors, int changes, int creations, String percentage) {}
 }
