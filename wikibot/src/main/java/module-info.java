@@ -18,6 +18,7 @@ module org.github.wikibot {
     requires transitive org.apache.commons.io;
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.commons.text;
+    requires transitive org.apache.commons.validator;
     requires transitive org.json;
     requires transitive org.jsoup;
     requires transitive plural4j;
