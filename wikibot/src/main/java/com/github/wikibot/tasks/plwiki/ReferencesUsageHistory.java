@@ -101,11 +101,11 @@ public final class ReferencesUsageHistory {
             sb.append("|}");
         }
 
-        var text = makeText(sb.toString(), dump.getDirectoryName());
+        var text = makeText(sb.toString(), dump.getDescriptiveFilename());
 
         Login.login(wiki);
 
-        wiki.edit(TARGET, text, "aktualizacja: " + dump.getDirectoryName());
+        wiki.edit(TARGET, text, "aktualizacja: " + dump.getDescriptiveFilename());
 
         Files.writeString(LOCATION.resolve("out.txt"), sb.toString());
         Files.writeString(datePath, dump.getDirectoryName());
