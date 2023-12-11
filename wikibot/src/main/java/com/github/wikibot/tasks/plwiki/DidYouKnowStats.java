@@ -24,14 +24,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
@@ -58,6 +61,7 @@ final class DidYouKnowStats {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/DidYouKnowStats/");
     private static final String CATEGORY_TREE = "Ekspozycje Czywiesza %d";
     private static final String EXPO_TEMPLATE = "Wikiprojekt:Czy wiesz/weryfikacja";
+    private static final Pattern EXPO_ARCHIVE_PATT = Pattern.compile("^Wikiprojekt:Czy wiesz/archiwum/\\d{4}-\\d{2}$");
     private static final int PROJECT_NS = 102;
     private static final ZoneId PROJECT_ZONE = ZoneId.of("Europe/Warsaw");
     private static final String DYK_SUBPAGE_AUTHORS = "Wikiprojekt:Czy wiesz/Statystyki (%d)";
@@ -145,12 +149,14 @@ final class DidYouKnowStats {
 
     private static List<Entry> processYear(int year) throws IOException {
         var category = CATEGORY_TREE.formatted(year);
-        var expoPages = wb.getCategoryMembers(category, PROJECT_NS);
+        var members = wb.getCategoryMembers(category, PROJECT_NS);
 
-        var talkPages = expoPages.stream()
+        var talkPages = members.stream()
             .map(wb::getTalkPage)
             .filter(title -> isValidExpoPage(title, year))
             .toList();
+
+        var linkedTitles = getLinkedArticles(members);
 
         var entries = new ArrayList<Entry>();
 
@@ -166,7 +172,7 @@ final class DidYouKnowStats {
                     var author = params.getOrDefault("ParamWithoutName4", "");
                     var poster = params.getOrDefault("ParamWithoutName5", "");
 
-                    if (title.isBlank() || author.isBlank() || poster.isBlank()) {
+                    if (title.isBlank() || author.isBlank() || poster.isBlank() || !linkedTitles.contains(title)) {
                         continue;
                     }
 
@@ -205,6 +211,21 @@ final class DidYouKnowStats {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    private static Set<String> getLinkedArticles(List<String> members) throws IOException {
+        var linkedTitles = new HashSet<String>();
+
+        var candidateMembers = members.stream()
+            .filter(title -> EXPO_ARCHIVE_PATT.matcher(title).matches())
+            .toList();
+
+        for (var expo : candidateMembers) {
+            var links = wb.getLinksOnPage(expo);
+            linkedTitles.addAll(links);
+        }
+
+        return linkedTitles;
     }
 
     private static String makeIntro(String header, String legend, String threshold, int year) {
@@ -456,7 +477,7 @@ final class DidYouKnowStats {
         var template = """
             <templatestyles src="Wikiprojekt:Czy wiesz/styles.css" />
             {{Wikiprojekt:Czy wiesz/statystyki-szablon}}
-            __NOTALK__
+            __FORCETOC__ __NOTALK__
             Ostatnia aktualizacja: ~~~~~.
 
             == Statystyki wyświetleń w CzyWieszu (%1$d) ==
@@ -501,7 +522,7 @@ final class DidYouKnowStats {
         var template = """
             <templatestyles src="Wikiprojekt:Czy wiesz/styles.css" />
             {{Wikiprojekt:Czy wiesz/statystyki-szablon}}
-            __NOTALK__
+            __NOTOC__ __NOTALK__
             Ostatnia aktualizacja: ~~~~~.
 
             == Statystyki wyświetleń w CzyWieszu (%1$d) ==
