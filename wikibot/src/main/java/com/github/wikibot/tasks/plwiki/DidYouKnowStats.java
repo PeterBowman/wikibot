@@ -48,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.InetAddressValidator;
 import org.json.JSONObject;
 import org.json.JSONPointer;
+import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
@@ -156,7 +157,8 @@ final class DidYouKnowStats {
             .filter(title -> isValidExpoPage(title, year))
             .toList();
 
-        var linkedTitles = getLinkedArticles(members);
+        var linkedArticles = getLinkedArticles(members);
+        var redirectsToNewTitles = getRedirectMap(linkedArticles.stream().toList());
 
         var entries = new ArrayList<Entry>();
 
@@ -168,11 +170,13 @@ final class DidYouKnowStats {
                 for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, section.toString())) {
                     var params = ParseUtils.getTemplateParametersWithValue(template);
 
-                    var title = params.getOrDefault("ParamWithoutName1", "");
-                    var author = params.getOrDefault("ParamWithoutName4", "");
-                    var poster = params.getOrDefault("ParamWithoutName5", "");
+                    var title = wb.normalize(params.getOrDefault("ParamWithoutName1", ""));
+                    var author = wb.normalize(params.getOrDefault("ParamWithoutName4", ""));
+                    var poster = wb.normalize(params.getOrDefault("ParamWithoutName5", ""));
 
-                    if (title.isBlank() || author.isBlank() || poster.isBlank() || !linkedTitles.contains(title)) {
+                    title = redirectsToNewTitles.getOrDefault(title, title);
+
+                    if (StringUtils.isAnyBlank(title, author, poster) || !linkedArticles.contains(title)) {
                         continue;
                     }
 
@@ -189,7 +193,7 @@ final class DidYouKnowStats {
                         }
                     }
 
-                    var entry = new Entry(wb.normalize(title), wb.normalize(author), wb.normalize(poster),
+                    var entry = new Entry(title, author, poster,
                                           Collections.unmodifiableList(reviewers),
                                           temporal.get(ChronoField.YEAR),
                                           temporal.get(ChronoField.MONTH_OF_YEAR),
@@ -226,6 +230,22 @@ final class DidYouKnowStats {
         }
 
         return linkedTitles;
+    }
+
+    private static Map<String, String> getRedirectMap(List<String> titles) throws IOException {
+        var map = new HashMap<String, String>();
+        var redirects = wb.whatLinksHere(titles, true, false, Wiki.MAIN_NAMESPACE); // only list redirects
+
+        for (int i = 0; i < redirects.size(); i++) {
+            var title = titles.get(i);
+            var maybeRedirects = redirects.get(i);
+
+            if (!maybeRedirects.isEmpty()) {
+                maybeRedirects.stream().forEach(t -> map.put(t, title));
+            }
+        }
+
+        return map;
     }
 
     private static String makeIntro(String header, String legend, String threshold, int year) {
