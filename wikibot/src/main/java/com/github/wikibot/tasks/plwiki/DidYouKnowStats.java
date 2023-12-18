@@ -52,7 +52,6 @@ import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.main.Wikibot;
-import com.github.wikibot.parsing.Page;
 import com.github.wikibot.utils.CollectorUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
@@ -164,43 +163,40 @@ final class DidYouKnowStats {
 
         for (var talkPage : wb.getContentOfPages(talkPages)) {
             var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage.getTitle()));
-            var p = Page.wrap(talkPage);
 
-            for (var section : p.getAllSections()) {
-                for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, section.toString())) {
-                    var params = ParseUtils.getTemplateParametersWithValue(template);
+            for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, talkPage.getText())) {
+                var params = ParseUtils.getTemplateParametersWithValue(template);
 
-                    var title = wb.normalize(params.getOrDefault("ParamWithoutName1", ""));
-                    var author = wb.normalize(params.getOrDefault("ParamWithoutName4", ""));
-                    var poster = wb.normalize(params.getOrDefault("ParamWithoutName5", ""));
+                var title = wb.normalize(params.getOrDefault("ParamWithoutName1", ""));
+                var author = wb.normalize(params.getOrDefault("ParamWithoutName4", ""));
+                var poster = wb.normalize(params.getOrDefault("ParamWithoutName5", ""));
 
-                    title = redirectsToNewTitles.getOrDefault(title, title);
+                title = redirectsToNewTitles.getOrDefault(title, title);
 
-                    if (StringUtils.isAnyBlank(title, author, poster) || !linkedArticles.contains(title)) {
-                        continue;
-                    }
-
-                    var reviewers = new ArrayList<String>();
-
-                    for (int i = 6; i <= 12; i++) {
-                        var value = params.getOrDefault("ParamWithoutName" + i, "?").trim();
-
-                        // ugly hack for extra trailing braces, e.g.: "...|Jamnik z Tarnowa}}}"
-                        value = StringUtils.stripEnd(value, "}");
-
-                        if (!value.isBlank() && !value.equals("?")) {
-                            reviewers.add(wb.normalize(value));
-                        }
-                    }
-
-                    var entry = new Entry(title, author, poster,
-                                          Collections.unmodifiableList(reviewers),
-                                          temporal.get(ChronoField.YEAR),
-                                          temporal.get(ChronoField.MONTH_OF_YEAR),
-                                          temporal.get(ChronoField.DAY_OF_MONTH));
-
-                    entries.add(entry);
+                if (StringUtils.isAnyBlank(title, author, poster) || !linkedArticles.contains(title)) {
+                    continue;
                 }
+
+                var reviewers = new ArrayList<String>();
+
+                for (int i = 6; i <= 12; i++) {
+                    var value = params.getOrDefault("ParamWithoutName" + i, "?").trim();
+
+                    // ugly hack for extra trailing braces, e.g.: "...|Jamnik z Tarnowa}}}"
+                    value = StringUtils.stripEnd(value, "}");
+
+                    if (!value.isBlank() && !value.equals("?")) {
+                        reviewers.add(wb.normalize(value));
+                    }
+                }
+
+                var entry = new Entry(title, author, poster,
+                                      Collections.unmodifiableList(reviewers),
+                                      temporal.get(ChronoField.YEAR),
+                                      temporal.get(ChronoField.MONTH_OF_YEAR),
+                                      temporal.get(ChronoField.DAY_OF_MONTH));
+
+                entries.add(entry);
             }
         }
 
