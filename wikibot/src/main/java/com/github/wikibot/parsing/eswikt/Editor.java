@@ -4079,7 +4079,7 @@ public class Editor extends AbstractEditor {
 
         Set<String> set = new HashSet<>();
 
-        // empty translations Sections
+        // misplaced translations Sections
 
         langSections.stream()
             .filter(langSection -> !langSection.getChildSections().isEmpty())
@@ -4091,7 +4091,7 @@ public class Editor extends AbstractEditor {
             .map(langSection -> langSection.findSubSectionsWithHeader("Traducci(ón|ones)"))
             .flatMap(Collection::stream)
             .filter(section -> section.getChildSections().isEmpty())
-            .filter(Editor::isEmptyTranslationsSection)
+            .filter(Editor::isTranslationsSection)
             .peek(dummy -> set.add("Traducciones"))
             .forEach(AbstractSection::detachOnlySelf);
 
@@ -4137,13 +4137,9 @@ public class Editor extends AbstractEditor {
             );
     }
 
-    private static boolean isEmptyTranslationsSection(Section section) {
-        String intro = section.getIntro();
-        intro = removeCommentsAndNoWikiText(intro);
-        intro = intro.replaceAll("\\{\\{trad-(arriba|centro|abajo)\\|*\\}\\}", "");
-        intro = intro.replace("{{clear}}", "");
-        intro = intro.trim();
-        return intro.isEmpty();
+    private static boolean isTranslationsSection(Section section) {
+        var intro = removeCommentsAndNoWikiText(section.getIntro());
+        return containsAny(intro, "trad-arriba", "trad-centro", "trad-abajo");
     }
 
     private static boolean isEmptyEtymologySection(Section section) {
