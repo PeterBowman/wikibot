@@ -1911,15 +1911,31 @@ public class Editor extends AbstractEditor {
 
         Page page = Page.store(title, text);
 
-        page.filterSections(section ->
+        var candidateSections = page.filterSections(section ->
             section.getLangSectionParent().isPresent() &&
             section.getChildSections().isEmpty() &&
-            !containsIgnoreCase(section.getHeader(), "forma") &&
             // TODO: execute after convertHashedDefinitions?
             !removeCommentsAndNoWikiText(section.getIntro()).lines().anyMatch(line -> line.startsWith("#")) &&
             filterTermSections(section) &&
             filterFlexiveSections(section)
-        ).forEach(Editor::processSectionFlexiveHeader);
+        );
+
+        candidateSections.stream()
+            .filter(section -> !containsIgnoreCase(section.getHeader(), "forma"))
+            .forEach(Editor::processSectionFlexiveHeader);
+
+        // {{forma verbal}}
+        candidateSections.stream()
+            .filter(section -> !getTemplates("forma verbal", section.getHeader()).isEmpty())
+            .forEach(section -> {
+                var header = section.getHeader();
+
+                for (var template : getTemplates("forma verbal", header).stream().distinct().toList()) {
+                    header = header.replace(template, "Forma verbal");
+                }
+
+                section.setHeader(header);
+            });
 
         String formatted = page.toString();
         checkDifferences(formatted, "convertHeadersToFlexiveForm", "revisando títulos de sección de formas flexivas");
