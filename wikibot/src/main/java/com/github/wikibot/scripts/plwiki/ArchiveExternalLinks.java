@@ -149,7 +149,7 @@ public final class ArchiveExternalLinks {
             var index = 0;
 
             while ((index = text.indexOf(template, index)) != -1) {
-                var range = Range.between(index, index + template.length() - 1); // inclusive-inclusive
+                var range = Range.of(index, index + template.length() - 1); // inclusive-inclusive
                 ranges.add(range);
                 index += template.length();
             }

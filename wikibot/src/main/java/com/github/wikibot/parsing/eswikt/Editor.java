@@ -573,7 +573,7 @@ public class Editor extends AbstractEditor {
         StringBuilder sb = new StringBuilder(text.length());
 
         while (m.find()) {
-            ranges.add(Range.between(m.start(), m.end()));
+            ranges.add(Range.of(m.start(), m.end()));
             String replacement = "-".repeat(m.group().length());
             m.appendReplacement(sb, replacement);
         }

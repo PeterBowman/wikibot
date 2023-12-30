@@ -85,8 +85,8 @@ public class XMLDump {
 
                 if (gStart != null && gEnd != null) {
                     // inclusive, inclusive
-                    var range = Range.between(Long.parseLong(gStart), Long.parseLong(gEnd));
-                    return Range.between(ids.first(), ids.last()).isOverlappedBy(range);
+                    var range = Range.of(Long.parseLong(gStart), Long.parseLong(gEnd));
+                    return Range.of(ids.first(), ids.last()).isOverlappedBy(range);
                 }
             }
         }

@@ -54,11 +54,11 @@ public final class Utils {
 
             if (endPos != -1) {
                 endPos += end.length();
-                list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
+                list.add(Range.of(startPos, endPos - 1)); // inclusive/inclusive
                 startPos = text.indexOf(start, endPos);
             } else if (lazyClosingTag) {
                 endPos = text.length();
-                list.add(Range.between(startPos, endPos - 1)); // inclusive/inclusive
+                list.add(Range.of(startPos, endPos - 1)); // inclusive/inclusive
                 break;
             } else {
                 return list;
@@ -73,7 +73,7 @@ public final class Utils {
         var m = patt.matcher(text);
 
         while (m.find()) {
-            list.add(Range.between(m.start(), m.end() - 1)); // inclusive/inclusive
+            list.add(Range.of(m.start(), m.end() - 1)); // inclusive/inclusive
         }
 
         return list;
