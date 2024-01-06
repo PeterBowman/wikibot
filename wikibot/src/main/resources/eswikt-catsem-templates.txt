@@ -142,6 +142,7 @@ historieta = Historieta
 hockey sobre césped = Hockey sobre césped
 hongos = Hongos
 horticultura = Horticultura
+hostelería = Hostelería
 huesos = Huesos
 ictiología = Ictiología
 imprenta = Imprenta
