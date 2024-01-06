@@ -27,9 +27,12 @@ public final class GreetNewEditors {
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
 
     static {
-        TEMPLATE_TEXT = String.format(
-                "{{subst:%s}}\n<span style=\"font-size:90%%\">Ten komunikat został wysłany automatycznie przez bota ~~~~</span>",
-                GREET_TEMPLATE);
+        TEMPLATE_TEXT =
+            String.format("{{subst:%s}}\n" +
+                          "<small>Szczegóły dotyczące nadania uprawnień znajdują się w [[Special:UserRights/{{ROOTPAGENAME}}|rejestrze]]. " +
+                          "Ten komunikat został wysłany automatycznie przez bota ~~~~~.</small>" +
+                          "<!-- User:%%s -->",
+                          GREET_TEMPLATE);
     }
 
     public static void main(String[] args) throws Exception {
@@ -37,8 +40,8 @@ public final class GreetNewEditors {
 
         String startTimestamp = extractTimestamp();
 
-        OffsetDateTime earliest = OffsetDateTime.parse(startTimestamp);
-        OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
+        var earliest = OffsetDateTime.parse(startTimestamp);
+        var latest = OffsetDateTime.now(wb.timezone());
 
         var helper = wb.new RequestHelper().withinDateRange(earliest, latest).reverse(true);
 
@@ -65,6 +68,7 @@ public final class GreetNewEditors {
             .toList();
 
         var infos = wb.getPageInfo(talkPages);
+        var greetText = TEMPLATE_TEXT.formatted(wb.getCurrentUser().getUsername());
 
         for (int i = 0; i < talkPages.size(); i++) {
             var talkPage = talkPages.get(i);
@@ -83,9 +87,9 @@ public final class GreetNewEditors {
                     continue;
                 }
 
-                pageText += "\n\n" + TEMPLATE_TEXT;
+                pageText += "\n\n" + greetText;
             } else {
-                pageText = TEMPLATE_TEXT;
+                pageText = greetText;
             }
 
             try {
