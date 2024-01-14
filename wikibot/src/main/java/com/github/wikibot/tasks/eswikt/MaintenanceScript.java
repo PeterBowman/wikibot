@@ -90,7 +90,7 @@ public final class MaintenanceScript {
 
         List<PageContainer> pages = wb.getContentOfPages(titles).stream()
             // TODO: implement a Comparator in PageContainer so this is not necessary anymore
-            .sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.getTitle()), titles.indexOf(pc2.getTitle())))
+            .sorted((pc1, pc2) -> Integer.compare(titles.indexOf(pc1.title()), titles.indexOf(pc2.title())))
             .toList();
 
         for (PageContainer pc : pages) {
@@ -100,32 +100,32 @@ public final class MaintenanceScript {
             try {
                 monitorThread(thread);
             } catch (TimeoutException e) {
-                logError("Editor.check() timeout", pc.getTitle(), e);
-                OffsetDateTime tempTimestamp = pc.getTimestamp().plusSeconds(1);
+                logError("Editor.check() timeout", pc.title(), e);
+                OffsetDateTime tempTimestamp = pc.timestamp().plusSeconds(1);
                 storeTimestamp(tempTimestamp);
                 System.exit(0);
             } catch (UnsupportedOperationException e) {
                 continue;
             } catch (Throwable t) {
-                logError("Editor.check() error", pc.getTitle(), t);
+                logError("Editor.check() error", pc.title(), t);
                 continue;
             }
 
             if (editor.isModified()) {
                 try {
-                    wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
+                    wb.edit(pc.title(), editor.getPageText(), editor.getSummary(), pc.timestamp());
                     System.out.println(editor.getLogs());
                 } catch (CredentialException ce) {
-                    logError("Permission denied", pc.getTitle(), ce);
+                    logError("Permission denied", pc.title(), ce);
                     continue;
                 } catch (ConcurrentModificationException cme) {
-                    logError("Edit conflict", pc.getTitle(), cme);
+                    logError("Edit conflict", pc.title(), cme);
                     continue;
                 } catch (AccountLockedException | AssertionError e) {
-                    logError("Blocked or session lost", pc.getTitle(), e);
+                    logError("Blocked or session lost", pc.title(), e);
                     break;
                 } catch (Throwable t) {
-                    logError("Edit error", pc.getTitle(), t);
+                    logError("Edit error", pc.title(), t);
                     continue;
                 }
             }

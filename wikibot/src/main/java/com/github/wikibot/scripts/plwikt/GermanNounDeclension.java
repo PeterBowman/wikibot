@@ -90,7 +90,7 @@ public final class GermanNounDeclension {
         List<String> list = new ArrayList<>(pages.size());
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
             Page p = Page.wrap(page);
             Section s = p.getSection("język niemiecki").get();
             Field definitions = s.getField(FieldTypes.DEFINITIONS).get();

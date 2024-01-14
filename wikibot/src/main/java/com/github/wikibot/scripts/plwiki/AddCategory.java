@@ -59,21 +59,21 @@ public final class AddCategory {
         var errors = new ArrayList<String>();
 
         for (var page : wb.getContentOfPages(titles)) {
-            String text = page.getText();
+            String text = page.text();
 
             if (!PATT_CATEGORIES.matcher(text).matches()) {
-                errors.add(page.getTitle());
+                errors.add(page.title());
                 continue;
             }
 
             text += String.format("\n[[Kategoria:%s]]", category);
 
             try {
-                wb.edit(page.getTitle(), text, summary, page.getTimestamp());
-                edited.add(page.getTitle());
+                wb.edit(page.title(), text, summary, page.timestamp());
+                edited.add(page.title());
             } catch (Throwable t) {
                 t.printStackTrace();
-                errors.add(page.getTitle());
+                errors.add(page.title());
             }
         }
 

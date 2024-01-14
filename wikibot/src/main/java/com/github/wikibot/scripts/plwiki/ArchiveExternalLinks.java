@@ -60,12 +60,12 @@ public final class ArchiveExternalLinks {
         var errors = new ArrayList<String>();
 
         for (var page : pages) {
-            var links = extractLinks(page.getText());
+            var links = extractLinks(page.text());
             links.retainAll(urls);
             links.removeAll(storage.keySet());
             updateStorage(links, storage);
 
-            var newText = page.getText();
+            var newText = page.text();
 
             for (var entry : storage.entrySet()) {
                 var ignoredCiteTemplateRanges = getIgnoredCiteTemplateRanges(newText);
@@ -73,13 +73,13 @@ public final class ArchiveExternalLinks {
                 newText = replaceOccurrences(newText, entry.getKey(), entry.getValue(), ignoredRanges);
             }
 
-            if (!newText.equals(page.getText())) {
+            if (!newText.equals(page.text())) {
                 try {
-                    wb.edit(page.getTitle(), newText, summary, page.getTimestamp());
-                    edited.add(page.getTitle());
+                    wb.edit(page.title(), newText, summary, page.timestamp());
+                    edited.add(page.title());
                 } catch (Throwable t) {
                     t.printStackTrace();
-                    errors.add(page.getTitle());
+                    errors.add(page.title());
                 }
             }
         }

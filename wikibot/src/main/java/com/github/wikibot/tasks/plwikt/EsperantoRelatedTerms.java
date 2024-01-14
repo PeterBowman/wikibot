@@ -86,7 +86,7 @@ public final class EsperantoRelatedTerms {
         List<PageContainer> morfeoTransclusions = wb.getContentOfTransclusions("Szablon:morfeo", Wiki.MAIN_NAMESPACE);
 
         for (PageContainer page : morfeoTransclusions) {
-            for (String template : ParseUtils.getTemplates("morfeo", page.getText())) {
+            for (String template : ParseUtils.getTemplates("morfeo", page.text())) {
                 Map<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
                 params.remove("templateName");
                 params.values().removeAll(excluded);
@@ -95,17 +95,17 @@ public final class EsperantoRelatedTerms {
                     String morphem = String.join("", params.values());
                     List<String> titles = morphemToTitle.getOrDefault(morphem, new ArrayList<>());
 
-                    if (!titles.contains(page.getTitle())) {
-                        titles.add(page.getTitle());
+                    if (!titles.contains(page.title())) {
+                        titles.add(page.title());
                         morphemToTitle.putIfAbsent(morphem, titles);
                     }
 
-                    List<String> morphems = titleToMorphem.getOrDefault(page.getTitle(), new ArrayList<>());
+                    List<String> morphems = titleToMorphem.getOrDefault(page.title(), new ArrayList<>());
 
                     if (!morphems.contains(morphem)) {
                         morphems.add(morphem);
-                        titleToMorphem.putIfAbsent(page.getTitle(), morphems);
-                        contentMap.put(page.getTitle(), page.getText());
+                        titleToMorphem.putIfAbsent(page.title(), morphems);
+                        contentMap.put(page.title(), page.text());
                     }
                 }
             }

@@ -66,7 +66,7 @@ public final class PolishVerbsConjugation {
 
                 if (parameter == null || parameter.isEmpty()) {
                     targets.add(page);
-                    map.put(page.getTitle(), content);
+                    map.put(page.title(), content);
                     continue outer;
                 }
             }
@@ -90,7 +90,7 @@ public final class PolishVerbsConjugation {
             String title = entry.getKey();
             String content = entry.getValue();
 
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
 
             if (page == null) {
                 System.out.printf("Error en \"%s\"%n", title);
@@ -107,7 +107,7 @@ public final class PolishVerbsConjugation {
             String summary = "wstawienie modelu koniugacji; wer.: [[User:Peter Bowman]]";
 
             try {
-                wb.edit(title, p.toString(), summary, false, true, -2, page.getTimestamp());
+                wb.edit(title, p.toString(), summary, false, true, -2, page.timestamp());
             } catch (Exception e) {
                 errors.add(title);
             }

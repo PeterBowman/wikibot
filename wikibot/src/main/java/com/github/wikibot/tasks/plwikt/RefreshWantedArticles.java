@@ -173,7 +173,7 @@ public final class RefreshWantedArticles {
 
         // Missing pages have been already filtered out
         List<String> nonMissingTitles = pages.stream()
-            .map(PageContainer::getTitle)
+            .map(PageContainer::title)
             .toList();
 
         List<String> redirects = wb.resolveRedirects(nonMissingTitles);
@@ -186,9 +186,9 @@ public final class RefreshWantedArticles {
 
                 try {
                     String redirectText = wb.getPageText(List.of(redirect)).get(0);
-                    pages.set(i, new PageContainer(old.getTitle(), redirectText, old.getRevid(), old.getTimestamp()));
+                    pages.set(i, new PageContainer(old.title(), redirectText, old.revid(), old.timestamp()));
                 } catch (FileNotFoundException | NullPointerException e) {
-                    System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
+                    System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.title(), redirect);
                     pages.set(i, null);
                     continue;
                 }

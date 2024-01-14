@@ -265,7 +265,7 @@ public final class InconsistentHeaderTitles {
             .forEach(section -> {
                 var lang = section.getLangShort();
                 var headerTitle = section.getHeaderTitle();
-                var item = new Item(pc.getTitle(), headerTitle);
+                var item = new Item(pc.title(), headerTitle);
 
                 // http://stackoverflow.com/a/10743710
                 var coll = map.get(lang);

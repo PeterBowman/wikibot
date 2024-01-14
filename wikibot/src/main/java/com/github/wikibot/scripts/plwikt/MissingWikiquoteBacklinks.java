@@ -72,19 +72,19 @@ public final class MissingWikiquoteBacklinks {
             Section s = wp.getPolishSection().orElse(null);
 
             if (s == null) {
-                System.out.printf("Missing polish section: %s%n", wiktpage.getTitle());
+                System.out.printf("Missing polish section: %s%n", wiktpage.title());
                 continue;
             }
 
             Field notes = s.getField(FieldTypes.NOTES).get();
 
             PageContainer qpage = quotepages.stream()
-                .filter(page -> page.getTitle().toUpperCase().equals(wiktpage.getTitle().toUpperCase()))
+                .filter(page -> page.title().toUpperCase().equals(wiktpage.title().toUpperCase()))
                 .findFirst()
                 .orElse(null);
 
             if (qpage == null) {
-                System.out.printf("Missing wikiquote page: %s%n", wiktpage.getTitle());
+                System.out.printf("Missing wikiquote page: %s%n", wiktpage.title());
                 continue;
             }
 
@@ -95,12 +95,12 @@ public final class MissingWikiquoteBacklinks {
             notes.editContent(notesText, true);
 
             String[] data = new String[]{
-                qpage.getText(),
-                wiktpage.getTitle(),
+                qpage.text(),
+                wiktpage.title(),
                 notes.getContent()
             };
 
-            map.put(wiktpage.getTitle(), Arrays.asList(data));
+            map.put(wiktpage.title(), Arrays.asList(data));
         }
 
         Files.writeString(PAGES_SER, new XStream().toXML(wiktpages));
@@ -117,8 +117,8 @@ public final class MissingWikiquoteBacklinks {
             String title = entry.getKey();
             String[] data = entry.getValue();
 
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
-            OffsetDateTime timestamp = page.getTimestamp();
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
+            OffsetDateTime timestamp = page.timestamp();
 
             Page p = Page.wrap(page);
 

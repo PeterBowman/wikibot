@@ -54,8 +54,8 @@ public final class BeXoldMissingIntroTemplates {
         List<PageContainer> pages = wb.getContentOfCategorymembers("białoruski (taraszkiewica) (indeks)", Wiki.MAIN_NAMESPACE);
         Map<String, OffsetDateTime> info = pages.stream()
             .collect(Collectors.toMap(
-                PageContainer::getTitle,
-                PageContainer::getTimestamp
+                PageContainer::title,
+                PageContainer::timestamp
             ));
         PrintWriter pw = new PrintWriter(LOCATION.resolve("worklist.txt").toFile());
 
@@ -73,7 +73,7 @@ public final class BeXoldMissingIntroTemplates {
             if (!intro.startsWith("{{ortografieBE") && !intro.contains("\n{{ortografieBE"))
                 continue;
 
-            pw.println(page.getTitle());
+            pw.println(page.title());
             pw.println(intro);
             pw.println("");
         }

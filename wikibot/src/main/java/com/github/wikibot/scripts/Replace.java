@@ -63,10 +63,10 @@ public final class Replace {
         List<PageContainer> pages = wb.getContentOfPages(titles);
 
         Map<String, String> map = pages.stream()
-            .filter(page -> page.getText().contains(target))
+            .filter(page -> page.text().contains(target))
             .collect(Collectors.toMap(
-                PageContainer::getTitle,
-                page -> replace(page.getText(), target, replacement)
+                PageContainer::title,
+                page -> replace(page.text(), target, replacement)
             ));
 
         Files.write(WORKLIST, List.of(Misc.makeList(map)));
@@ -74,7 +74,7 @@ public final class Replace {
         System.out.printf("Tamaño final: %d%n", map.size());
 
         if (map.size() != pages.size()) {
-            List<String> all = pages.stream().map(PageContainer::getTitle).collect(Collectors.toCollection(ArrayList::new));
+            List<String> all = pages.stream().map(PageContainer::title).collect(Collectors.toCollection(ArrayList::new));
             Set<String> found = map.keySet();
             all.removeAll(found);
 
@@ -86,8 +86,8 @@ public final class Replace {
 
         Map<String, OffsetDateTime> timestamps = pages.stream()
             .collect(Collectors.toMap(
-                PageContainer::getTitle,
-                PageContainer::getTimestamp
+                PageContainer::title,
+                PageContainer::timestamp
             ));
 
         Files.writeString(INFO, new XStream().toXML(timestamps));

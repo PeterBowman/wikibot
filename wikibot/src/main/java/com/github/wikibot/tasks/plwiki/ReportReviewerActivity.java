@@ -144,7 +144,7 @@ public final class ReportReviewerActivity {
             page.prependSections(List.of(newSection));
         }
 
-        plwiki.edit(TARGET_PAGE, page.toString(), "raport oznaczania artykułów", pc.getTimestamp());
+        plwiki.edit(TARGET_PAGE, page.toString(), "raport oznaczania artykułów", pc.timestamp());
 
         Files.writeString(path, TIMESTAMP_FORMATTER.format(ref));
 

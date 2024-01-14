@@ -179,12 +179,12 @@ public class MissingRefsOnPlwiki {
                         continue;
                     }
                 } else {
-                    set.add(plwiki.normalize(page.getTitle()));
+                    set.add(plwiki.normalize(page.title()));
                 }
             }
 
             if (!set.isEmpty()) {
-                map.put(page.getTitle(), set);
+                map.put(page.title(), set);
             }
         }
 
@@ -227,8 +227,8 @@ public class MissingRefsOnPlwiki {
 
     private static Map<String, Set<String>> retrievePlwiktBacklinks(List<PageContainer> pages) {
         return pages.stream().collect(Collectors.toMap(
-            PageContainer::getTitle,
-            pc -> getPlwiktBacklinks(pc.getTitle(), pc.getText()))
+            PageContainer::title,
+            pc -> getPlwiktBacklinks(pc.title(), pc.text()))
         );
     }
 

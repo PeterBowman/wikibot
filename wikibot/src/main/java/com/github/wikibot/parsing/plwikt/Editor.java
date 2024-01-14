@@ -18,7 +18,7 @@ public class Editor extends AbstractEditor {
     }
 
     public Editor(PageContainer pc) {
-        super(pc.getTitle(), pc.getText());
+        super(pc.title(), pc.text());
     }
 
     @Override

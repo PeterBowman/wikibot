@@ -77,7 +77,7 @@ public final class PolishVerbsInsertInflection {
         Map<String, Collection<String>> map = new HashMap<>(pages.size());
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
             Page p = Page.wrap(page);
             Section s = p.getPolishSection().get();
 
@@ -117,7 +117,7 @@ public final class PolishVerbsInsertInflection {
         Map<String, Collection<String>> map = new HashMap<>(pages.size());
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
             Page p = Page.wrap(page);
             Section s = p.getPolishSection().get();
 
@@ -187,7 +187,7 @@ public final class PolishVerbsInsertInflection {
                 String param = ParseUtils.getTemplateParam(template, "koniugacja", true);
 
                 if (param == null) {
-                    System.out.printf("Sin parámetro en: %s%n", page.getTitle());
+                    System.out.printf("Sin parámetro en: %s%n", page.title());
                     continue;
                 }
 
@@ -198,7 +198,7 @@ public final class PolishVerbsInsertInflection {
             }
 
             if (found) {
-                map.put(page.getTitle(), inflectionText);
+                map.put(page.title(), inflectionText);
             }
         }
 
@@ -219,7 +219,7 @@ public final class PolishVerbsInsertInflection {
             String title = entry.getKey();
             String[] contents = entry.getValue();
 
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
 
             if (page == null) {
                 System.out.printf("Error en \"%s\"%n", title);
@@ -237,7 +237,7 @@ public final class PolishVerbsInsertInflection {
             String summary = "wstawienie odmiany; wer.: [[User:Peter Bowman]]";
 
             try {
-                wb.edit(title, p.toString(), summary, false, true, -2, page.getTimestamp());
+                wb.edit(title, p.toString(), summary, false, true, -2, page.timestamp());
             } catch (Exception e) {
                 errors.add(title);
             }

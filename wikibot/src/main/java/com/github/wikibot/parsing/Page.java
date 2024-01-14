@@ -20,7 +20,7 @@ public class Page extends AbstractPage<Section> implements Serializable {
     }
 
     public static Page wrap(PageContainer page) {
-        return new Page(page.getTitle(), page.getText());
+        return new Page(page.title(), page.text());
     }
 
     public static Page wrap(XMLRevision xml) {

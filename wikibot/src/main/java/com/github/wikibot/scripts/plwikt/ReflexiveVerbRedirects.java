@@ -52,7 +52,7 @@ public final class ReflexiveVerbRedirects {
         System.out.printf("Tamaño de la lista total de verbos: %d%n", pages.size());
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
 
             if (title.endsWith(" się")) {
                 continue;

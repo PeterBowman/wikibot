@@ -141,13 +141,13 @@ public final class ResolveLinks {
 
         stream.takeWhile(t -> keepGoing.booleanValue()).forEach(page -> {
             // Wikipedystka: -> Wikipedysta: (in order to match SQL results)
-            var title = wb.normalize(page.getTitle());
-            var newText = prepareText(page.getText(), backlinkToSources.get(title), sourceToTarget, isRedirMode, replaceText);
+            var title = wb.normalize(page.title());
+            var newText = prepareText(page.text(), backlinkToSources.get(title), sourceToTarget, isRedirMode, replaceText);
 
-            if (!newText.equals(page.getText())) {
+            if (!newText.equals(page.text())) {
                 try {
                     if (!isDryRunMode) {
-                        wb.edit(page.getTitle(), newText, summary, page.getTimestamp());
+                        wb.edit(page.title(), newText, summary, page.timestamp());
                     }
 
                     edited.add(title);

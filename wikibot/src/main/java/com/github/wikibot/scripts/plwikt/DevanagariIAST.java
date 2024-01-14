@@ -65,9 +65,9 @@ public class DevanagariIAST {
 
                 if (f == null || !f.getContent().contains("{{IAST|")) {
                     if (s.getLangShort().equals("hindi")) {
-                        hindi.add(page.getTitle());
+                        hindi.add(page.title());
                     } else {
-                        nonHindi.add(page.getTitle());
+                        nonHindi.add(page.title());
                     }
                 }
             }

@@ -23,14 +23,14 @@ public class WordOfTheDayCycle {
             .toList();
 
         for (var page : wb.getContentOfPages(targets)) {
-            var current = pattCurrent.matcher(page.getText()).results()
+            var current = pattCurrent.matcher(page.text()).results()
                 .map(mr -> mr.group(1))
                 .findAny().get();
 
-            var newText = pattPrevious.matcher(page.getText())
+            var newText = pattPrevious.matcher(page.text())
                 .replaceFirst(mr -> mr.group().replace(mr.group(1), current));
 
-            wb.edit(page.getTitle(), newText, "rotacja słowa dnia", page.getTimestamp());
+            wb.edit(page.title(), newText, "rotacja słowa dnia", page.timestamp());
         }
     }
 }

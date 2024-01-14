@@ -170,16 +170,16 @@ public final class AuthorityControl {
 
             for (var page : wb.getContentOfPages(articles)) {
                 try {
-                    var optText = prepareText(page.getText());
+                    var optText = prepareText(page.text());
 
                     if (optText.isPresent()) {
-                        wb.edit(page.getTitle(), optText.get(), "wstawienie {{Kontrola autorytatywna}}", page.getTimestamp());
+                        wb.edit(page.title(), optText.get(), "wstawienie {{Kontrola autorytatywna}}", page.timestamp());
                     }
                 } catch (UnsupportedOperationException e) {
-                    warnings.add(page.getTitle());
-                    System.out.printf("Parse exception in %s: %s%n", page.getTitle(), e.getMessage());
+                    warnings.add(page.title());
+                    System.out.printf("Parse exception in %s: %s%n", page.title(), e.getMessage());
                 } catch (Throwable t) {
-                    errors.add(page.getTitle());
+                    errors.add(page.title());
                     t.printStackTrace();
 
                     if (t instanceof AccountLockedException | t instanceof AssertionError) {

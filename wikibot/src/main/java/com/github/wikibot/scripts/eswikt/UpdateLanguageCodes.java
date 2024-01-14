@@ -108,15 +108,15 @@ public final class UpdateLanguageCodes {
 
     private static Map<String, String> extractFetchedLangs(List<PageContainer> pages) {
         return pages.stream()
-            .filter(page -> !ParseUtils.getTemplates("base idioma", page.getText()).isEmpty())
+            .filter(page -> !ParseUtils.getTemplates("base idioma", page.text()).isEmpty())
             .collect(Collectors.toMap(
-                page -> page.getTitle().substring(page.getTitle().indexOf(":") + 1),
+                page -> page.title().substring(page.title().indexOf(":") + 1),
                 UpdateLanguageCodes::getLanguageName
             ));
     }
 
     private static String getLanguageName(PageContainer page) {
-        List<String> templates = ParseUtils.getTemplates("base idioma", page.getText());
+        List<String> templates = ParseUtils.getTemplates("base idioma", page.text());
         String template = templates.get(0);
         HashMap<String, String> params = ParseUtils.getTemplateParametersWithValue(template);
         return params.get("ParamWithoutName1");

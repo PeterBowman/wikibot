@@ -255,7 +255,7 @@ public class PolishGerundsList {
         List<PageContainer> pages = wb.getContentOfPages(gerunds);
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
             Page p = Page.wrap(page);
             Section s = p.getPolishSection().get();
             String definitionsText = null;

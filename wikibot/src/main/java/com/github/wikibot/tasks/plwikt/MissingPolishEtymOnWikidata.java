@@ -54,7 +54,7 @@ public final class MissingPolishEtymOnWikidata {
         List<PageContainer> wdPages = wd.getContentOfBacklinks(POLISH_LANGUAGE_ITEM, namespaceIds.get("Lexeme"));
 
         Map<String, Set<String>> wiktToLexemes = wdPages.stream()
-            .map(PageContainer::getText)
+            .map(PageContainer::text)
             .map(JSONObject::new)
             .filter(json -> Optional.ofNullable(json.optJSONObject("claims"))
                 .filter(obj -> !TARGET_PROPERTIES.stream().anyMatch(obj::has))

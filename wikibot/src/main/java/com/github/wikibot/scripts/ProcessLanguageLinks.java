@@ -107,11 +107,11 @@ public final class ProcessLanguageLinks {
 
         for (PageContainer page : pages) {
             String newText = interwikis.stream()
-                .map(iw -> String.format("[[%s:%s]]", iw, page.getTitle()))
-                .reduce(page.getText(), (text, link) -> text.replace(link, ""))
+                .map(iw -> String.format("[[%s:%s]]", iw, page.title()))
+                .reduce(page.text(), (text, link) -> text.replace(link, ""))
                 .trim();
 
-            wb.edit(page.getTitle(), newText, "-interwiki", page.getTimestamp());
+            wb.edit(page.title(), newText, "-interwiki", page.timestamp());
         }
     }
 

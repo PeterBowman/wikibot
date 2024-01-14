@@ -96,7 +96,7 @@ public class ArticleStats {
         try {
             // attempt a null edit; purging doesn't work
             var pc = wb.getContentOfPages(List.of(STATS_PAGE)).get(0);
-            wb.edit(pc.getTitle(), pc.getText(), "", pc.getTimestamp());
+            wb.edit(pc.title(), pc.text(), "", pc.timestamp());
         } catch (Throwable t) {}
     }
 

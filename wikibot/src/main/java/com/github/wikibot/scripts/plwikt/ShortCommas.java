@@ -127,7 +127,7 @@ public final class ShortCommas {
 
         while (lt.hasNext()) {
             PageContainer page = lt.next();
-            String text = page.getText();
+            String text = page.text();
             String[] lines = text.split("\n");
             List<String> newLines = new ArrayList<>();
             List<String> targets = new ArrayList<>();
@@ -158,15 +158,15 @@ public final class ShortCommas {
             }
 
             if (!targets.isEmpty()) {
-                map.put(page.getTitle(), targets);
-                lt.set(new PageContainer(page.getTitle(), String.join("\n", newLines), page.getRevid(), page.getTimestamp()));
+                map.put(page.title(), targets);
+                lt.set(new PageContainer(page.title(), String.join("\n", newLines), page.revid(), page.timestamp()));
             }
         }
 
         if (map.size() != pages.size()) {
             String[] errors = pages.stream()
-                .filter(page -> !map.containsKey(page.getTitle()))
-                .map(PageContainer::getTitle)
+                .filter(page -> !map.containsKey(page.title()))
+                .map(PageContainer::title)
                 .toArray(String[]::new);
 
             System.out.printf("%d errores: %s%n", errors.length, errors.toString());
@@ -187,7 +187,7 @@ public final class ShortCommas {
 
         for (Entry<String, String[]> entry : map.entrySet()) {
             String title = entry.getKey();
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
 
             if (page == null) {
                 System.out.printf("Error en \"%s\"%n", title);
@@ -197,7 +197,7 @@ public final class ShortCommas {
 
             try {
                 String summary = "usunięcie znaku oddzielającego między kwalifikatorami";
-                wb.edit(title, page.getText(), summary, true, true, -2, page.getTimestamp());
+                wb.edit(title, page.text(), summary, true, true, -2, page.timestamp());
             } catch (Exception e) {
                 System.out.printf("Error en \"%s\"%n", title);
                 errors.add(title);

@@ -70,7 +70,7 @@ public final class Page extends AbstractPage<Section> {
     }
 
     public static Page wrap(PageContainer page) {
-        return new Page(page.getTitle(), page.getText());
+        return new Page(page.title(), page.text());
     }
 
     public static Page wrap(XMLRevision xml) {

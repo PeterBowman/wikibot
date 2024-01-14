@@ -235,7 +235,7 @@ public final class LinkManager {
                         Section s = p.getSection(entry.lang, false).get();
                         contents.putIfAbsent(p.getTitle(), s.toString());
                     } catch (Exception e) {
-                        contents.putIfAbsent(page.getTitle(), Utils.sanitizeWhitespaces(page.getText()));
+                        contents.putIfAbsent(page.title(), Utils.sanitizeWhitespaces(page.text()));
                     }
                 }
 

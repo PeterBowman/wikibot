@@ -112,13 +112,13 @@ public final class ScheduledEditor {
                 }
 
                 if (!processPage(pc)) {
-                    String nextEntry = pages.get(i + 1).getTitle();
+                    String nextEntry = pages.get(i + 1).title();
                     storeEntry(nextEntry);
                     return;
                 }
             }
 
-            lastEntry = pages.get(pages.size() - 1).getTitle();
+            lastEntry = pages.get(pages.size() - 1).title();
             storeEntry(lastEntry);
         }
     }
@@ -151,8 +151,8 @@ public final class ScheduledEditor {
     }
 
     private static boolean filterPages(PageContainer pc) {
-        String title = pc.getTitle();
-        String text = pc.getText();
+        String title = pc.title();
+        String text = pc.text();
 
         return
             !StringUtils.containsAny(title, '/', ':') &&
@@ -168,13 +168,13 @@ public final class ScheduledEditor {
         try {
             monitorThread(thread);
         } catch (TimeoutException e) {
-            logError("Editor.check() timeout", pc.getTitle(), e);
+            logError("Editor.check() timeout", pc.title(), e);
             exitCode = ExitCode.FAILURE;
             return false;
         } catch (UnsupportedOperationException e) {
             return true;
         } catch (Throwable t) {
-            logError("Editor.check() error", pc.getTitle(), t);
+            logError("Editor.check() error", pc.title(), t);
             return true;
         }
 
@@ -182,13 +182,13 @@ public final class ScheduledEditor {
             try {
                 editEntry(pc, editor);
             } catch (CredentialException ce) {
-                logError("Permission denied", pc.getTitle(), ce);
+                logError("Permission denied", pc.title(), ce);
                 return true;
             } catch (ConcurrentModificationException cme) {
-                logError("Edit conflict", pc.getTitle(), cme);
+                logError("Edit conflict", pc.title(), cme);
                 return true;
             } catch (Throwable t) {
-                logError("Edit error", pc.getTitle(), t);
+                logError("Edit error", pc.title(), t);
                 return false;
             }
         }
@@ -226,7 +226,7 @@ public final class ScheduledEditor {
 
     private static void editEntry(PageContainer pc, AbstractEditor editor) throws Throwable {
         try {
-            wb.edit(pc.getTitle(), editor.getPageText(), editor.getSummary(), pc.getTimestamp());
+            wb.edit(pc.title(), editor.getPageText(), editor.getSummary(), pc.timestamp());
             System.out.println(editor.getLogs());
         } catch (IOException | UnknownError e) {
             sleep();

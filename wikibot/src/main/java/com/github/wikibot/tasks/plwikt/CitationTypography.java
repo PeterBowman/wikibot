@@ -118,7 +118,7 @@ public final class CitationTypography {
                 .flatMap(CitationTypography::mapOccurrences)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-            contentCache = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText));
+            contentCache = pages.stream().collect(Collectors.toMap(PageContainer::title, PageContainer::text));
 
             System.out.printf("%d entries extracted.%n", entries.size());
 
@@ -676,7 +676,7 @@ public final class CitationTypography {
 
             if (!titles.isEmpty()) {
                 try {
-                    wb.getContentOfPages(titles).forEach(pc -> contentCache.putIfAbsent(pc.getTitle(), pc.getText()));
+                    wb.getContentOfPages(titles).forEach(pc -> contentCache.putIfAbsent(pc.title(), pc.text()));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

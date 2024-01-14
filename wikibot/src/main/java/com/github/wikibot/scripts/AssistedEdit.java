@@ -100,13 +100,13 @@ public final class AssistedEdit {
 
         var pages = wb.getContentOfPages(titles);
 
-        var map = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getText, (a, b) -> a, LinkedHashMap::new));
+        var map = pages.stream().collect(Collectors.toMap(PageContainer::title, PageContainer::text, (a, b) -> a, LinkedHashMap::new));
         Files.write(WORKLIST, List.of(Misc.makeList(map)));
 
-        var timestamps = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, PageContainer::getTimestamp));
+        var timestamps = pages.stream().collect(Collectors.toMap(PageContainer::title, PageContainer::timestamp));
         Files.writeString(TIMESTAMPS, xstream.toXML(timestamps));
 
-        var hashcodes = pages.stream().collect(Collectors.toMap(PageContainer::getTitle, pc -> pc.getText().hashCode()));
+        var hashcodes = pages.stream().collect(Collectors.toMap(PageContainer::title, pc -> pc.text().hashCode()));
         Files.writeString(HASHCODES, xstream.toXML(hashcodes));
     }
 

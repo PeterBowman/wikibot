@@ -68,8 +68,8 @@ public final class SJPTemplates {
             List<PageContainer> pcs = wb.getContentOfRevIds(revids);
 
             PageContainer page = pcs.stream()
-                .sorted(Comparator.comparing(PageContainer::getTimestamp))
-                .filter(pc -> !ParseUtils.getTemplates("sjp.pl", pc.getText()).isEmpty())
+                .sorted(Comparator.comparing(PageContainer::timestamp))
+                .filter(pc -> !ParseUtils.getTemplates("sjp.pl", pc.text()).isEmpty())
                 .findFirst()
                 .orElse(null);
 

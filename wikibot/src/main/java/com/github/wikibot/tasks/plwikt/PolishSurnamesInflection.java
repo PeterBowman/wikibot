@@ -143,13 +143,13 @@ public final class PolishSurnamesInflection {
     }
 
     private static void doWork(PageContainer pc, Set<Item> storage, Set<Item> history, List<LogEntry> logs) {
-        InflectionStructure is = new InflectionStructure(pc.getTitle(), storage);
+        InflectionStructure is = new InflectionStructure(pc.title(), storage);
         FieldEditor fe;
 
         try {
             fe = extractAndValidateData(pc, is);
         } catch (RuntimeException e) {
-            LogEntry le = new LogEntry(pc.getTitle(), e.getMessage());
+            LogEntry le = new LogEntry(pc.title(), e.getMessage());
             logs.add(le);
             return;
         }
@@ -164,7 +164,7 @@ public final class PolishSurnamesInflection {
             is.isEditedMasculine = processInflection(is.getView(SurnameGender.MASCULINE), fe, storage, history);
         } catch (RuntimeException e) {
             String msg = String.format("%s (zn. %s)", e.getMessage(), is.masculineNum);
-            LogEntry le = new LogEntry(pc.getTitle(), msg);
+            LogEntry le = new LogEntry(pc.title(), msg);
             logs.add(le);
         }
 
@@ -172,13 +172,13 @@ public final class PolishSurnamesInflection {
             is.isEditedFeminine = processInflection(is.getView(SurnameGender.FEMININE), fe, storage, history);
         } catch (RuntimeException e) {
             String msg = String.format("%s (zn. %s)", e.getMessage(), is.feminineNum);
-            LogEntry le = new LogEntry(pc.getTitle(), msg);
+            LogEntry le = new LogEntry(pc.title(), msg);
             logs.add(le);
         }
 
         if (is.isEditedMasculine || is.isEditedFeminine) {
             try {
-                wb.edit(pc.getTitle(), fe.getPageContainer().toString(), EDIT_SUMMARY, pc.getTimestamp());
+                wb.edit(pc.title(), fe.getPageContainer().toString(), EDIT_SUMMARY, pc.timestamp());
                 is.insertIntoSet(history);
             } catch (CredentialException | ConcurrentModificationException e) {
                 e.printStackTrace();

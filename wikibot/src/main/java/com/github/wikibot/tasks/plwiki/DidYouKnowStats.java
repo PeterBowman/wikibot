@@ -162,9 +162,9 @@ final class DidYouKnowStats {
         var entries = new ArrayList<Entry>();
 
         for (var talkPage : wb.getContentOfPages(talkPages)) {
-            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage.getTitle()));
+            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage.title()));
 
-            for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, talkPage.getText())) {
+            for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, talkPage.text())) {
                 var params = ParseUtils.getTemplateParametersWithValue(template);
 
                 var title = wb.normalize(params.getOrDefault("ParamWithoutName1", ""));

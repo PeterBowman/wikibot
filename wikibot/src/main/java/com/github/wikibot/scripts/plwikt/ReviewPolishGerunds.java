@@ -58,7 +58,7 @@ public final class ReviewPolishGerunds {
         System.out.printf("Tamaño de la lista: %d%n", titles.size());
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
             Page p = Page.wrap(page);
             Section section = p.getPolishSection().get();
 
@@ -114,7 +114,7 @@ public final class ReviewPolishGerunds {
         List<String> errors = new ArrayList<>();
 
         for (String title : titles) {
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
 
             if (page == null) {
                 System.out.printf("Error en \"%s\"%n", title);
@@ -123,7 +123,7 @@ public final class ReviewPolishGerunds {
 
             Revision rev = wb.getTopRevision(title);
 
-            if (!rev.getTimestamp().equals(page.getTimestamp())) {
+            if (!rev.getTimestamp().equals(page.timestamp())) {
                 System.out.printf("Conflicto en \"%s\"%n", title);
                 errors.add(title);
                 continue;

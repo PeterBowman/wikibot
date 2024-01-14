@@ -53,10 +53,10 @@ public final class UnpairedSectionTags {
 
 		var out = wb.getContentOfPages(titles).stream()
 			.<Item>mapMulti((pc, consumer) -> {
-				var optUnpairedTag = getFirstUnpairedTag(pc.getText());
+				var optUnpairedTag = getFirstUnpairedTag(pc.text());
 
 				if (optUnpairedTag.isPresent()) {
-					consumer.accept(new Item(pc.getTitle(), optUnpairedTag.get()));
+					consumer.accept(new Item(pc.title(), optUnpairedTag.get()));
 				}
 			})
 			.sorted(Comparator.comparing(Item::title))

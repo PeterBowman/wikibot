@@ -111,7 +111,7 @@ public final class PolishMasculineNounHeaders {
 
         Map<String, Collection<String>> map = pages.stream()
             .collect(Collectors.toMap(
-                PageContainer::getTitle,
+                PageContainer::title,
                 page -> {
                     Section s = Page.wrap(page).getPolishSection().get();
                     String[] data = new String[]{
@@ -150,7 +150,7 @@ public final class PolishMasculineNounHeaders {
             String[] data = entry.getValue();
             String definitionsText = data[0];
 
-            PageContainer page = pages.stream().filter(p -> p.getTitle().equals(title)).findAny().orElse(null);
+            PageContainer page = pages.stream().filter(p -> p.title().equals(title)).findAny().orElse(null);
             Page p = Page.wrap(page);
 
             Optional.of(p)
@@ -162,7 +162,7 @@ public final class PolishMasculineNounHeaders {
             editor.check();
 
             String summary = editor.getSummary(summaryTemplate);
-            OffsetDateTime timestamp = page.getTimestamp();
+            OffsetDateTime timestamp = page.timestamp();
 
             try {
                 wb.edit(title, editor.getPageText(), summary, false, true, -2, timestamp);
@@ -179,7 +179,7 @@ public final class PolishMasculineNounHeaders {
             System.out.printf("Errores en: %s%n", errors.toString());
         }
 
-        List<String> omitted = pages.stream().map(page -> page.getTitle()).collect(Collectors.toCollection(ArrayList::new));
+        List<String> omitted = pages.stream().map(page -> page.title()).collect(Collectors.toCollection(ArrayList::new));
         omitted.removeAll(map.keySet());
 
         System.out.printf("Editados: %d, errores: %d, omitidos: %d%n", edited.size(), errors.size(), omitted.size());

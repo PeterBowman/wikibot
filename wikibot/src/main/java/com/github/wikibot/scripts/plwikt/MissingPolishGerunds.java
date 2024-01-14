@@ -77,7 +77,7 @@ public final class MissingPolishGerunds {
         Map<String, String> list = new HashMap<>(2000);
 
         for (PageContainer page : pages) {
-            String title = page.getTitle();
+            String title = page.title();
 
             String inflection = Optional.of(Page.wrap(page))
                 .flatMap(Page::getPolishSection)
