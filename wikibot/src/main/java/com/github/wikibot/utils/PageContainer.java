@@ -9,12 +9,14 @@ public class PageContainer implements Serializable {
 
     protected String title;
     protected String text;
+    protected long revid;
     protected OffsetDateTime timestamp;
 
-    public PageContainer(String title, String text, OffsetDateTime timestamp) {
+    public PageContainer(String title, String text, long revid, OffsetDateTime timestamp) {
         this.title = Objects.requireNonNull(title);
         this.text = Objects.requireNonNull(text);
-        this.timestamp = timestamp;
+        this.revid = revid;
+        this.timestamp = Objects.requireNonNull(timestamp);
     }
 
     public String getTitle() {
@@ -23,6 +25,10 @@ public class PageContainer implements Serializable {
 
     public String getText() {
         return text;
+    }
+
+    public long getRevid() {
+        return revid;
     }
 
     public OffsetDateTime getTimestamp() {
@@ -35,7 +41,7 @@ public class PageContainer implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(title.hashCode(), text.hashCode(), timestamp.hashCode());
+        return Long.hashCode(revid);
     }
 
     @Override
@@ -43,7 +49,7 @@ public class PageContainer implements Serializable {
         if (obj == this) {
             return true;
         } else if (obj instanceof PageContainer pc) {
-            return title.equals(pc.title) && text.equals(pc.text) && timestamp.equals(pc.timestamp);
+            return revid == pc.revid;
         } else {
             return false;
         }

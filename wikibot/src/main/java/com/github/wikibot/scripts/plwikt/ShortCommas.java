@@ -159,7 +159,7 @@ public final class ShortCommas {
 
             if (!targets.isEmpty()) {
                 map.put(page.getTitle(), targets);
-                lt.set(new PageContainer(page.getTitle(), String.join("\n", newLines), page.getTimestamp()));
+                lt.set(new PageContainer(page.getTitle(), String.join("\n", newLines), page.getRevid(), page.getTimestamp()));
             }
         }
 

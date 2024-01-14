@@ -186,7 +186,7 @@ public final class RefreshWantedArticles {
 
                 try {
                     String redirectText = wb.getPageText(List.of(redirect)).get(0);
-                    pages.set(i, new PageContainer(old.getTitle(), redirectText, old.getTimestamp()));
+                    pages.set(i, new PageContainer(old.getTitle(), redirectText, old.getRevid(), old.getTimestamp()));
                 } catch (FileNotFoundException | NullPointerException e) {
                     System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.getTitle(), redirect);
                     pages.set(i, null);

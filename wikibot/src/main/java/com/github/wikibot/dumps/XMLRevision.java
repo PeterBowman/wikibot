@@ -109,7 +109,7 @@ public class XMLRevision implements Serializable, Comparable<XMLRevision> {
     }
 
     public PageContainer toPageContainer() {
-        return new PageContainer(title, text, OffsetDateTime.parse(timestamp));
+        return new PageContainer(title, text, revid, OffsetDateTime.parse(timestamp));
     }
 
     @Override

@@ -37,7 +37,7 @@ public class Wikibot extends WMFWiki {
         var getparams = Map.of(
             "action", "query",
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main"
         );
         return getListedContent(new HashMap<>(getparams), pages, "getContents", "titles", this::parseContentLine);
@@ -47,7 +47,7 @@ public class Wikibot extends WMFWiki {
         var getparams = Map.of(
             "action", "query",
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main"
         );
         var stringified = pageids.stream().map(Object::toString).toList();
@@ -58,7 +58,7 @@ public class Wikibot extends WMFWiki {
         var getparams = Map.of(
             "action", "query",
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main"
         );
         var stringified = revids.stream().map(Object::toString).toList();
@@ -79,7 +79,7 @@ public class Wikibot extends WMFWiki {
     public List<PageContainer> getContentOfCategorymembers(String category, int... ns) throws IOException {
         var getparams = Map.of(
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main",
             "generator", "categorymembers",
             "gcmtitle", "Category:" + normalize(removeNamespace(category, Wiki.CATEGORY_NAMESPACE)),
@@ -93,7 +93,7 @@ public class Wikibot extends WMFWiki {
     public List<PageContainer> getContentOfTransclusions(String page, int... ns) throws IOException {
         var getparams = Map.of(
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main",
             "generator", "embeddedin",
             "geititle", normalize(page),
@@ -106,7 +106,7 @@ public class Wikibot extends WMFWiki {
     public List<PageContainer> getContentOfBacklinks(String page, int... ns) throws IOException {
         var getparams = Map.of(
             "prop", "revisions",
-            "rvprop", "timestamp|content",
+            "rvprop", "timestamp|content|ids",
             "rvslots", "main",
             "generator", "backlinks",
             "gbltitle", normalize(page),
@@ -186,6 +186,7 @@ public class Wikibot extends WMFWiki {
 
                 var rev = page.substring(revIndex, page.indexOf("</rev>", revIndex));
                 var timestamp = OffsetDateTime.parse(parseAttribute(rev, "timestamp", 0));
+                var revid = Long.parseLong(parseAttribute(rev, "revid", 0));
                 int slotIndex = 0;
 
                 while ((slotIndex = rev.indexOf("<slot ", slotIndex + 1)) != -1) {
@@ -201,7 +202,7 @@ public class Wikibot extends WMFWiki {
                         var start = rev.indexOf('>', slotIndex) + 1;
                         var end = rev.indexOf("</slot>", start);
                         var text = decode(rev.substring(start, end));
-                        list.add(new PageContainer(title, text, timestamp));
+                        list.add(new PageContainer(title, text, revid, timestamp));
                     }
 
                     break;
