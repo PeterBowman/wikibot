@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
@@ -119,8 +120,10 @@ public final class MissingPersonInfoboxes {
             for (var retry = 1; ; retry++) {
                 try (var result = query.evaluate()) {
                     return result.stream()
-                        .map(bs -> ((IRI)bs.getValue("article")))
-                        .map(iri -> iri.stringValue().substring(uriPrefix.length()).replace('_', ' '))
+                        .map(bs -> bs.getValue("article"))
+                        .filter(Value::isIRI)
+                        .map(v -> ((IRI)v).stringValue())
+                        .map(iri -> iri.substring(uriPrefix.length()).replace('_', ' '))
                         .map(pagename -> URLDecoder.decode(pagename, StandardCharsets.UTF_8))
                         .collect(Collectors.toCollection(ArrayList::new));
                 } catch (QueryEvaluationException e) {

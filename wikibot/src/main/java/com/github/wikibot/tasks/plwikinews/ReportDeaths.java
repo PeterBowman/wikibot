@@ -14,7 +14,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleLiteral;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 
@@ -137,18 +138,22 @@ public final class ReportDeaths {
                     return result.stream()
                         .map(bs -> new Item(
                             ((IRI)bs.getValue("item")).getLocalName(),
-                            ((SimpleLiteral)bs.getValue("articlename")).stringValue(),
-                            Optional.ofNullable(((IRI)bs.getValue("image")))
-                                .map(IRI::getLocalName)
+                            ((Literal)bs.getValue("articlename")).stringValue(),
+                            Optional.ofNullable(bs.getValue("image"))
+                                .filter(Value::isIRI)
+                                .map(v -> ((IRI)v).getLocalName())
                                 .map(image -> URLDecoder.decode(image, StandardCharsets.UTF_8)),
-                            Optional.ofNullable(((SimpleLiteral)bs.getValue("dateOfBirth")))
-                                .map(SimpleLiteral::stringValue)
+                            Optional.ofNullable(bs.getValue("dateOfBirth"))
+                                .filter(Value::isLiteral)
+                                .map(v -> ((Literal)v).stringValue())
                                 .flatMap(ReportDeaths::parseYear),
-                            Optional.ofNullable(((SimpleLiteral)bs.getValue("label")))
-                                .map(SimpleLiteral::stringValue)
+                            Optional.ofNullable(bs.getValue("label"))
+                                .filter(Value::isLiteral)
+                                .map(v -> ((Literal)v).stringValue())
                                 .filter(label -> !label.matches("^Q\\d+$")),
-                            Optional.ofNullable(((SimpleLiteral)bs.getValue("description")))
-                                .map(SimpleLiteral::stringValue)
+                            Optional.ofNullable(bs.getValue("description"))
+                                .filter(Value::isLiteral)
+                                .map(v -> ((Literal)v).stringValue())
                         ))
                         .toList();
                 } catch (QueryEvaluationException e) {

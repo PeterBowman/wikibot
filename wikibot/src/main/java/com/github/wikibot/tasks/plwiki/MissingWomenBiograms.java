@@ -43,6 +43,7 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -270,7 +271,11 @@ public final class MissingWomenBiograms {
             var query = connection.prepareTupleQuery(querySelect);
 
             try (var result = query.evaluate()) {
-                result.forEach(bs -> entities.add(((IRI)bs.getValue("item")).getLocalName()));
+                result.stream()
+                    .map(bs -> bs.getValue("item"))
+                    .filter(Value::isIRI)
+                    .map(v -> ((IRI)v).getLocalName())
+                    .forEach(entities::add);
             }
         }
 
