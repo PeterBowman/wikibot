@@ -8,9 +8,9 @@ import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,7 +97,8 @@ public class LatinInfinitiveBacklinks {
                                      String.join("\n", translationResults),
                                      String.join("\n", wikilinkResults));
 
-            wb.edit(TARGET_PAGE, text, "aktualizacja", false, false, -2, null);
+            wb.setMarkBot(false);
+            wb.edit(TARGET_PAGE, text, "aktualizacja");
 
             Files.writeString(hashPath, Integer.toString(computedHash));
         } else {
@@ -134,23 +135,37 @@ public class LatinInfinitiveBacklinks {
         return dumpConfig.fetch();
     }
 
+    private static Stream<String> getEtymologyParams(String template, boolean isSecondType) {
+        final var patt = Pattern.compile("^ParamWithoutName(\\d+)$");
+
+        return Stream.of(ParseUtils.getTemplateParametersWithValue(template))
+            .filter(params -> isSecondType ? params.size() > 3 : params.size() > 2)
+            .filter(params -> StringUtils.equalsAny(params.getOrDefault("ParamWithoutName1", ""), LATIN_SHORTS))
+            .flatMap(params -> params.entrySet().stream())
+            .filter(entry -> patt.matcher(entry.getKey()).results()
+                .map(mr -> Integer.parseInt(mr.group(1)))
+                .anyMatch(id -> isSecondType ? (id - 2) % 2 == 0 : id >= 2)
+            )
+            .map(Map.Entry::getValue);
+    }
+
     private static List<String> doEtymology(XMLDump dump) throws IOException {
         try (var stream = dump.stream()) {
             return stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
                 .<Item>mapMulti((rev, cons) -> {
-                    var infinitives = Stream.of(
-                            ParseUtils.getTemplates("etym", rev.getText()).stream(),
-                            ParseUtils.getTemplates("etymn", rev.getText()).stream(),
-                            ParseUtils.getTemplates("etym2", rev.getText()).stream(),
-                            ParseUtils.getTemplates("etymn2", rev.getText()).stream()
+                    var infinitives = Stream.concat(
+                            Stream.concat(
+                                ParseUtils.getTemplates("etym", rev.getText()).stream(),
+                                ParseUtils.getTemplates("etymn", rev.getText()).stream()
+                            ).flatMap(template -> getEtymologyParams(template, false)),
+                            Stream.concat(
+                                ParseUtils.getTemplates("etym2", rev.getText()).stream(),
+                                ParseUtils.getTemplates("etymn2", rev.getText()).stream()
+                            ).flatMap(template -> getEtymologyParams(template, true))
                         )
-                        .flatMap(Function.identity())
-                        .map(ParseUtils::getTemplateParametersWithValue)
-                        .filter(params -> StringUtils.equalsAny(params.getOrDefault("ParamWithoutName1", ""), LATIN_SHORTS))
-                        .filter(params -> params.getOrDefault("ParamWithoutName2", "").length() > 3)
-                        .map(params -> params.get("ParamWithoutName2"))
+                        .filter(param -> param.length() > 3)
                         .filter(param -> !param.contains("-"))
                         .filter(param -> StringUtils.endsWithAny(param, LATIN_DESINENCES))
                         .sorted()
