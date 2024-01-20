@@ -33,11 +33,11 @@ public final class Misc {
         return map;
     }
 
-    public static String makeMultiList(Map<String, Collection<String>> map) {
+    public static String makeMultiList(Map<String, ? extends Collection<String>> map) {
         return makeMultiList(map, String.format("%n%n%s%n%n", "-".repeat(30)));
     }
 
-    public static String makeMultiList(Map<String, Collection<String>> map, String separator) {
+    public static String makeMultiList(Map<String, ? extends Collection<String>> map, String separator) {
         return map.keySet().stream()
             .map(title -> String.format(
                 "%s%n%n%s",
