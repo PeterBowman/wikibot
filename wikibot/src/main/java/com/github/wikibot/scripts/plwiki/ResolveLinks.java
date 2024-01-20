@@ -284,21 +284,23 @@ public final class ResolveLinks {
 
             var query = """
                 SELECT
-                    page_title, pl_title
+                    page_title,
+                    lt_title
                 FROM page
                     INNER JOIN pagelinks ON pl_from = page_id
+                    INNER JOIN linktarget ON lt_id = pl_target_id
                 WHERE
                     page_namespace = 0 AND
                     page_is_redirect = 1 AND
-                    pl_namespace = 0 AND
-                    pl_title IN (%s);
+                    lt_namespace = 0 AND
+                    lt_title IN (%s);
                 """.formatted(targetsString);
 
             var rs = connection.createStatement().executeQuery(query);
 
             while (rs.next()) {
                 var source = rs.getString("page_title");
-                var target = rs.getString("pl_title");
+                var target = rs.getString("lt_title");
 
                 sourceToTarget.put(wb.normalize(source), wb.normalize(target));
             }
@@ -314,21 +316,23 @@ public final class ResolveLinks {
 
             var query = """
                 SELECT
-                    page_title, pl_title
+                    page_title,
+                    lt_title
                 FROM page
                     INNER JOIN pagelinks ON pl_from = page_id
+                    INNER JOIN linktarget ON lt_id = pl_target_id
                 WHERE
                     page_namespace = 0 AND
                     page_is_redirect = 1 AND
                     page_title IN (%s) AND
-                    pl_namespace = 0;
+                    lt_namespace = 0;
                 """.formatted(sourcesString);
 
             var rs = connection.createStatement().executeQuery(query);
 
             while (rs.next()) {
                 var source = rs.getString("page_title");
-                var target = rs.getString("pl_title");
+                var target = rs.getString("lt_title");
 
                 sourceToTarget.put(wb.normalize(source), wb.normalize(target));
             }
@@ -347,13 +351,16 @@ public final class ResolveLinks {
 
             var query = """
                 SELECT
-                    page_title, page_namespace, pl_title
+                    page_title,
+                    page_namespace,
+                    lt_title
                 FROM page
                     INNER JOIN pagelinks ON pl_from = page_id
+                    INNER JOIN linktarget ON lt_id = pl_target_id
                 WHERE
                     page_is_redirect = 0 AND
-                    pl_namespace = 0 AND
-                    pl_title IN (%s);
+                    lt_namespace = 0 AND
+                    lt_title IN (%s);
                 """.formatted(sourcesString);
 
             var rs = connection.createStatement().executeQuery(query);
@@ -362,7 +369,7 @@ public final class ResolveLinks {
                 var title = rs.getString("page_title");
                 var ns = rs.getInt("page_namespace");
                 var backlink = wb.normalize(String.format("%s:%s", wb.namespaceIdentifier(ns), title));
-                var source = wb.normalize(rs.getString("pl_title"));
+                var source = wb.normalize(rs.getString("lt_title"));
 
                 backlinkToSources.computeIfAbsent(backlink, k -> new ArrayList<>()).add(source);
             }

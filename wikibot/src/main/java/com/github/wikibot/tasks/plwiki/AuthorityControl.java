@@ -335,12 +335,13 @@ public final class AuthorityControl {
                     ips_site_page
                 FROM page
                     INNER JOIN pagelinks ON pl_from = page_id
+                    INNER JOIN linktarget ON lt_id = pl_target_id
                     INNER JOIN wb_items_per_site ON page_namespace = 0 AND CONCAT('Q', ips_item_id) = page_title
                 WHERE
                     pl_from_namespace = 0 AND
                     ips_site_id = 'plwiki' AND
-                    pl_namespace = 120 AND
-                    pl_title in (%s);
+                    lt_namespace = 120 AND
+                    lt_title in (%s);
                 """.formatted(properties);
 
             var rs = connection.createStatement().executeQuery(query);
