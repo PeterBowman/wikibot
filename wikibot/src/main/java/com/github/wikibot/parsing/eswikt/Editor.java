@@ -4283,8 +4283,6 @@ public class Editor extends AbstractEditor {
         String initial = removeBrTags(text);
         Page page = Page.store(title, initial);
 
-        List<String> templates = List.of("arriba", "trad-arriba", "rel-arriba", "derivados");
-
         for (Section section : page.getAllSections()) {
             if (!section.nextSection().isPresent()) {
                 break;
@@ -4292,17 +4290,11 @@ public class Editor extends AbstractEditor {
 
             Section nextSection = section.nextSection().get();
             String sectionIntro = section.getIntro();
-            String sanitizedNextSectionIntro = removeCommentsAndNoWikiText(nextSection.getIntro());
 
-            boolean anyMatch = templates.stream()
-                .map(template -> getTemplates(template, sanitizedNextSectionIntro))
-                .flatMap(Collection::stream)
-                .anyMatch(sanitizedNextSectionIntro::startsWith);
-
-            if (anyMatch || (
+            if (
                 nextSection.getStrippedHeader().matches("Etimología \\d+") &&
                 !nextSection.getStrippedHeader().equals("Etimología 1")
-            )) {
+            ) {
                 List<String> clearTemplates = getTemplates("clear", sectionIntro);
                 String sanitizedSectionIntro = removeCommentsAndNoWikiText(sectionIntro);
 
