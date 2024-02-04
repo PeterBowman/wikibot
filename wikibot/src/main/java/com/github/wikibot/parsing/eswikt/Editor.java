@@ -83,6 +83,7 @@ public class Editor extends AbstractEditor {
     private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
     private static final Pattern P_UCF = Pattern.compile("^; *?\\d+(?: *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
     private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
+    private static final Pattern P_TRANSLATIONS = Pattern.compile("\\{{2} *trad-arriba *(?:\\|[^\\}]+?)?\\}{2}.*?(\\{{2} *trad-centro *\\}{2}\n*).*?\\{{2} *trad-abajo *\\}{2}", Pattern.DOTALL);
 
     private static final List<String> LENG_PARAM_TMPLS;
     private static final List<String> LENG_PARAM_TMPLS_STANDARD = List.of(
@@ -253,7 +254,6 @@ public class Editor extends AbstractEditor {
         List<String> translationsTemplate = List.of(
             "{{trad-arriba}}",
             TRANSLATIONS_COMMENT,
-            "{{trad-centro}}",
             "{{trad-abajo}}"
         );
 
@@ -485,6 +485,7 @@ public class Editor extends AbstractEditor {
         adaptPronunciationTemplates();
         convertToTemplate();
         addMissingElements();
+        removeObsoleteElements();
         moveAltPronGrafParams();
         checkLangCodeCase();
         langTemplateParams();
@@ -3460,6 +3461,29 @@ public class Editor extends AbstractEditor {
         text = text.replace("{{clear}}", "");
 
         return text.trim();
+    }
+
+    private void removeObsoleteElements() {
+        Page page = Page.store(title, text);
+        Set<String> set = new LinkedHashSet<>();
+
+        // {{trad-centro}}
+
+        page.filterSections(s -> s.getStrippedHeader().equals("Traducciones")).stream()
+            .filter(s -> List.of("trad-arriba", "trad-centro", "trad-abajo").stream().allMatch(str -> s.getIntro().contains(str)))
+            .forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), P_TRANSLATIONS, mr ->
+                Matcher.quoteReplacement(s.getIntro().substring(mr.start(0), mr.start(1))) +
+                Matcher.quoteReplacement(s.getIntro().substring(mr.end(1), mr.end(0))))
+            ));
+
+        if (!page.toString().equals(text)) {
+            set.add("{{trad-centro}}");
+        }
+
+        String formatted = page.toString();
+        String summary = String.format("eliminando %s", String.join(", ", set));
+
+        checkDifferences(formatted, "removeObsoleteElements", summary);
     }
 
     public void moveAltPronGrafParams() {
