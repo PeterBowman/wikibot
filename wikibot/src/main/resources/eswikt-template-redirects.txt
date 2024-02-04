@@ -27,6 +27,7 @@ utcs = setc
 trans-top = trad-arriba
 trans-mid = trad-centro
 trans-bottom = trad-abajo
+rel-mid = rel-centro
 Unicode = unicode
 
 Ampliable = ampliable

@@ -83,7 +83,7 @@ public class Editor extends AbstractEditor {
     private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
     private static final Pattern P_UCF = Pattern.compile("^; *?\\d+(?: *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
     private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
-    private static final Pattern P_TRANSLATIONS = Pattern.compile("\\{{2} *trad-arriba *(?:\\|[^\\}]+?)?\\}{2}.*?(\\{{2} *trad-centro *\\}{2}\n*).*?\\{{2} *trad-abajo *\\}{2}", Pattern.DOTALL);
+    private static final Pattern P_COLUMNS = Pattern.compile("\\{{2} *(?<type>trad|rel)-arriba *(?:\\|[^\\}]+?)?\\}{2}.*?(?<mid>\\{{2} *\\k<type>-centro *\\}{2}\n*).*?\\{{2} *\\k<type>-abajo *\\}{2}", Pattern.DOTALL);
 
     private static final List<String> LENG_PARAM_TMPLS;
     private static final List<String> LENG_PARAM_TMPLS_STANDARD = List.of(
@@ -3467,22 +3467,29 @@ public class Editor extends AbstractEditor {
         Page page = Page.store(title, text);
         Set<String> set = new LinkedHashSet<>();
 
-        // {{trad-centro}}
+        String formatted = page.toString();
 
-        page.filterSections(s -> s.getStrippedHeader().equals("Traducciones")).stream()
-            .filter(s -> List.of("trad-arriba", "trad-centro", "trad-abajo").stream().allMatch(str -> s.getIntro().contains(str)))
-            .forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), P_TRANSLATIONS, mr ->
-                Matcher.quoteReplacement(s.getIntro().substring(mr.start(0), mr.start(1))) +
-                Matcher.quoteReplacement(s.getIntro().substring(mr.end(1), mr.end(0))))
+        // {{trad-centro}}, {{rel-centro}}
+
+        List<String> trads = List.of("trad", "trad-abajo", "trad-arriba", "trad-centro");
+        List<String> rels = List.of("rel", "rel-abajo", "rel-arriba", "rel-centro");
+
+        page.getAllSections().stream()
+            .filter(s ->
+                trads.stream().anyMatch(str -> s.getIntro().contains(str)) ||
+                rels.stream().anyMatch(str -> s.getIntro().contains(str))
+            )
+            .forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), P_COLUMNS, mr ->
+                Matcher.quoteReplacement(s.getIntro().substring(mr.start(0), mr.start(2))) +
+                Matcher.quoteReplacement(s.getIntro().substring(mr.end(2), mr.end(0))))
             ));
 
-        if (!page.toString().equals(text)) {
-            set.add("{{trad-centro}}");
+        if (!page.toString().equals(formatted)) {
+            set.add("{{X-centro}}");
+            formatted = page.toString();
         }
 
-        String formatted = page.toString();
         String summary = String.format("eliminando %s", String.join(", ", set));
-
         checkDifferences(formatted, "removeObsoleteElements", summary);
     }
 
