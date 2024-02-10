@@ -157,19 +157,15 @@ final class DidYouKnowStats {
             .filter(title -> isValidExpoPage(title, year))
             .toList();
 
-        var candidatePages = wb.getTemplates(talkPages, PROJECT_NS).stream()
-            .flatMap(List::stream)
-            .distinct()
-            .filter(title -> CANDIDATE_PATT.matcher(wb.removeNamespace(title)).matches())
-            .toList();
-
+        var candidatePagesMap = getCandidatePagesMap(talkPages);
         var linkedArticles = getLinkedArticles(members);
         var redirectsToNewTitles = getRedirectMap(linkedArticles.stream().toList());
 
         var entries = new ArrayList<Entry>();
 
-        for (var page : wb.getContentOfPages(candidatePages)) {
-            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(page.title()));
+        for (var page : wb.getContentOfPages(candidatePagesMap.keySet())) {
+            var talkPage = candidatePagesMap.get(page.title());
+            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage));
 
             for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, page.text())) {
                 var params = ParseUtils.getTemplateParametersWithValue(template);
@@ -255,6 +251,21 @@ final class DidYouKnowStats {
             if (!maybeRedirects.isEmpty()) {
                 maybeRedirects.stream().forEach(t -> map.put(t, title));
             }
+        }
+
+        return map;
+    }
+
+    private static Map<String, String> getCandidatePagesMap(List<String> titles) throws IOException {
+        var map = new HashMap<String, String>();
+        var candidatePages = wb.getTemplates(titles, PROJECT_NS);
+
+        for (var i = 0; i < titles.size(); i++) {
+            var title = titles.get(i);
+
+            candidatePages.get(i).stream()
+                .filter(t -> CANDIDATE_PATT.matcher(wb.removeNamespace(t)).matches())
+                .forEach(t -> map.put(t, title));
         }
 
         return map;
