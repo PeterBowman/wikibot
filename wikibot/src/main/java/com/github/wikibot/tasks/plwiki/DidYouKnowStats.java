@@ -60,9 +60,10 @@ import com.thoughtworks.xstream.XStream;
 final class DidYouKnowStats {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/DidYouKnowStats/");
     private static final String CATEGORY_TREE = "Ekspozycje Czywiesza %d";
-    private static final String EXPO_TEMPLATE = "Wikiprojekt:Czy wiesz/weryfikacja";
+    private static final String EXPO_TEMPLATE = "CW/weryfikacja";
+    private static final Pattern CANDIDATE_PATT = Pattern.compile("^Czy wiesz/propozycje/\\d{4}-\\d{2}/.+$");
     private static final Pattern EXPO_ARCHIVE_PATT = Pattern.compile("^Wikiprojekt:Czy wiesz/archiwum/\\d{4}-\\d{2}$");
-    private static final int PROJECT_NS = 102;
+    private static final int PROJECT_NS = 102; // Wikiprojekt
     private static final ZoneId PROJECT_ZONE = ZoneId.of("Europe/Warsaw");
     private static final String DYK_SUBPAGE_AUTHORS = "Wikiprojekt:Czy wiesz/Statystyki (%d)";
     private static final String DYK_SUBPAGE_POSTERS = "Wikiprojekt:Czy wiesz/Statystyki zgłaszających (%d)";
@@ -156,41 +157,56 @@ final class DidYouKnowStats {
             .filter(title -> isValidExpoPage(title, year))
             .toList();
 
+        var candidatePages = wb.getTemplates(talkPages, PROJECT_NS).stream()
+            .flatMap(List::stream)
+            .distinct()
+            .filter(title -> CANDIDATE_PATT.matcher(wb.removeNamespace(title)).matches())
+            .toList();
+
         var linkedArticles = getLinkedArticles(members);
         var redirectsToNewTitles = getRedirectMap(linkedArticles.stream().toList());
 
         var entries = new ArrayList<Entry>();
 
-        for (var talkPage : wb.getContentOfPages(talkPages)) {
-            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage.title()));
+        for (var page : wb.getContentOfPages(candidatePages)) {
+            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(page.title()));
 
-            for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, talkPage.text())) {
+            for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, page.text())) {
                 var params = ParseUtils.getTemplateParametersWithValue(template);
 
-                var title = wb.normalize(params.getOrDefault("ParamWithoutName1", ""));
-                var author = wb.normalize(params.getOrDefault("ParamWithoutName4", ""));
-                var poster = wb.normalize(params.getOrDefault("ParamWithoutName5", ""));
+                var title = wb.normalize(params.getOrDefault("artykuł", ""));
+                var poster = wb.normalize(params.getOrDefault("nominacja", ""));
 
                 title = redirectsToNewTitles.getOrDefault(title, title);
 
-                if (StringUtils.isAnyBlank(title, author, poster) || !linkedArticles.contains(title)) {
+                var authors = new ArrayList<String>();
+
+                for (int i = 1; i <= 5; i++) {
+                    var value = params.getOrDefault("%d. autorstwo".formatted(i), "").trim();
+
+                    if (!value.isEmpty()) {
+                        authors.add(wb.normalize(value));
+                    }
+                }
+
+                if (StringUtils.isAnyBlank(title, poster) || authors.isEmpty() || !linkedArticles.contains(title)) {
                     continue;
                 }
 
                 var reviewers = new ArrayList<String>();
 
-                for (int i = 6; i <= 12; i++) {
-                    var value = params.getOrDefault("ParamWithoutName" + i, "?").trim();
+                for (int i = 1; i <= 9; i++) {
+                    var value = params.getOrDefault("%d. sprawdzenie".formatted(i), "?").trim();
 
                     // ugly hack for extra trailing braces, e.g.: "...|Jamnik z Tarnowa}}}"
                     value = StringUtils.stripEnd(value, "}");
 
-                    if (!value.isBlank() && !value.equals("?")) {
+                    if (!value.isEmpty() && !value.equals("?")) {
                         reviewers.add(wb.normalize(value));
                     }
                 }
 
-                var entry = new Entry(title, author, poster,
+                var entry = new Entry(title, authors, poster,
                                       Collections.unmodifiableList(reviewers),
                                       temporal.get(ChronoField.YEAR),
                                       temporal.get(ChronoField.MONTH_OF_YEAR),
@@ -348,14 +364,14 @@ final class DidYouKnowStats {
     private static void updateAuthors(int year, int untilMonth, List<Entry> entries) throws IOException, LoginException {
         var template = makeIntro("Najbardziej aktywni autorzy", "artykułów", "jeden artykuł", year);
 
-        var groupedUsers = entries.stream().collect(Collectors.groupingBy(
-            Entry::author,
+        var groupedUsers = entries.stream().collect(CollectorUtils.groupingByFlattened(
+            e -> e.authors().stream(),
             Collectors.groupingBy(Entry::monthOfYear, Collectors.counting())
         ));
 
         var groupedMonths = entries.stream().collect(Collectors.groupingBy(
             Entry::monthOfYear,
-            Collectors.groupingBy(Entry::author, Collectors.counting())
+            CollectorUtils.groupingByFlattened(e -> e.authors().stream(), Collectors.counting())
         ));
 
         var contents = makeTableContents(groupedUsers, groupedMonths, untilMonth);
@@ -612,7 +628,7 @@ final class DidYouKnowStats {
         }
     }
 
-    private record Entry(String title, String author, String poster, List<String> reviewers, int year, int monthOfYear, int dayOfMonth) {
+    private record Entry(String title, List<String> authors, String poster, List<String> reviewers, int year, int monthOfYear, int dayOfMonth) {
         int getTimestamp() {
             return Integer.parseInt("%04d%02d%02d".formatted(year, monthOfYear, dayOfMonth));
         }
