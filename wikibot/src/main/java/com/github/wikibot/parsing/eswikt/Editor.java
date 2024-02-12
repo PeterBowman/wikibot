@@ -375,7 +375,7 @@ public class Editor extends AbstractEditor {
 
     static {
         REDUCED_SECTION_CHECK = section -> {
-            if (section instanceof LangSection ls && (ls.langCodeEqualsTo("trans") || ls.isTransliteration())) {
+            if (section instanceof LangSection ls && (ls.langCodeEqualsTo("trans") || ls.langCodeEqualsTo("mul") || ls.isTransliteration())) {
                 return true;
             }
 
@@ -1524,7 +1524,7 @@ public class Editor extends AbstractEditor {
 
                     params.put("escritura", "transliteración");
                 } else if (name.equals("TRANS")) {
-                    name = "trans";
+                    name = "mul";
                 } else {
                     name = name.replace("-ES", "").toLowerCase();
                 }
@@ -2748,7 +2748,8 @@ public class Editor extends AbstractEditor {
                         if (param1 == null) {
                             if (
                                 !langSection.langCodeEqualsTo("es") &&
-                                !langSection.langCodeEqualsTo("trans") // this shouldn't happen
+                                !langSection.langCodeEqualsTo("trans") && // alias for back-compat
+                                !langSection.langCodeEqualsTo("mul") // this shouldn't happen
                             ) {
                                 break;
                             }
@@ -3264,7 +3265,8 @@ public class Editor extends AbstractEditor {
         for (LangSection langSection : page.getAllLangSections()) {
             if (
                 RECONSTRUCTED_LANGS.contains(langSection.getLangCode()) ||
-                langSection.langCodeEqualsTo("trans") // exclusions
+                langSection.langCodeEqualsTo("trans") || // alias for back-compat
+                langSection.langCodeEqualsTo("mul")
             ) {
                 continue;
             }
