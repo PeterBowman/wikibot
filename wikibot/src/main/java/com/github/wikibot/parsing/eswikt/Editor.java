@@ -3489,16 +3489,7 @@ public class Editor extends AbstractEditor {
 
         // {{centro}}, {{trad-centro}}, {{rel-centro}}
 
-        List<String> misc = List.of("trad", "abajo", "arriba", "centro");
-        List<String> trads = List.of("trad", "trad-abajo", "trad-arriba", "trad-centro");
-        List<String> rels = List.of("rel", "rel-abajo", "rel-arriba", "rel-centro");
-
         page.getAllSections().stream()
-            .filter(s ->
-                misc.stream().anyMatch(str -> s.getIntro().contains(str)) ||
-                trads.stream().anyMatch(str -> s.getIntro().contains(str)) ||
-                rels.stream().anyMatch(str -> s.getIntro().contains(str))
-            )
             .forEach(s -> s.setIntro(Utils.replaceWithStandardIgnoredRanges(s.getIntro(), P_COLUMNS, mr ->
                 Matcher.quoteReplacement(s.getIntro().substring(mr.start(0), mr.start(2))) +
                 Matcher.quoteReplacement(s.getIntro().substring(mr.end(2), mr.end(0))))
