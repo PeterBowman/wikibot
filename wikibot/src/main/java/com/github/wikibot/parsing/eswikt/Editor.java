@@ -83,7 +83,7 @@ public class Editor extends AbstractEditor {
     private static final Pattern P_CLEAR_TMPLS = Pattern.compile("\n?\\{\\{ *?clear *?\\}\\}\n?");
     private static final Pattern P_UCF = Pattern.compile("^; *?\\d+(?: *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))? *?: *?(\\[\\[:?([^\\]\\|]+)(?:\\|((?:\\]?[^\\]\\|])*+))*\\]\\])(.*)$", Pattern.MULTILINE);
     private static final Pattern P_TERM = Pattern.compile("^;( *?\\d+)( *?(?:\\{\\{[^\\{]+?\\}\\}|[^:\n]+?))?(\\s*?:+)(.*)$", Pattern.MULTILINE);
-    private static final Pattern P_COLUMNS = Pattern.compile("\\{{2} *(?<type>trad|rel)-arriba *(?:\\|[^\\}]+?)?\\}{2}.*?(?<mid>\\{{2} *\\k<type>-centro *\\}{2}\n*).*?\\{{2} *\\k<type>-abajo *\\}{2}", Pattern.DOTALL);
+    private static final Pattern P_COLUMNS = Pattern.compile("\\{{2} *(?<type>trad-|rel-|)arriba *(?:\\|[^\\}]+?)?\\}{2}.*?(?<mid>\\{{2} *\\k<type>centro *\\}{2}\n*).*?\\{{2} *\\k<type>abajo *\\}{2}", Pattern.DOTALL);
 
     private static final List<String> LENG_PARAM_TMPLS;
     private static final List<String> LENG_PARAM_TMPLS_STANDARD = List.of(
@@ -3487,13 +3487,15 @@ public class Editor extends AbstractEditor {
 
         String formatted = page.toString();
 
-        // {{trad-centro}}, {{rel-centro}}
+        // {{centro}}, {{trad-centro}}, {{rel-centro}}
 
+        List<String> misc = List.of("trad", "abajo", "arriba", "centro");
         List<String> trads = List.of("trad", "trad-abajo", "trad-arriba", "trad-centro");
         List<String> rels = List.of("rel", "rel-abajo", "rel-arriba", "rel-centro");
 
         page.getAllSections().stream()
             .filter(s ->
+                misc.stream().anyMatch(str -> s.getIntro().contains(str)) ||
                 trads.stream().anyMatch(str -> s.getIntro().contains(str)) ||
                 rels.stream().anyMatch(str -> s.getIntro().contains(str))
             )
