@@ -326,7 +326,7 @@ public class Editor extends AbstractEditor {
             "<!-- (?:regular|invariante|s[óo]lo admite|irregular|idem anterior|sin discriminar|palabras terminadas).+?-->",
             "<!-- \\{\\{verbo intransitivo\\|es\\}\\}.+?-->",
             "<!-- Incluir una y sólo una plantilla.+?-->",
-            "<!-- para verbos.+?-->",
+            "<!-- para (verbos|sustantivos).+?-->",
             "<!-- LAS IMAGENES VAN TODAS EN ESTA PARTE.+?-->",
             "<!-- Puedes? también incluir las siguientes secciones.+?-->"
         );
