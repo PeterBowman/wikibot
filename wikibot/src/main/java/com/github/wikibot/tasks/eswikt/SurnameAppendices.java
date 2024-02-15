@@ -2,7 +2,6 @@ package com.github.wikibot.tasks.eswikt;
 
 import java.io.IOException;
 import java.text.Collator;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -22,7 +21,6 @@ public final class SurnameAppendices {
     private static final String TARGET_PARENT_PAGE = "Apéndice:Antropónimos/Apellidos/";
     private static final String SURNAME_TEMPLATE = "Plantilla:apellido";
     private static final char SPECIAL_LETTER = '#';
-    private static final int COLUMNS = 5;
     private static final Locale locale = new Locale("es");
     private static final Collator collator = Collator.getInstance(locale);
     private static final Map<Character, Character> stressedVowels = Map.of('Á', 'A', 'É', 'E', 'Í', 'I', 'Ó', 'O', 'Ú', 'U');
@@ -31,15 +29,15 @@ public final class SurnameAppendices {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        List<String> subPages = getSubPages();
-        List<String> surnames = getSurnames();
+        var subPages = getSubPages();
+        var surnames = getSurnames();
 
-        Set<Character> letters = filterTargetLetters(subPages);
-        Map<Character, List<String>> groupedSurnames = groupSurnames(surnames, letters);
+        var letters = filterTargetLetters(subPages);
+        var groupedSurnames = groupSurnames(surnames, letters);
 
         for (var entry : groupedSurnames.entrySet()) {
-            Character firstLetter = entry.getKey();
-            List<String> surnameList = entry.getValue();
+            var firstLetter = entry.getKey();
+            var surnameList = entry.getValue();
 
             if (firstLetter == SPECIAL_LETTER) {
                 continue;
@@ -48,11 +46,11 @@ public final class SurnameAppendices {
             var targetPage = TARGET_PARENT_PAGE + firstLetter;
             var header = firstLetter.toString();
 
-            List<String> links = getLinksOnPage(targetPage, header);
+            var links = getLinksOnPage(targetPage, header);
 
             if (!links.containsAll(surnameList)) {
-                List<String> mergedList = mergeLists(links, surnameList);
-                String pageText = prepareOutput(header.toUpperCase(locale), header.toLowerCase(locale), mergedList);
+                var mergedList = mergeLists(links, surnameList);
+                var pageText = prepareOutput(header.toUpperCase(locale), header.toLowerCase(locale), mergedList);
 
                 wb.edit(targetPage, pageText, "actualización");
             }
@@ -115,43 +113,17 @@ public final class SurnameAppendices {
         sb.append(String.format("<strong>Lista de {{l|es|apellido|apellidos}} que comienzan por la letra {{l|es|%s}}</strong>:", headerUpper));
         sb.append("\n\n");
 
-        sb.append("{| border=0  width=100%").append("\n");
-        sb.append("|-").append("\n");
+        sb.append("{{arriba}}").append("\n");
 
-        List<List<String>> splitList = splitList(surnames, COLUMNS);
-        final var width = (int) Math.floor(100 / COLUMNS);
+        surnames.stream()
+            .map(surname -> String.format("* {{l|es|%s}}\n", surname))
+            .forEach(sb::append);
 
-        for (List<String> chunk : splitList) {
-            sb.append("|valign=top width=").append(width).append("%|").append("\n");
-            sb.append("{|").append("\n");
-
-            chunk.stream()
-                .map(link -> String.format("* {{l|es|%s}}", link))
-                .forEach(item -> sb.append(item).append("\n"));
-
-            sb.append("|}").append("\n");
-        }
-
-        sb.append("|}");
-        sb.append("\n\n");
+        sb.append("{{abajo}}").append("\n\n");
 
         sb.append(String.format("[[Categoría:ES:Apellidos| %s]]", headerLower)).append("\n");
         sb.append(String.format("[[Categoría:Wikcionario:Apéndices|Apellidos %s]]", headerLower));
 
         return sb.toString();
-    }
-
-    private static List<List<String>> splitList(List<String> original, int chunks) {
-        var chunkSize = (int) Math.ceil((double) original.size() / (double) chunks);
-        var list = new ArrayList<List<String>>(chunks);
-        var cursor = 0;
-
-        for (var i = 0; i < chunks; i++) {
-            var subList = original.subList(cursor, Math.min(original.size(), cursor + chunkSize));
-            list.add(subList);
-            cursor += chunkSize;
-        }
-
-        return list;
     }
 }
