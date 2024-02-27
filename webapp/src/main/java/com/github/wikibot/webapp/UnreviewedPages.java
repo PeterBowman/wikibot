@@ -81,7 +81,7 @@ public class UnreviewedPages extends HttpServlet {
             var wiki = wikis.get(optProject.get());
 
             try {
-                var localEntries = doQuery(dataSource, optCategory, wiki);
+                var localEntries = doUnreviewedPagesQuery(dataSource, optCategory, wiki);
                 var results = getDataView(localEntries, limit, offset);
 
                 request.setAttribute("results", results);
@@ -118,7 +118,56 @@ public class UnreviewedPages extends HttpServlet {
         }
     }
 
-    private List<Entry> doQuery(DataSource dataSource, Optional<String> optCategory, Wiki wiki) throws SQLException {
+    private List<Entry> doUnreviewedPagesQuery(DataSource dataSource, Optional<String> optCategory, Wiki wiki) throws SQLException {
+        var today = ZonedDateTime.now(ZoneOffset.UTC).toLocalDate();
+        var entries = new ArrayList<Entry>();
+        var categoryBranch = "";
+
+        if (optCategory.isPresent()) {
+            var normalized = wiki.removeNamespace(optCategory.get(), Wiki.CATEGORY_NAMESPACE).replace(' ', '_');
+
+            categoryBranch = """
+                INNER JOIN categorylinks
+                    ON cl_from = page_id
+                    AND cl_to = '%s'
+                """.formatted(normalized);
+        }
+
+        var query = """
+            SELECT
+                page_title,
+                rev_timestamp
+            FROM page
+                INNER JOIN revision
+                    ON rev_id = page_latest
+                LEFT JOIN flaggedpages
+                    ON fp_page_id = page_id
+                %s
+            WHERE
+                page_namespace = 0 AND
+                page_is_redirect = 0 AND
+                fp_page_id IS NULL
+            ORDER BY
+                rev_timestamp ASC
+            """.formatted(categoryBranch);
+
+        try (var connection = dataSource.getConnection()) {
+            var statement = connection.prepareStatement(query);
+            var results = statement.executeQuery();
+
+            while (results.next()) {
+                var title = results.getString("page_title").replace('_', ' ');
+                var timestamp = results.getString("rev_timestamp");
+                var refDate = LocalDate.parse(timestamp, TIMESTAMP_FORMAT);
+
+                entries.add(new Entry(title, ChronoUnit.DAYS.between(refDate, today)));
+            }
+        }
+
+        return entries;
+    }
+
+    private List<Entry> doPendingChangesQuery(DataSource dataSource, Optional<String> optCategory, Wiki wiki) throws SQLException {
         var today = ZonedDateTime.now(ZoneOffset.UTC).toLocalDate();
         var entries = new ArrayList<Entry>();
         var categoryBranch = "";
