@@ -99,6 +99,7 @@ esgrima = Esgrima
 especias = Especias
 estaciones = Estaciones
 estadística = Estadística
+estética = Estética
 estomatología = Estomatología
 ética = Ética
 farmacología = Farmacología
