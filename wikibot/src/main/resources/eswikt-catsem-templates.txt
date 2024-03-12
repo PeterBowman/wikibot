@@ -239,6 +239,7 @@ retórica = Retórica
 ríos = Ríos, Topónimos
 rugby = Rugby
 sabores = Sabores
+seguridad = Seguridad
 sentimientos = Sentimientos
 serpientes = Serpientes
 sexualidad = Sexualidad
