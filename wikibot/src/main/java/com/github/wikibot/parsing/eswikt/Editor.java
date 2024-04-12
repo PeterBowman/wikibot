@@ -519,7 +519,7 @@ public class Editor extends AbstractEditor {
         removeDefinitionHeaders();
         sanitizeReferences();
         groupReferences();
-        addTranslationsExampleComment();
+        // addTranslationsExampleComment(); // TODO: re-enable? see TRANSLATIONS_COMMENT
         strongWhitespaces();
         weakWhitespaces();
     }
