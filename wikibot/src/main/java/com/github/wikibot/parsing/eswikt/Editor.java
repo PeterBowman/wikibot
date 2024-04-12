@@ -253,7 +253,7 @@ public class Editor extends AbstractEditor {
 
         List<String> translationsTemplate = List.of(
             "{{trad-arriba}}",
-            TRANSLATIONS_COMMENT,
+            // TRANSLATIONS_COMMENT, // TODO: disabled for now until migration is complete
             "{{trad-abajo}}"
         );
 
