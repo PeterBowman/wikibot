@@ -38,10 +38,9 @@ public final class LonelyPages {
             FROM page
                 LEFT JOIN linktarget ON
                     lt_title = page_title AND
-                    lt_namespace = page_title
+                    lt_namespace = page_namespace
                 LEFT JOIN pagelinks ON
-                    pl_namespace = page_namespace AND
-                    pl_title = page_title
+                    pl_target_id = lt_id
                 LEFT JOIN templatelinks ON
                     tl_target_id = lt_id
             WHERE
