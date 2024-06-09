@@ -78,6 +78,10 @@ public final class MisusedRegTemplates {
         "reg-pl", "gw-pl", "reg-es"
     );
 
+    private static final List<FieldTypes> SPECIAL_FIELDS = List.of(
+        FieldTypes.DEFINITIONS, FieldTypes.INFLECTION
+    );
+
     static {
         var templateList = TEMPLATES.stream()
             .map(template -> String.format("{{s|%s}}", template))
@@ -88,6 +92,7 @@ public final class MisusedRegTemplates {
             Wskazane tutaj wystąpienia skutkują zwykle niezamierzonym umieszczeniem strony w kategorii,
             często w wyniku pominięcia pierwszego parametru w polu innym niż „znaczenia”
             (zasady działania szablonów mogą się różnić, zapoznaj się z instrukcją na ich stronie opisu).
+            Wyjątek: w polu odmiany szablony te zawsze powinny kategoryzować stronę.
 
             Rozpoznawane szablony: %s.
 
@@ -189,17 +194,19 @@ public final class MisusedRegTemplates {
                 .map(template -> ParseUtils.getTemplates(template, field.getContent()))
                 .flatMap(Collection::stream)
                 .map(ParseUtils::getTemplateParametersWithValue)
-                .filter(params -> filterTemplates(params, field.getFieldType() == FieldTypes.DEFINITIONS))
+                .filter(params -> filterTemplates(params, field.getFieldType()))
                 .map(params -> Item.constructNewItem(field, params))
             );
     }
 
-    private static boolean filterTemplates(Map<String, String> params, boolean isDefinition) {
+    private static boolean filterTemplates(Map<String, String> params, FieldTypes fieldType) {
+        var isSpecialField = SPECIAL_FIELDS.contains(fieldType);
+
         if (TEMPLATES_NEW_GEN.contains(params.get("templateName"))) {
-            return isDefinition ^ params.getOrDefault("ParamWithoutName2", "").isEmpty();
+            return isSpecialField ^ params.getOrDefault("ParamWithoutName2", "").isEmpty();
         }
 
-        return isDefinition ^ params.entrySet().stream()
+        return isSpecialField ^ params.entrySet().stream()
             .filter(entry -> !entry.getKey().equals("templateName"))
             .filter(entry -> !TEMPLATES.contains(entry.getValue()))
             .count() == 0;
@@ -301,7 +308,7 @@ public final class MisusedRegTemplates {
         public String buildEntry() {
             var format = "&#123;{%s}} (%s, %s)";
 
-            if (fieldType == FieldTypes.DEFINITIONS) {
+            if (SPECIAL_FIELDS.contains(fieldType)) {
                 format = "&#123;{%s}} (%s, '''%s''')";
             }
 
