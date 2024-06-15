@@ -67,8 +67,8 @@ public final class ReportReviewerActivity {
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneOffset.UTC);
 
-    private static final int REVIEW_COUNT_THRESHOLD = 120;
-    private static final int REVIEWER_SUMMARY_LIMIT = 10;
+    private static final int REVIEW_COUNT_THRESHOLD = 70;
+    private static final int REVIEWER_SUMMARY_LIMIT = 12;
 
     private static final Locale LOCALE_PL = Locale.forLanguageTag("pl-PL");
 
