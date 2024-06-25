@@ -88,7 +88,7 @@ public class DBUtils {
             }
         }
 
-        System.out.printf("Got %d category members for category %s%n", articles.size(), category);
+        System.out.printf("Got %d category members for category \"%s\" (%d subcategories)%n", articles.size(), category, visitedCats.size() - 1);
         return articles;
     }
 }
