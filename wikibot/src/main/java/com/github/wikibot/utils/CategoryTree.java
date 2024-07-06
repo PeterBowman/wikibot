@@ -29,12 +29,20 @@ public class CategoryTree {
         private final String name;
         private final int members;
         private final SortedSet<Node> children;
+        private final int depth;
 
         private Node(Node parent, String name, int members) {
             this.parent = parent;
             this.name = Objects.requireNonNull(name);
             this.members = members;
+
             children = new TreeSet<>(CategoryTree.this.collator);
+
+            if (parent == null) {
+                depth = 0;
+            } else {
+                depth = parent.depth + 1;
+            }
         }
 
         public Node getParent() {
@@ -47,6 +55,14 @@ public class CategoryTree {
 
         public int getMembers() {
             return members;
+        }
+
+        public SortedSet<Node> getChildren() {
+            return children;
+        }
+
+        public int getDepth() {
+            return depth;
         }
 
         public Node addChild(String name, int members) {
