@@ -1,15 +1,18 @@
 package com.github.wikibot.utils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.Collator;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class CategoryTree {
     private final Node root;
+    private final Collator collator;
 
-    public CategoryTree(String rootData, int rootMembers) {
+    public CategoryTree(String rootData, int rootMembers, Collator collator) {
         root = new Node(null, rootData, rootMembers);
+        this.collator = Objects.requireNonNull(collator);
     }
 
     public Node getRoot() {
@@ -21,17 +24,17 @@ public class CategoryTree {
         return root.toString();
     }
 
-    public static class Node {
+    public class Node {
         private final Node parent;
         private final String name;
         private final int members;
-        private final List<Node> children;
+        private final SortedSet<Node> children;
 
         private Node(Node parent, String name, int members) {
             this.parent = parent;
             this.name = Objects.requireNonNull(name);
             this.members = members;
-            children = new ArrayList<>();
+            children = new TreeSet<>(CategoryTree.this.collator);
         }
 
         public Node getParent() {

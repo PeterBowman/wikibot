@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -103,12 +104,12 @@ public class DBUtils {
         return articles;
     }
 
-    public static CategoryTree getRecursiveCategoryTree(String sqlUri, String category) throws IOException, SQLException {
+    public static CategoryTree getRecursiveCategoryTree(String sqlUri, String category, Collator collator) throws IOException, SQLException {
         var props = prepareSQLProperties();
-        return getRecursiveCategoryTree(sqlUri, props, category);
+        return getRecursiveCategoryTree(sqlUri, props, category, collator);
     }
 
-    public static CategoryTree getRecursiveCategoryTree(String sqlUri, Properties props, String category) throws SQLException {
+    public static CategoryTree getRecursiveCategoryTree(String sqlUri, Properties props, String category, Collator collator) throws SQLException {
         var visitedCats = new HashSet<String>();
         var nodes = new HashMap<String, CategoryTree.Node>();
         var targetCategories = Arrays.asList(category.replace(' ', '_').replace("'", "\\'"));
@@ -130,7 +131,7 @@ public class DBUtils {
                     throw new SQLException("Category not found: " + category);
                 }
 
-                tree = new CategoryTree(category, rs.getInt("members"));
+                tree = new CategoryTree(category, rs.getInt("members"), collator);
             }
 
             nodes.put(targetCategories.get(0), tree.getRoot());
