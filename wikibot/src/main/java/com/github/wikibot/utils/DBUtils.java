@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -36,13 +37,22 @@ public class DBUtils {
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, int... namespaces) throws SQLException, IOException {
         var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, category, namespaces);
+        return getRecursiveCategoryMembers(sqlUri, props, category, List.of(), namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, List<String> ignoredCategories, int... namespaces) throws SQLException, IOException {
+        var props = prepareSQLProperties();
+        return getRecursiveCategoryMembers(sqlUri, props, category, ignoredCategories, namespaces);
     }
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, int... namespaces) throws SQLException {
+        return getRecursiveCategoryMembers(sqlUri, props, category, List.of(), namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, List<String> ignoredCategories, int... namespaces) throws SQLException {
         var targetNs = Arrays.stream(namespaces).boxed().toList();
         var articles = new HashSet<String>();
-        var visitedCats = new HashSet<String>();
+        var visitedCats = ignoredCategories.stream().map(cat -> cat.replace(' ', '_')).collect(Collectors.toCollection(HashSet::new));
         var targetCategories = Arrays.asList(category.replace(' ', '_'));
         var depth = 0;
 
