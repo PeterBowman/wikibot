@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -100,5 +101,83 @@ public class DBUtils {
 
         System.out.printf("Got %d category members for category \"%s\" (%d subcategories)%n", articles.size(), category, visitedCats.size() - 1);
         return articles;
+    }
+
+    public static CategoryTree getRecursiveCategoryTree(String sqlUri, String category) throws IOException, SQLException {
+        var props = prepareSQLProperties();
+        return getRecursiveCategoryTree(sqlUri, props, category);
+    }
+
+    public static CategoryTree getRecursiveCategoryTree(String sqlUri, Properties props, String category) throws SQLException {
+        var visitedCats = new HashSet<String>();
+        var nodes = new HashMap<String, CategoryTree.Node>();
+        var targetCategories = Arrays.asList(category.replace(' ', '_').replace("'", "\\'"));
+        var depth = 0;
+
+        final CategoryTree tree;
+
+        try (var connection = DriverManager.getConnection(sqlUri, props)) {
+            {
+                var query = """
+                    SELECT cat_pages - cat_subcats - cat_files AS members
+                    FROM category
+                    WHERE cat_title = "Informatyka";
+                    """.formatted(targetCategories.get(0));
+
+                var rs = connection.createStatement().executeQuery(query);
+
+                if (!rs.next()) {
+                    throw new SQLException("Category not found: " + category);
+                }
+
+                tree = new CategoryTree(category, rs.getInt("members"));
+            }
+
+            nodes.put(targetCategories.get(0), tree.getRoot());
+
+            final var queryFmt = """
+                SELECT
+                    cl_to,
+                    page_title,
+                    cat_pages - cat_subcats - cat_files AS members
+                FROM page
+                    LEFT JOIN categorylinks ON cl_from = page_id
+                    LEFT JOIN category ON cat_title = page_title
+                WHERE
+                    page_namespace = 14 AND
+                    cl_to IN (%s);
+                """;
+
+            while (!targetCategories.isEmpty()) {
+                var catArray = targetCategories.stream()
+                    .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
+                    .collect(Collectors.joining(","));
+
+                var query = String.format(queryFmt, catArray);
+                var rs = connection.createStatement().executeQuery(query);
+                var subcats = new HashSet<String>();
+
+                while (rs.next()) {
+                    var parent = rs.getString("cl_to");
+                    var subcat = rs.getString("page_title");
+                    var members = rs.getInt("members");
+
+                    var parentNode = nodes.get(parent);
+                    var childNode = parentNode.addChild(subcat, members);
+
+                    nodes.put(subcat, childNode);
+                    subcats.add(subcat);
+                }
+
+                visitedCats.addAll(targetCategories);
+
+                System.out.printf("depth = %d, subcats = %d%n", depth++, subcats.size());
+
+                subcats.removeAll(visitedCats);
+                targetCategories = new ArrayList<>(subcats);
+            }
+        }
+
+        return tree;
     }
 }
