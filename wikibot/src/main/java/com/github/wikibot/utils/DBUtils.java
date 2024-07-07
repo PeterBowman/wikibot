@@ -164,9 +164,15 @@ public class DBUtils {
                     var members = rs.getInt("members");
 
                     var parentNode = nodes.get(parent);
-                    var childNode = parentNode.addChild(subcat, members);
 
-                    nodes.put(subcat, childNode);
+                    if (!nodes.containsKey(subcat)) {
+                        var childNode = parentNode.registerChild(subcat.replace("_", " "), members);
+                        nodes.put(subcat, childNode);
+                    } else {
+                        var childNode = nodes.get(subcat);
+                        parentNode.connectChild(childNode);
+                    }
+
                     subcats.add(subcat);
                 }
 

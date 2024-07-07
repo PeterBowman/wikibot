@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class CategoryTree implements Iterable<CategoryTree.Node> {
+public class CategoryTree implements Iterable<CategoryTree.NodeResult> {
     private final Node root;
     private final Collator collator;
 
@@ -28,33 +28,28 @@ public class CategoryTree implements Iterable<CategoryTree.Node> {
     }
 
     @Override
-    public Iterator<Node> iterator() {
+    public Iterator<NodeResult> iterator() {
         return new DepthFirstSearch(root);
     }
 
     public class Node implements Comparable<Node> {
-        private final Node parent;
         private final String name;
         private final int members;
-        private final SortedSet<Node> children;
-        private final int depth;
+        private final int minDepth;
+
+        private final SortedSet<Node> parents = new TreeSet<>();
+        private final SortedSet<Node> children = new TreeSet<>();
 
         private Node(Node parent, String name, int members) {
-            this.parent = parent;
             this.name = Objects.requireNonNull(name);
             this.members = members;
 
-            children = new TreeSet<>();
-
             if (parent == null) {
-                depth = 0;
+                minDepth = 0;
             } else {
-                depth = parent.depth + 1;
+                minDepth = parent.minDepth + 1;
+                parents.add(parent);
             }
-        }
-
-        public Node getParent() {
-            return parent;
         }
 
         public String getName() {
@@ -65,15 +60,25 @@ public class CategoryTree implements Iterable<CategoryTree.Node> {
             return members;
         }
 
+        public int getMinDepth() {
+            return minDepth;
+        }
+
+        public SortedSet<Node> getParents() {
+            return parents;
+        }
+
         public SortedSet<Node> getChildren() {
             return children;
         }
 
-        public int getDepth() {
-            return depth;
+        public Node connectChild(Node child) {
+            children.add(child);
+            child.parents.add(this);
+            return child;
         }
 
-        public Node addChild(String name, int members) {
+        public Node registerChild(String name, int members) {
             var node = new Node(this, name, members);
             children.add(node);
             return node;
@@ -89,7 +94,7 @@ public class CategoryTree implements Iterable<CategoryTree.Node> {
 
         @Override
         public int hashCode() {
-            return Objects.hash(parent, name);
+            return name.hashCode();
         }
 
         @Override
@@ -101,12 +106,7 @@ public class CategoryTree implements Iterable<CategoryTree.Node> {
             }
 
             var other = (Node)obj;
-
-            if (parent == null || other.parent == null) {
-                return false; // can't be both null (two root nodes)
-            }
-
-            return parent.equals(other.parent) && name.equals(other.name);
+            return name.equals(other.name);
         }
 
         @Override
@@ -120,32 +120,39 @@ public class CategoryTree implements Iterable<CategoryTree.Node> {
         }
     }
 
-    public class DepthFirstSearch implements Iterator<Node> {
+    public static record NodeResult (Node node, int depth) {}
+
+    public static class DepthFirstSearch implements Iterator<NodeResult> {
         private final Deque<Iterator<Node>> iteratorStack;
+        private int currentDepth;
 
         public DepthFirstSearch(Node root) {
             iteratorStack = new ArrayDeque<>();
             iteratorStack.push(root.children.iterator());
+            currentDepth = 1;
         }
 
         @Override
         public boolean hasNext() {
             while (!iteratorStack.isEmpty() && !iteratorStack.peekLast().hasNext()) {
                 iteratorStack.pollLast();
+                currentDepth--;
             }
 
             return !iteratorStack.isEmpty();
         }
 
         @Override
-        public Node next() {
+        public NodeResult next() {
             var next = iteratorStack.peekLast().next();
+            var depth = currentDepth;
 
-            if (!next.children.isEmpty()) {
+            if (next.minDepth == currentDepth && !next.children.isEmpty()) {
                 iteratorStack.add(next.children.iterator());
+                currentDepth++;
             }
 
-            return next;
+            return new NodeResult(next, depth);
         }
     }
 }
