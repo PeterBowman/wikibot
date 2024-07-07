@@ -1,12 +1,15 @@
 package com.github.wikibot.utils;
 
 import java.text.Collator;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class CategoryTree {
+public class CategoryTree implements Iterable<CategoryTree.Node> {
     private final Node root;
     private final Collator collator;
 
@@ -24,7 +27,12 @@ public class CategoryTree {
         return root.toString();
     }
 
-    public class Node {
+    @Override
+    public Iterator<Node> iterator() {
+        return new DepthFirstSearch(root);
+    }
+
+    public class Node implements Comparable<Node> {
         private final Node parent;
         private final String name;
         private final int members;
@@ -36,7 +44,7 @@ public class CategoryTree {
             this.name = Objects.requireNonNull(name);
             this.members = members;
 
-            children = new TreeSet<>(CategoryTree.this.collator);
+            children = new TreeSet<>();
 
             if (parent == null) {
                 depth = 0;
@@ -104,6 +112,40 @@ public class CategoryTree {
         @Override
         public String toString() {
             return String.format("%s (%d members, %d subcats)", name, members, children.size());
+        }
+
+        @Override
+        public int compareTo(Node o) {
+            return collator.compare(name, o.name);
+        }
+    }
+
+    public class DepthFirstSearch implements Iterator<Node> {
+        private final Deque<Iterator<Node>> iteratorStack;
+
+        public DepthFirstSearch(Node root) {
+            iteratorStack = new ArrayDeque<>();
+            iteratorStack.push(root.children.iterator());
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (!iteratorStack.isEmpty() && !iteratorStack.peekLast().hasNext()) {
+                iteratorStack.pollLast();
+            }
+
+            return !iteratorStack.isEmpty();
+        }
+
+        @Override
+        public Node next() {
+            var next = iteratorStack.peekLast().next();
+
+            if (!next.children.isEmpty()) {
+                iteratorStack.add(next.children.iterator());
+            }
+
+            return next;
         }
     }
 }
