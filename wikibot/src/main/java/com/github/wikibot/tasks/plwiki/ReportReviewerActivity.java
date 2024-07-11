@@ -278,8 +278,8 @@ public final class ReportReviewerActivity {
         var last = topUsers.size() - 1;
         var top = String.join(" i ", String.join(", ", topUsers.subList(0, last)), topUsers.get(last));
 
-        return String.format(SUMMARY_FMT, String.format("%d.%d", startDate.getDayOfMonth(), startDate.getMonthValue()),
-                                          String.format("%d.%d", endDate.getDayOfMonth(), endDate.getMonthValue()),
+        return String.format(SUMMARY_FMT, String.format("%02d.%02d", startDate.getDayOfMonth(), startDate.getMonthValue()),
+                                          String.format("%02d.%02d", endDate.getDayOfMonth(), endDate.getMonthValue()),
                                           PLURAL_PL.pl(summary.editors(), "zaakceptował"),
                                           formatNum(summary.editors()),
                                           PLURAL_PL.pl(summary.editors(), "redaktor"),
