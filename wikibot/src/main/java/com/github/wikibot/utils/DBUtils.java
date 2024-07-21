@@ -112,7 +112,7 @@ public class DBUtils {
     public static CategoryTree getRecursiveCategoryTree(String sqlUri, Properties props, String category, Collator collator) throws SQLException {
         var visitedCats = new HashSet<String>();
         var nodes = new HashMap<String, CategoryTree.Node>();
-        var targetCategories = Arrays.asList(category.replace(' ', '_').replace("'", "\\'"));
+        var targetCategories = Arrays.asList(category.replace(' ', '_'));
         var depth = 0;
 
         final CategoryTree tree;
@@ -122,8 +122,8 @@ public class DBUtils {
                 var query = """
                     SELECT cat_pages - cat_subcats - cat_files AS members
                     FROM category
-                    WHERE cat_title = "Informatyka";
-                    """.formatted(targetCategories.get(0));
+                    WHERE cat_title = '%s';
+                    """.formatted(targetCategories.get(0).replace("'", "\\'"));
 
                 var rs = connection.createStatement().executeQuery(query);
 
