@@ -280,6 +280,7 @@ public final class AuthorityControl {
                 .filter(rev -> qPatt.matcher(rev.getTitle()).matches())
                 .filter(pred)
                 .filter(rev -> !rev.isRevisionDeleted())
+                .filter(rev -> !rev.getText().isBlank()) // phab: T365155
                 .map(rev -> new JSONObject(rev.getText()))
                 // https://doc.wikimedia.org/Wikibase/master/php/md_docs_topics_json.html
                 .filter(json -> json.optString("type").equals("item"))
