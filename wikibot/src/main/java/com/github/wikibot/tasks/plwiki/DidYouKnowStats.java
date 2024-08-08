@@ -10,14 +10,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,10 +54,15 @@ import org.json.JSONPointer;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
+import com.github.plural4j.Plural;
+import com.github.plural4j.Plural.WordForms;
 import com.github.wikibot.main.Wikibot;
+import com.github.wikibot.parsing.Page;
+import com.github.wikibot.parsing.Section;
 import com.github.wikibot.utils.CollectorUtils;
 import com.github.wikibot.utils.Login;
 import com.github.wikibot.utils.Misc;
+import com.github.wikibot.utils.PluralRules;
 import com.thoughtworks.xstream.XStream;
 
 final class DidYouKnowStats {
@@ -72,7 +80,33 @@ final class DidYouKnowStats {
     private static final String DYK_SUBPAGE_PAGEVIEWS_TOP100 = "Wikiprojekt:Czy wiesz/Statystyki wyświetleń (%d)/TOP 100";
     private static final String DYK_SUBPAGE_TEMPLATE = "Wikiprojekt:Czy wiesz/statystyki-szablon";
     private static final String REST_URI_TEMPLATE = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/pl.wikipedia.org/all-access/user/%1$s/daily/%2$d/%2$d";
+    private static final String NOTICEBOARD_PAGE = "Wikipedia:Tablica ogłoszeń/Ogłoszenia";
+    private static final int NOTICEBOARD_MAX_DAYS_SPAN = 31;
+    private static final int NOTICEBOARD_MIN_DAYS = 5;
+    private static final int NOTICEBOARD_MAX_MENTIONS = 3;
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
+
+    private static final Map<Long, String> MONTH_NAMES_GENITIVE = Map.ofEntries(
+        Map.entry(1L, "stycznia"),
+        Map.entry(2L, "lutego"),
+        Map.entry(3L, "marca"),
+        Map.entry(4L, "kwietnia"),
+        Map.entry(5L, "maja"),
+        Map.entry(6L, "czerwca"),
+        Map.entry(7L, "lipca"),
+        Map.entry(8L, "sierpnia"),
+        Map.entry(9L, "września"),
+        Map.entry(10L, "października"),
+        Map.entry(11L, "listopada"),
+        Map.entry(12L, "grudnia")
+    );
+
+    // https://stackoverflow.com/q/17188316
+    private static final DateTimeFormatter NOTICEBOARD_HEADER_FORMATTER = new DateTimeFormatterBuilder()
+        .appendValue(ChronoField.DAY_OF_MONTH)
+        .appendLiteral(' ')
+        .appendText(ChronoField.MONTH_OF_YEAR, MONTH_NAMES_GENITIVE)
+        .toFormatter(Locale.forLanguageTag("pl-PL"));
 
     private static final DateTimeFormatter EXPO_DATE_FORMAT = new DateTimeFormatterBuilder()
         .appendLiteral("Czy wiesz/ekspozycje/")
@@ -83,21 +117,42 @@ final class DidYouKnowStats {
         .appendValue(ChronoField.DAY_OF_MONTH, 2)
         .toFormatter();
 
+    private static final Plural PLURAL_PL = new Plural(PluralRules.POLISH, new WordForms[] {
+        new WordForms(new String[] {"artykuł", "artykuły", "artykułów"}),
+        new WordForms(new String[] {"utworzona", "utworzone", "utworzonych"}),
+        new WordForms(new String[] {"zgłoszona", "zgłoszone", "zgłoszonych"}),
+        new WordForms(new String[] {"sprawdzona", "sprawdzone", "sprawdzonych"}),
+    });
+
+    private static final String NOTICEBOARD_SUMMARY_FMT =
+        "* W ostatnim okresie (%s–%s) wyeksponowano %d %s na stronie głównej w ramach [[Wikiprojekt:Czy wiesz|projektu „Czy wiesz”]]. " +
+        "Najaktywniejsze osoby w określonych obszarach:" +
+        "<ul>" +
+        "<li>tworzenie artykułów: %s;</li>" +
+        "<li>zgłaszanie do ekspozycji: %s;</li>" +
+        "<li>sprawdzanie zgłoszeń: %s.</li>" +
+        "</ul>" +
+        "Artykułem z największą liczbą wyświetleń (%d w dniu %s) był „[[%s]]”. " +
+        "Więcej informacji można uzyskać na [[Wikiprojekt:Czy wiesz/statystyki|stronie statystyk projektu]]. " +
+        "Dziękujemy wszystkim zaangażowanym! ~~~~";
+
     public static void main(String[] args) throws Exception {
         var lastDatePath = LOCATION.resolve("last_date.txt");
+        var optLastDate = retrieveLastDate(lastDatePath);
         var now = OffsetDateTime.now().atZoneSameInstant(PROJECT_ZONE);
         var line = readOptions(args);
         var years = new ArrayList<Integer>();
 
         if (line.hasOption("year")) {
+            if (line.hasOption("noticeboard")) {
+                throw new IllegalArgumentException("Noticeboard option cannot be used with year option.");
+            }
+
             var yearStr = line.getOptionValue("year");
             years.add(Integer.parseInt(yearStr));
         } else if (line.hasOption("update")) {
-            if (Files.exists(lastDatePath)) {
-                var contents = Files.readString(lastDatePath).trim();
-                var lastDate = OffsetDateTime.parse(contents, DateTimeFormatter.ISO_OFFSET_DATE_TIME).atZoneSameInstant(PROJECT_ZONE);
-
-                for (int year = lastDate.getYear(); year <= now.getYear(); year++) {
+            if (optLastDate.isPresent()) {
+                for (int year = optLastDate.get().getYear(); year <= now.getYear(); year++) {
                     years.add(year);
                 }
             } else {
@@ -109,27 +164,51 @@ final class DidYouKnowStats {
 
         Login.login(wb);
 
+        var storage = new ArrayList<Entry>();
+
         for (var year : years) {
             System.out.println("Processing year " + year);
             var entries = processYear(year);
             System.out.printf("Got %d entries.%n", entries.size());
 
-            var untilMonth = entries.stream().mapToInt(Entry::monthOfYear).max().getAsInt();
+            var untilMonth = entries.stream().mapToInt(e -> e.date().getMonthValue()).max().getAsInt();
 
             updateAuthors(year, untilMonth, entries);
             updatePosters(year, untilMonth, entries);
             updateReviewers(year, untilMonth, entries);
             updatePageViews(year, untilMonth, entries);
             updateNavbox(year);
+
+            if (line.hasOption("noticeboard")) {
+                storage.addAll(entries);
+            }
         }
 
         Files.writeString(lastDatePath, now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+
+        if (line.hasOption("noticeboard") && !storage.isEmpty()) {
+            if (optLastDate.isPresent()) {
+                var lastDate = optLastDate.get();
+
+                if (
+                    ChronoUnit.DAYS.between(lastDate, now) <= NOTICEBOARD_MAX_DAYS_SPAN &&
+                    ChronoUnit.DAYS.between(lastDate, now) >= NOTICEBOARD_MIN_DAYS
+                ) {
+                    postOnNoticeboard(lastDate, now.minusDays(1), storage);
+                } else {
+                    System.out.println("Last update was too soon or too long ago, skipping noticeboard update.");
+                }
+            } else {
+                System.out.println("No last date found, skipping noticeboard update.");
+            }
+        }
     }
 
     private static CommandLine readOptions(String[] args) {
         var options = new Options();
         options.addOption("y", "year", true, "year of archived threads to be queried");
         options.addOption("u", "update", false, "process new changes since last run");
+        options.addOption("n", "noticeboard", false, "report to noticeboard");
 
         if (args.length == 0) {
             System.out.print("Option: ");
@@ -145,6 +224,20 @@ final class DidYouKnowStats {
             System.out.println(e.getMessage());
             new HelpFormatter().printHelp(DidYouKnowStats.class.getName(), options);
             return null;
+        }
+    }
+
+    private static Optional<ZonedDateTime> retrieveLastDate(Path lastDatePath) {
+        try {
+            var contents = Files.readString(lastDatePath).trim();
+
+            var parsed = OffsetDateTime.parse(contents, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                .atZoneSameInstant(PROJECT_ZONE);
+
+            return Optional.of(parsed);
+        } catch (IOException | DateTimeParseException e) {
+            System.out.println("Failed to retrieve last date: " + e.getMessage());
+            return Optional.empty();
         }
     }
 
@@ -165,7 +258,7 @@ final class DidYouKnowStats {
 
         for (var page : wb.getContentOfPages(candidatePagesMap.keySet())) {
             var talkPage = candidatePagesMap.get(page.title());
-            var temporal = EXPO_DATE_FORMAT.parse(wb.removeNamespace(talkPage));
+            var date = LocalDate.parse(wb.removeNamespace(talkPage), EXPO_DATE_FORMAT);
 
             for (var template : ParseUtils.getTemplatesIgnoreCase(EXPO_TEMPLATE, page.text())) {
                 var params = ParseUtils.getTemplateParametersWithValue(template);
@@ -202,12 +295,7 @@ final class DidYouKnowStats {
                     }
                 }
 
-                var entry = new Entry(title, authors, poster,
-                                      Collections.unmodifiableList(reviewers),
-                                      temporal.get(ChronoField.YEAR),
-                                      temporal.get(ChronoField.MONTH_OF_YEAR),
-                                      temporal.get(ChronoField.DAY_OF_MONTH));
-
+                var entry = new Entry(title, authors, poster, Collections.unmodifiableList(reviewers), date);
                 entries.add(entry);
             }
         }
@@ -377,11 +465,11 @@ final class DidYouKnowStats {
 
         var groupedUsers = entries.stream().collect(CollectorUtils.groupingByFlattened(
             e -> e.authors().stream(),
-            Collectors.groupingBy(Entry::monthOfYear, Collectors.counting())
+            Collectors.groupingBy(e -> e.date().getMonthValue(), Collectors.counting())
         ));
 
         var groupedMonths = entries.stream().collect(Collectors.groupingBy(
-            Entry::monthOfYear,
+            e -> e.date().getMonthValue(),
             CollectorUtils.groupingByFlattened(e -> e.authors().stream(), Collectors.counting())
         ));
 
@@ -396,11 +484,11 @@ final class DidYouKnowStats {
 
         var groupedUsers = entries.stream().collect(Collectors.groupingBy(
             Entry::poster,
-            Collectors.groupingBy(Entry::monthOfYear, Collectors.counting())
+            Collectors.groupingBy(e -> e.date().getMonthValue(), Collectors.counting())
         ));
 
         var groupedMonths = entries.stream().collect(Collectors.groupingBy(
-            Entry::monthOfYear,
+            e -> e.date().getMonthValue(),
             Collectors.groupingBy(Entry::poster, Collectors.counting())
         ));
 
@@ -415,11 +503,11 @@ final class DidYouKnowStats {
 
         var groupedUsers = entries.stream().collect(CollectorUtils.groupingByFlattened(
             e -> e.reviewers().stream(),
-            Collectors.groupingBy(Entry::monthOfYear, Collectors.counting())
+            Collectors.groupingBy(e -> e.date().getMonthValue(), Collectors.counting())
         ));
 
         var groupedMonths = entries.stream().collect(Collectors.groupingBy(
-            Entry::monthOfYear,
+            e -> e.date().getMonthValue(),
             CollectorUtils.groupingByFlattened(e -> e.reviewers().stream(), Collectors.counting())
         ));
 
@@ -430,6 +518,20 @@ final class DidYouKnowStats {
     }
 
     private static void updatePageViews(int year, int untilMonth, List<Entry> entries) throws IOException, InterruptedException, LoginException {
+        var pageViews = updatePageViewsStorage(year, entries);
+
+        if (pageViews.isEmpty()) {
+            return;
+        }
+
+        var text = makePageViewsText(year, untilMonth, pageViews);
+        wb.edit(DYK_SUBPAGE_PAGEVIEWS.formatted(year), text, "aktualizacja");
+
+        var top100Text = makePageViewsTop100Text(year, untilMonth, pageViews);
+        wb.edit(DYK_SUBPAGE_PAGEVIEWS_TOP100.formatted(year), top100Text, "aktualizacja");
+    }
+
+    private static List<PageViews> updatePageViewsStorage(int year, List<Entry> entries) throws IOException, InterruptedException {
         var xstream = new XStream();
         var storagePath = LOCATION.resolve("pageviews-%d.xml".formatted(year));
 
@@ -444,53 +546,57 @@ final class DidYouKnowStats {
 
         System.out.println("Filtered entries for pageviews analysis: " + filtered.size());
 
-        if (filtered.isEmpty()) {
-            return;
-        }
+        if (!filtered.isEmpty()) {
+            var client = HttpClient.newHttpClient();
+            var jsonPointer = JSONPointer.builder().append("items").append(0).append("views").build();
 
-        var client = HttpClient.newHttpClient();
-        var jsonPointer = JSONPointer.builder().append("items").append(0).append("views").build();
+            var requestBuilder = HttpRequest.newBuilder()
+                .header("User-Agent", Login.getUserAgent())
+                .header("Accept", "application/json")
+                .GET();
 
-        var requestBuilder = HttpRequest.newBuilder()
-            .header("User-Agent", Login.getUserAgent())
-            .header("Accept", "application/json")
-            .GET();
+            for (var entry : filtered) {
+                var urlStr = URLEncoder.encode(entry.title(), StandardCharsets.UTF_8);
+                var uri = URI.create(REST_URI_TEMPLATE.formatted(urlStr, entry.getTimestamp()));
+                var request = requestBuilder.uri(uri).build();
+                var response = getResponse(client, request);
+                var json = new JSONObject(response.body());
+                var optViews = Optional.ofNullable((Integer)json.optQuery(jsonPointer));
 
-        for (var entry : filtered) {
-            var uri = URI.create(REST_URI_TEMPLATE.formatted(URLEncoder.encode(entry.title(), StandardCharsets.UTF_8), entry.getTimestamp()));
-            var request = requestBuilder.uri(uri).build();
-            var response = getResponse(client, request);
-            var json = new JSONObject(response.body());
-            var optViews = Optional.ofNullable((Integer)json.optQuery(jsonPointer));
+                if (optViews.isPresent()) {
+                    storage.computeIfAbsent(entry.getTimestamp(), k -> new HashMap<>()).put(entry.title(), optViews.get());
+                }
 
-            if (optViews.isPresent()) {
-                storage.computeIfAbsent(entry.getTimestamp(), k -> new HashMap<>()).put(entry.title(), optViews.get());
+                System.out.printf("Queried pageviews for %s (%d)%n", entry.title(), entry.getTimestamp());
+
+                // REST API rules state that no more than 100 requests per *second* are allowed, so 10 ms is the hard limit
+                Thread.sleep(100);
             }
 
-            System.out.printf("Queried pageviews for %s (%d)%n", entry.title(), entry.getTimestamp());
-            Thread.sleep(100); // REST API rules state that no more than 100 requests per *second* are allowed, so 10 ms is the hard limit
+            var currentTitles = entries.stream().map(Entry::title).collect(Collectors.toSet());
+
+            // some titles might have been renamed
+            storage.values().forEach(map -> map.keySet().removeIf(title -> !currentTitles.contains(title)));
+
+            // shouldn't happen, maybe the pages were deleted instead
+            storage.values().removeIf(Map::isEmpty);
+
+            Files.writeString(storagePath, xstream.toXML(storage));
         }
 
-        var currentTitles = entries.stream().map(Entry::title).collect(Collectors.toSet());
-
-        storage.values().forEach(map -> map.keySet().removeIf(title -> !currentTitles.contains(title))); // some titles might have been renamed
-        storage.values().removeIf(Map::isEmpty); // shouldn't happen, maybe the pages were deleted instead
-
-        Files.writeString(storagePath, xstream.toXML(storage));
-
-        var results = new ArrayList<PageViews>();
+        var pageViews = new ArrayList<PageViews>();
 
         storage.entrySet().stream()
             .forEach(e -> e.getValue().entrySet().stream()
-                .map(ee -> new PageViews(ee.getKey(), year, extractMonth(e.getKey()), extractDay(e.getKey()), ee.getValue()))
-                .forEach(results::add)
+                .map(ee -> new PageViews(
+                    ee.getKey(),
+                    LocalDate.of(year, extractMonth(e.getKey()), extractDay(e.getKey())),
+                    ee.getValue())
+                )
+                .forEach(pageViews::add)
             );
 
-        var text = makePageViewsText(year, untilMonth, results);
-        wb.edit(DYK_SUBPAGE_PAGEVIEWS.formatted(year), text, "aktualizacja");
-
-        var top100Text = makePageViewsTop100Text(year, untilMonth, results);
-        wb.edit(DYK_SUBPAGE_PAGEVIEWS_TOP100.formatted(year), top100Text, "aktualizacja");
+        return pageViews;
     }
 
     private static HttpResponse<String> getResponse(HttpClient client, HttpRequest request) throws InterruptedException {
@@ -537,8 +643,11 @@ final class DidYouKnowStats {
 
         var rankingPerMonth = pageViews.stream()
             .collect(Collectors.groupingBy(
-                PageViews::month,
-                Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingInt(PageViews::views).reversed().thenComparing(PageViews::day)))
+                pv -> pv.date().getMonthValue(),
+                Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingInt(PageViews::views)
+                    .reversed()
+                    .thenComparing(pv -> pv.date().getDayOfMonth())
+                ))
             ));
 
         for (int month = 1; month <= untilMonth; month++) {
@@ -586,7 +695,7 @@ final class DidYouKnowStats {
         var sb = new StringBuilder();
 
         var top100 = pageViews.stream()
-            .sorted(Comparator.comparingInt(PageViews::views).reversed().thenComparing(PageViews::day))
+            .sorted(Comparator.comparingInt(PageViews::views).reversed().thenComparing(pv -> pv.date().getDayOfMonth()))
             .limit(100)
             .toList();
 
@@ -602,7 +711,9 @@ final class DidYouKnowStats {
             sb.append("|-\n");
             sb.append("|%d\n".formatted(ordinal++));
             sb.append("|[[%s]]\n".formatted(entry.title()));
-            sb.append("|[[Wikiprojekt:Czy wiesz/ekspozycje/%1$04d-%2$02d-%3$02d|%1$04d-%2$02d-%3$02d]]\n".formatted(entry.year(), entry.month(), entry.day()));
+            sb.append("|[[Wikiprojekt:Czy wiesz/ekspozycje/%1$s|%1$s]]\n".formatted(
+                DateTimeFormatter.ISO_LOCAL_DATE.format(entry.date())
+            ));
             sb.append("|%d\n".formatted(entry.views()));
         }
     }
@@ -639,9 +750,74 @@ final class DidYouKnowStats {
         }
     }
 
-    private record Entry(String title, List<String> authors, String poster, List<String> reviewers, int year, int monthOfYear, int dayOfMonth) {
+    private static void postOnNoticeboard(ZonedDateTime startDate, ZonedDateTime endDate, List<Entry> entries) throws IOException, InterruptedException, LoginException {
+        var filtered = entries.stream()
+            .filter(e -> !e.date().isBefore(startDate.toLocalDate()) && !e.date().isAfter(endDate.toLocalDate()))
+            .toList();
+
+        var authors = filtered.stream()
+            .collect(CollectorUtils.groupingByFlattened(e -> e.authors().stream(), Collectors.counting()));
+
+        var posters = filtered.stream()
+            .collect(Collectors.groupingBy(Entry::poster, Collectors.counting()));
+
+        var reviewers = filtered.stream()
+            .collect(CollectorUtils.groupingByFlattened(e -> e.reviewers().stream(), Collectors.counting()));
+
+        var topAuthors = TopUsers.fromMap(authors);
+        var topPosters = TopUsers.fromMap(posters);
+        var topReviewers = TopUsers.fromMap(reviewers);
+
+        var pageViews = new ArrayList<PageViews>(); // *all* of them, not limited to `filtered`
+
+        for (var year : filtered.stream().map(e -> e.date().getYear()).distinct().toList()) {
+            var pageViewsStorage = updatePageViewsStorage(year, filtered);
+            pageViews.addAll(pageViewsStorage);
+        }
+
+        var topPageViews = pageViews.stream()
+            .filter(pv -> !pv.date().isBefore(startDate.toLocalDate()) && !pv.date().isAfter(endDate.toLocalDate()))
+            .sorted(Comparator.comparingInt(PageViews::views).reversed())
+            .findFirst()
+            .get();
+
+        var dateFormatter = new DateTimeFormatterBuilder()
+            .appendValue(ChronoField.DAY_OF_MONTH, 2)
+            .appendLiteral('.')
+            .appendValue(ChronoField.MONTH_OF_YEAR, 2)
+            .toFormatter();
+
+        var text = NOTICEBOARD_SUMMARY_FMT.formatted(dateFormatter.format(startDate),
+                                                     dateFormatter.format(endDate),
+                                                     filtered.size(),
+                                                     PLURAL_PL.pl(filtered.size(), "artykuł"),
+                                                     topAuthors.stringifyRanking(),
+                                                     topPosters.stringifyRanking(),
+                                                     topReviewers.stringifyRanking(),
+                                                     topPageViews.views(),
+                                                     dateFormatter.format(topPageViews.date()),
+                                                     topPageViews.title());
+
+        var today = OffsetDateTime.now().atZoneSameInstant(PROJECT_ZONE);
+        var pc = wb.getContentOfPages(List.of(NOTICEBOARD_PAGE)).get(0);
+        var page = Page.wrap(pc);
+        var firstSection = page.getAllSections().get(0);
+        var header = NOTICEBOARD_HEADER_FORMATTER.format(today);
+
+        if (firstSection.getHeader().equals(header)) {
+            firstSection.setIntro(text + "\n" + firstSection.getIntro());
+        } else {
+            var newSection = Section.create(header, 2);
+            newSection.setIntro(text);
+            page.prependSections(List.of(newSection));
+        }
+
+        wb.edit(NOTICEBOARD_PAGE, page.toString(), "raport CzyWiesza", pc.timestamp());
+    }
+
+    private record Entry(String title, List<String> authors, String poster, List<String> reviewers, LocalDate date) {
         int getTimestamp() {
-            return Integer.parseInt("%04d%02d%02d".formatted(year, monthOfYear, dayOfMonth));
+            return Integer.parseInt("%04d%02d%02d".formatted(date.getYear(), date.getMonthValue(), date.getDayOfMonth()));
         }
     }
 
@@ -686,7 +862,7 @@ final class DidYouKnowStats {
         }
     }
 
-    private record TopUsers(List<String> gold, List<String> silver, List<String> bronze) {
+    private record TopUsers(List<String> gold, List<String> silver, List<String> bronze, long goldValue, long silverValue, long bronzeValue) {
         private static List<String> getRankedUsers(Map<String, Long> topUsers, long score) {
             return topUsers.entrySet().stream()
                 .filter(e -> e.getValue().equals(score))
@@ -706,9 +882,55 @@ final class DidYouKnowStats {
             var silverUsers = highestScores.size() >= 2 ? getRankedUsers(topUsers, highestScores.get(1)) : Collections.<String>emptyList();
             var bronzeUsers = highestScores.size() >= 3 ? getRankedUsers(topUsers, highestScores.get(2)) : Collections.<String>emptyList();
 
-            return new TopUsers(goldUsers, silverUsers, bronzeUsers);
+            return new TopUsers(goldUsers, silverUsers, bronzeUsers,
+                                highestScores.size() >= 1 ? highestScores.get(0) : 0L,
+                                highestScores.size() >= 2 ? highestScores.get(1) : 0L,
+                                highestScores.size() >= 3 ? highestScores.get(2) : 0L);
+        }
+
+        public String stringifyRanking() {
+            var out = new ArrayList<String>();
+
+            appendTopUsers(gold, goldValue, out);
+            appendTopUsers(silver, silverValue, out);
+            appendTopUsers(bronze, bronzeValue, out);
+
+            return joinItemsAsNaturalLanguage(out, "oraz");
         }
     }
 
-    private record PageViews(String title, int year, int month, int day, int views) {}
+    private static void appendTopUsers(List<String> users, long value, List<String> out) {
+        if (!users.isEmpty()) {
+            var linked = users.stream()
+                .map(user -> "[[User:%1$s|%1$s]]".formatted(user))
+                .limit(NOTICEBOARD_MAX_MENTIONS)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+            if (users.size() > NOTICEBOARD_MAX_MENTIONS) {
+                linked.add("in.");
+            }
+
+            var temp = joinItemsAsNaturalLanguage(linked, "i");
+            out.add("%s (%d)".formatted(temp, value));
+        }
+    }
+
+    // https://www.baeldung.com/java-string-concatenation-natural-language
+    private static String joinItemsAsNaturalLanguage(List<String> elements, String conjunction) {
+        if (elements.size() < 3) {
+            return String.join(" " + conjunction + " ", elements);
+        }
+
+        // list has at least three elements
+        int lastIdx = elements.size() - 1;
+
+        var sb = new StringBuilder();
+
+        return sb.append(String.join(", ", elements.subList(0, lastIdx)))
+          .append(" " + conjunction + " ")
+          .append(elements.get(lastIdx))
+          .toString();
+    }
+
+    private record PageViews(String title, LocalDate date, int views) {}
 }
