@@ -66,7 +66,7 @@ public final class InconsistentHeaderTitles {
 
     private static final List<String> HEADER_TEMPLATES = List.of("zh", "ko", "ja");
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
-    private static final Map<String, Set<Item>> map = new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")));
+    private static final Map<String, Set<Item>> map = new TreeMap<>(Collator.getInstance(Locale.forLanguageTag("pl-PL")));
 
     private static final Plural PLURAL_PL;
     private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
@@ -89,7 +89,7 @@ public final class InconsistentHeaderTitles {
         };
 
         PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
-        NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        NUMBER_FORMAT_PL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     public static void main(String[] args) throws Exception {

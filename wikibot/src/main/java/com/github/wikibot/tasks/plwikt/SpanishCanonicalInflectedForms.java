@@ -41,7 +41,7 @@ public final class SpanishCanonicalInflectedForms {
 
     private static final Plural PLURAL_PL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
 
-    private static final LocalizedNumberFormatter NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL"))
+    private static final LocalizedNumberFormatter NUMBER_FORMAT_PL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL"))
             .grouping(GroupingStrategy.MIN2);
 
     private static final Wikibot wb = Wikibot.newSession("pl.wiktionary.org");
@@ -86,7 +86,7 @@ public final class SpanishCanonicalInflectedForms {
     private static List<String> retrieveList() throws IOException {
         List<PageContainer> pages = wb.getContentOfCategorymembers(CATEGORY_NAME, Wiki.MAIN_NAMESPACE);
 
-        Collator collator = Collator.getInstance(new Locale("es", "ES"));
+        Collator collator = Collator.getInstance(Locale.forLanguageTag("es-ES"));
         collator.setStrength(Collator.SECONDARY);
 
         List<String> titles = pages.stream()

@@ -125,7 +125,7 @@ public final class PolishSurnamesInflection {
             Files.writeString(fHistory, new XStream().toXML(history));
         }
 
-        Collator collator = Collator.getInstance(new Locale("pl", "PL"));
+        Collator collator = Collator.getInstance(Locale.forLanguageTag("pl-PL"));
         collator.setStrength(Collator.SECONDARY);
         Collections.sort(logs, new LogEntryComparator(collator));
 

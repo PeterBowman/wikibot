@@ -81,7 +81,7 @@ public final class LinkManager {
 
         pluralPL = new Plural(PluralRules.POLISH, polishWords);
 
-        numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        numberFormatPL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     public void selector(char op) throws Exception {

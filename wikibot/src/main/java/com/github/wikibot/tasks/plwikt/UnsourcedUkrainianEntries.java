@@ -66,7 +66,7 @@ public final class UnsourcedUkrainianEntries {
         };
 
         PLURAL_PL = new Plural(PluralRules.POLISH, polishWords);
-        NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        NUMBER_FORMAT_PL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     public static void main(String[] args) throws Exception {
@@ -89,7 +89,7 @@ public final class UnsourcedUkrainianEntries {
             .flatMap(p -> p.getSection("ukraiński", true).stream())
             .filter(s -> !hasAllDefinitionsSourced(s, sourceTmpls, ignoredHeaderTmpls))
             .map(f -> f.getContainingPage().get().getTitle())
-            .sorted(Collator.getInstance(new Locale("uk")))
+            .sorted(Collator.getInstance(Locale.forLanguageTag("uk")))
             .toList();
 
         var sublist = titles.subList(0, RESULT_LIMIT);

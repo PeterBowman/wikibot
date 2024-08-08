@@ -55,7 +55,7 @@ public final class RefreshWantedArticles {
         P_OCCURRENCES_TARGET = Pattern.compile("((?: *• *)?" + P_LINK.pattern() + ")+");
         P_OCCURRENCES_REFILL = Pattern.compile("^\\* '{3}" + P_LINK.pattern() + "'{3}$", Pattern.MULTILINE);
         PLURAL_PL = new Plural(PluralRules.POLISH, "utworzone,utworzone,utworzonych");
-        NUMBER_FORMAT_PL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        NUMBER_FORMAT_PL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     public static void main(String[] args) throws Exception {

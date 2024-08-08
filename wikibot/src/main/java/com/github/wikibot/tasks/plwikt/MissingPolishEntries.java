@@ -1,7 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -158,7 +158,7 @@ public class MissingPolishEntries {
 
     private static void retainSgjpEntries(String dumpDir, List<String> titles) throws IOException {
         stats.dumpFile = String.format(DUMP_FILENAME_FORMAT, dumpDir);
-        var url = new URL(DOWNLOAD_URL + dumpDir + "/" + stats.dumpFile);
+        var url = URI.create(DOWNLOAD_URL + dumpDir + "/" + stats.dumpFile).toURL();
 
         try (var stream = MorfeuszLookup.fromInputStream(url.openStream())) {
             var database = stream.map(MorfeuszLookup.Record::lemma).collect(Collectors.toSet());
@@ -175,10 +175,10 @@ public class MissingPolishEntries {
     }
 
     private static String getOutput(List<String> titles) {
-        var coll = Collator.getInstance(new Locale("pl", "PL"));
+        var coll = Collator.getInstance(Locale.forLanguageTag("pl-PL"));
         coll.setStrength(Collator.SECONDARY);
 
-        var numberFormatter = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        var numberFormatter = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
 
         var map = titles.stream()
             .collect(Collectors.groupingBy(

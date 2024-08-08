@@ -85,7 +85,7 @@ public final class MissingPolishEtymOnWikidata {
                 f -> f.getContainingSection().get().getContainingPage().get().getTitle(),
                 Field::getContent,
                 (a, b) -> a,
-                () -> new TreeMap<>(Collator.getInstance(new Locale("pl", "PL")))));
+                () -> new TreeMap<>(Collator.getInstance(Locale.forLanguageTag("pl-PL")))));
 
         Path hash = LOCATION.resolve("hash.txt");
 

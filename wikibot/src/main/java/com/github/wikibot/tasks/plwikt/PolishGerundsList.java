@@ -59,7 +59,7 @@ public class PolishGerundsList {
 
         pluralPL = new Plural(PluralRules.POLISH, polishWords);
 
-        numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        numberFormatPL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     private static void selector(char op) throws Exception {
@@ -347,7 +347,7 @@ public class PolishGerundsList {
             tempList.add(formatted);
         }
 
-        Collator coll = Collator.getInstance(new Locale("pl"));
+        Collator coll = Collator.getInstance(Locale.forLanguageTag("pl-PL"));
         coll.setStrength(Collator.SECONDARY);
 
         Collections.sort(tempList, coll);

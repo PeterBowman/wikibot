@@ -36,7 +36,7 @@ public class DevanagariIAST {
 
     static {
         pluralPL = new Plural(PluralRules.POLISH, "hasło,hasła,haseł");
-        numberFormatPL = NumberFormatter.withLocale(new Locale("pl", "PL")).grouping(GroupingStrategy.MIN2);
+        numberFormatPL = NumberFormatter.withLocale(Locale.forLanguageTag("pl-PL")).grouping(GroupingStrategy.MIN2);
     }
 
     private static void selector(char op) throws Exception {
