@@ -5,7 +5,7 @@
 
 <%@ tag description="Ambox header template" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 <%@ attribute name="type" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <c:choose>
     <c:when test="${type eq 'warning'}">

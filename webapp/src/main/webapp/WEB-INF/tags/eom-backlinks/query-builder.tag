@@ -1,8 +1,8 @@
 <%@ tag description="Helper tag for building SQL query bits" pageEncoding="UTF-8"
     trimDirectiveWhitespaces="true" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 
 <c:choose>
     <c:when test="${empty fn:trim(fn:replace(param.morphem, '|', ''))}">

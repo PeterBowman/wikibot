@@ -10,8 +10,8 @@
 <%@ attribute name="display" %>
 <%@ attribute name="customClasses" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>
 
 <c:set var="normalized" value="${fn:replace(target, '_', ' ')}" />

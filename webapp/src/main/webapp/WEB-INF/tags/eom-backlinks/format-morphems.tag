@@ -3,8 +3,8 @@
 <%@ attribute name="morphems" required="true" %>
 <%@ attribute name="types" required="true" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 
 <jsp:useBean id="targetMap" class="java.util.HashMap" />

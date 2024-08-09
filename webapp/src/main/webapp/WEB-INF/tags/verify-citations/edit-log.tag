@@ -3,8 +3,8 @@
 
 <%@ attribute name="row" required="true" type="java.util.SortedMap" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
 <fmt:formatDate value="${row.edit_timestamp}" pattern="HH:mm, d MMM yyyy" />
 .&nbsp;.

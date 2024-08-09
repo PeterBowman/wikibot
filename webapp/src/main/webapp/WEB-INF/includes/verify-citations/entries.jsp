@@ -1,8 +1,8 @@
 <%@ page language="java" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.sql" prefix="sql" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <%@ taglib tagdir="/WEB-INF/tags" prefix="t" %>
 <%@ taglib tagdir="/WEB-INF/tags/verify-citations" prefix="vc" %>
 <%@ taglib uri="tld/utils" prefix="utils" %>

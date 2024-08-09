@@ -1,7 +1,7 @@
 <%-- Based on http://stackoverflow.com/a/33246991 --%>
 <%@ tag pageEncoding="UTF-8" dynamic-attributes="attrs" trimDirectiveWhitespaces="true" %>
 <%@ attribute name="context" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <c:url value="${context}">
 

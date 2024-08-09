@@ -25,7 +25,7 @@ public class DBUtils {
 
     public static Properties prepareSQLProperties() throws IOException {
         var defaultSQLProperties = new Properties();
-        defaultSQLProperties.setProperty("enabledTLSProtocols", "TLSv1.2");
+        defaultSQLProperties.setProperty("tlsVersions", "TLSv1.2");
         return prepareSQLProperties(defaultSQLProperties);
     }
 

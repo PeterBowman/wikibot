@@ -5,7 +5,7 @@
 <%@ attribute name="label" %>
 <%@ attribute name="defaultOption" %>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <c:if test="${not empty label}">
     <label for="${parameter}">${label}:</label>
