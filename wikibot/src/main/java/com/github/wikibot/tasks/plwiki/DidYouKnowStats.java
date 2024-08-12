@@ -805,7 +805,7 @@ final class DidYouKnowStats {
         var header = NOTICEBOARD_HEADER_FORMATTER.format(today);
 
         if (firstSection.getHeader().equals(header)) {
-            firstSection.setIntro(text + "\n" + firstSection.getIntro());
+            firstSection.setIntro(firstSection.getIntro().stripTrailing() + "\n" + text);
         } else {
             var newSection = Section.create(header, 2);
             newSection.setIntro(text);

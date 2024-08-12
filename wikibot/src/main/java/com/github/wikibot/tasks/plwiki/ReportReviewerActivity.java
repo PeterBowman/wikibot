@@ -137,7 +137,7 @@ public final class ReportReviewerActivity {
         var wikipediaSummary = makeWikipediaSummary(startDate, endDate, rows, summary);
 
         if (firstSection.getHeader().equals(header)) {
-            firstSection.setIntro(wikipediaSummary + "\n" + firstSection.getIntro());
+            firstSection.setIntro(firstSection.getIntro().stripTrailing() + "\n" + wikipediaSummary);
         } else {
             var newSection = Section.create(header, 2);
             newSection.setIntro(wikipediaSummary);
