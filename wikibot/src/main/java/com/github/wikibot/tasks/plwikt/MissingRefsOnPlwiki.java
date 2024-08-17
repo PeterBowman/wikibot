@@ -51,6 +51,7 @@ public class MissingRefsOnPlwiki {
         TARGET_TEMPLATES.put("Grafem infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Gwiazda infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Imię infobox", Arrays.asList("wikisłownik"));
+        TARGET_TEMPLATES.put("Instytucja państwowa infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Jednostka administracyjna infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Jezioro infobox", Arrays.asList("wikisłownik"));
         //_sorted_map.put("Język infobox", Arrays.asList("wikisłownik")); // links back to categories only
@@ -60,6 +61,7 @@ public class MissingRefsOnPlwiki {
         TARGET_TEMPLATES.put("Miejscowość infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Minerał infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Narzędzie infobox", Arrays.asList("wikisłownik"));
+        TARGET_TEMPLATES.put("Oprogramowanie infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Państwo infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Pasmo górskie infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Pierwiastek infobox", Arrays.asList("wikisłownik"));
@@ -69,7 +71,9 @@ public class MissingRefsOnPlwiki {
         TARGET_TEMPLATES.put("Postać fikcyjna infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Postać religijna infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Preparat leczniczy infobox", Arrays.asList("wikisłownik"));
+        TARGET_TEMPLATES.put("Przedsiębiorstwo infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Roślina infobox", Arrays.asList("wikisłownik"));
+        TARGET_TEMPLATES.put("Ród infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Rzeka infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Takson infobox", Arrays.asList("wikisłownik"));
         TARGET_TEMPLATES.put("Wielkość fizyczna infobox", Arrays.asList("wikisłownik"));
