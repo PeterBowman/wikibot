@@ -37,7 +37,8 @@ public final class ReportDeaths {
         WHERE {
             VALUES ?dod {"+%s"^^xsd:dateTime}
             ?dod ^wdt:P570 ?item .
-            ?item ^schema:about ?article .
+            ?item wdt:P31 wd:Q5 ;
+                  ^schema:about ?article .
             ?article schema:isPartOf <https://pl.wikipedia.org/> ;
                      schema:name ?name .
             OPTIONAL {
