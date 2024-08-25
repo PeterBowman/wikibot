@@ -27,7 +27,7 @@ public final class ReportDeaths {
 
     private static final int MAX_SPARQL_RETRIES = 15;
     private static final int LATEST_OFFSET_DAYS = 1;
-    private static final int TIME_SPAN_DAYS = 7;
+    private static final int TIME_SPAN_DAYS = 10;
 
     private static final String SPARQL_ENTRYPOINT = "https://query.wikidata.org/embed.html#";
 
