@@ -113,14 +113,11 @@ public final class SurnameAppendices {
         sb.append(String.format("<strong>Lista de {{l|es|apellido|apellidos}} que comienzan por la letra {{l|es|%s}}</strong>:", headerUpper));
         sb.append("\n\n");
 
-        sb.append("{{arriba}}").append("\n");
-
         surnames.stream()
             .map(surname -> String.format("* {{l|es|%s}}\n", surname))
             .forEach(sb::append);
 
-        sb.append("{{abajo}}").append("\n\n");
-
+        sb.append("\n\n");
         sb.append(String.format("[[Categoría:ES:Apellidos| %s]]", headerLower)).append("\n");
         sb.append(String.format("[[Categoría:Wikcionario:Apéndices|Apellidos %s]]", headerLower));
 
