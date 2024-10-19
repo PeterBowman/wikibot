@@ -40,12 +40,14 @@ public final class MissingWikidataBiograms {
 
     private static final List<String> PROPERTY_IDS = List.of(
         "P7305", // identyfikator internetowej Encyklopedii PWN
-        "P7982" // identyfikator EFIS
+        "P7982", // identyfikator EFIS
+        "P1417"  // identyfikator Encyclopædia Britannica Online
     );
 
     private static final Map<String, String> PROPERTY_URLS = Map.of(
         "P7305", "https://encyklopedia.pwn.pl/haslo/;%s",
-        "P7982", "https://www.enciklopedija.hr/Natuknica.aspx?ID=%s"
+        "P7982", "https://www.enciklopedija.hr/Natuknica.aspx?ID=%s",
+        "P1417", "https://www.britannica.com/%s"
     );
 
     private static final String INTRO = """
@@ -104,7 +106,7 @@ public final class MissingWikidataBiograms {
     private static List<Item> queryBiograms(String pid) {
         try (var connection = SPARQL_REPO.getConnection()) {
             var querySelect = """
-                SELECT DISTINCT ?item ?itemLabel ?source
+                SELECT DISTINCT ?item ?itemLabel (SAMPLE(?source) AS ?source)
                 WHERE
                 {
                 ?item wdt:P31 wd:Q5 ;
@@ -117,6 +119,7 @@ public final class MissingWikidataBiograms {
                 }
                 SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pl,en". }
                 }
+                GROUP BY ?item ?itemLabel
                 """.formatted(pid);
 
             var query = connection.prepareTupleQuery(querySelect);
@@ -124,7 +127,7 @@ public final class MissingWikidataBiograms {
             for (var retry = 1; ; retry++) {
                 try (var result = query.evaluate()) {
                     return result.stream()
-                        .map(Item::fromQuarryResult)
+                        .map(Item::fromSparqlResult)
                         .collect(Collectors.toCollection(ArrayList::new)); // mutable
                 } catch (QueryEvaluationException e) {
                     if (retry > MAX_SPARQL_RETRIES) {
@@ -198,7 +201,7 @@ public final class MissingWikidataBiograms {
         String id;
         int sitelinks;
 
-        static Item fromQuarryResult(BindingSet bs) {
+        static Item fromSparqlResult(BindingSet bs) {
             var i = new Item();
             i.qid = ((IRI)bs.getValue("item")).getLocalName();
             i.label = ((Literal)bs.getValue("itemLabel")).stringValue();
