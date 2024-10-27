@@ -51,6 +51,10 @@ public class Field implements Comparable<Field> {
         return false;
     }
 
+    public boolean isNewLine() {
+        return isNewLine;
+    }
+
     public String getContent() {
         return content;
     }

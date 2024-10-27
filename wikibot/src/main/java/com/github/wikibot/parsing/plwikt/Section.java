@@ -223,28 +223,20 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
     }
 
     public Field addField(FieldTypes fieldType, String text, boolean isNewline) {
-        Optional<? extends Field> newFieldOpt = getField(fieldType);
+        var fieldOpt = getField(fieldType);
 
-        if (newFieldOpt.isPresent()) {
-            return newFieldOpt.get();
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        if (isNewline) {
-            sb.append("\n");
+        if (fieldOpt.isPresent()) {
+            var field = fieldOpt.get();
+            field.editContent(text, isNewline);
+            return field;
         } else {
-            sb.append(" ");
+            var sb = new StringBuilder(isNewline ? "\n" : " ");
+            var field = Field.parseField(fieldType, sb.append(text).toString());
+            field.containingSection = this;
+            fields.add(field);
+            sortFields();
+            return field;
         }
-
-        sb.append(text);
-
-        Field newField = Field.parseField(fieldType, sb.toString());
-        newField.containingSection = this;
-        fields.add(newField);
-        sortFields();
-
-        return newField;
     }
 
     public boolean removeField(FieldTypes fieldType) {
