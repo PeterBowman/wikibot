@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 
 import org.json.JSONObject;
 

@@ -101,7 +101,7 @@
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-      <version>3.0.0</version>
+      <version>3.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.jsoup</groupId>
@@ -116,12 +116,12 @@
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-      <version>9.0.0</version>
+      <version>9.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.16.0</version>
+      <version>3.17.0</version>
     </dependency>
     <dependency>
       <groupId>org.wikipedia</groupId>
@@ -136,7 +136,7 @@
     <dependency>
       <groupId>com.thoughtworks.xstream</groupId>
       <artifactId>xstream</artifactId>
-      <version>1.4.20</version>
+      <version>1.4.21</version>
     </dependency>
     <dependency>
       <groupId>com.github.wikibot</groupId>

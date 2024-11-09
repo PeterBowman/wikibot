@@ -8,7 +8,6 @@ module org.github.wikibot {
 
     requires transitive com.ibm.icu;
     requires transitive commons.cli;
-    requires transitive commons.exec;
     requires transitive java.logging;
     requires transitive java.net.http;
     requires transitive java.sql;
@@ -19,6 +18,7 @@ module org.github.wikibot {
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.commons.text;
     requires transitive org.apache.commons.validator;
+    requires transitive org.apache.commons.exec;
     requires transitive org.json;
     requires transitive org.jsoup;
     requires transitive plural4j;
@@ -35,7 +35,7 @@ module org.github.wikibot {
     requires transitive rdf4j.repository.sparql;
     requires transitive rdf4j.common.exception;
     requires transitive rdf4j.common.iterator;
-    requires transitive java.xml.bind;
+    requires transitive jakarta.xml.bind;
 
     // https://stackoverflow.com/a/41265267
     opens com.github.wikibot.main;
