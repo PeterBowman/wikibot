@@ -12,6 +12,7 @@ import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -57,13 +58,15 @@ public final class ReportDeaths {
         """;
 
     private static final String ARTICLE_TEMPLATE = """
-        {{data|%s}}
-        %s
-        '''%s zmarli:'''
-        %s
+        {{data|%1$s}}
+        %2$s
+        '''%3$s zmarli: %4$s'''.
+
+        %3$s zmarły następujące osoby:
+        %5$s
 
         == Źródło ==
-        * To zestawienie zostało automatycznie wygenerowane z Wikidanych. Zobacz [%s zapytanie SPARQL].
+        * To zestawienie zostało automatycznie wygenerowane z Wikidanych. Zobacz [%6$s zapytanie SPARQL].
 
         {{Pasek boczny|
         {{Społeczeństwo}}
@@ -71,7 +74,7 @@ public final class ReportDeaths {
         }}
 
         [[Kategoria:Archiwalne]]
-        [[Kategoria:Nekrologi %d]]
+        [[Kategoria:Nekrologi %7$d]]
         """;
 
     private static final Wikibot wb = Wikibot.newSession("pl.wikinews.org");
@@ -98,6 +101,10 @@ public final class ReportDeaths {
             System.out.printf("Retrieved %d items for %s:%n", items.size(), refDate);
             items.forEach(System.out::println);
 
+            var names = items.stream()
+                .map(i -> i.optLabel().orElse(i.sanitizedArticle()))
+                .collect(Collectors.joining(", "));
+
             var list = items.stream()
                 .map(i -> String.format("* [[w:%s|%s]] (%s[[d:%s|WD]])%s",
                     i.article(),
@@ -106,7 +113,7 @@ public final class ReportDeaths {
                     i.item(),
                     i.optDescription().map(desc -> String.format(": %s", desc)).orElse("")
                 ))
-                .toList();
+                .collect(Collectors.joining("\n"));
 
             var image = items.stream()
                 .filter(i -> i.optImage().isPresent())
@@ -120,7 +127,7 @@ public final class ReportDeaths {
 
             var localizedDate = formatter.format(refDate);
             var title = String.format("Zmarli %s", localizedDate);
-            var text = String.format(ARTICLE_TEMPLATE, isoDate, image, localizedDate, String.join("\n", list), shortenedUrl, refDate.getYear());
+            var text = String.format(ARTICLE_TEMPLATE, isoDate, image, localizedDate, names, list, shortenedUrl, refDate.getYear());
 
             if (n == LATEST_OFFSET_DAYS) {
                 text = text.replace("[[Kategoria:Archiwalne]]\n", "");
