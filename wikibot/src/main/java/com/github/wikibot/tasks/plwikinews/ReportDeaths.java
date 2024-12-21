@@ -66,7 +66,7 @@ public final class ReportDeaths {
     private static final String ARTICLE_TEMPLATE = """
         {{data|%1$s}}
         %2$s
-        '''%3$s zmarli: %4$s'''.
+        '''%3$s zmarli: %4$s.'''
 
         W tym dniu zmarły następujące osoby:
         %5$s
