@@ -33,8 +33,7 @@ public final class ReportDeaths {
     private static final String SPARQL_ENTRYPOINT = "https://query.wikidata.org/embed.html#";
 
     private static final String SPARQL_QUERY_TEMPLATE = """
-        # Humans who died on a specific date on Polish Wikipedia, ordered by label
-        SELECT ?item (MIN(?name) AS ?articlename) (MIN(?img) AS ?image) (MIN(?dob) AS ?dateOfBirth) (MIN(?itemLabel) AS ?label) (MIN(?itemDescription) AS ?description)
+        SELECT ?item (MIN(?name) AS ?articlename) (MIN(?img) AS ?image) (MIN(?dob) AS ?dateOfBirth) (MIN(?podLbl) AS ?placeOfDeath) (MIN(?itemLbl) AS ?label) (MIN(?itemDesc) AS ?description)
         WHERE {
             VALUES ?dod {"+%s"^^xsd:dateTime}
             ?dod ^wdt:P570 ?item .
@@ -48,13 +47,20 @@ public final class ReportDeaths {
             OPTIONAL {
                 ?item wdt:P569 ?dob .
             }
+            OPTIONAL {
+                ?item wdt:P20 ?pod
+                SERVICE wikibase:label {
+                    bd:serviceParam wikibase:language "pl" .
+                    ?pod rdfs:label ?podLbl .
+                }
+            }
             SERVICE wikibase:label {
                 bd:serviceParam wikibase:language "pl" .
-                ?item rdfs:label ?itemLabel ;
-                      schema:description ?itemDescription .
+                ?item rdfs:label ?itemLbl ;
+                      schema:description ?itemDesc .
             }
-            BIND(REPLACE(?itemLabel, "^.*(?<! [Vv][ao]n| [Dd][aeiu]| [Dd][e][lns]| [Ll][ae]) (?!([SJ]r\\\\.?|[XVI]+)$)", "") AS ?sortname)
-        } GROUP BY ?item ORDER BY ASC(?dateOfBirth) ASC(UCASE(?sortname))
+            BIND(REPLACE(?label, "^.*(?<! [Vv][ao]n| [Dd][aeiu]| [Dd][e][lns]| [Ll][ae]) (?!([SJ]r\\\\.?|[XVI]+)$)", "") AS ?sorted)
+        } GROUP BY ?item ORDER BY ASC(?dateOfBirth) ASC(UCASE(?sorted))
         """;
 
     private static final String ARTICLE_TEMPLATE = """
@@ -62,7 +68,7 @@ public final class ReportDeaths {
         %2$s
         '''%3$s zmarli: %4$s'''.
 
-        %3$s zmarły następujące osoby:
+        W tym dniu zmarły następujące osoby:
         %5$s
 
         == Źródło ==
@@ -106,11 +112,12 @@ public final class ReportDeaths {
                 .collect(Collectors.joining(", "));
 
             var list = items.stream()
-                .map(i -> String.format("* [[w:%s|%s]] (%s[[d:%s|WD]])%s",
+                .map(i -> String.format("* [[w:%s|%s]]%s%s%s%s",
                     i.article(),
                     i.optLabel().orElse(i.sanitizedArticle()),
-                    i.optYearOfBirth().map(year -> String.format("ur. %d, ", year)).orElse(""),
-                    i.item(),
+                    i.optYearOfBirth().map(year -> String.format(", ur. %d", year)).orElse(""),
+                    i.optPlaceOfDeath().map(place -> String.format(", jako miejsce śmierci wskazano %s", place)).orElse(""),
+                    " ([[d:%s|WD]])".formatted(i.item()),
                     i.optDescription().map(desc -> String.format(": %s", desc)).orElse("")
                 ))
                 .collect(Collectors.joining("\n"));
@@ -155,6 +162,9 @@ public final class ReportDeaths {
                                 .filter(Value::isLiteral)
                                 .map(v -> ((Literal)v).stringValue())
                                 .flatMap(ReportDeaths::parseYear),
+                            Optional.ofNullable(bs.getValue("placeOfDeath"))
+                                .filter(Value::isLiteral)
+                                .map(v -> ((Literal)v).stringValue()),
                             Optional.ofNullable(bs.getValue("label"))
                                 .filter(Value::isLiteral)
                                 .map(v -> ((Literal)v).stringValue())
@@ -183,7 +193,7 @@ public final class ReportDeaths {
         }
     }
 
-    private record Item(String item, String article, Optional<String> optImage, Optional<Integer> optYearOfBirth, Optional<String> optLabel, Optional<String> optDescription) {
+    private record Item(String item, String article, Optional<String> optImage, Optional<Integer> optYearOfBirth, Optional<String> optPlaceOfDeath, Optional<String> optLabel, Optional<String> optDescription) {
         String sanitizedArticle() {
             return article.replaceFirst("\\([^\\(\\)]*+\\)$", "").stripTrailing();
         }
