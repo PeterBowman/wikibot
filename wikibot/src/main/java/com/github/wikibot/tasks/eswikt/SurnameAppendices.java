@@ -117,7 +117,7 @@ public final class SurnameAppendices {
             .map(surname -> String.format("* {{l|es|%s}}\n", surname))
             .forEach(sb::append);
 
-        sb.append("\n\n");
+        sb.append("\n");
         sb.append(String.format("[[Categoría:ES:Apellidos| %s]]", headerLower)).append("\n");
         sb.append(String.format("[[Categoría:Wikcionario:Apéndices|Apellidos %s]]", headerLower));
 
