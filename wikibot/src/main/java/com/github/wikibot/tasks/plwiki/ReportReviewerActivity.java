@@ -133,7 +133,7 @@ public final class ReportReviewerActivity {
         var page = Page.wrap(pc);
         var firstSection = page.getAllSections().get(0);
         var header = HEADER_FORMATTER.format(now);
-        var summary = makeSummary(startDate, rows, stats);
+        var summary = makeSummary(endDate, rows, stats);
         var wikipediaSummary = makeWikipediaSummary(startDate, endDate, rows, summary);
 
         if (firstSection.getHeader().equals(header)) {
@@ -253,10 +253,10 @@ public final class ReportReviewerActivity {
         return NUMBER_FORMAT_PL.format(num).toString().replace(" ", "&nbsp;");
     }
 
-    private static Summary makeSummary(ZonedDateTime startDate, List<Row> rows, Stats stats) {
+    private static Summary makeSummary(ZonedDateTime endDate, List<Row> rows, Stats stats) {
         return new Summary(
-            startDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR),
-            startDate.getYear(),
+            endDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR),
+            endDate.getYear(),
             rows.stream().mapToInt(Row::total).sum(),
             rows.size(),
             stats.reviewed() - stats.synced(),
