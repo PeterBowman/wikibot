@@ -49,9 +49,8 @@ public final class ReportDeaths {
             }
             OPTIONAL {
                 ?item wdt:P20 ?pod
-                SERVICE wikibase:label {
-                    bd:serviceParam wikibase:language "pl" .
-                    ?pod rdfs:label ?podLbl .
+                OPTIONAL {
+                    ?pod rdfs:label ?podLbl filter (lang(?podLbl) = "pl")
                 }
             }
             SERVICE wikibase:label {
