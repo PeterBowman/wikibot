@@ -63,7 +63,9 @@ public final class MisusedRegTemplates {
         // Spanish
         "reg-es",
         // Dutch
-        "belghol", "surinhol",
+        "reg-nl",
+        // Dutch (deprecated)
+        "belghol", "belgniderl", "nidhol", "surinhol",
         // Korean
         "korpłd", "korpłn",
         // German
@@ -71,11 +73,15 @@ public final class MisusedRegTemplates {
         // Portuguese
         "brazport", "eurport",
         // Italian
-        "szwajcwł", "tosk"
+        "szwajcwł", "tosk",
+        // Slovincian
+        "gw-csb-slo",
+        // Ukrainian
+        "gw-uk"
     );
 
     private static final List<String> TEMPLATES_NEW_GEN = List.of(
-        "reg-pl", "gw-pl", "reg-es"
+        "reg-pl", "gw-pl", "reg-es", "reg-nl", "gw-uk", "gw-csb-slo"
     );
 
     private static final List<FieldTypes> SPECIAL_FIELDS = List.of(
