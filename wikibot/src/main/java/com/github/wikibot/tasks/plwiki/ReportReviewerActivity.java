@@ -257,7 +257,7 @@ public final class ReportReviewerActivity {
         return new Summary(
             endDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR),
             endDate.getYear(),
-            rows.stream().mapToInt(Row::total).sum(),
+            rows.stream().mapToInt(r -> r.total() - r.unapprove()).sum(),
             rows.size(),
             stats.reviewed() - stats.synced(),
             stats.total() - stats.reviewed(),
@@ -267,7 +267,7 @@ public final class ReportReviewerActivity {
 
     private static String makeWikipediaSummary(ZonedDateTime startDate, ZonedDateTime endDate, List<Row> rows, Summary summary) {
         var topUsers = rows.stream()
-            .filter(r -> r.total() > REVIEW_COUNT_THRESHOLD)
+            .filter(r -> (r.total() - r.unapprove()) > REVIEW_COUNT_THRESHOLD)
             .limit(REVIEWER_SUMMARY_LIMIT)
             .map(r -> String.format("[[Wikipedysta:%1$s|%1$s]] (%2$s)", r.user(), formatNum(r.total())))
             .toList();
