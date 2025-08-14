@@ -165,7 +165,7 @@ public final class MissingPolishGerunds {
             }
         }
 
-        Collator coll = Collator.getInstance(new Locale("pl"));
+        Collator coll = Collator.getInstance(Locale.forLanguageTag("pl"));
         coll.setStrength(Collator.SECONDARY);
 
         Collections.sort(aff, coll);

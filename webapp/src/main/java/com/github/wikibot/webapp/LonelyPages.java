@@ -66,7 +66,7 @@ public class LonelyPages extends HttpServlet {
         checkCurrentState(false, localStorage, localCalendar); // synchronized, returns local copies
 
         List<String> results = getDataView(localStorage, limit, offset);
-        DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, new Locale("es"));
+        DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.forLanguageTag("es"));
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         String timestamp = sdf.format(localCalendar.getTime()); // SimpleDateFormat.format is not thread safe!
 

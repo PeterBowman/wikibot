@@ -88,7 +88,7 @@ public final class ReportDeaths {
         Login.login(wb);
 
         final var today = LocalDate.now();
-        final var formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(new Locale("pl"));
+        final var formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(Locale.forLanguageTag("pl"));
 
         for (int n = LATEST_OFFSET_DAYS; n < LATEST_OFFSET_DAYS + TIME_SPAN_DAYS; n++) {
             var refDate = today.minusDays(n);

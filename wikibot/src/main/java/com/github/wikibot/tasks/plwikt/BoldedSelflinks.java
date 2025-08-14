@@ -50,7 +50,7 @@ public final class BoldedSelflinks {
     private static final Pattern P_TRANSL = Pattern.compile("→[^•;]+");
     private static final Pattern P_TEMPLATE = Pattern.compile("\\{{2}[^\\}\n]+?\\}{2}");
 
-    private static final Collator COLL_PL = Collator.getInstance(new Locale("pl"));
+    private static final Collator COLL_PL = Collator.getInstance(Locale.forLanguageTag("pl"));
 
     private static final String PAGE_INTRO;
 

@@ -241,7 +241,7 @@ public final class PolishSurnamesInflection {
             .filter(line -> !ParseUtils.getTemplates(targetTemplate, line).isEmpty())
             .map(P_DEF::matcher)
             .filter(Matcher::find)
-            .map(m -> new MeaningNumber(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3))))
+            .map(m -> new MeaningNumber(Integer.valueOf(m.group(2)), Integer.valueOf(m.group(3))))
             .findAny()
             .orElseThrow(() -> new NoSuchElementException(targetTemplate));
     }
@@ -688,13 +688,13 @@ public final class PolishSurnamesInflection {
                     Integer primary, secondary, range;
 
                     try {
-                        primary = Integer.parseInt(m2.group(1));
+                        primary = Integer.valueOf(m2.group(1));
                     } catch (NumberFormatException e) {
                         primary = null; // will never happen, catch anyway
                     }
 
                     try {
-                        secondary = Integer.parseInt(m2.group(2));
+                        secondary = Integer.valueOf(m2.group(2));
                     } catch (NumberFormatException e) {
                         MeaningNumber mn = new MeaningNumber(primary, null);
                         mns.add(mn);
@@ -702,7 +702,7 @@ public final class PolishSurnamesInflection {
                     }
 
                     try {
-                        range = Integer.parseInt(m2.group(3));
+                        range = Integer.valueOf(m2.group(3));
                     } catch (NumberFormatException e) {
                         range = secondary;
                     }

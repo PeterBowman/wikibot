@@ -128,7 +128,7 @@ public class PlwiktStatisticsService extends HttpServlet {
         return new JSONObject(Map.of(
             "canonical", value,
             "cached", isCached,
-            "timestamp", Long.parseLong(DATE_TIME_FORMATTER.format(instant))
+            "timestamp", Long.valueOf(DATE_TIME_FORMATTER.format(instant))
         ));
     }
 

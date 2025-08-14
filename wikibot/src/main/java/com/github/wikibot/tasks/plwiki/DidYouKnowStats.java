@@ -149,7 +149,7 @@ final class DidYouKnowStats {
             }
 
             var yearStr = line.getOptionValue("year");
-            years.add(Integer.parseInt(yearStr));
+            years.add(Integer.valueOf(yearStr));
         } else if (line.hasOption("update")) {
             if (optLastDate.isPresent()) {
                 for (int year = optLastDate.get().getYear(); year <= now.getYear(); year++) {

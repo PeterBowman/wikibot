@@ -270,7 +270,7 @@ public class PrettyRefServlet extends HttpServlet {
             throw new RuntimeException("Found no references sections");
         }
 
-        final var coll = Collator.getInstance(new Locale("pl"));
+        final var coll = Collator.getInstance(Locale.forLanguageTag("pl"));
         coll.setStrength(Collator.SECONDARY);
 
         // get only refs with content (ie. not shorttags) and sort them

@@ -37,7 +37,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class RecursiveCategoryContribs extends HttpServlet {
     private static final String JSP_DISPATCH_TARGET = "/jsp/recursive-category-contribs.jsp";
-    private static final Collator POLISH_COLLATOR = Collator.getInstance(new Locale("pl"));
+    private static final Collator POLISH_COLLATOR = Collator.getInstance(Locale.forLanguageTag("pl"));
 
     private static final DateTimeFormatter DATE_FORMAT;
 

@@ -102,7 +102,7 @@ public class MissingPlwiktRefsOnPlwiki extends HttpServlet {
         }
 
         List<Entry> results = getDataView(localEntries, limit, offset);
-        DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, new Locale("pl"));
+        DateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.forLanguageTag("pl"));
         sdf.setTimeZone(TimeZone.getTimeZone("Europe/Warsaw"));
         String timestamp = sdf.format(localCalendar.getTime()); // SimpleDateFormat.format is not thread safe!
 

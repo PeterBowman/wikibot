@@ -45,7 +45,7 @@ public final class MissingUkrainianAudio {
                 .flatMap(s -> s.getField(FieldTypes.PRONUNCIATION).stream())
                 .filter(f -> f.isEmpty() || ParseUtils.getTemplates("audio", f.getContent()).isEmpty())
                 .map(f -> f.getContainingSection().get().getContainingPage().get().getTitle())
-                .sorted(Collator.getInstance(new Locale("uk")))
+                .sorted(Collator.getInstance(Locale.forLanguageTag("uk")))
                 .toList();
 
             var titlesPath = LOCATION.resolve("titles.txt");

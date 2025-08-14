@@ -3,7 +3,7 @@ package com.github.wikibot.dumps;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -85,7 +85,7 @@ public class XMLDump {
 
                 if (gStart != null && gEnd != null) {
                     // inclusive, inclusive
-                    var range = Range.of(Long.parseLong(gStart), Long.parseLong(gEnd));
+                    var range = Range.of(Long.valueOf(gStart), Long.valueOf(gEnd));
                     return Range.of(ids.first(), ids.last()).isOverlappedBy(range);
                 }
             }
@@ -395,7 +395,7 @@ class RemoteDumpHandler implements DumpHandler {
 
     @Override
     public String getFileContent(String database, String date, String filename) {
-        try (var is = new URL(makePath(database, date, filename)).openStream()) {
+        try (var is = URI.create(makePath(database, date, filename)).toURL().openStream()) {
             return IOUtils.toString(is, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -407,7 +407,7 @@ class RemoteDumpHandler implements DumpHandler {
         System.out.println("Reading " + filename);
 
         try {
-            return new URL(makePath(database, date, filename)).openStream();
+            return URI.create(makePath(database, date, filename)).toURL().openStream();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

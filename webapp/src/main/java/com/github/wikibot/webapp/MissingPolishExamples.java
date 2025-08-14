@@ -86,10 +86,10 @@ public class MissingPolishExamples extends HttpServlet {
 
         List<Entry> results = getDataView(localEntries, limit, offset);
 
-        DateFormat sdfDump = new SimpleDateFormat(DATE_FORMAT, new Locale("pl"));
+        DateFormat sdfDump = new SimpleDateFormat(DATE_FORMAT, Locale.forLanguageTag("pl"));
         sdfDump.setTimeZone(TimeZone.getTimeZone("Europe/Warsaw"));
 
-        DateFormat sdfBot = new SimpleDateFormat(DATE_TIME_FORMAT, new Locale("pl"));
+        DateFormat sdfBot = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.forLanguageTag("pl"));
         sdfBot.setTimeZone(TimeZone.getTimeZone("Europe/Warsaw"));
 
         String dumpTimestamp = sdfDump.format(localDumpCalendar.getTime()); // SimpleDateFormat.format is not thread safe!

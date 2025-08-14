@@ -213,7 +213,7 @@ public class LatinInfinitiveBacklinks {
                         cons.accept(new Item(title, infinitives));
                     }
                 })
-                .sorted(Comparator.comparing(Item::title, Collator.getInstance(new Locale("pl"))))
+                .sorted(Comparator.comparing(Item::title, Collator.getInstance(Locale.forLanguageTag("pl"))))
                 .map(i -> String.format("#[[%s]]: %s", i.title(), String.join(", ", i.infinitives())))
                 .toList();
         }

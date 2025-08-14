@@ -55,7 +55,7 @@ public class MissingUkrainianAudio extends HttpServlet {
             var files = getUkrainianAudioFiles();
             var titles = getTargetedEntries(files);
 
-            Collections.sort(titles, Collator.getInstance(new Locale("uk")));
+            Collections.sort(titles, Collator.getInstance(Locale.forLanguageTag("uk")));
 
             if (request.getRequestURI().endsWith("/raw")) {
                 response.setContentType("text/plain");

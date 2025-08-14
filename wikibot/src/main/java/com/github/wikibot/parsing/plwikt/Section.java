@@ -264,7 +264,7 @@ public class Section extends AbstractSection<Section> implements Comparable<Sect
         if (containsSelf && containsOther) {
             return Integer.compare(list.indexOf(langShort), list.indexOf(targetLang));
         } else if (!containsSelf && !containsOther) {
-            Collator collator = Collator.getInstance(new Locale("pl"));
+            Collator collator = Collator.getInstance(Locale.forLanguageTag("pl"));
             collator.setStrength(Collator.SECONDARY);
             return collator.compare(langShort, targetLang);
         } else {

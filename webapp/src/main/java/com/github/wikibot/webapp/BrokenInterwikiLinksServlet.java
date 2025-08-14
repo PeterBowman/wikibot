@@ -502,7 +502,7 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
         writer.append("<p>");
 
         writer.append("Czas przetwarzania zapytania: ")
-            .append(String.format(new Locale("pl"), "%.3f", ((float) requestInfo.output.timeElapsedMs) / 1000))
+            .append(String.format(Locale.forLanguageTag("pl"), "%.3f", ((float) requestInfo.output.timeElapsedMs) / 1000))
             .append(" sekund.");
 
         writer.append(" Wszystkich linków: ")
@@ -870,9 +870,9 @@ public class BrokenInterwikiLinksServlet extends HttpServlet {
         Collator targetCollator;
 
         public ItemComparator(String sourceLang, String targetLang) {
-            sourceCollator = Collator.getInstance(new Locale(sourceLang));
+            sourceCollator = Collator.getInstance(Locale.forLanguageTag(sourceLang));
             sourceCollator.setStrength(Collator.TERTIARY);
-            targetCollator = Collator.getInstance(new Locale(targetLang));
+            targetCollator = Collator.getInstance(Locale.forLanguageTag(targetLang));
             targetCollator.setStrength(Collator.TERTIARY);
         }
 

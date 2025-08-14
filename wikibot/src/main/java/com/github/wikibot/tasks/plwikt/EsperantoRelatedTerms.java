@@ -117,7 +117,7 @@ public final class EsperantoRelatedTerms {
 
     private static Map<String, List<MorphemTitlePair>> findItems(Map<String, List<String>> morphemToTitle,
             Map<String, List<String>> titleToMorphem, Map<String, String> contentMap) throws IOException {
-        Collator collator = Collator.getInstance(new Locale("eo"));
+        Collator collator = Collator.getInstance(Locale.forLanguageTag("eo"));
         Map<String, List<MorphemTitlePair>> items = new TreeMap<>(collator);
         List<String> allEsperantoTitles = wb.getCategoryMembers("esperanto (indeks)", Wiki.MAIN_NAMESPACE);
         Set<String> esperantoSet = new HashSet<>(allEsperantoTitles);
@@ -229,7 +229,7 @@ public final class EsperantoRelatedTerms {
     }
 
     private static String buildItemList(List<MorphemTitlePair> list) {
-        Collator collator = Collator.getInstance(new Locale("eo"));
+        Collator collator = Collator.getInstance(Locale.forLanguageTag("eo"));
 
         return list.stream()
             .collect(Collectors.groupingBy(
@@ -274,7 +274,7 @@ public final class EsperantoRelatedTerms {
 
         @Override
         public int compareTo(MorphemTitlePair o) {
-            Collator coll = Collator.getInstance(new Locale("eo"));
+            Collator coll = Collator.getInstance(Locale.forLanguageTag("eo"));
             return coll.compare(title, o.title);
         }
 

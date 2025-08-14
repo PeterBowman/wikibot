@@ -616,7 +616,7 @@ public final class LinkManager {
                         break;
                     }
 
-                    String diff = rev.diff(Wiki.PREVIOUS_REVISION);
+                    String diff = rev.diff(Wiki.PREVIOUS_REVISION, "table");
                     diff = StringEscapeUtils.unescapeXml(diff);
                     diff = diff.replaceAll("</?ins.*?>", "");
                     diff = diff.replace("\n", "");

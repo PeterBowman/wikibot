@@ -2,7 +2,7 @@ package com.github.wikibot.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -95,7 +95,7 @@ public class NKJPGenerator extends HttpServlet {
     }
 
     private static Map<String, String> validateUrl(String urlString) throws MalformedURLException {
-        var url = new URL(urlString);
+        var url = URI.create(urlString).toURL();
         var query = url.getQuery();
 
         var mandatoryParams = List.of("pid", "match_start", "match_end", "wynik");
@@ -150,19 +150,11 @@ public class NKJPGenerator extends HttpServlet {
             }
 
             switch (label) {
-                case "Autorzy:":
-                    value = value.replace('\u00A0', ' ').replaceFirst(",? *$", "");
-                    resultMap.put("autorzy", value);
-                    break;
-                case "Źródło:":
-                    resultMap.put("tytuł_pub", value);
-                    break;
-                case "Tytuł:":
-                    resultMap.put("tytuł_art", value);
-                    break;
-                case "Data publikacji:":
-                    resultMap.put("data", value);
-                    break;
+                case "Autorzy:" ->
+                    resultMap.put("autorzy", value.replace('\u00A0', ' ').replaceFirst(",? *$", ""));
+                case "Źródło:" -> resultMap.put("tytuł_pub", value);
+                case "Tytuł:" -> resultMap.put("tytuł_art", value);
+                case "Data publikacji:" -> resultMap.put("data", value);
             }
 
             if (resultMap.containsKey("tytuł_pub") && resultMap.containsKey("tytuł_art")) {

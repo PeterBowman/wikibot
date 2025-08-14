@@ -82,7 +82,7 @@ public final class MissingPersonInfoboxes {
         biograms.removeAll(new HashSet<>(noInfoboxNotices));
         System.out.println("Biograms without infoboxes and no_infobox notice on talk page: " + biograms.size());
 
-        var collator = Collator.getInstance(new Locale("pl"));
+        var collator = Collator.getInstance(Locale.forLanguageTag("pl"));
         var results = biograms.stream().sorted(collator).toList();
 
         writeCompressedOutput(results, "all");

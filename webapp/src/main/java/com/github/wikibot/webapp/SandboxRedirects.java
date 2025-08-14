@@ -103,9 +103,9 @@ public class SandboxRedirects extends HttpServlet {
                 results.add(Map.of(
                     "source", logTitle,
                     "sourceExists", sourceId != 0L,
-                    "target", logData.targetPage,
+                    "target", logData.targetPage(),
                     "targetExists", targetId != 0L && targetId != sourceId,
-                    "targetDisplay", logData.targetDisplay,
+                    "targetDisplay", logData.targetDisplay(),
                     "timestamp", formatDate(logTimestamp)
                 ));
             }

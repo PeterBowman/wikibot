@@ -53,7 +53,7 @@ public class WebArchiveLookup {
     }
 
     private Item parseResponse(JSONObject object) throws MalformedURLException, JSONException {
-        var requestUrl = new URL(object.getString("url"));
+        var requestUrl = URI.create(object.getString("url")).toURL();
         var snapshots = object.getJSONObject("archived_snapshots");
 
         if (snapshots.isEmpty()) {
@@ -66,7 +66,7 @@ public class WebArchiveLookup {
             return Item.makeInvalidItem(requestUrl);
         }
 
-        var archivedUrl = new URL(closest.getString("url"));
+        var archivedUrl = URI.create(closest.getString("url")).toURL();
         var timestamp = LocalDateTime.parse(closest.getString("timestamp"), DateTimeFormatter.ofPattern("yyyyMMddHHmmss")).atOffset(ZoneOffset.UTC);
 
         return Item.makeValidItem(requestUrl, archivedUrl, timestamp);

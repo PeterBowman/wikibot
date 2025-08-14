@@ -5,7 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -227,7 +227,7 @@ public final class FetchEpwnBiograms {
             try {
                 throttle(delay);
                 System.out.println(String.format("%s (%d)", url, retries));
-                return Jsoup.parse(new URL(url), TIMEOUT_MS);
+                return Jsoup.parse(URI.create(url).toURL(), TIMEOUT_MS);
             } catch (MalformedURLException e) {
                 throw new IOException(e);
             } catch (IOException e) {

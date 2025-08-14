@@ -212,7 +212,7 @@ public class LangSection extends Section {
         } else if (isTransliteration && !ls.isTransliteration) {
             return 1;
         } else if (!langName.isEmpty() && !ls.langName.isEmpty()) {
-            Collator collator = Collator.getInstance(new Locale("es"));
+            Collator collator = Collator.getInstance(Locale.forLanguageTag("es"));
             collator.setStrength(Collator.SECONDARY);
             return collator.compare(langName, ls.langName);
         }

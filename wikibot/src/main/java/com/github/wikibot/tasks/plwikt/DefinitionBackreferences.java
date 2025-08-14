@@ -78,7 +78,7 @@ public final class DefinitionBackreferences {
 
         analyzeDump(dump, polishTitles, foreignTitles);
 
-        polishTitles.sort(Collator.getInstance(new Locale("pl")));
+        polishTitles.sort(Collator.getInstance(Locale.forLanguageTag("pl")));
         foreignTitles.sort(Comparator.naturalOrder());
 
         var outPolishPath = LOCATION.resolve("out-polish.txt");

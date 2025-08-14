@@ -467,7 +467,7 @@ public final class GermanNounDeclension {
 
         for (Revision rev : revs) {
             if (rev.getTitle().equals("Actinium")) break;
-            String diff = rev.diff(Wiki.PREVIOUS_REVISION);
+            String diff = rev.diff(Wiki.PREVIOUS_REVISION, "table");
             //int lm = diff.indexOf(" lm = ");
 
             /*if (lm != -1 && diff.substring(lm).contains("&lt;br&gt;"))

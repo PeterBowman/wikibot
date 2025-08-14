@@ -21,7 +21,7 @@ public final class SurnameAppendices {
     private static final String TARGET_PARENT_PAGE = "Apéndice:Antropónimos/Apellidos/";
     private static final String SURNAME_TEMPLATE = "Plantilla:apellido";
     private static final char SPECIAL_LETTER = '#';
-    private static final Locale locale = new Locale("es");
+    private static final Locale locale = Locale.forLanguageTag("es");
     private static final Collator collator = Collator.getInstance(locale);
     private static final Map<Character, Character> stressedVowels = Map.of('Á', 'A', 'É', 'E', 'Í', 'I', 'Ó', 'O', 'Ú', 'U');
     private static final Wikibot wb = Wikibot.newSession("es.wiktionary.org");

@@ -512,7 +512,7 @@ public final class MissingWomenBiograms {
     }
 
     private static abstract class EntryComparator implements Comparator<Entry> {
-        private static final Collator PL_COLLATOR = Collator.getInstance(new Locale("pl"));
+        private static final Collator PL_COLLATOR = Collator.getInstance(Locale.forLanguageTag("pl"));
 
         static EntryComparator prioritizeLanglinks() {
             return new LanglinksFirst();

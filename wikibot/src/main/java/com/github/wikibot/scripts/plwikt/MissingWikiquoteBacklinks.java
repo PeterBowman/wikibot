@@ -60,7 +60,7 @@ public final class MissingWikiquoteBacklinks {
 
         System.out.printf("Tamaño de la lista: %d%n", list.size());
 
-        List<Long> wiktids = list.stream().map(data -> Long.parseLong(data[0])).toList();
+        List<Long> wiktids = list.stream().map(data -> Long.valueOf(data[0])).toList();
         List<String> quotetitles = list.stream().map(data -> data[1]).toList();
 
         List<PageContainer> wiktpages = wb.getContentOfPageIds(wiktids);
