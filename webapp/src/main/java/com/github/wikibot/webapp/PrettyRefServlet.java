@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.json.JSONObject;
 import org.nibor.autolink.LinkExtractor;
 import org.nibor.autolink.LinkType;
@@ -581,7 +582,7 @@ public class PrettyRefServlet extends HttpServlet {
                 var value = m.group(2).trim();
 
                 // strip quotes
-                if (value.charAt(0) == value.charAt(value.length() - 1) && StringUtils.startsWithAny(value, "'", "\"")) {
+                if (value.charAt(0) == value.charAt(value.length() - 1) && Strings.CI.startsWithAny(value, "'", "\"")) {
                     value = value.substring(1, value.length() - 1).trim();
                 }
 

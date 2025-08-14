@@ -37,6 +37,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -527,7 +528,7 @@ public final class ResolveLinks {
                 var hash = params.hashCode();
 
                 params.entrySet().stream()
-                    .filter(e -> StringUtils.equalsAny(templateName, "Zobacz też", "Seealso")
+                    .filter(e -> Strings.CS.equalsAny(templateName, "Zobacz też", "Seealso")
                         ? e.getKey().equals("ParamWithoutName1")
                         : e.getKey().startsWith("ParamWithoutName"))
                     .filter(e -> sources.contains(normalizeTitle(e.getValue())))

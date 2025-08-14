@@ -42,6 +42,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
@@ -341,7 +342,7 @@ public final class MissingWomenBiograms {
 
         var langlinks = Optional.ofNullable(json.optJSONObject("sitelinks"))
             .map(obj -> obj.keySet().stream()
-                .filter(project -> project.endsWith("wiki") && !StringUtils.equalsAny(project, "commonswiki", "specieswiki", "sourceswiki"))
+                .filter(project -> project.endsWith("wiki") && !Strings.CS.equalsAny(project, "commonswiki", "specieswiki", "sourceswiki"))
                 .sorted()
                 .map(project -> String.format("%s:%s",
                     project.replace('_', '-').replace("be-x-old", "be-tarask").replaceFirst("wiki$", ""),

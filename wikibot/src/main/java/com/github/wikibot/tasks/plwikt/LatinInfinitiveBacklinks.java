@@ -20,7 +20,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.wikiutils.ParseUtils;
 
 import com.github.wikibot.dumps.XMLDump;
@@ -144,7 +144,7 @@ public class LatinInfinitiveBacklinks {
 
         return Stream.of(ParseUtils.getTemplateParametersWithValue(template))
             .filter(params -> isSecondType ? params.size() > 3 : params.size() > 2)
-            .filter(params -> StringUtils.equalsAny(params.getOrDefault("ParamWithoutName1", ""), LATIN_SHORTS))
+            .filter(params -> Strings.CS.equalsAny(params.getOrDefault("ParamWithoutName1", ""), LATIN_SHORTS))
             .flatMap(params -> params.entrySet().stream())
             .filter(entry -> patt.matcher(entry.getKey()).results()
                 .map(mr -> Integer.parseInt(mr.group(1)))
@@ -171,7 +171,7 @@ public class LatinInfinitiveBacklinks {
                         )
                         .filter(param -> param.length() > 3)
                         .filter(param -> !param.contains("-"))
-                        .filter(param -> StringUtils.endsWithAny(param, LATIN_DESINENCES))
+                        .filter(param -> Strings.CS.endsWithAny(param, LATIN_DESINENCES))
                         .sorted()
                         .distinct()
                         .toList();
@@ -203,7 +203,7 @@ public class LatinInfinitiveBacklinks {
                         .flatMap(line -> P_LINK.matcher(line).results())
                         .map(mr -> mr.group(1))
                         .map(String::strip)
-                        .filter(title -> StringUtils.endsWithAny(title, LATIN_DESINENCES))
+                        .filter(title -> Strings.CS.endsWithAny(title, LATIN_DESINENCES))
                         .sorted()
                         .distinct()
                         .toList();
@@ -237,7 +237,7 @@ public class LatinInfinitiveBacklinks {
                         .flatMap(content -> P_LINK.matcher(content).results())
                         .map(mr -> mr.group(1))
                         .map(String::strip)
-                        .filter(title -> StringUtils.endsWithAny(title, LATIN_DESINENCES))
+                        .filter(title -> Strings.CS.endsWithAny(title, LATIN_DESINENCES))
                         .sorted()
                         .distinct()
                         .toList();

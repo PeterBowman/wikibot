@@ -1,10 +1,10 @@
 package com.github.wikibot.parsing.eswikt;
 
+import static org.apache.commons.lang3.Strings.CI;
+import static org.apache.commons.lang3.Strings.CS;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.containsAny;
-import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import static org.apache.commons.lang3.StringUtils.countMatches;
-import static org.apache.commons.lang3.StringUtils.startsWithAny;
 import static org.apache.commons.lang3.StringUtils.strip;
 import static org.apache.commons.lang3.StringUtils.uncapitalize;
 import static org.wikiutils.ParseUtils.getTemplateParametersWithValue;
@@ -952,7 +952,7 @@ public class Editor extends AbstractEditor {
                 ? new String[]{":", ";", "*", "#"}
                 : new String[]{" ", ":", ";", "*", "#"};
 
-            if (!previousLine.isEmpty() && startsWithAny(previousLine, arr)) {
+            if (!previousLine.isEmpty() && CI.startsWithAny(previousLine, arr)) {
                 return;
             }
 
@@ -1936,7 +1936,7 @@ public class Editor extends AbstractEditor {
         );
 
         candidateSections.stream()
-            .filter(section -> !containsIgnoreCase(section.getHeader(), "forma"))
+            .filter(section -> !CI.contains(section.getHeader(), "forma"))
             .forEach(Editor::processSectionFlexiveHeader);
 
         // {{forma verbal}}
@@ -4195,7 +4195,7 @@ public class Editor extends AbstractEditor {
 
     private static boolean isTranslationsSection(Section section) {
         var intro = removeCommentsAndNoWikiText(section.getIntro());
-        return containsAny(intro, "trad-arriba", "trad-centro", "trad-abajo");
+        return CS.containsAny(intro, "trad-arriba", "trad-centro", "trad-abajo");
     }
 
     private static boolean isEmptyEtymologySection(Section section) {

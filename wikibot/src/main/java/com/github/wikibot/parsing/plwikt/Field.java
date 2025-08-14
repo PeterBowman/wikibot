@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 public class Field implements Comparable<Field> {
     private static final String[] NEWLINE_MARKERS = new String[] { ":", "*", "#", ";" };
@@ -108,7 +108,7 @@ public class Field implements Comparable<Field> {
             return;
         }
 
-        boolean suppressColon = StringUtils.startsWithAny(content, NEWLINE_MARKERS) || content.startsWith("{{współczesna}}");
+        boolean suppressColon = Strings.CI.startsWithAny(content, NEWLINE_MARKERS) || content.startsWith("{{współczesna}}");
 
         if (!isNewLine && suppressColon) {
             isNewLine = true;

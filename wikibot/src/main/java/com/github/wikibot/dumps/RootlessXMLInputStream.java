@@ -47,10 +47,10 @@ public class RootlessXMLInputStream extends InputStream {
 
                 currentStream = factory.createCompressorInputStream(compressorName, bis);
                 return;
+            }  catch (CompressorException e) {
+                throw e;
             } catch (IOException e) {
                 System.out.printf("Unable to read file at channel position %d: %s%n", offset, e.getMessage());
-            } catch (CompressorException e) {
-                throw new IOException(e);
             }
         }
 

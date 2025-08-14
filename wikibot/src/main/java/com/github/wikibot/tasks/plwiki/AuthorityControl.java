@@ -30,7 +30,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.json.JSONObject;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
@@ -479,7 +479,7 @@ public final class AuthorityControl {
         var body = text.substring(0, m.start()).stripTrailing();
         var footer = text.substring(m.start()).stripLeading();
 
-        if (StringUtils.containsAnyIgnoreCase(body, "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
+        if (Strings.CI.containsAny(body, "#PATRZ", "#PRZEKIERUJ", "#TAM", "#REDIRECT")) {
             return Optional.empty(); // ignore redirs, there's nothing we can do
         }
 

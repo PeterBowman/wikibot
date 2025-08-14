@@ -36,7 +36,7 @@ public final class DumpWatcher {
     private static final Path DUMPS_SCHEDULE = Paths.get("./data/dumps/schedule.txt");
     private static final Path PUBLIC_DUMPS = Paths.get("./data/dumps/public/");
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-    private static final String JOB_LAUNCHER = "jsub %s";
+    private static final String JOB_LAUNCHER = "jsub";
     private static final long MAX_FILE_SIZE_FOR_CHECKSUM = 2500000000L; // ~2.5 GB
 
     private static final JSONObject DUMP_CONFIG;
@@ -116,7 +116,7 @@ public final class DumpWatcher {
     }
 
     private static void issueJob(String job) throws IOException, InterruptedException {
-        var process = Runtime.getRuntime().exec(String.format(JOB_LAUNCHER, job));
+        var process = Runtime.getRuntime().exec(new String[]{JOB_LAUNCHER, job});
 
         String s;
 

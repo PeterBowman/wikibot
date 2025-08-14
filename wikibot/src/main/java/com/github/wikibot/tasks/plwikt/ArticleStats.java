@@ -19,7 +19,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.wikipedia.Wiki;
@@ -235,7 +235,7 @@ public class ArticleStats {
     }
 
     private static boolean isFlexiveForm(String header) {
-        return StringUtils.containsAny(header, "forma fleksyjna", "forma odmieniona", "{{forma ");
+        return Strings.CS.containsAny(header, "forma fleksyjna", "forma odmieniona", "{{forma ");
     }
 
     private static String stripFieldContents(String text) {

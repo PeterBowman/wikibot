@@ -20,7 +20,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -136,11 +136,11 @@ public final class DefinitionBackreferences {
         text = ParseUtils.removeCommentsAndNoWikiText(text);
 
         for (var template : ParseUtils.getTemplatesIgnoreCase("wikipedia", text)) {
-            text = StringUtils.remove(text, template);
+            text = Strings.CS.remove(text, template);
         }
 
         for (var template : ParseUtils.getTemplates("Gloger", text)) {
-            text = StringUtils.remove(text, template);
+            text = Strings.CS.remove(text, template);
         }
 
         return P_REF.matcher(text).replaceAll("");
