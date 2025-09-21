@@ -1,6 +1,5 @@
-<li><a href="//admin.toolforge.org/tool/pbbot" target="_blank">Tool account</a></li>
+<li><a href="//toolsadmin.wikimedia.org/tools/id/pbbot" target="_blank">Tool account</a></li>
 <li><a href="//tool-db-usage.toolforge.org/owner/s52584" target="_blank">Tool DB usage</a></li>
-<li><a href="//sge-jobs.toolforge.org/tool/pbbot" target="_blank">Grid jobs</a></li>
 <li><a href="//sal.toolforge.org/tools.pbbot" target="_blank">SAL</a> (<a href="//wikitech.wikimedia.org/wiki/Nova_Resource:Tools.pbbot/SAL" target="_blank">wikitech</a>)</li>
 <li><a href="//tools-info.toolforge.org/" target="_blank">Tools info</a></li>
 

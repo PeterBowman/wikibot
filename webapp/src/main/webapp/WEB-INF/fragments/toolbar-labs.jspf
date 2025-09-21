@@ -1,3 +1,3 @@
-<li><a href="//admin.toolforge.org/tools" target="_blank">Lista narzędzi</a></li>
-<li><a href="//sge-status.toolforge.org" target="_blank">Status</a></li>
-<li><a href="//admin.toolforge.org/?Help" target="_blank">Pomoc</a></li>
+<li><a href="//toolhub.wikimedia.org/" target="_blank">Lista narzędzi</a></li>
+<li><a href="//k8s-status.toolforge.org/" target="_blank">Status</a></li>
+<li><a href="//wikitech.wikimedia.org/wiki/Portal:Toolforge" target="_blank">Pomoc</a></li>
