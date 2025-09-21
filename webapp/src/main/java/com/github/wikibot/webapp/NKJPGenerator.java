@@ -60,7 +60,11 @@ public class NKJPGenerator extends HttpServlet {
             return;
         } else {
             // sanitize a bit
-            address = "http://" + address.replace("&amp;", "&").replaceFirst("^https?://", "").replaceFirst("[#\\|].*$", "");
+            address = "https://" + address
+                .replace("nkjp.uni.lodz.pl", "pelcra-nkjp.clarin-pl.eu")
+                .replace("&amp;", "&")
+                .replaceFirst("^https?://", "")
+                .replaceFirst("[#\\|].*$", "");
         }
 
         var resultMap = new TreeMap<String, String>(Comparator.comparingInt(TEMPLATE_PARAMS::indexOf));

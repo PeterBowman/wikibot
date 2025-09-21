@@ -15,13 +15,13 @@
             Narzędzie generujące wypełniony szablon
             <code>{{NKJP}}</code>
             na podstawie adresu prowadzącego do wystąpienia w
-            <a href="http://nkjp.pl/" target="_blank">Narodowym Korpusie Języka Polskiego</a>.
+            <a href="https://nkjp.pl/" target="_blank">Narodowym Korpusie Języka Polskiego</a>.
             Przykłady z
             <a href="https://pl.wiktionary.org/wiki/Szablon:NKJP" target="_blank">dokumentacji szablonu</a>
             (kliknij na link, aby sprawdzić wynik):
         </p>
         <p>
-            <c:set var="example" value="http://nkjp.uni.lodz.pl/ParagraphMetadata?pid=e8f388f43c5a921039efd59b53dddc70&amp;match_start=228&amp;match_end=235&amp;wynik=1" />
+            <c:set var="example" value="https://pelcra-nkjp.clarin-pl.eu/ParagraphMetadata?pid=e8f388f43c5a921039efd59b53dddc70&amp;match_start=228&amp;match_end=235&amp;wynik=1" />
             <c:url var="exampleUrl" value="">
                 <c:param name="address" value="${example}" />
                 <c:param name="gui" value="on" />
@@ -29,7 +29,7 @@
             <code><a href="${exampleUrl}" class="example-link">${example}</a></code>
         </p>
         <p>
-            <c:set var="example" value="http://nkjp.uni.lodz.pl/ParagraphMetadata?pid=963ecb48f0ea8f021161b3cf06c33b4e&amp;match_start=43&amp;match_end=57&amp;wynik=1 " />
+            <c:set var="example" value="https://pelcra-nkjp.clarin-pl.eu/ParagraphMetadata?pid=963ecb48f0ea8f021161b3cf06c33b4e&amp;match_start=43&amp;match_end=57&amp;wynik=1 " />
             <c:url var="exampleUrl" value="">
                 <c:param name="address" value="${example}" />
                 <c:param name="gui" value="on" />
@@ -38,7 +38,7 @@
         </p>
         <p>
             Podobne linki można uzyskać w wyszukiwarce
-            <a href="http://www.nkjp.uni.lodz.pl/index.jsp" target="_blank">PELCRA NKJP 1.0</a>
+            <a href="https://pelcra-nkjp.clarin-pl.eu/" target="_blank">PELCRA NKJP</a>
             (z adresu okna otwieranego po naciśnięciu ikony z plusem obok wyniku wyszukiwania).
         </p>
         <form action="/pbbot/nkjp-generator" method="GET" id="nkjp-form">
@@ -75,7 +75,7 @@
                             </c:forEach>
                         </ul>
                         <p>Wynik w korpusie:
-                            <a target="_blank" href="http://nkjp.uni.lodz.pl/ParagraphMetadata?pid=${parameters.hash}&match_start=${parameters.match_start}&match_end=${parameters.match_end}&wynik=1">link</a>
+                            <a target="_blank" href="https://pelcra-nkjp.clarin-pl.eu/ParagraphMetadata?pid=${parameters.hash}&match_start=${parameters.match_start}&match_end=${parameters.match_end}&wynik=1">link</a>
                         </p>
                     </c:if>
                 </c:otherwise>
