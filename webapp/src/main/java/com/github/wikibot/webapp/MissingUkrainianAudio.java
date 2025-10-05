@@ -108,9 +108,10 @@ public class MissingUkrainianAudio extends HttpServlet {
                 page_namespace
             FROM page
                 LEFT JOIN categorylinks ON cl_from = page_id
+                LEFT JOIN linktarget ON lt_id = cl_target_id
             WHERE
-                page_is_redirect = 0
-                AND cl_to IN (%s);
+                page_is_redirect = 0 AND
+                lt_title IN (%s);
             """;
 
         try (var connection = commonsDataSource.getConnection()) {
@@ -157,10 +158,11 @@ public class MissingUkrainianAudio extends HttpServlet {
                     page_title
                 FROM page
                     INNER JOIN categorylinks ON cl_from = page_id
+                    INNER JOIN linktarget ON lt_id = cl_target_id
                     LEFT JOIN imagelinks ON il_from = page_id AND il_to IN (%s)
                 WHERE
                     page_namespace = 0 AND
-                    cl_to = '%s' AND
+                    lt_title = '%s' AND
                     il_from IS NULL;
                 """.formatted(filesStr, ENTRIES_CATEGORY_NAME);
 

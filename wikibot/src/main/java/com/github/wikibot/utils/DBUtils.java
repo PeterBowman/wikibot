@@ -59,10 +59,15 @@ public class DBUtils {
         var depth = 0;
 
         final var queryFmt = """
-            SELECT DISTINCT page_title AS page_title, page_namespace
-            FROM page LEFT JOIN categorylinks ON cl_from = page_id
-            WHERE page_is_redirect = 0
-            AND cl_to IN (%s);
+            SELECT
+                DISTINCT page_title AS page_title,
+                page_namespace
+            FROM page
+                LEFT JOIN categorylinks ON cl_from = page_id
+                LEFT JOIN linktarget ON lt_id = cl_target_id
+            WHERE
+                page_is_redirect = 0 AND
+                lt_title IN (%s);
             """;
 
         try (var connection = DriverManager.getConnection(sqlUri, props)) {
@@ -138,15 +143,16 @@ public class DBUtils {
 
             final var queryFmt = """
                 SELECT
-                    cl_to,
+                    lt_title,
                     page_title,
                     cat_pages - cat_subcats - cat_files AS members
                 FROM page
                     LEFT JOIN categorylinks ON cl_from = page_id
+                    LEFT JOIN linktarget ON lt_id = cl_target_id
                     LEFT JOIN category ON cat_title = page_title
                 WHERE
                     page_namespace = 14 AND
-                    cl_to IN (%s);
+                    lt_title IN (%s);
                 """;
 
             while (!targetCategories.isEmpty()) {
@@ -159,7 +165,7 @@ public class DBUtils {
                 var subcats = new HashSet<String>();
 
                 while (rs.next()) {
-                    var parent = rs.getString("cl_to");
+                    var parent = rs.getString("lt_title");
                     var subcat = rs.getString("page_title");
                     var members = rs.getInt("members");
 

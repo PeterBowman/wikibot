@@ -105,10 +105,11 @@ public class PlwiktStatisticsService extends HttpServlet {
                     SUM(cat_pages - cat_subcats - cat_files) AS total_entries
                 FROM page
                     INNER JOIN categorylinks ON cl_from = page_id
+                    INNER JOIN linktarget ON lt_id = cl_target_id
                     INNER JOIN category ON cat_title = page_title
                 WHERE
-                    cl_to = '%s'
-                    AND page_namespace = 14;
+                    lt_title = '%s' AND
+                    page_namespace = 14;
                 """.formatted(TARGET_CATEGORY.replace(' ', '_'));
 
             var statement = connection.createStatement();

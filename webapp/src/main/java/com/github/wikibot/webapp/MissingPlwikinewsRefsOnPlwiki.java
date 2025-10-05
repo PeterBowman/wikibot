@@ -144,8 +144,8 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
                     page_title NOT IN (
                         SELECT
                             rd_title
-                        FROM
-                            redirect INNER JOIN page AS p2 ON rd_from = p2.page_id
+                        FROM redirect
+                            INNER JOIN page AS p2 ON rd_from = p2.page_id
                         WHERE
                             p2.page_namespace = 0 AND
                             rd_namespace = 0 AND
@@ -154,11 +154,12 @@ public class MissingPlwikinewsRefsOnPlwiki extends HttpServlet {
                     page_title NOT IN (
                         SELECT
                             p3.page_title
-                        FROM
-                            categorylinks INNER JOIN page AS p3 ON cl_from = p3.page_id
+                        FROM categorylinks
+                            INNER JOIN page AS p3 ON cl_from = p3.page_id
+                            INNER JOIN categorylinks ON lt_id = cl_target_id
                         WHERE
                             p3.page_namespace = 0 AND
-                            cl_to IN (%2$s)
+                            lt_title IN (%2$s)
                     )
                 ORDER BY
                     CONVERT(page_title USING utf8) COLLATE utf8_polish_ci;

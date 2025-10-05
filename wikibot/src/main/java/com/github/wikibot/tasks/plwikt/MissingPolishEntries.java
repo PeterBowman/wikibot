@@ -140,10 +140,15 @@ public class MissingPolishEntries {
 
         try (var connection = getConnection()) {
             var query = """
-                SELECT page_title
+                SELECT
+                    page_title
                 FROM page
-                INNER JOIN categorylinks ON cl_from = page_id
-                WHERE page_namespace = 0 AND page_is_redirect = 0 AND cl_to = '%s';
+                    INNER JOIN categorylinks ON cl_from = page_id
+                    INNER JOIN linktarget ON lt_id = cl_target_id
+                WHERE
+                    page_namespace = 0 AND
+                    page_is_redirect = 0 AND
+                    lt_title = '%s';
                 """.formatted(category.replace(' ', '_').replace("'", "\\'"));
 
             var resultSet = connection.createStatement().executeQuery(query);

@@ -157,10 +157,15 @@ public final class MissingPersonInfoboxes {
         var depth = 0;
 
         final var queryFmt = """
-            SELECT DISTINCT page_title AS page_title, page_namespace
-            FROM page LEFT JOIN categorylinks ON cl_from = page_id
-            WHERE page_is_redirect = 0
-            AND cl_to IN (%s);
+            SELECT
+                DISTINCT page_title AS page_title,
+                page_namespace
+            FROM page
+                LEFT JOIN categorylinks ON cl_from = page_id
+                LEFT JOIN linktarget ON lt_id = cl_target_id
+            WHERE
+                page_is_redirect = 0 AND
+                lt_title IN (%s);
             """;
 
         try (var connection = getConnection()) {

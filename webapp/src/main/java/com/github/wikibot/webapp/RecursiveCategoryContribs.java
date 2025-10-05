@@ -174,6 +174,7 @@ public class RecursiveCategoryContribs extends HttpServlet {
                 ) AS is_sysop
             FROM page
                 LEFT JOIN categorylinks ON cl_from = page_id
+                LEFT JOIN linktarget ON lt_id = cl_target_id
                 INNER JOIN revision ON rev_page = page_id
                 INNER JOIN actor ON rev_actor = actor_id
                 LEFT JOIN user ON user_id = actor_user
@@ -182,7 +183,7 @@ public class RecursiveCategoryContribs extends HttpServlet {
                 (page_namespace != 0 OR %s) AND
                 (page_namespace != 0 OR %s) AND
                 (page_namespace = 0 OR page_latest = rev_id) AND
-                cl_to IN (%%s) AND
+                lt_title IN (%%s) AND
                 page_id NOT IN (%%s) AND
                 (page_namespace != 0 OR user_id NOT IN (
                     SELECT user_id
