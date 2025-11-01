@@ -70,24 +70,27 @@ public class Wikibot extends WMFWiki {
      * section.
      *
      * @param category the name of the category
-     * @param section the language section or <tt>null</tt> to retrieve the
-     * contents of the entire page
+     * @param type the type of category members to retrieve: "page", "subcat", "file"
      * @param ns a list of namespaces to filter by, empty = all namespaces
-     * @return a Map containing page titles and its respective contents
+     * @return a List of page contents
      * @throws IOException
      */
-    public List<PageContainer> getContentOfCategorymembers(String category, int... ns) throws IOException {
+    public List<PageContainer> getContentOfCategorymembers(String category, String type, int... ns) throws IOException {
         var getparams = Map.of(
             "prop", "revisions",
             "rvprop", "timestamp|content|ids",
             "rvslots", "main",
             "generator", "categorymembers",
             "gcmtitle", "Category:" + normalize(removeNamespace(category, Wiki.CATEGORY_NAMESPACE)),
-            "gcmtype", "page",
+            "gcmtype", type,
             "gcmnamespace", constructNamespaceString(ns)
         );
 
         return getGeneratedContent(getparams, "gcm");
+    }
+
+    public List<PageContainer> getContentOfCategorymembers(String category, int... ns) throws IOException {
+        return getContentOfCategorymembers(category, "page", ns);
     }
 
     public List<PageContainer> getContentOfTransclusions(String page, int... ns) throws IOException {
