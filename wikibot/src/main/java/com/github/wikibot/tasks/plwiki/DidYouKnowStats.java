@@ -80,7 +80,7 @@ final class DidYouKnowStats {
     private static final String DYK_SUBPAGE_PAGEVIEWS_TOP100 = "Wikiprojekt:Czy wiesz/Statystyki wyświetleń (%d)/TOP 100";
     private static final String DYK_SUBPAGE_TEMPLATE = "Wikiprojekt:Czy wiesz/statystyki-szablon";
     private static final String REST_URI_TEMPLATE = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/pl.wikipedia.org/all-access/user/%1$s/daily/%2$d/%2$d";
-    private static final String NOTICEBOARD_PAGE = "Wikipedia:Tablica ogłoszeń/Ogłoszenia";
+    private static final String NOTICEBOARD_PAGE = "Wikipedia:Tablica ogłoszeń";
     private static final int NOTICEBOARD_MAX_DAYS_SPAN = 31;
     private static final int NOTICEBOARD_MIN_DAYS = 5;
     private static final int NOTICEBOARD_MAX_MENTIONS = 3;

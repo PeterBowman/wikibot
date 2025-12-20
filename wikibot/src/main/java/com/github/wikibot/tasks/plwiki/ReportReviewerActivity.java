@@ -39,7 +39,7 @@ public final class ReportReviewerActivity {
 
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
-    private static final String TARGET_PAGE = "Wikipedia:Tablica ogłoszeń/Ogłoszenia";
+    private static final String TARGET_PAGE = "Wikipedia:Tablica ogłoszeń";
     private static final String WIKINEWS_TEMPLATE = "Wikireporter:PBbot/szablon statystyk wersji przejrzanych Wikipedii";
     private static final String WIKINEWS_PAGENAME = "Statystyki wersji przejrzanych Wikipedii - %d tydzień %d";
 
