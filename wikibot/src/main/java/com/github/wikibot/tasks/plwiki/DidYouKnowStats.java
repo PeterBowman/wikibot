@@ -171,16 +171,18 @@ final class DidYouKnowStats {
             var entries = processYear(year);
             System.out.printf("Got %d entries.%n", entries.size());
 
-            var untilMonth = entries.stream().mapToInt(e -> e.date().getMonthValue()).max().getAsInt();
+            if (!entries.isEmpty()) {
+                var untilMonth = entries.stream().mapToInt(e -> e.date().getMonthValue()).max().getAsInt();
 
-            updateAuthors(year, untilMonth, entries);
-            updatePosters(year, untilMonth, entries);
-            updateReviewers(year, untilMonth, entries);
-            updatePageViews(year, untilMonth, entries);
-            updateNavbox(year);
+                updateAuthors(year, untilMonth, entries);
+                updatePosters(year, untilMonth, entries);
+                updateReviewers(year, untilMonth, entries);
+                updatePageViews(year, untilMonth, entries);
+                updateNavbox(year);
 
-            if (line.hasOption("noticeboard")) {
-                storage.addAll(entries);
+                if (line.hasOption("noticeboard")) {
+                    storage.addAll(entries);
+                }
             }
         }
 
