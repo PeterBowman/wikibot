@@ -29,7 +29,7 @@ public final class SandboxRepublishTagger {
         var startTimestamp = extractTimestamp();
         var earliest = OffsetDateTime.parse(startTimestamp);
         var latest = OffsetDateTime.now(wb.timezone());
-        var helper = wb.new RequestHelper().withinDateRange(earliest, latest).inNamespaces(Wiki.USER_NAMESPACE);
+        var helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest)).inNamespaces(Wiki.USER_NAMESPACE);
 
         wb.getLogEntries(Wiki.MOVE_LOG, null, helper).stream()
             .filter(log -> wb.namespace(log.getDetails().get("target_title")) == Wiki.MAIN_NAMESPACE)
@@ -60,7 +60,7 @@ public final class SandboxRepublishTagger {
     private static boolean wasPreviouslyPublished(Wiki.LogEntry log) {
         try {
             var article = log.getDetails().get("target_title");
-            var helper = wb.new RequestHelper().byTitle(article).withinDateRange(null, log.getTimestamp());
+            var helper = wb.new RequestHelper().byTitle(article).withinInterval(new Wiki.Interval(null, log.getTimestamp()));
 
             return wb.getLogEntries(Wiki.MOVE_LOG, null, helper).stream()
                 .anyMatch(le -> le.getDetails().get("target_title").equals(log.getTitle()));

@@ -222,7 +222,7 @@ public final class CitationTypography {
         List<String> rcTypes = List.of("new", "edit");
         List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 
-        Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+        Wiki.RequestHelper helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest));
         List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 
         // store current timestamp for the next iteration
@@ -849,7 +849,7 @@ public final class CitationTypography {
 
             Wiki.RequestHelper helper = wb.new RequestHelper()
                 .inNamespaces(Wiki.MAIN_NAMESPACE)
-                .withinDateRange(now, null);
+                .withinInterval(new Wiki.Interval(now, null));
 
             optRevision = wb.contribs("PBbot", helper).stream()
                  .filter(c -> c.getTitle().equals(entry.title) && c.getComment().startsWith(EDIT_SUMMARY))

@@ -229,7 +229,7 @@ public final class InconsistentHeaderTitles {
         var rcTypes = List.of("new", "edit");
         var revs = wb.recentChanges(earliest, latest, null, rcTypes, false, null, Wiki.MAIN_NAMESPACE);
 
-        var helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+        var helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest));
         var logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 
         // store current timestamp for the next iteration

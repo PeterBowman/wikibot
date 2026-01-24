@@ -608,7 +608,7 @@ public final class LinkManager {
                 OffsetDateTime startTimestamp = request.currentTimestamp; // earliest
                 OffsetDateTime endTimestamp = currentRevision.getTimestamp(); // latest
 
-                Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(startTimestamp, endTimestamp);
+                Wiki.RequestHelper helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(startTimestamp, endTimestamp));
                 List<Revision> revs = wb.getPageHistory(mainpage, helper);
 
                 for (Revision rev : revs) {

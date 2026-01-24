@@ -43,7 +43,7 @@ public final class GreetNewEditors {
         var earliest = OffsetDateTime.parse(startTimestamp);
         var latest = OffsetDateTime.now(wb.timezone());
 
-        var helper = wb.new RequestHelper().withinDateRange(earliest, latest).reverse(true);
+        var helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest)).reverse(true);
 
         var usernames = wb.getLogEntries(Wiki.USER_RIGHTS_LOG, null, helper).stream()
             .filter(GreetNewEditors::selectNewEditors)

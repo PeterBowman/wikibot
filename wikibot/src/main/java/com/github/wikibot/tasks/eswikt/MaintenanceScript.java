@@ -76,7 +76,7 @@ public final class MaintenanceScript {
         List<String> rctypes = List.of("new", "edit");
         List<Wiki.Revision> revs = wb.recentChanges(earliest, latest, rcoptions, rctypes, false, wb.getCurrentUser().getUsername(), Wiki.MAIN_NAMESPACE);
 
-        Wiki.RequestHelper helper = wb.new RequestHelper().withinDateRange(earliest, latest);
+        Wiki.RequestHelper helper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest));
         List<Wiki.LogEntry> logs = wb.getLogEntries(Wiki.MOVE_LOG, "move", helper);
 
         List<String> titles = Stream.of(

@@ -31,7 +31,7 @@ public final class NewPageTagger {
         OffsetDateTime earliest = OffsetDateTime.parse(startTimestamp);
         OffsetDateTime latest = OffsetDateTime.now(wb.timezone());
 
-        Wiki.RequestHelper rcHelper = wb.new RequestHelper().withinDateRange(earliest, latest);
+        Wiki.RequestHelper rcHelper = wb.new RequestHelper().withinInterval(new Wiki.Interval(earliest, latest));
 
         wb.newPages(rcHelper).stream()
             .filter(Wiki.Revision::isNew)
