@@ -158,13 +158,17 @@ public class MissingUkrainianAudio extends HttpServlet {
                     page_title
                 FROM page
                     INNER JOIN categorylinks ON cl_from = page_id
-                    INNER JOIN linktarget ON lt_id = cl_target_id
-                    LEFT JOIN imagelinks ON il_from = page_id AND il_to IN (%s)
+                    INNER JOIN linktarget AS lt_cl ON lt_cl.lt_id = cl_target_id
                 WHERE
                     page_namespace = 0 AND
-                    lt_title = '%s' AND
-                    il_from IS NULL;
-                """.formatted(filesStr, ENTRIES_CATEGORY_NAME);
+                    lt_cl.lt_title = '%s' AND
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM imagelinks
+                            INNER JOIN linktarget AS lt_il ON lt_il.lt_id = il_target_id
+                        WHERE il_from = page_id AND lt_il.lt_title IN (%s)
+                    );
+                """.formatted(ENTRIES_CATEGORY_NAME, filesStr);
 
             var rs = connection.createStatement().executeQuery(query);
 
