@@ -502,7 +502,7 @@ public class PrettyRefServlet extends HttpServlet {
 
         private static final Pattern TLD_RE, CCTLD_RE;
 
-        private String orig, name, origName, group, content;
+        private String orig, name, origName, group, content, details;
 
         private final Map<String, Integer> groupRefCounter;
 
@@ -596,6 +596,9 @@ public class PrettyRefServlet extends HttpServlet {
                         groupRefCounter.put(group, ++count);
                         // `name` might have been already set by the previous case branch, therefore don't overwrite it
                         if (name == null) name = group + count;
+                        break;
+                    case "details":
+                        details = value;
                         break;
                 }
             }
@@ -884,23 +887,34 @@ public class PrettyRefServlet extends HttpServlet {
         }
 
         String toShortTag() {
+            var details = makeDetailsAttribute();
+
             if (group == null) {
-                return String.format("<ref name=\"%s\" />", name);
+                return String.format("<ref name=\"%s\"%s />", name, details);
             } else if (group.equals("uwaga")) {
-                return String.format("<ref name=\"%s\" group=\"uwaga\" />", name);
+                return String.format("<ref name=\"%s\" group=\"uwaga\"%s />", name, details);
             } else {
-                return String.format("<ref name=\"%s\" group=\"%s\" />", name, group);
+                return String.format("<ref name=\"%s\" group=\"%s\"%s />", name, group, details);
             }
         }
 
         @Override
         public String toString() {
+            var details = makeDetailsAttribute();
+
             if (content == null) {
-                return String.format("<ref name=\"%s\" />", name);
+                return String.format("<ref name=\"%s\"%s />", name, details);
             }
 
             var cont = isOneTemplateCall(content) ? new Template(content).toString() : content;
-            return String.format("<ref name=\"%s\">%s</ref>", name, cont);
+            return String.format("<ref name=\"%s\"%s>%s</ref>", name, details, cont);
+        }
+
+        private String makeDetailsAttribute() {
+            return Optional.ofNullable(details)
+                .filter(s -> !s.isBlank())
+                .map(s -> " details=\"%s\"".formatted(s)) // mind the leading space
+                .orElse("");
         }
 
         @Override
