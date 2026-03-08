@@ -44,12 +44,12 @@ public final class ArchiveExternalLinks {
         webArchive = new WebArchiveLookup();
 
         var list = wb.linksearch(url, protocol, Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, Wiki.CATEGORY_NAMESPACE);
-        var titles = list.stream().map(item -> item[0]).distinct().collect(Collectors.toCollection(ArrayList::new));
+        var titles = list.stream().map(item -> item.page()).distinct().collect(Collectors.toCollection(ArrayList::new));
 
         // retain user sandboxes
         titles.removeIf(title -> wb.namespace(title) == Wiki.USER_NAMESPACE && wb.getRootPage(title).equals(title));
 
-        var urls = list.stream().map(item -> item[1]).collect(Collectors.toSet());
+        var urls = list.stream().map(item -> item.url()).collect(Collectors.toSet());
         var pages = wb.getContentOfPages(titles);
         var storage = new HashMap<String, String>();
 

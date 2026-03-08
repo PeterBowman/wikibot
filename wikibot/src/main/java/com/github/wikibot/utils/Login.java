@@ -29,7 +29,7 @@ public class Login {
     private Login() {}
 
     public static String getUserAgent() throws IOException {
-        return Files.readString(LOCATION.resolve(USER_AGENT_FILENAME));
+        return Files.readString(LOCATION.resolve(USER_AGENT_FILENAME)).trim();
     }
 
     public static void login(Wiki wiki, String username, char[] password) {
@@ -39,11 +39,11 @@ public class Login {
         String userAgent;
 
         try {
-            userAgent = getUserAgent();
+            userAgent = "%s Wiki.java/%s".formatted(getUserAgent(), Wiki.VERSION);
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Setting basic user agent, please edit " + USER_AGENT_FILENAME);
-            userAgent = "bot operator: User:" + username;
+            userAgent = wiki.getUserAgent();
         }
 
         var fullUsername = String.format("%s@%s", username, BOT_PASSWORD_SUFFIX);
@@ -51,7 +51,7 @@ public class Login {
 
         wiki.setThrottle(DEFAULT_THROTTLE_MS);
         wiki.setMaxLag(DEFAULT_MAXLAG_S);
-        wiki.setUserAgent(String.format("%s, %s", wiki.getUserAgent(), userAgent));
+        wiki.setUserAgent(userAgent);
         wiki.setMarkBot(true);
         setAssertionFlag(wiki);
 
