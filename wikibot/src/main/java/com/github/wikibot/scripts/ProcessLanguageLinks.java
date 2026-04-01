@@ -41,9 +41,9 @@ public final class ProcessLanguageLinks {
         Options options = new Options();
         options.addOption("f", "find", false, "find remaining language links");
         options.addOption("r", "remove", false, "remove language links");
-        options.addOption("d", "database", false, "database name");
-        options.addOption("n", "name", false, "name of date directory of dump file");
-        options.addRequiredOption("d", "domain", true, "wiki domain name");
+        options.addOption("d", "database", true, "database name");
+        options.addOption("n", "name", true, "name of date directory of dump file");
+        options.addOption("p", "project", true, "wiki project name");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine line;
@@ -55,10 +55,7 @@ public final class ProcessLanguageLinks {
             line = parser.parse(options, Misc.readLine().split(" "));
         }
 
-        String domain = line.getOptionValue("domain");
         interwikis = Files.readAllLines(LANG_LIST);
-        wb = Wikibot.newSession(domain);
-        Login.login(wb);
 
         if (line.hasOption("find")) {
             var database = line.getOptionValue("database");
@@ -72,6 +69,9 @@ public final class ProcessLanguageLinks {
 
             findLanguageLinks(dumpConfig.fetch().get());
         } else if (line.hasOption("remove")) {
+            String project = line.getOptionValue("project");
+            wb = Wikibot.newSession(project);
+            Login.login(wb);
             removeLanguageLinks();
         } else {
             new HelpFormatter().printHelp(ProcessLanguageLinks.class.getName(), options);
