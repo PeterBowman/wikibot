@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwikt;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,49 +48,32 @@ public final class MisusedRegTemplates {
     private static final Plural PLURAL_PL;
     private static final LocalizedNumberFormatter NUMBER_FORMAT_PL;
 
-    private static final List<String> TEMPLATES = List.of(
-        // Polish
-        "reg-pl", "gw-pl",
-        // Polish (deprecated)
-        "białystok", "częstochowa", "góry", "kielce", "kraków", "kresy", "kujawy", "łódź",
-        "lwów", "mazowsze", "podhale", "poznań", "roztoczański", "sącz", "śląsk", "warmia",
-        "warszawa", "zaol",
-        // English
-        "szkocang",
-        // Arabic
-        "algierarab", "egiparab", "hasarab", "lewantarab", "libijarab", "marokarab", "tunezarab",
-        // French
-        "akadfranc", "belgfranc", "kanadfranc", "szwajcfranc",
-        // Spanish
-        "reg-es",
-        // Dutch
-        "reg-nl",
-        // Dutch (deprecated)
-        "belghol", "belgniderl", "nidhol", "surinhol",
-        // Korean
-        "korpłd", "korpłn",
-        // German
-        "austr", "płdniem", "płnniem", "szwajcniem",
-        // Portuguese
-        "brazport", "eurport",
-        // Italian
-        "szwajcwł", "tosk",
-        // Slovincian
-        "gw-csb-slo",
-        // Ukrainian
-        "gw-uk"
-    );
-
-    private static final List<String> TEMPLATES_NEW_GEN = List.of(
-        "reg-pl", "gw-pl", "reg-es", "reg-nl", "gw-uk", "gw-csb-slo"
-    );
+    private static final List<String> TEMPLATES_ALL;
+    private static final List<String> TEMPLATES_NEW_GEN;
+    private static final List<String> TEMPLATES_OLD_GEN;
 
     private static final List<FieldTypes> SPECIAL_FIELDS = List.of(
         FieldTypes.DEFINITIONS, FieldTypes.INFLECTION
     );
 
     static {
-        var templateList = TEMPLATES.stream()
+        try {
+            TEMPLATES_NEW_GEN = Files.readAllLines(LOCATION.resolve("templates-new.txt")).stream()
+                .filter(line -> !line.isBlank())
+                .filter(line -> !line.startsWith("#"))
+                .toList();
+
+            TEMPLATES_OLD_GEN = Files.readAllLines(LOCATION.resolve("templates-old.txt")).stream()
+                .filter(line -> !line.isBlank())
+                .filter(line -> !line.startsWith("#"))
+                .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        TEMPLATES_ALL = Stream.concat(TEMPLATES_NEW_GEN.stream(), TEMPLATES_OLD_GEN.stream()).distinct().toList();
+
+        var templateList = TEMPLATES_ALL.stream()
             .map(template -> String.format("{{s|%s}}", template))
             .collect(Collectors.joining(", "));
 
@@ -188,7 +172,7 @@ public final class MisusedRegTemplates {
     }
 
     private static boolean containsTemplates(XMLRevision rev) {
-        return TEMPLATES.stream().anyMatch(template -> !ParseUtils.getTemplates(template, rev.getText()).isEmpty());
+        return TEMPLATES_ALL.stream().anyMatch(template -> !ParseUtils.getTemplates(template, rev.getText()).isEmpty());
     }
 
     private static Stream<Item> extractItemsFromPage(Page page) {
@@ -196,7 +180,7 @@ public final class MisusedRegTemplates {
             .map(Section::getAllFields)
             .flatMap(Collection::stream)
             .filter(field -> !field.isEmpty())
-            .flatMap(field -> TEMPLATES.stream()
+            .flatMap(field -> TEMPLATES_ALL.stream()
                 .map(template -> ParseUtils.getTemplates(template, field.getContent()))
                 .flatMap(Collection::stream)
                 .map(ParseUtils::getTemplateParametersWithValue)
@@ -214,7 +198,7 @@ public final class MisusedRegTemplates {
 
         return isSpecialField ^ params.entrySet().stream()
             .filter(entry -> !entry.getKey().equals("templateName"))
-            .filter(entry -> !TEMPLATES.contains(entry.getValue()))
+            .filter(entry -> !TEMPLATES_ALL.contains(entry.getValue()))
             .count() == 0;
     }
 
