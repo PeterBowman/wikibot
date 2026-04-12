@@ -899,15 +899,13 @@ public class PrettyRefServlet extends HttpServlet {
         }
 
         @Override
-        public String toString() {
-            var details = makeDetailsAttribute();
-
+        public String toString() { // ignore details (we don't want them inside <references>)!
             if (content == null) {
-                return String.format("<ref name=\"%s\"%s />", name, details);
+                return String.format("<ref name=\"%s\" />", name);
             }
 
             var cont = isOneTemplateCall(content) ? new Template(content).toString() : content;
-            return String.format("<ref name=\"%s\"%s>%s</ref>", name, details, cont);
+            return String.format("<ref name=\"%s\">%s</ref>", name, cont);
         }
 
         private String makeDetailsAttribute() {
