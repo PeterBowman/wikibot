@@ -32,7 +32,7 @@ public class MissingPolishEntries {
     private static final Path TITLES_PATH = LOCATION.resolve("titles.txt");
 
     private static final String TARGET_PAGE = "Wikipedysta:PBbot/brakujące polskie";
-    private static final String DOWNLOAD_URL = "http://download.sgjp.pl/morfeusz/";
+    private static final String DOWNLOAD_URL = "https://download.sgjp.pl/morfeusz/";
     private static final String DUMP_FILENAME_FORMAT = "sgjp-%s.tab.gz";
 
     private static final String SQL_PLWIKT_URI_SERVER = "jdbc:mysql://plwiktionary.analytics.db.svc.wikimedia.cloud:3306/plwiktionary_p";
@@ -65,7 +65,7 @@ public class MissingPolishEntries {
 
         System.out.println(stats);
 
-        if (Files.exists(HASH_PATH) && Integer.parseInt(Files.readString(HASH_PATH)) == titles.hashCode()) {
+        if (Files.exists(HASH_PATH) && Integer.parseInt(Files.readString(HASH_PATH).strip()) == titles.hashCode()) {
             System.out.println("No changes detected, aborting.");
             return;
         }
@@ -80,9 +80,9 @@ public class MissingPolishEntries {
     }
 
     private static String retrieveLatestDumpDir() throws IOException {
-        return Jsoup.connect(DOWNLOAD_URL).get().select("td a").stream()
+        return Jsoup.connect(DOWNLOAD_URL).get().select("a").stream()
             .map(Element::text)
-            .filter(href  -> href.matches("^\\d{8}/$"))
+            .filter(href -> href.matches("^\\d{8}/$"))
             .map(href -> href.substring(0, href.length() - 1))
             .reduce((first, second) -> second)
             .orElseThrow();
