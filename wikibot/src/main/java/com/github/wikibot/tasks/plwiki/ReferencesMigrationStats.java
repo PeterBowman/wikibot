@@ -38,8 +38,7 @@ class ReferencesMigrationStats {
     private static final XStream xstream = new XStream();
 
     private static final String EMPTY_REFS_TEMPLATE = """
-        Artykuły, w których użyto &lt;references&gt; lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy &lt;ref&gt;, {{s|r}}, {{s|odn}}, {{s|refn}}
-        ani szablonów, które automatycznie dodają przypisy ({{s|zwierzę infobox}}).
+        Artykuły, w których użyto &lt;references&gt; lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy &lt;ref&gt;, {{s|r}}, {{s|odn}} ani {{s|refn}}.
 
         Dane na podstawie zrzutu %s. Aktualizacja: ~~~~~.
         ----
@@ -147,7 +146,7 @@ class ReferencesMigrationStats {
             hasReferenceInBody = true;
         }
 
-        for (var template : List.of("odn", "refn", "zwierzę infobox")) {
+        for (var template : List.of("odn", "refn")) {
             if (!ParseUtils.getTemplatesIgnoreCase(template, text).isEmpty()) {
                 hasReferenceInBody = true;
             }
