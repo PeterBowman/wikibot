@@ -8,10 +8,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Comparator;
-import java.time.YearMonth;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.github.wikibot.utils.DBUtils;
@@ -28,7 +30,17 @@ public final class NewbieActivityReport {
     private static final int MIN_NORMAL_ACTIVITY_EDITS = 20;
     private static final int MAX_LOW_ACTIVITY_EDITS = 5;
 
-    private static final YearMonth REPORT_MONTH = YearMonth.now().minusMonths(1);
+    private static final int MONTHS_TO_ANALYZE = 24;
+
+    private static final long START_TIMESTAMP;
+
+    static {
+        var now = OffsetDateTime.now();
+        var then = now.minusMonths(MONTHS_TO_ANALYZE);
+        var fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+        START_TIMESTAMP = Long.parseLong(fmt.format(then));
+    }
 
     public static void main(String[] args) throws Exception {
         var activity = getUserActivity();
@@ -53,16 +65,17 @@ public final class NewbieActivityReport {
         var monthlyEdits = activity.stream().collect(Collectors.toMap(
             UserActivity::period,
             UserActivity::edits,
-            Integer::sum
+            Integer::sum,
+            TreeMap::new
         ));
 
-        var firstActivityMonth = monthlyEdits.keySet().stream().min(YearMonth::compareTo).orElse(REPORT_MONTH);
-        var currentMonth = REPORT_MONTH;
+        var earliestActivityMonth = monthlyEdits.lastEntry().getValue();
+        var currentMonth = 0;
 
         var lowActivityMonths = 0;
         var lowActivityEdits = 0;
 
-        while (!currentMonth.isBefore(firstActivityMonth)) {
+        while (currentMonth <= earliestActivityMonth) {
             var edits = monthlyEdits.getOrDefault(currentMonth, 0);
 
             if (edits > MAX_LOW_ACTIVITY_EDITS) {
@@ -71,7 +84,7 @@ public final class NewbieActivityReport {
 
             lowActivityMonths++;
             lowActivityEdits += edits;
-            currentMonth = currentMonth.minusMonths(1);
+            currentMonth++;
         }
 
         if (lowActivityMonths < LOW_ACTIVITY_MONTHS) {
@@ -81,7 +94,7 @@ public final class NewbieActivityReport {
         var normalActivityMonths = 0;
         var normalActivityEdits = 0;
 
-        while (!currentMonth.isBefore(firstActivityMonth)) {
+        while (currentMonth <= earliestActivityMonth) {
             var edits = monthlyEdits.getOrDefault(currentMonth, 0);
 
             if (edits < MIN_NORMAL_ACTIVITY_EDITS) {
@@ -90,7 +103,7 @@ public final class NewbieActivityReport {
 
             normalActivityMonths++;
             normalActivityEdits += edits;
-            currentMonth = currentMonth.minusMonths(1);
+            currentMonth++;
         }
 
         if (normalActivityMonths < NORMAL_ACTIVITY_MONTHS) {
@@ -137,7 +150,7 @@ public final class NewbieActivityReport {
         var query = """
             select
                 user_name,
-                date_format(str_to_date(rev_timestamp, "%Y%m%d%H%i%s"), "%Y-%m") as edit_month,
+                floor((unix_timestamp() - unix_timestamp(rev_timestamp)) / (86400 * 30)) AS months_ago,
                 count(*) as monthly_edit_count
             from user
                 inner join actor on actor_user = user_id
@@ -146,21 +159,21 @@ public final class NewbieActivityReport {
             where
                 user_is_temp = 0 and
                 ug_user is null and
-                rev_timestamp > 20250101000000
+                rev_timestamp >= %d
             group by
                 user_name,
-                edit_month
-            """;
+                months_ago
+            """.formatted(START_TIMESTAMP);
 
         try (var connection = getConnection()) {
             var rs = connection.createStatement().executeQuery(query);
 
             while (rs.next()) {
                 var userName = rs.getString("user_name");
-                var period = YearMonth.parse(rs.getString("edit_month"));
+                var monthsAgo = rs.getInt("months_ago");
                 var monthlyEditCount = rs.getInt("monthly_edit_count");
 
-                list.add(new UserActivity(userName, period, monthlyEditCount));
+                list.add(new UserActivity(userName, monthsAgo, monthlyEditCount));
             }
         }
 
@@ -179,7 +192,7 @@ public final class NewbieActivityReport {
         }
     }
 
-    record UserActivity(String userName, YearMonth period, int edits) {}
+    record UserActivity(String userName, int period, int edits) {}
 
     record ReportEntry(String userName, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {}
 }
