@@ -57,8 +57,10 @@ public final class NewbieActivityReport {
             .toList();
 
         var html = makeHtml(report);
-
         Files.writeString(LOCATION.resolve("report.html"), html);
+
+        var wikitable = makeWikitable(report);
+        Files.writeString(LOCATION.resolve("report.txt"), wikitable);
     }
 
     private static ReportEntry analyze(String userName, List<UserActivity> activity) {
@@ -115,7 +117,7 @@ public final class NewbieActivityReport {
 
     private static String makeHtml(List<ReportEntry> report) {
         var rows = report.stream()
-            .map(ReportEntry::formatRow)
+            .map(ReportEntry::formatHtmlRow)
             .collect(Collectors.joining("\n"));
 
         return """
@@ -131,6 +133,23 @@ public final class NewbieActivityReport {
             </tr>
             %s
             </table></body></html>
+            """.formatted(rows);
+    }
+
+    private static String makeWikitable(List<ReportEntry> report) {
+        var rows = report.stream()
+            .map(ReportEntry::formatWikitableRow)
+            .collect(Collectors.joining("\n"));
+
+        return """
+            {| class="wikitable sortable"
+            ! Nazwa użytkownika
+            ! Miesiące niskiej aktywności
+            ! Edycje podczas niskiej aktywności
+            ! Miesiące dużej aktywności
+            ! Edycje podczas dużej aktywności
+            %s
+            |}
             """.formatted(rows);
     }
 
@@ -185,8 +204,18 @@ public final class NewbieActivityReport {
     record UserActivity(String userName, int period, int edits) {}
 
     record ReportEntry(String userName, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {
-        String formatRow() {
+        String formatHtmlRow() {
             return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
+                userName(),
+                lowActivityMonths(),
+                lowActivityEdits(),
+                normalActivityMonths(),
+                normalActivityEdits()
+            );
+        }
+
+        String formatWikitableRow() {
+            return "|-\n| [[User:%1$s|%1$s]]\n| %2$d\n| %3$d\n| %4$d\n| %5$d".formatted(
                 userName(),
                 lowActivityMonths(),
                 lowActivityEdits(),
