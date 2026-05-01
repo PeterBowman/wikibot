@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import org.wikipedia.Wiki;
 
 public class DBUtils {
-    private static final Pattern P_CONFIG = Pattern.compile("^(.+)='(.+)'$", Pattern.MULTILINE);
+    private static final Pattern P_CONFIG = Pattern.compile("^(.+?) *= *['\"]?(.+?)['\"]?$", Pattern.MULTILINE);
 
     private DBUtils() {}
 
