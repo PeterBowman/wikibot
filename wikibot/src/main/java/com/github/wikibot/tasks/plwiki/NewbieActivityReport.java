@@ -12,9 +12,13 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import com.github.wikibot.utils.DBUtils;
 
@@ -32,19 +36,28 @@ public final class NewbieActivityReport {
 
     private static final int MONTHS_TO_ANALYZE = 24;
 
-    private static final long START_TIMESTAMP;
+    private static final long EARLIEST_TIMESTAMP;
+    private static final long LATEST_TIMESTAMP;
 
     static {
         var now = OffsetDateTime.now();
         var then = now.minusMonths(MONTHS_TO_ANALYZE);
         var fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-        START_TIMESTAMP = Long.parseLong(fmt.format(then));
+        EARLIEST_TIMESTAMP = Long.parseLong(fmt.format(then));
+        LATEST_TIMESTAMP = Long.parseLong(fmt.format(now));
     }
 
     public static void main(String[] args) throws Exception {
-        var activity = getUserActivity();
+        System.out.printf("Generating report: [%d - %d]%n", EARLIEST_TIMESTAMP, LATEST_TIMESTAMP);
 
+        var activity = getUserActivity();
+        System.out.printf("Total entries: %d%n", activity.size());
+
+        makeReport(activity, "report-decrease");
+    }
+
+    private static void makeReport(List<UserActivity> activity, String filename) throws IOException {
         var report = activity.stream()
             .collect(Collectors.groupingBy(UserActivity::userName))
             .entrySet()
@@ -57,10 +70,10 @@ public final class NewbieActivityReport {
             .toList();
 
         var html = makeHtml(report);
-        Files.writeString(LOCATION.resolve("report.html"), html);
+        Files.writeString(LOCATION.resolve(filename + ".html"), html);
 
         var wikitable = makeWikitable(report);
-        Files.writeString(LOCATION.resolve("report.txt"), wikitable);
+        Files.writeString(LOCATION.resolve(filename + ".txt"), wikitable);
     }
 
     private static ReportEntry analyze(String userName, List<UserActivity> activity) {
@@ -72,47 +85,41 @@ public final class NewbieActivityReport {
         ));
 
         var earliestActivityMonth = monthlyEdits.lastEntry().getValue();
-        var currentMonth = 0;
+        var currentMonth = new MutableInt(0);
 
-        var lowActivityMonths = 0;
-        var lowActivityEdits = 0;
+        var lowActivityMonths = new MutableInt();
+        var lowActivityEdits = new MutableInt();
 
-        while (currentMonth <= earliestActivityMonth) {
-            var edits = monthlyEdits.getOrDefault(currentMonth, 0);
+        iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
 
-            if (edits > MAX_LOW_ACTIVITY_EDITS) {
-                break;
-            }
-
-            lowActivityMonths++;
-            lowActivityEdits += edits;
-            currentMonth++;
-        }
-
-        if (lowActivityMonths < LOW_ACTIVITY_MONTHS) {
+        if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS) {
             return null;
         }
 
-        var normalActivityMonths = 0;
-        var normalActivityEdits = 0;
+        var normalActivityMonths = new MutableInt(0);
+        var normalActivityEdits = new MutableInt(0);
 
-        while (currentMonth <= earliestActivityMonth) {
-            var edits = monthlyEdits.getOrDefault(currentMonth, 0);
+        iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
 
-            if (edits < MIN_NORMAL_ACTIVITY_EDITS) {
-                break;
-            }
-
-            normalActivityMonths++;
-            normalActivityEdits += edits;
-            currentMonth++;
-        }
-
-        if (normalActivityMonths < NORMAL_ACTIVITY_MONTHS) {
+        if (normalActivityMonths.intValue() < NORMAL_ACTIVITY_MONTHS) {
             return null;
         }
 
-        return new ReportEntry(userName, lowActivityMonths, lowActivityEdits, normalActivityMonths, normalActivityEdits);
+        return new ReportEntry(userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), normalActivityMonths.intValue(), normalActivityEdits.intValue());
+    }
+
+    private static void iterateMonths(Map<Integer, Integer> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond) {
+        while (current.intValue() <= limit) {
+            var monthEdits = monthlyEdits.getOrDefault(current.intValue(), 0);
+
+            if (!cond.test(monthEdits)) {
+                break;
+            }
+
+            months.increment();
+            edits.add(monthEdits);
+            current.increment();
+        }
     }
 
     private static String makeHtml(List<ReportEntry> report) {
@@ -169,11 +176,12 @@ public final class NewbieActivityReport {
                 user_is_temp = 0 and
                 ug_user is null and
                 user_name not like "Renamed user %%" and
-                rev_timestamp >= %d
+                rev_timestamp >= %d and
+                rev_timestamp <= %d
             group by
                 user_name,
                 months_ago
-            """.formatted(START_TIMESTAMP);
+            """.formatted(EARLIEST_TIMESTAMP, LATEST_TIMESTAMP);
 
         try (var connection = getConnection()) {
             var rs = connection.createStatement().executeQuery(query);
