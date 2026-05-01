@@ -168,6 +168,7 @@ public final class NewbieActivityReport {
             where
                 user_is_temp = 0 and
                 ug_user is null and
+                user_name not like "Renamed user %%" and
                 rev_timestamp >= %d
             group by
                 user_name,
