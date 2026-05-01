@@ -49,20 +49,21 @@ public final class NewbieActivityReport {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.printf("Generating report: [%d - %d]%n", EARLIEST_TIMESTAMP, LATEST_TIMESTAMP);
+        System.out.printf("Generating report: from %d to %d%n", EARLIEST_TIMESTAMP, LATEST_TIMESTAMP);
 
         var activity = getUserActivity();
         System.out.printf("Total entries: %d%n", activity.size());
 
-        makeReport(activity, "report-decrease");
+        makeReport(activity, "report-decrease", true);
+        makeReport(activity, "report-increase", false);
     }
 
-    private static void makeReport(List<UserActivity> activity, String filename) throws IOException {
+    private static void makeReport(List<UserActivity> activity, String filename, boolean isDecrease) throws IOException {
         var report = activity.stream()
             .collect(Collectors.groupingBy(UserActivity::userName))
             .entrySet()
             .stream()
-            .map(entry -> analyze(entry.getKey(), entry.getValue()))
+            .map(entry -> analyze(entry.getKey(), entry.getValue(), isDecrease))
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingInt(ReportEntry::lowActivityMonths).reversed()
                 .thenComparing(Comparator.comparingInt(ReportEntry::normalActivityMonths).reversed())
@@ -76,7 +77,7 @@ public final class NewbieActivityReport {
         Files.writeString(LOCATION.resolve(filename + ".txt"), wikitable);
     }
 
-    private static ReportEntry analyze(String userName, List<UserActivity> activity) {
+    private static ReportEntry analyze(String userName, List<UserActivity> activity, boolean isDecrease) {
         var monthlyEdits = activity.stream().collect(Collectors.toMap(
             UserActivity::period,
             UserActivity::edits,
@@ -87,21 +88,21 @@ public final class NewbieActivityReport {
         var earliestActivityMonth = monthlyEdits.lastEntry().getValue();
         var currentMonth = new MutableInt(0);
 
-        var lowActivityMonths = new MutableInt();
-        var lowActivityEdits = new MutableInt();
-
-        iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
-
-        if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS) {
-            return null;
-        }
+        var lowActivityMonths = new MutableInt(0);
+        var lowActivityEdits = new MutableInt(0);
 
         var normalActivityMonths = new MutableInt(0);
         var normalActivityEdits = new MutableInt(0);
 
-        iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
+        if (isDecrease) {
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
+        } else {
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
+        }
 
-        if (normalActivityMonths.intValue() < NORMAL_ACTIVITY_MONTHS) {
+        if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS || normalActivityMonths.intValue() < NORMAL_ACTIVITY_MONTHS) {
             return null;
         }
 
