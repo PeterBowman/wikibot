@@ -113,19 +113,9 @@ public final class NewbieActivityReport {
         return new ReportEntry(userName, lowActivityMonths, lowActivityEdits, normalActivityMonths, normalActivityEdits);
     }
 
-    private static String formatRow(ReportEntry entry) {
-        return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
-            entry.userName(),
-            entry.lowActivityMonths(),
-            entry.lowActivityEdits(),
-            entry.normalActivityMonths(),
-            entry.normalActivityEdits()
-        );
-    }
-
     private static String makeHtml(List<ReportEntry> report) {
         var rows = report.stream()
-            .map(NewbieActivityReport::formatRow)
+            .map(ReportEntry::formatRow)
             .collect(Collectors.joining("\n"));
 
         return """
@@ -194,5 +184,15 @@ public final class NewbieActivityReport {
 
     record UserActivity(String userName, int period, int edits) {}
 
-    record ReportEntry(String userName, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {}
+    record ReportEntry(String userName, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {
+        String formatRow() {
+            return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
+                userName(),
+                lowActivityMonths(),
+                lowActivityEdits(),
+                normalActivityMonths(),
+                normalActivityEdits()
+            );
+        }
+    }
 }
