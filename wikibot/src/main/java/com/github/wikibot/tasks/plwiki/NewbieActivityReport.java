@@ -85,7 +85,7 @@ public final class NewbieActivityReport {
             TreeMap::new
         ));
 
-        var earliestActivityMonth = monthlyEdits.lastEntry().getValue();
+        var earliestActivityMonth = monthlyEdits.lastKey();
         var currentMonth = new MutableInt(0);
 
         var lowActivityMonths = new MutableInt(0);
