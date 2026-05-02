@@ -54,30 +54,36 @@ public final class NewbieActivityReport {
         var activity = getUserActivity();
         System.out.printf("Total entries: %d%n", activity.size());
 
-        makeReport(activity, "report-decrease", true);
-        makeReport(activity, "report-increase", false);
+        makeReport(activity, "report-decrease", "aktywność malejąca", true);
+        makeReport(activity, "report-increase", "aktywność rosnąca", false);
     }
 
-    private static void makeReport(List<UserActivity> activity, String filename, boolean isDecrease) throws IOException {
+    private static void makeReport(List<UserActivity> activity, String filename, String title, boolean isDecrease) throws IOException {
         var report = activity.stream()
-            .collect(Collectors.groupingBy(UserActivity::userName))
+            .collect(Collectors.groupingBy(UserActivity::id))
             .entrySet()
             .stream()
-            .map(entry -> analyze(entry.getKey(), entry.getValue(), isDecrease))
+            .map(entry -> analyze(entry.getValue(), isDecrease))
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingInt(ReportEntry::lowActivityMonths).reversed()
                 .thenComparing(Comparator.comparingInt(ReportEntry::normalActivityMonths).reversed())
-                .thenComparing(ReportEntry::userName))
+                .thenComparing(ReportEntry::name))
             .toList();
 
-        var html = makeHtml(report);
+        var html = makeHtml(report, title);
         Files.writeString(LOCATION.resolve(filename + ".html"), html);
 
         var wikitable = makeWikitable(report);
         Files.writeString(LOCATION.resolve(filename + ".txt"), wikitable);
+
+        var tsv = makeTsv(report);
+        Files.writeString(LOCATION.resolve(filename + ".tsv"), tsv);
     }
 
-    private static ReportEntry analyze(String userName, List<UserActivity> activity, boolean isDecrease) {
+    private static ReportEntry analyze(List<UserActivity> activity, boolean isDecrease) {
+        var id = activity.get(0).id();
+        var userName = activity.get(0).name();
+
         var monthlyEdits = activity.stream().collect(Collectors.toMap(
             UserActivity::period,
             UserActivity::edits,
@@ -106,7 +112,7 @@ public final class NewbieActivityReport {
             return null;
         }
 
-        return new ReportEntry(userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), normalActivityMonths.intValue(), normalActivityEdits.intValue());
+        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), normalActivityMonths.intValue(), normalActivityEdits.intValue());
     }
 
     private static void iterateMonths(Map<Integer, Integer> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond) {
@@ -123,25 +129,42 @@ public final class NewbieActivityReport {
         }
     }
 
-    private static String makeHtml(List<ReportEntry> report) {
+    private static String makeHtml(List<ReportEntry> report, String title) {
         var rows = report.stream()
             .map(ReportEntry::formatHtmlRow)
             .collect(Collectors.joining("\n"));
 
         return """
             <!DOCTYPE html>
-            <html><head><meta charset="utf-8"></head>
-            <body><table border="1">
-            <tr>
-            <th>Nazwa użytkownika</th>
-            <th>Miesiące niskiej aktywności</th>
-            <th>Edycje podczas niskiej aktywności</th>
-            <th>Miesiące dużej aktywności</th>
-            <th>Edycje podczas dużej aktywności</th>
-            </tr>
-            %s
-            </table></body></html>
-            """.formatted(rows);
+            <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>%s – nowi.toolforge</title>
+                    <link rel="stylesheet" href="basic.css">
+                </head>
+                <body>
+                    <style>
+                        table {
+                            table-layout: fixed;
+                            width: 100%%;
+                        }
+                        .user-name {
+                            text-align: right;
+                        }
+                    </style>
+                    <table border="1">
+                        <tr>
+                            <th>Nazwa użytkownika</th>
+                            <th>Miesiące niskiej aktywności</th>
+                            <th>Edycje podczas niskiej aktywności</th>
+                            <th>Miesiące dużej aktywności</th>
+                            <th>Edycje podczas dużej aktywności</th>
+                        </tr>
+                        %s
+                    </table>
+                </body>
+            </html>
+            """.formatted(title, rows);
     }
 
     private static String makeWikitable(List<ReportEntry> report) {
@@ -161,11 +184,18 @@ public final class NewbieActivityReport {
             """.formatted(rows);
     }
 
+    private static String makeTsv(List<ReportEntry> report) {
+        return report.stream()
+            .map(ReportEntry::formatTsvRow)
+            .collect(Collectors.joining("\n"));
+    }
+
     private static List<UserActivity> getUserActivity() throws ClassNotFoundException, SQLException, IOException {
         var list = new ArrayList<UserActivity>();
 
         var query = """
             select
+                user_id,
                 user_name,
                 floor((unix_timestamp() - unix_timestamp(rev_timestamp)) / (86400 * 30)) AS months_ago,
                 count(*) as monthly_edit_count
@@ -188,11 +218,12 @@ public final class NewbieActivityReport {
             var rs = connection.createStatement().executeQuery(query);
 
             while (rs.next()) {
+                var userId = rs.getInt("user_id");
                 var userName = rs.getString("user_name");
                 var monthsAgo = rs.getInt("months_ago");
                 var monthlyEditCount = rs.getInt("monthly_edit_count");
 
-                list.add(new UserActivity(userName, monthsAgo, monthlyEditCount));
+                list.add(new UserActivity(userId, userName, monthsAgo, monthlyEditCount));
             }
         }
 
@@ -211,12 +242,12 @@ public final class NewbieActivityReport {
         }
     }
 
-    record UserActivity(String userName, int period, int edits) {}
+    record UserActivity(int id, String name, int period, int edits) {}
 
-    record ReportEntry(String userName, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {
+    record ReportEntry(int id, String name, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {
         String formatHtmlRow() {
             return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
-                userName(),
+                name(),
                 lowActivityMonths(),
                 lowActivityEdits(),
                 normalActivityMonths(),
@@ -226,7 +257,18 @@ public final class NewbieActivityReport {
 
         String formatWikitableRow() {
             return "|-\n| [[User:%1$s|%1$s]]\n| %2$d\n| %3$d\n| %4$d\n| %5$d".formatted(
-                userName(),
+                name(),
+                lowActivityMonths(),
+                lowActivityEdits(),
+                normalActivityMonths(),
+                normalActivityEdits()
+            );
+        }
+
+        String formatTsvRow() {
+            return "%d\t%s\t%d\t%d\t%d\t%d".formatted(
+                id(),
+                name(),
                 lowActivityMonths(),
                 lowActivityEdits(),
                 normalActivityMonths(),
