@@ -35,16 +35,18 @@ class ReferencesMigrationStats {
     private static final Path STORED_STATS = LOCATION.resolve("stats.xml");
     private static final String TARGET_STATS = "Wikipedysta:PBbot/statystyki migracji przypisów";
     private static final String TARGET_EMPTY_REFS = "Wikipedysta:PBbot/niewykorzystane grupowanie przypisów";
+    private static final String SPECIAL_TEMPLATES_CATEGORY = "Szablony dodające przypisy";
+    private static final List<String> SPECIAL_TEMPLATES = List.of("odn", "refn");
     private static final Wiki wiki = Wiki.newSession("pl.wikipedia.org");
     private static final XStream xstream = new XStream();
 
     private static final String EMPTY_REFS_TEMPLATE = """
         Artykuły, w których użyto &lt;references&gt; lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy &lt;ref&gt;, {{s|r}}, {{s|odn}}, {{s|refn}}
-        ani szablonów, które automatycznie dodają przypisy ({{s|zwierzę infobox}}).
+        ani [[:Kategoria:%s|szablonów, które automatycznie dodają przypisy]].
 
-        Dane na podstawie zrzutu %s. Aktualizacja: ~~~~~.
+        Dane na podstawie zrzutu %%s. Aktualizacja: ~~~~~.
         ----
-        """;
+        """.formatted(SPECIAL_TEMPLATES_CATEGORY);
 
     static {
         xstream.allowTypes(new Class[]{Stats.class});
@@ -59,6 +61,9 @@ class ReferencesMigrationStats {
             return;
         }
 
+        var specialTemplates = new ArrayList<>(SPECIAL_TEMPLATES);
+        specialTemplates.addAll(wiki.getCategoryMembers(SPECIAL_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE));
+
         var dump = optDump.get();
         var stats = new Stats();
         var emptyRefs = new ArrayList<String>(1000);
@@ -67,7 +72,7 @@ class ReferencesMigrationStats {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
-                .forEach(rev -> analyze(rev, stats, emptyRefs));
+                .forEach(rev -> analyze(rev, stats, emptyRefs, specialTemplates));
         }
 
         stats.printResults();
@@ -106,7 +111,7 @@ class ReferencesMigrationStats {
         return dumpConfig.fetch();
     }
 
-    private static void analyze(XMLRevision rev, Stats stats, List<String> emptyRefs) {
+    private static void analyze(XMLRevision rev, Stats stats, List<String> emptyRefs, List<String> specialTemplates) {
         var text = ParseUtils.removeCommentsAndNoWikiText(rev.getText());
         var title = rev.getTitle();
         var hasGroupingElement = false;
@@ -149,7 +154,7 @@ class ReferencesMigrationStats {
             hasReferenceInBody = true;
         }
 
-        for (var template : List.of("odn", "refn", "zwierzę infobox")) {
+        for (var template : SPECIAL_TEMPLATES) {
             if (!ParseUtils.getTemplatesIgnoreCase(template, text).isEmpty()) {
                 hasReferenceInBody = true;
             }
