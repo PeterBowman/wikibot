@@ -18,6 +18,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jsoup.Jsoup;
+import org.jsoup.parser.Parser;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -123,7 +124,8 @@ class ReferencesMigrationStats {
             hasGroupingElement = true;
         }
 
-        var doc = Jsoup.parseBodyFragment(text);
+        var parser = Parser.xmlParser();
+        var doc = parser.parseInput(text, "");
         var referencesTag = doc.getElementsByTag("references").stream().findAny();
 
         if (referencesTag.isPresent()) {
