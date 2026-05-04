@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
@@ -35,6 +37,7 @@ class ReferencesMigrationStats {
     private static final Path STORED_STATS = LOCATION.resolve("stats.xml");
     private static final String TARGET_STATS = "Wikipedysta:PBbot/statystyki migracji przypisów";
     private static final String TARGET_EMPTY_REFS = "Wikipedysta:PBbot/niewykorzystane grupowanie przypisów";
+    private static final String TARGET_EMPTY_REFS_IGNORED = "Wikipedysta:PBbot/niewykorzystane grupowanie przypisów/ignorowane";
     private static final String SPECIAL_TEMPLATES_CATEGORY = "Szablony dodające przypisy";
     private static final List<String> SPECIAL_TEMPLATES = List.of("odn", "refn");
     private static final Wiki wiki = Wiki.newSession("pl.wikipedia.org");
@@ -42,11 +45,11 @@ class ReferencesMigrationStats {
 
     private static final String EMPTY_REFS_TEMPLATE = """
         Artykuły, w których użyto &lt;references&gt; lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy &lt;ref&gt;, {{s|r}}, {{s|odn}}, {{s|refn}}
-        ani [[:Kategoria:%s|szablonów, które automatycznie dodają przypisy]].
+        ani [[:Kategoria:%s|szablonów, które automatycznie dodają przypisy]], z wyłączeniem stron na [[%s|liście ignorowanych]].
 
         Dane na podstawie zrzutu %%s. Aktualizacja: ~~~~~.
         ----
-        """.formatted(SPECIAL_TEMPLATES_CATEGORY);
+        """.formatted(SPECIAL_TEMPLATES_CATEGORY, TARGET_EMPTY_REFS_IGNORED);
 
     static {
         xstream.allowTypes(new Class[]{Stats.class});
@@ -61,6 +64,10 @@ class ReferencesMigrationStats {
             return;
         }
 
+        Login.login(wiki);
+
+        var ignoredTitles = getIgnoredTitles();
+
         var specialTemplates = new ArrayList<>(SPECIAL_TEMPLATES);
         specialTemplates.addAll(wiki.getCategoryMembers(SPECIAL_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE));
 
@@ -72,12 +79,11 @@ class ReferencesMigrationStats {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
+                .filter(rev -> !ignoredTitles.contains(rev.getTitle()))
                 .forEach(rev -> analyze(rev, stats, emptyRefs, specialTemplates));
         }
 
         stats.printResults();
-
-        Login.login(wiki);
         edit(stats, retrieveStats(), emptyRefs, dump);
 
         Files.writeString(STORED_STATS, xstream.toXML(stats));
@@ -109,6 +115,15 @@ class ReferencesMigrationStats {
         }
 
         return dumpConfig.fetch();
+    }
+
+    private static Set<String> getIgnoredTitles() throws IOException {
+        var text = wiki.getPageText(List.of(TARGET_EMPTY_REFS_IGNORED)).get(0);
+        var patt = Pattern.compile("^# \\[{2}(.+?)\\]{2} ma .+", Pattern.MULTILINE);
+
+        return patt.matcher(text).results()
+            .map(m -> m.group(1))
+            .collect(Collectors.toSet());
     }
 
     private static void analyze(XMLRevision rev, Stats stats, List<String> emptyRefs, List<String> specialTemplates) {
