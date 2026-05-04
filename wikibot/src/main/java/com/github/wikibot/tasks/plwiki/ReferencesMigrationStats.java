@@ -44,7 +44,7 @@ class ReferencesMigrationStats {
     private static final XStream xstream = new XStream();
 
     private static final String EMPTY_REFS_TEMPLATE = """
-        Artykuły, w których użyto &lt;references&gt; lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy &lt;ref&gt;, {{s|r}}, {{s|odn}}, {{s|refn}}
+        Artykuły, w których użyto <code>&lt;references&gt;</code> lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy <code>&lt;ref&gt;</code>, {{s|r}}, {{s|odn}}, {{s|refn}}
         ani [[:Kategoria:%s|szablonów, które automatycznie dodają przypisy]], z wyłączeniem stron na [[%s|liście ignorowanych]].
 
         Dane na podstawie zrzutu %%s. Aktualizacja: ~~~~~.
@@ -66,8 +66,6 @@ class ReferencesMigrationStats {
 
         Login.login(wiki);
 
-        var ignoredTitles = getIgnoredTitles();
-
         var specialTemplates = new ArrayList<>(SPECIAL_TEMPLATES);
         specialTemplates.addAll(wiki.getCategoryMembers(SPECIAL_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE));
 
@@ -79,19 +77,20 @@ class ReferencesMigrationStats {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
-                .filter(rev -> !ignoredTitles.contains(rev.getTitle()))
                 .forEach(rev -> analyze(rev, stats, emptyRefs, specialTemplates));
         }
 
+        var ignoredTitles = getIgnoredTitles();
+
         stats.printResults();
-        edit(stats, retrieveStats(), emptyRefs, dump);
+        edit(stats, retrieveStats(), emptyRefs, dump, ignoredTitles);
 
         Files.writeString(STORED_STATS, xstream.toXML(stats));
         Files.writeString(datePath, dump.getDirectoryName());
     }
 
     private static Optional<XMLDump> getXMLDump(String[] args, Path path) throws ParseException, IOException {
-        var dumpConfig = new XMLDumpConfig("plwiki").type(XMLDumpTypes.PAGES_ARTICLES_RECOMBINE);
+        var dumpConfig = new XMLDumpConfig("plwiki").type(XMLDumpTypes.PAGES_ARTICLES);
 
         if (args.length != 0) {
             var options = new Options();
@@ -191,7 +190,7 @@ class ReferencesMigrationStats {
         }
     }
 
-    private static void edit(Stats newstats, Stats oldStats, List<String> emptyRefs, XMLDump dump) throws IOException, LoginException {
+    private static void edit(Stats newstats, Stats oldStats, List<String> emptyRefs, XMLDump dump, Set<String> ignoredTitles) throws IOException, LoginException {
         var text = wiki.getPageText(List.of(TARGET_STATS)).get(0);
         var marker = "<!-- BOTTOM -->";
 
@@ -205,6 +204,7 @@ class ReferencesMigrationStats {
         wiki.edit(TARGET_STATS, newText, "aktualizacja: " + dump.getDescriptiveFilename());
 
         var emptyRefsText = String.format(EMPTY_REFS_TEMPLATE, dump.getDescriptiveFilename()) + emptyRefs.stream()
+            .filter(title -> !ignoredTitles.contains(title))
             .sorted(Collator.getInstance(Locale.forLanguageTag("pl")))
             .map(title -> String.format("#[[%s#Przypisy]]", title))
             .collect(Collectors.joining("\n"));
