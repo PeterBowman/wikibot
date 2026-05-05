@@ -28,10 +28,10 @@ public final class NewbieActivityReport {
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
 
-    private static final int NORMAL_ACTIVITY_MONTHS = 3;
+    private static final int HIGH_ACTIVITY_MONTHS = 3;
     private static final int LOW_ACTIVITY_MONTHS = 3;
 
-    private static final int MIN_NORMAL_ACTIVITY_EDITS = 20;
+    private static final int MIN_HIGH_ACTIVITY_EDITS = 20;
     private static final int MAX_LOW_ACTIVITY_EDITS = 5;
 
     private static final int MONTHS_TO_ANALYZE = 24;
@@ -66,7 +66,7 @@ public final class NewbieActivityReport {
             .map(entry -> analyze(entry.getValue(), isDecrease))
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingInt(ReportEntry::lowActivityMonths).reversed()
-                .thenComparing(Comparator.comparingInt(ReportEntry::normalActivityMonths).reversed())
+                .thenComparing(Comparator.comparingInt(ReportEntry::highActivityMonths).reversed())
                 .thenComparing(ReportEntry::name))
             .toList();
 
@@ -97,22 +97,22 @@ public final class NewbieActivityReport {
         var lowActivityMonths = new MutableInt(0);
         var lowActivityEdits = new MutableInt(0);
 
-        var normalActivityMonths = new MutableInt(0);
-        var normalActivityEdits = new MutableInt(0);
+        var highActivityMonths = new MutableInt(0);
+        var highActivityEdits = new MutableInt(0);
 
         if (isDecrease) {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // earliest low
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // latest high
         } else {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, normalActivityMonths, normalActivityEdits, edits -> edits >= MIN_NORMAL_ACTIVITY_EDITS);
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // earliest high
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // latest low
         }
 
-        if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS || normalActivityMonths.intValue() < NORMAL_ACTIVITY_MONTHS) {
+        if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS || highActivityMonths.intValue() < HIGH_ACTIVITY_MONTHS) {
             return null;
         }
 
-        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), normalActivityMonths.intValue(), normalActivityEdits.intValue());
+        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), highActivityMonths.intValue(), highActivityEdits.intValue(), null);
     }
 
     private static void iterateMonths(Map<Integer, Integer> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond) {
@@ -198,7 +198,9 @@ public final class NewbieActivityReport {
                 user_id,
                 user_name,
                 floor((unix_timestamp() - unix_timestamp(rev_timestamp)) / (86400 * 30)) AS months_ago,
-                count(*) as monthly_edit_count
+                count(*) as monthly_edit_count,
+                min(rev_timestamp) as earliest,
+                max(rev_timestamp) as latest
             from user
                 inner join actor on actor_user = user_id
                 inner join revision on rev_actor = actor_id
@@ -222,8 +224,10 @@ public final class NewbieActivityReport {
                 var userName = rs.getString("user_name");
                 var monthsAgo = rs.getInt("months_ago");
                 var monthlyEditCount = rs.getInt("monthly_edit_count");
+                var earliest = rs.getLong("earliest");
+                var latest = rs.getLong("latest");
 
-                list.add(new UserActivity(userId, userName, monthsAgo, monthlyEditCount));
+                list.add(new UserActivity(userId, userName, monthsAgo, monthlyEditCount, earliest, latest));
             }
         }
 
@@ -242,16 +246,16 @@ public final class NewbieActivityReport {
         }
     }
 
-    record UserActivity(int id, String name, int period, int edits) {}
+    record UserActivity(int id, String name, int period, int edits, long earliest, long latest) {}
 
-    record ReportEntry(int id, String name, int lowActivityMonths, int lowActivityEdits, int normalActivityMonths, int normalActivityEdits) {
+    record ReportEntry(int id, String name, int lowActivityMonths, int lowActivityEdits, int highActivityMonths, int highActivityEdits, OffsetDateTime turnpoint) {
         String formatHtmlRow() {
             return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
                 name(),
                 lowActivityMonths(),
                 lowActivityEdits(),
-                normalActivityMonths(),
-                normalActivityEdits()
+                highActivityMonths(),
+                highActivityEdits()
             );
         }
 
@@ -260,8 +264,8 @@ public final class NewbieActivityReport {
                 name(),
                 lowActivityMonths(),
                 lowActivityEdits(),
-                normalActivityMonths(),
-                normalActivityEdits()
+                highActivityMonths(),
+                highActivityEdits()
             );
         }
 
@@ -271,8 +275,8 @@ public final class NewbieActivityReport {
                 name(),
                 lowActivityMonths(),
                 lowActivityEdits(),
-                normalActivityMonths(),
-                normalActivityEdits()
+                highActivityMonths(),
+                highActivityEdits()
             );
         }
     }
