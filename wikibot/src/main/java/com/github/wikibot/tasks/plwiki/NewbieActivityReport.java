@@ -101,18 +101,18 @@ public final class NewbieActivityReport {
         var highActivityEdits = new MutableInt(0);
 
         if (isDecrease) {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // earliest low
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // latest high
         } else {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS);
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS);
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // earliest high
+            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // latest low
         }
 
         if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS || highActivityMonths.intValue() < HIGH_ACTIVITY_MONTHS) {
             return null;
         }
 
-        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), highActivityMonths.intValue(), highActivityEdits.intValue());
+        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), highActivityMonths.intValue(), highActivityEdits.intValue(), null);
     }
 
     private static void iterateMonths(Map<Integer, Integer> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond) {
@@ -198,7 +198,9 @@ public final class NewbieActivityReport {
                 user_id,
                 user_name,
                 floor((unix_timestamp() - unix_timestamp(rev_timestamp)) / (86400 * 30)) AS months_ago,
-                count(*) as monthly_edit_count
+                count(*) as monthly_edit_count,
+                min(rev_timestamp) as earliest,
+                max(rev_timestamp) as latest
             from user
                 inner join actor on actor_user = user_id
                 inner join revision on rev_actor = actor_id
@@ -222,8 +224,10 @@ public final class NewbieActivityReport {
                 var userName = rs.getString("user_name");
                 var monthsAgo = rs.getInt("months_ago");
                 var monthlyEditCount = rs.getInt("monthly_edit_count");
+                var earliest = rs.getLong("earliest");
+                var latest = rs.getLong("latest");
 
-                list.add(new UserActivity(userId, userName, monthsAgo, monthlyEditCount));
+                list.add(new UserActivity(userId, userName, monthsAgo, monthlyEditCount, earliest, latest));
             }
         }
 
@@ -242,9 +246,9 @@ public final class NewbieActivityReport {
         }
     }
 
-    record UserActivity(int id, String name, int period, int edits) {}
+    record UserActivity(int id, String name, int period, int edits, long earliest, long latest) {}
 
-    record ReportEntry(int id, String name, int lowActivityMonths, int lowActivityEdits, int highActivityMonths, int highActivityEdits) {
+    record ReportEntry(int id, String name, int lowActivityMonths, int lowActivityEdits, int highActivityMonths, int highActivityEdits, OffsetDateTime turnpoint) {
         String formatHtmlRow() {
             return "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>".formatted(
                 name(),
