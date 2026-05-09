@@ -38,18 +38,17 @@ class ReferencesMigrationStats {
     private static final String TARGET_STATS = "Wikipedysta:PBbot/statystyki migracji przypisów";
     private static final String TARGET_EMPTY_REFS = "Wikipedysta:PBbot/niewykorzystane grupowanie przypisów";
     private static final String TARGET_EMPTY_REFS_IGNORED = "Wikipedysta:PBbot/niewykorzystane grupowanie przypisów/ignorowane";
-    private static final String SPECIAL_TEMPLATES_CATEGORY = "Szablony dodające przypisy";
     private static final List<String> SPECIAL_TEMPLATES = List.of("odn", "refn");
     private static final Wiki wiki = Wiki.newSession("pl.wikipedia.org");
     private static final XStream xstream = new XStream();
 
     private static final String EMPTY_REFS_TEMPLATE = """
-        Artykuły, w których użyto <code>&lt;references&gt;</code> lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy <code>&lt;ref&gt;</code>, {{s|r}}, {{s|odn}}, {{s|refn}}
-        ani [[:Kategoria:%s|szablonów, które automatycznie dodają przypisy]], z wyłączeniem stron na [[%s|liście ignorowanych]].
+        Artykuły, w których użyto <code>&lt;references&gt;</code> lub {{s|przypisy}}, lecz w treści nie znaleziono odsyłaczy
+        <code>&lt;ref&gt;</code>, {{s|r}}, {{s|odn}} ani {{s|refn}}, z wyłączeniem stron na [[%s|liście ignorowanych]].
 
         Dane na podstawie zrzutu %%s. Aktualizacja: ~~~~~.
         ----
-        """.formatted(SPECIAL_TEMPLATES_CATEGORY, TARGET_EMPTY_REFS_IGNORED);
+        """.formatted(TARGET_EMPTY_REFS_IGNORED);
 
     static {
         xstream.allowTypes(new Class[]{Stats.class});
@@ -66,9 +65,6 @@ class ReferencesMigrationStats {
 
         Login.login(wiki);
 
-        var specialTemplates = new ArrayList<>(SPECIAL_TEMPLATES);
-        specialTemplates.addAll(wiki.getCategoryMembers(SPECIAL_TEMPLATES_CATEGORY, Wiki.TEMPLATE_NAMESPACE));
-
         var dump = optDump.get();
         var stats = new Stats();
         var emptyRefs = new ArrayList<String>(1000);
@@ -77,7 +73,7 @@ class ReferencesMigrationStats {
             stream
                 .filter(XMLRevision::isMainNamespace)
                 .filter(XMLRevision::nonRedirect)
-                .forEach(rev -> analyze(rev, stats, emptyRefs, specialTemplates));
+                .forEach(rev -> analyze(rev, stats, emptyRefs));
         }
 
         var ignoredTitles = getIgnoredTitles();
@@ -125,7 +121,7 @@ class ReferencesMigrationStats {
             .collect(Collectors.toSet());
     }
 
-    private static void analyze(XMLRevision rev, Stats stats, List<String> emptyRefs, List<String> specialTemplates) {
+    private static void analyze(XMLRevision rev, Stats stats, List<String> emptyRefs) {
         var text = ParseUtils.removeCommentsAndNoWikiText(rev.getText());
         var title = rev.getTitle();
         var hasGroupingElement = false;
