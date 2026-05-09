@@ -14,6 +14,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jsoup.Jsoup;
+import org.jsoup.parser.Parser;
 
 import com.github.wikibot.dumps.XMLDump;
 import com.github.wikibot.dumps.XMLDumpConfig;
@@ -106,7 +107,7 @@ public final class UnpairedSectionTags {
     }
 
 	private static Optional<String> getFirstUnpairedTag(String text) {
-		var doc = Jsoup.parseBodyFragment(text);
+		var doc = Jsoup.parse(text, "", Parser.xmlParser());
 		var sections = doc.getElementsByTag("section");
 
 		if (sections.isEmpty()) {

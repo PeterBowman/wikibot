@@ -11,16 +11,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
-import org.jsoup.select.Elements;
+import org.jsoup.parser.Parser;
 
 import com.github.plural4j.Plural;
 import com.github.wikibot.main.Wikibot;
@@ -61,20 +59,18 @@ public final class RefreshWantedArticles {
     public static void main(String[] args) throws Exception {
         Login.login(wb);
 
-        String content = wb.getPageText(List.of(TARGET_PAGE)).get(0);
+        var content = wb.getPageText(List.of(TARGET_PAGE)).get(0);
 
-        Document doc = Jsoup.parseBodyFragment(content);
-        doc.outputSettings().prettyPrint(false);
+        var doc = Jsoup.parse(content, "", Parser.xmlParser());
+        var targetElement = selectTargetElement(doc);
 
-        Element targetElement = selectTargetElement(doc.body());
+        var visibleTitles = extractTitles(targetElement.previousSibling());
+        var hiddenTitles = extractTitles(targetElement);
 
-        List<String> visibleTitles = extractTitles(targetElement.previousSibling());
-        List<String> hiddenTitles = extractTitles(targetElement);
+        var storeSet = manageStoredTitles(visibleTitles, hiddenTitles);
 
-        Set<String> storeSet = manageStoredTitles(visibleTitles, hiddenTitles);
-
-        List<String> doneVisible = filterDoneArticles(visibleTitles);
-        List<String> doneHidden = filterDoneArticles(hiddenTitles);
+        var doneVisible = filterDoneArticles(visibleTitles);
+        var doneHidden = filterDoneArticles(hiddenTitles);
 
         if (
             doneVisible.isEmpty() && doneHidden.size() < REFILL_SIZE &&
@@ -86,29 +82,29 @@ public final class RefreshWantedArticles {
 
         processElement(targetElement, visibleTitles, doneVisible, hiddenTitles, doneHidden, storeSet);
 
-        String text = doc.body().html();
-        int totalDone = doneVisible.size() + doneHidden.size();
-        String counter = String.format("%s %s", NUMBER_FORMAT_PL.format(totalDone), PLURAL_PL.pl(totalDone, "utworzone"));
-        String summary = String.format("odświeżenie listy (%s)", counter);
+        var text = doc.html();
+        var totalDone = doneVisible.size() + doneHidden.size();
+        var counter = String.format("%s %s", NUMBER_FORMAT_PL.format(totalDone), PLURAL_PL.pl(totalDone, "utworzone"));
+        var summary = String.format("odświeżenie listy (%s)", counter);
 
         wb.edit(TARGET_PAGE, text, summary);
         wb.purge(true, TARGET_PAGE);
     }
 
     private static Element selectTargetElement(Element body) {
-        Elements els = body.getElementsByTag("noinclude");
+        var els = body.getElementsByTag("noinclude");
 
         if (els.isEmpty()) {
             throw new RuntimeException("No <noinclude> tags found.");
         }
 
-        Element parent = els.get(0).parent();
+        var parent = els.get(0).parent();
 
         if (els.stream().anyMatch(el -> el.parent() != parent)) {
             throw new RuntimeException("Multiple <noinclude> tags with no common parent.");
         }
 
-        Element targetElement = els.stream()
+        var targetElement = els.stream()
             .filter(el -> P_OCCURRENCES_TARGET.matcher(el.html().trim()).matches())
             .findFirst()
             .orElseThrow(() -> new RuntimeException("No matching <noinclude> target element found."));
@@ -117,7 +113,7 @@ public final class RefreshWantedArticles {
             throw new RuntimeException("Target <noinclude> node has inner elements.");
         }
 
-        Node previousSibling = targetElement.previousSibling();
+        var previousSibling = targetElement.previousSibling();
 
         if (previousSibling == null) {
             throw new RuntimeException("Target <noinclude> node has no previous sibling.");
@@ -143,8 +139,8 @@ public final class RefreshWantedArticles {
             text = node.toString().trim();
         }
 
-        List<String> list = new ArrayList<>();
-        Matcher m = P_LINK.matcher(text);
+        var list = new ArrayList<String>();
+        var m = P_LINK.matcher(text);
 
         while (m.find()) {
             list.add(m.group(1).trim());
@@ -169,23 +165,23 @@ public final class RefreshWantedArticles {
     }
 
     private static List<String> filterDoneArticles(List<String> titles) throws IOException {
-        List<PageContainer> pages = wb.getContentOfPages(titles);
+        var pages = wb.getContentOfPages(titles);
 
         // Missing pages have been already filtered out
-        List<String> nonMissingTitles = pages.stream()
+        var nonMissingTitles = pages.stream()
             .map(PageContainer::title)
             .toList();
 
-        List<String> redirects = wb.resolveRedirects(nonMissingTitles);
+        var redirects = wb.resolveRedirects(nonMissingTitles);
 
         for (int i = 0; i < pages.size(); i++) {
-            String redirect = redirects.get(i);
+            var redirect = redirects.get(i);
 
             if (!redirect.equals(nonMissingTitles.get(i))) {
-                PageContainer old = pages.get(i);
+                var old = pages.get(i);
 
                 try {
-                    String redirectText = wb.getPageText(List.of(redirect)).get(0);
+                    var redirectText = wb.getPageText(List.of(redirect)).get(0);
                     pages.set(i, new PageContainer(old.title(), redirectText, old.revid(), old.timestamp()));
                 } catch (FileNotFoundException | NullPointerException e) {
                     System.out.printf("Title \"%s\" redirects to missing page \"%s\"%n", old.title(), redirect);
@@ -205,10 +201,10 @@ public final class RefreshWantedArticles {
 
     private static void processElement(Element el, List<String> visibleTitles, List<String> doneVisible,
             List<String> hiddenTitles, List<String> doneHidden, Set<String> storeSet) {
-        List<String> visibleList = new ArrayList<>(visibleTitles);
+        var visibleList = new ArrayList<>(visibleTitles);
         visibleList.removeAll(doneVisible);
 
-        List<String> hiddenList = new ArrayList<>(hiddenTitles);
+        var hiddenList = new ArrayList<>(hiddenTitles);
         hiddenList.removeAll(doneHidden);
 
         if (!doneVisible.isEmpty()) {
@@ -238,9 +234,9 @@ public final class RefreshWantedArticles {
             }
         }
 
-        final String fmt = "[[%s]]";
-        String visibleText = buildString(visibleList, fmt);
-        String hiddenText = " • " + buildString(hiddenList, fmt);
+        final var fmt = "[[%s]]";
+        var visibleText = buildString(visibleList, fmt);
+        var hiddenText = " • " + buildString(hiddenList, fmt);
 
         ((TextNode) el.previousSibling()).text(visibleText);
         el.text(hiddenText);
@@ -257,19 +253,19 @@ public final class RefreshWantedArticles {
     }
 
     private static void fetchMoreArticles(List<String> list, Set<String> storeSet) throws IOException {
-        String text = wb.getPageText(List.of(REFILL_PAGE)).get(0);
-        Matcher m = P_OCCURRENCES_REFILL.matcher(text);
-        List<String> titles = new ArrayList<>(500);
+        var text = wb.getPageText(List.of(REFILL_PAGE)).get(0);
+        var m = P_OCCURRENCES_REFILL.matcher(text);
+        var titles = new ArrayList<String>(500);
 
         while (m.find()) {
-            String title = m.group(1).trim();
+            var title = m.group(1).trim();
 
             if (!storeSet.contains(title)) {
                 titles.add(title);
             }
         }
 
-        Set<String> doneSet = new HashSet<>(filterDoneArticles(titles));
+        var doneSet = new HashSet<>(filterDoneArticles(titles));
 
         titles.stream()
             .filter(title -> !doneSet.contains(title))

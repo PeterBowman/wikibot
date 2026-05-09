@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -104,7 +105,7 @@ public final class UnsourcedUkrainianEntries {
     }
 
     private static boolean hasAllDefinitionsSourced(Section section, List<String> sourceTmpls, List<String> ignoredHeaderTmpls) {
-        var namedRefs = Jsoup.parseBodyFragment(section.toString()).select("ref[name]").stream()
+        var namedRefs = Jsoup.parse(section.toString(), "", Parser.xmlParser()).select("ref[name]").stream()
             .filter(el -> elementHasAnyTemplate(el, sourceTmpls))
             .map(el -> el.attr("name"))
             .filter(attr -> !attr.isBlank())
@@ -114,7 +115,7 @@ public final class UnsourcedUkrainianEntries {
         var stripped = stripIgnoredDefinitionLines(defsContent, ignoredHeaderTmpls);
 
         return PATT_NEWLINE.splitAsStream(stripped)
-            .allMatch(line -> !Optional.of(Jsoup.parseBodyFragment(line))
+            .allMatch(line -> !Optional.of(Jsoup.parse(line, "", Parser.xmlParser()))
                 .map(doc -> doc.getElementsByTag("ref"))
                 .filter(els -> els.stream().anyMatch(el -> elementHasAnyTemplateOrNamedGroup(el, sourceTmpls, namedRefs)))
                 .isEmpty()

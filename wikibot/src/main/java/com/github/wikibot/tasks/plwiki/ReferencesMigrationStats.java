@@ -144,8 +144,7 @@ class ReferencesMigrationStats {
             hasGroupingElement = true;
         }
 
-        var parser = Parser.xmlParser();
-        var doc = parser.parseInput(text, "");
+        var doc = Jsoup.parse(text, "", Parser.xmlParser());
         var referencesTag = doc.getElementsByTag("references").stream().findAny();
 
         if (referencesTag.isPresent()) {

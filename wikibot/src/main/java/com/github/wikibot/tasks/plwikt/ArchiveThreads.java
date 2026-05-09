@@ -41,6 +41,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
+import org.jsoup.parser.Parser;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -390,7 +391,7 @@ public final class ArchiveThreads {
         }
 
         private static EnumSet<ArchiveType> retrieveTargets(String text, List<String> targets) {
-            var doc = Jsoup.parseBodyFragment(ParseUtils.removeCommentsAndNoWikiText(text));
+            var doc = Jsoup.parse(ParseUtils.removeCommentsAndNoWikiText(text), "", Parser.xmlParser());
             doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
             doc.getElementsByTag("s").remove();
             doc.getElementsByTag("strike").remove();
@@ -399,7 +400,7 @@ public final class ArchiveThreads {
             doc.getElementsByTag("syntaxhighlight").remove();
             doc.getElementsByTag("source").remove();
 
-            var eligibleParams = ParseUtils.getTemplates(TARGET_TEMPLATE, doc.body().text()).stream()
+            var eligibleParams = ParseUtils.getTemplates(TARGET_TEMPLATE, doc.html()).stream()
                 .map(ParseUtils::getTemplateParametersWithValue)
                 .filter(params -> !params.getOrDefault("ParamWithoutName1", "").equals("-"))
                 .toList();

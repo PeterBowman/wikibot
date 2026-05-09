@@ -21,6 +21,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.wikipedia.Wiki;
 import org.wikiutils.ParseUtils;
 
@@ -161,7 +162,7 @@ public final class ReferencesUsageHistory {
             }
         }
 
-        var doc = Jsoup.parseBodyFragment(text);
+        var doc = Jsoup.parse(text, "", Parser.xmlParser());
         var referencesTags = doc.getElementsByTag("references");
 
         if (!referencesTags.isEmpty()) {
