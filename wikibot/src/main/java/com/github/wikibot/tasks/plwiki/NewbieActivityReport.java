@@ -9,13 +9,18 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -39,13 +44,14 @@ public final class NewbieActivityReport {
     private static final long EARLIEST_TIMESTAMP;
     private static final long LATEST_TIMESTAMP;
 
-    static {
-        var now = OffsetDateTime.now();
-        var then = now.minusMonths(MONTHS_TO_ANALYZE);
-        var fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final DateTimeFormatter DT_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneOffset.UTC);
 
-        EARLIEST_TIMESTAMP = Long.parseLong(fmt.format(then));
-        LATEST_TIMESTAMP = Long.parseLong(fmt.format(now));
+    static {
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        var then = now.minusMonths(MONTHS_TO_ANALYZE);
+
+        EARLIEST_TIMESTAMP = Long.parseLong(DT_FORMATTER.format(then));
+        LATEST_TIMESTAMP = Long.parseLong(DT_FORMATTER.format(now));
     }
 
     public static void main(String[] args) throws Exception {
@@ -84,14 +90,14 @@ public final class NewbieActivityReport {
         var id = activity.get(0).id();
         var userName = activity.get(0).name();
 
-        var monthlyEdits = activity.stream().collect(Collectors.toMap(
+        var monthlyActivity = activity.stream().collect(Collectors.toMap(
             UserActivity::period,
-            UserActivity::edits,
-            Integer::sum,
+            UnaryOperator.identity(),
+            (a, b) -> a, // shouldn't happen
             TreeMap::new
         ));
 
-        var earliestActivityMonth = monthlyEdits.lastKey();
+        var earliestActivityMonth = monthlyActivity.lastKey();
         var currentMonth = new MutableInt(0);
 
         var lowActivityMonths = new MutableInt(0);
@@ -100,26 +106,33 @@ public final class NewbieActivityReport {
         var highActivityMonths = new MutableInt(0);
         var highActivityEdits = new MutableInt(0);
 
+        final long turnpoint;
+
         if (isDecrease) {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // earliest low
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // latest high
+            iterateMonths(monthlyActivity, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS, UserActivity::earliest); // earliest low
+            iterateMonths(monthlyActivity, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS, UserActivity::latest); // *latest high*
         } else {
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS); // earliest high
-            iterateMonths(monthlyEdits, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS); // latest low
+            iterateMonths(monthlyActivity, earliestActivityMonth, currentMonth, highActivityMonths, highActivityEdits, edits -> edits >= MIN_HIGH_ACTIVITY_EDITS, UserActivity::earliest); // *earliest high*
+            iterateMonths(monthlyActivity, earliestActivityMonth, currentMonth, lowActivityMonths, lowActivityEdits, edits -> edits <= MAX_LOW_ACTIVITY_EDITS, UserActivity::latest); // latest low
         }
 
         if (lowActivityMonths.intValue() < LOW_ACTIVITY_MONTHS || highActivityMonths.intValue() < HIGH_ACTIVITY_MONTHS) {
             return null;
         }
 
-        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), highActivityMonths.intValue(), highActivityEdits.intValue(), null);
+        var odt = OffsetDateTime.parse(Long.toString(turnpoint), DT_FORMATTER);
+        return new ReportEntry(id, userName, lowActivityMonths.intValue(), lowActivityEdits.intValue(), highActivityMonths.intValue(), highActivityEdits.intValue(), odt);
     }
 
-    private static void iterateMonths(Map<Integer, Integer> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond) {
+    private static long iterateMonths(Map<Integer, UserActivity> monthlyEdits, int limit, MutableInt current, MutableInt months, MutableInt edits, Predicate<Integer> cond, Function<UserActivity, Long> supp) {
+        long out = 0L;
+
         while (current.intValue() <= limit) {
-            var monthEdits = monthlyEdits.getOrDefault(current.intValue(), 0);
+            var activity = Optional.ofNullable(monthlyEdits.get(current.intValue()));
+            var monthEdits = activity.map(UserActivity::edits).orElse(0);
 
             if (!cond.test(monthEdits)) {
+                out = activity.map(supp).orElse(0L);
                 break;
             }
 
@@ -127,6 +140,8 @@ public final class NewbieActivityReport {
             edits.add(monthEdits);
             current.increment();
         }
+
+        return out;
     }
 
     private static String makeHtml(List<ReportEntry> report, String title) {
