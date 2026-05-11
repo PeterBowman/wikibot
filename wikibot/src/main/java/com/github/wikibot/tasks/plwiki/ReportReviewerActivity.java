@@ -40,8 +40,6 @@ public final class ReportReviewerActivity {
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
     private static final String TARGET_PAGE = "Wikipedia:Tablica ogłoszeń";
-    private static final String WIKINEWS_TEMPLATE = "Wikireporter:PBbot/szablon statystyk wersji przejrzanych Wikipedii";
-    private static final String WIKINEWS_PAGENAME = "Statystyki wersji przejrzanych Wikipedii - %d tydzień %d";
 
     private static final Map<Long, String> MONTH_NAMES_GENITIVE = Map.ofEntries(
         Map.entry(1L, "stycznia"),
@@ -94,7 +92,6 @@ public final class ReportReviewerActivity {
         "Dziękujemy przeglądającym! ~~~~";
 
     private static final Wikibot plwiki = Wikibot.newSession("pl.wikipedia.org");
-    private static final Wikibot plwikinews = Wikibot.newSession("pl.wikinews.org");
 
     public static void main(String[] args) throws Exception {
         var now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Warsaw"));
@@ -147,13 +144,6 @@ public final class ReportReviewerActivity {
         plwiki.edit(TARGET_PAGE, page.toString(), "raport oznaczania artykułów", pc.timestamp());
 
         Files.writeString(path, TIMESTAMP_FORMATTER.format(ref));
-
-        Login.login(plwikinews);
-
-        var wikinewsSummary = makeWikinewsSummary(startDate, endDate, rows, summary, plwikinews.getCurrentUser().getUsername());
-        var wikinewsTitle = String.format(WIKINEWS_PAGENAME, summary.week(), summary.year());
-
-        plwikinews.edit(wikinewsTitle, wikinewsSummary, "nowy raport");
     }
 
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
@@ -298,55 +288,6 @@ public final class ReportReviewerActivity {
                                           wasLimited ? " m.in." : "",
                                           top
                                           );
-    }
-
-    private static String makeWikinewsSummary(ZonedDateTime startDate, ZonedDateTime endDate, List<Row> rows, Summary summary, String bot) {
-        var topUsers = rows.stream()
-            .filter(r -> r.total() > REVIEW_COUNT_THRESHOLD)
-            .limit(REVIEWER_SUMMARY_LIMIT)
-            .map(r -> String.format("{{w|User:%1$s|%1$s}}", r.user()))
-            .toList();
-
-        var wasLimited = rows.stream().filter(r -> r.total() > REVIEW_COUNT_THRESHOLD).count() > REVIEWER_SUMMARY_LIMIT;
-
-        final String top;
-
-        if (!wasLimited) {
-            // https://stackoverflow.com/a/34936891
-            var last = topUsers.size() - 1;
-            top = String.join(" i ", String.join(", ", topUsers.subList(0, last)), topUsers.get(last));
-        } else {
-            top = String.join(", ", topUsers) + " i inni";
-        }
-
-        return """
-            {{subst:%s
-              | tydzień = %d
-              | rok = %d
-              | liczba edycji = %d
-              | liczba redaktorów = %d
-              | początek = %s
-              | koniec = %s
-              | zmienione artykuły = %d
-              | nowe artykuły = %d
-              | procent przejrzanych = %s
-              | pułap = %d
-              | top redaktorów = %s
-              | bot = %s
-            }}
-            """.formatted(WIKINEWS_TEMPLATE,
-                          summary.week(),
-                          summary.year(),
-                          summary.edits(),
-                          summary.editors(),
-                          HEADER_FORMATTER.format(startDate),
-                          HEADER_FORMATTER.format(endDate),
-                          summary.changes(),
-                          summary.creations(),
-                          summary.percentage(),
-                          REVIEW_COUNT_THRESHOLD,
-                          top,
-                          bot);
     }
 
     private record Row(String user, int total, int create, int other, int unapprove) {}
