@@ -34,6 +34,8 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
+import com.github.wikibot.utils.Login;
+
 public class XMLDump {
     private static final Pattern PATT_FILENAME_ID = Pattern.compile("(?<slice>\\d+)\\.(?:txt|xml)(?:-p(?<start>\\d+)p(?<end>\\d+))?");
 
@@ -383,7 +385,10 @@ class RemoteDumpHandler implements DumpHandler {
     @Override
     public List<String> listDirectoryContents(String database, String date, boolean isDirectory) {
         try {
-            return Jsoup.connect(makePath(database, date, "")).get().getElementsByTag("a").stream()
+            var connection = Jsoup.connect(makePath(database, date, ""));
+            connection.userAgent(Login.getUserAgent());
+
+            return connection.get().getElementsByTag("a").stream()
                 .map(Element::text)
                 .filter(text  -> !isDirectory ^ text.endsWith("/"))
                 .map(text -> isDirectory ? text.substring(0, text.length() - 1) : text)
