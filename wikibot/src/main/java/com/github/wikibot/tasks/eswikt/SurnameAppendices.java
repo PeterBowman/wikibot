@@ -108,7 +108,7 @@ public final class SurnameAppendices {
     private static String prepareOutput(String headerUpper, String headerLower, List<String> surnames) {
         var sb = new StringBuilder(surnames.size() * 20);
 
-        sb.append("{{Abecedario|").append(TARGET_PARENT_PAGE.replaceFirst("/$", "")).append("}}");
+        sb.append("{{abecedario|prefijo={{NAMESPACE}}:{{BASEPAGENAME}}/}}");
         sb.append("\n\n");
         sb.append(String.format("<strong>Lista de {{l|es|apellido|apellidos}} que comienzan por la letra {{l|es|%s}}</strong>:", headerUpper));
         sb.append("\n\n");
@@ -119,7 +119,7 @@ public final class SurnameAppendices {
 
         sb.append("\n");
         sb.append(String.format("[[Categoría:ES:Apellidos| %s]]", headerLower)).append("\n");
-        sb.append(String.format("[[Categoría:Wikcionario:Apéndices|Apellidos %s]]", headerLower));
+        sb.append(String.format("[[Categoría:Apéndices]]"));
 
         return sb.toString();
     }
