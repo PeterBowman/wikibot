@@ -316,8 +316,8 @@ public final class AuthorityControl {
         return isHuman && (
             // criterion 2: denotes a human and has at least two identifiers
             count >= 2 ||
-            // criterion 3: denotes a human and has a VIAF (P214) or NUKAT (P1207) identifier
-            json.has("P214") || json.has("P1207")
+            // criterion 3: denotes a human and has a VIAF (P214), NUKAT (P1207), or Olympedia (P8286) identifier
+            json.has("P214") || json.has("P1207") || json.has("P8286")
         );
     }
 
