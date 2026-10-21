@@ -18,6 +18,7 @@ public class WordOfTheDayHandler {
     private static final Path LOCATION = Paths.get("./data/tasks.plwikt/WordOfTheDayHandler/");
     private static final Path LAST_DATE_FILE_PATH = LOCATION.resolve("last-date.txt");
     private static final String MAIN_PAGE = "Wikisłownik:Strona główna";
+    private static final String PROJECT_PAGE = "Wikisłownik:Słowo dnia";
     private static final String SCHEDULE_PAGE_FMT = "Wikisłownik:Słowo dnia/Rozkład/%04d/%02d/%02d";
     private static final String SCHEDULE_TEMPLATE = "Słowo dnia";
     private static final String WOTD_TEMPLATE = "słowo dnia";
@@ -49,7 +50,9 @@ public class WordOfTheDayHandler {
         }
 
         Login.login(wb);
+
         wb.purge(false, MAIN_PAGE);
+        wb.purge(false, PROJECT_PAGE);
 
         while (refDate.isBefore(today)) {
             refDate = refDate.plusDays(1);
