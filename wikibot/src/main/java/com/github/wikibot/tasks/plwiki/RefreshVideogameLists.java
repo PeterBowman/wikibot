@@ -1,6 +1,7 @@
 package com.github.wikibot.tasks.plwiki;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,13 +10,17 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.wikipedia.Wiki;
 
 import com.github.wikibot.main.Wikibot;
@@ -24,19 +29,31 @@ import com.github.wikibot.utils.Login;
 
 final public class RefreshVideogameLists {
     private static final Path LOCATION = Paths.get("./data/tasks.plwiki/RefreshVideogameLists/");
+    private static final String TARGET_MAIN_PAGE = "Wikiprojekt:Gry komputerowe";
     private static final String TARGET_ARTICLE_LIST = "Wikiprojekt:Gry komputerowe/Lista artykułów";
     private static final String TARGET_MOST_LINKED_MISSING = "Wikiprojekt:Gry komputerowe/Najczęściej linkowane brakujące artykuły";
-    private static final String TARGET_PROJECT_SUBPAGE_MISSING = "Wikiprojekt:Gry komputerowe/brakujące";
-    private static final String TARGET_PROJECT_SUBPAGE_INTERWIKIS = "Wikiprojekt:Gry komputerowe/interwiki";
+    private static final String TARGET_PROJECT_SUBPAGE_MISSING = "Wikiprojekt:Gry komputerowe/Najwięcej linkowań (rubryka)";
+    private static final String TARGET_PROJECT_SUBPAGE_INTERWIKIS = "Wikiprojekt:Gry komputerowe/Najwięcej interwiki (rubryka)";
     private static final List<String> TARGET_CATEGORIES = List.of("Gry komputerowe", "Kategorie według gier komputerowych");
 
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
     private static final String SQL_PLWIKI_URI_LOCAL = "jdbc:mysql://localhost:4715/plwiki_p";
 
+    private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
+
     private static final int MAX_MOST_LINKED_PAGES = 500;
-    private static final int MAX_PROJECT_SUBPAGE_MISSING = 13;
+    private static final int MAX_PROJECT_SUBPAGE_MISSING = 15;
+    private static final int MAX_SPARQL_RETRIES = 15;
 
     private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
+
+    static {
+        try {
+            SPARQL_REPO.setAdditionalHttpHeaders(Collections.singletonMap("User-Agent", Login.getUserAgent()));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         Login.login(wb);
@@ -62,15 +79,18 @@ final public class RefreshVideogameLists {
             wb.edit(TARGET_MOST_LINKED_MISSING, outMostLinkedMissing, "aktualizacja");
         }
 
+        final List<WikidataItem> wikidataItems;
+
         {
-            System.out.println("Updating project subpage for missing articles...");
-            var filtered = missingTitles.stream().limit(MAX_PROJECT_SUBPAGE_MISSING).toList();
-            var titles = filtered.stream().map(MissingTitle::title).toList();
-            var props = wb.getPageProperties(titles);
-            var outMissingMainPage = makeMissingMainPage(filtered, props);
-            Files.writeString(LOCATION.resolve("main_page_missing"), outMissingMainPage);
+            System.out.println("Querying Wikidata items for articles...");
+            var titles = missingTitles.stream().map(MissingTitle::title).toList();
+            wikidataItems = queryWikidataItems(titles);
+            var outMissingMainPage = makeMissingMainPage(missingTitles, wikidataItems);
+            Files.writeString(LOCATION.resolve("missing_main_page.txt"), outMissingMainPage);
             wb.edit(TARGET_PROJECT_SUBPAGE_MISSING, outMissingMainPage, "aktualizacja");
         }
+
+        wb.purge(true, TARGET_MAIN_PAGE);
     }
 
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
@@ -245,19 +265,65 @@ final public class RefreshVideogameLists {
         return sb.toString();
     }
 
-    private static final String makeMissingMainPage(List<MissingTitle> titles, List<Map<String, String>> properties) {
+    private static final List<WikidataItem> queryWikidataItems(List<String> titles) {
+        var formattedTitles = titles.stream().map(title -> "\"%s\"@en".formatted(title)).collect(Collectors.joining("\n"));
+
+        try (var connection = SPARQL_REPO.getConnection()) {
+            var querySelect = """
+                SELECT ?search ?item ?itemLabel ?itemDescription
+                WHERE {
+                    VALUES ?search {
+                        %s
+                    }
+                    ?item rdfs:label ?search ;
+                          wdt:P31 wd:Q7889 .
+                    SERVICE wikibase:label {
+                        bd:serviceParam wikibase:language "[AUTO_LANGUAGE],mul,en".
+                    }
+                }
+                """.formatted(formattedTitles);
+
+            var query = connection.prepareTupleQuery(querySelect);
+
+            for (var retry = 1; ; retry++) {
+                try (var result = query.evaluate()) {
+                    return result.stream()
+                        .map(bs -> new WikidataItem(
+                            ((IRI)bs.getValue("item")).getLocalName(),
+                            ((Literal)bs.getValue("search")).stringValue()
+                        ))
+                        .toList();
+                } catch (QueryEvaluationException e) {
+                    if (retry > MAX_SPARQL_RETRIES) {
+                        throw e;
+                    }
+
+                    System.out.printf("Query failed with: %s (retry %d)%n", e.getMessage(), retry);
+                }
+            }
+        }
+    }
+
+    private static final String makeMissingMainPage(List<MissingTitle> titles, List<WikidataItem> wikidataItems) {
         var sb = new StringBuilder();
+        var count = 0;
 
         for (var i = 0; i < titles.size(); i++) {
-            var item = titles.get(i);
-            var props = properties.get(i);
+            var missingTitleItem = titles.get(i);
 
-            if (props != null && props.containsKey("wikibase_item")) {
-                var qid = props.get("wikibase_item");
-                sb.append("* {{Link-interwiki|").append(item.title()).append("|Q=");
-                sb.append(qid).append("}} (").append(item.pagelinks()).append(")\n");
-            } else {
-                sb.append("* [[").append(item.title()).append("]] (").append(item.pagelinks()).append(")\n");
+            var wikidataItem = wikidataItems.stream()
+                .filter(wdi -> wdi.title().equals(missingTitleItem.title()))
+                .findFirst()
+                .orElse(null);
+
+            if (wikidataItem != null) {
+                sb.append("* {{Link-interwiki|%s|Q=%s}} (%d)\n"
+                    .formatted(missingTitleItem.title(), wikidataItem.qid(), missingTitleItem.pagelinks())
+                );
+
+                if (++count >= MAX_PROJECT_SUBPAGE_MISSING) {
+                    break;
+                }
             }
         }
 
@@ -266,4 +332,5 @@ final public class RefreshVideogameLists {
 
     record ArticleInfo(String title, int id, int length, long lastChange) {}
     record MissingTitle(String title, int pagelinks) {}
+    record WikidataItem(String qid, String title) {}
 }
