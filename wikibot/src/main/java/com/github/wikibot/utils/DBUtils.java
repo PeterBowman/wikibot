@@ -39,19 +39,37 @@ public class DBUtils {
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, int... namespaces) throws SQLException, IOException {
         var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, category, List.of(), namespaces);
+        return getRecursiveCategoryMembers(sqlUri, props, -1, category, List.of(), namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, int maxDepth, String category, int... namespaces) throws SQLException, IOException {
+        var props = prepareSQLProperties();
+        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, List.of(), namespaces);
     }
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, List<String> ignoredCategories, int... namespaces) throws SQLException, IOException {
         var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, category, ignoredCategories, namespaces);
+        return getRecursiveCategoryMembers(sqlUri, props, -1, category, ignoredCategories, namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, int maxDepth, String category, List<String> ignoredCategories, int... namespaces) throws SQLException, IOException {
+        var props = prepareSQLProperties();
+        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, ignoredCategories, namespaces);
     }
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, int... namespaces) throws SQLException {
-        return getRecursiveCategoryMembers(sqlUri, props, category, List.of(), namespaces);
+        return getRecursiveCategoryMembers(sqlUri, props, -1, category, List.of(), namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, int maxDepth, String category, int... namespaces) throws SQLException {
+        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, List.of(), namespaces);
     }
 
     public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, List<String> ignoredCategories, int... namespaces) throws SQLException {
+        return getRecursiveCategoryMembers(sqlUri, props, -1, category, ignoredCategories, namespaces);
+    }
+
+    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, int maxDepth, String category, List<String> ignoredCategories, int... namespaces) throws SQLException {
         var targetNs = Arrays.stream(namespaces).boxed().toList();
         var articles = new HashSet<String>();
         var visitedCats = ignoredCategories.stream().map(cat -> cat.replace(' ', '_')).collect(Collectors.toCollection(HashSet::new));
@@ -98,10 +116,16 @@ public class DBUtils {
                 articles.addAll(members);
                 visitedCats.addAll(targetCategories);
 
-                System.out.printf("depth = %d, members = %d, subcats = %d%n", depth++, members.size(), subcats.size());
+                System.out.printf("depth = %d, members = %d, subcats = %d%n", depth, members.size(), subcats.size());
 
                 subcats.removeAll(visitedCats);
                 targetCategories = subcats;
+
+                depth++;
+
+                if (depth != -1 && depth > maxDepth) {
+                    break;
+                }
             }
         }
 
