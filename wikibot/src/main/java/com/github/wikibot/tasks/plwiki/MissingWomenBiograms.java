@@ -420,7 +420,7 @@ public final class MissingWomenBiograms {
         var outFmt = """
             <templatestyles src="Wikipedysta:Peter Bowman/autonumber.css" />
             Właściwość: {{PID|%s}}. Wartość: {{QID|%s}}. Rozmiar [%s oryginalnej listy]: {{formatnum:%d}}. Ograniczono do {{formatnum:%d}} wyników.
-
+            [[Kategoria:Biogramy kobiet do zrobienia|%s]]
             Aktualizacja: ~~~~~. Dane na podstawie zrzutu %s.
             ----
             {| class="wikitable sortable autonumber"
@@ -436,6 +436,7 @@ public final class MissingWomenBiograms {
                 String.format(STATIC_URL_DUMP_FMT, queryItem.filename()),
                 originalSize,
                 MAX_PRINTED_RESULTS,
+                queryItem.subtype(),
                 dumpFilename,
                 data.stream().map(Entry::toTemplate).collect(Collectors.joining("\n"))
             );
