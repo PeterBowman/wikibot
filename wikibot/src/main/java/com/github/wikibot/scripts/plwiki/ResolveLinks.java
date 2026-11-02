@@ -493,7 +493,7 @@ public final class ResolveLinks {
 
         for (var source : sources) {
             var target = sourceToTarget.get(source);
-            text = replaceAdditionalOccurrences(text, source, target);
+            text = replaceAdditionalOccurrences(text, source, target, replaceText);
         }
 
         return text;
@@ -519,7 +519,7 @@ public final class ResolveLinks {
         return Utils.getCombinedRanges(ignoredRanges);
     }
 
-    private static String replaceAdditionalOccurrences(String text, String source, String target) {
+    private static String replaceAdditionalOccurrences(String text, String source, String target, boolean replaceText) {
         var sources = List.of(StringUtils.capitalize(source), StringUtils.uncapitalize(source));
 
         for (var templateName : SOFT_REDIR_TEMPLATES) {
@@ -542,21 +542,15 @@ public final class ResolveLinks {
 
         for (var template : ParseUtils.getTemplatesIgnoreCase("Link-interwiki", text)) {
             var params = ParseUtils.getTemplateParametersWithValue(template);
-            var local = normalizeTitle(params.getOrDefault("pl", params.getOrDefault("ParamWithoutName1", "")));
+            var local = normalizeTitle(params.getOrDefault("ParamWithoutName1", ""));
 
             if (sources.contains(local)) {
-                if (params.containsKey("pl")) {
-                    params.put("pl", target);
-                } else {
-                    params.put("ParamWithoutName1", target);
-                }
+                params.put("ParamWithoutName1", target);
 
-                if (!params.containsKey("tekst") && !params.containsKey("ParamWithoutName4")) {
-                    if (!params.containsKey("ParamWithoutName3")) {
-                        params.put("tekst", local);
-                    } else {
-                        params.put("ParamWithoutName4", local);
-                    }
+                if (params.getOrDefault("tekst", "").equals(target)) {
+                    params.remove("tekst");
+                } else if (!replaceText) {
+                    params.put("tekst", local);
                 }
 
                 text = Utils.replaceWithStandardIgnoredRanges(text, Pattern.quote(template), ParseUtils.templateFromMap(params));
