@@ -15,6 +15,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -33,7 +35,7 @@ final public class RefreshVideogameLists {
     private static final String TARGET_ARTICLE_LIST = "Wikiprojekt:Gry komputerowe/Lista artykułów";
     private static final String TARGET_MOST_LINKED_MISSING = "Wikiprojekt:Gry komputerowe/Najczęściej linkowane brakujące artykuły";
     private static final String TARGET_PROJECT_SUBPAGE_MISSING = "Wikiprojekt:Gry komputerowe/Najwięcej linkowań (rubryka)";
-    private static final String TARGET_PROJECT_SUBPAGE_INTERWIKIS = "Wikiprojekt:Gry komputerowe/Najwięcej interwiki (rubryka)";
+    private static final String TARGET_PROJECT_SUBPAGE_LANGLINKS = "Wikiprojekt:Gry komputerowe/Najwięcej interwiki (rubryka)";
     private static final List<String> TARGET_CATEGORIES = List.of("Gry komputerowe", "Kategorie według gier komputerowych");
 
     private static final String SQL_PLWIKI_URI_SERVER = "jdbc:mysql://plwiki.analytics.db.svc.wikimedia.cloud:3306/plwiki_p";
@@ -42,10 +44,11 @@ final public class RefreshVideogameLists {
     private static final SPARQLRepository SPARQL_REPO = new SPARQLRepository("https://query.wikidata.org/sparql");
 
     private static final int MAX_MOST_LINKED_PAGES = 500;
-    private static final int MAX_PROJECT_SUBPAGE_MISSING = 15;
+    private static final int MAX_PROJECT_SUBPAGE_SIZE = 15;
     private static final int MAX_SPARQL_RETRIES = 15;
 
-    private static final Wikibot wb = Wikibot.newSession("pl.wikipedia.org");
+    private static final Wikibot plwiki = Wikibot.newSession("pl.wikipedia.org");
+    private static final Wikibot wd = Wikibot.newSession("www.wikidata.org");
 
     static {
         try {
@@ -56,7 +59,8 @@ final public class RefreshVideogameLists {
     }
 
     public static void main(String[] args) throws Exception {
-        Login.login(wb);
+        Login.login(plwiki);
+        Login.login(wd);
 
         final List<ArticleInfo> articleInfos;
 
@@ -65,7 +69,7 @@ final public class RefreshVideogameLists {
             articleInfos = queryArticleList();
             var outArticleList = makeArticleListsPage(articleInfos);
             Files.writeString(LOCATION.resolve("articles.txt"), outArticleList);
-            wb.edit(TARGET_ARTICLE_LIST, outArticleList, "aktualizacja");
+            plwiki.edit(TARGET_ARTICLE_LIST, outArticleList, "aktualizacja");
         }
 
         final List<MissingTitle> missingTitles;
@@ -76,21 +80,24 @@ final public class RefreshVideogameLists {
             missingTitles = queryMostLinkedMissing(titles);
             var outMostLinkedMissing = makeMissingTitlesTable(missingTitles);
             Files.writeString(LOCATION.resolve("most_linked_missing.txt"), outMostLinkedMissing);
-            wb.edit(TARGET_MOST_LINKED_MISSING, outMostLinkedMissing, "aktualizacja");
+            plwiki.edit(TARGET_MOST_LINKED_MISSING, outMostLinkedMissing, "aktualizacja");
         }
-
-        final List<WikidataItem> wikidataItems;
 
         {
             System.out.println("Querying Wikidata items for articles...");
             var titles = missingTitles.stream().map(MissingTitle::title).toList();
-            wikidataItems = queryWikidataItems(titles);
+            var wikidataItems = queryWikidataItems(titles);
+
             var outMissingMainPage = makeMissingMainPage(missingTitles, wikidataItems);
             Files.writeString(LOCATION.resolve("missing_main_page.txt"), outMissingMainPage);
-            wb.edit(TARGET_PROJECT_SUBPAGE_MISSING, outMissingMainPage, "aktualizacja");
+            plwiki.edit(TARGET_PROJECT_SUBPAGE_MISSING, outMissingMainPage, "aktualizacja");
+
+            var outLanglinksMainPage = makeLanglinksMainPage(wikidataItems);
+            Files.writeString(LOCATION.resolve("langlinks_main_page.txt"), outLanglinksMainPage);
+            plwiki.edit(TARGET_PROJECT_SUBPAGE_LANGLINKS, outLanglinksMainPage, "aktualizacja");
         }
 
-        wb.purge(true, TARGET_MAIN_PAGE);
+        plwiki.purge(true, TARGET_MAIN_PAGE);
     }
 
     private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
@@ -270,13 +277,18 @@ final public class RefreshVideogameLists {
 
         try (var connection = SPARQL_REPO.getConnection()) {
             var querySelect = """
-                SELECT ?search ?item ?itemLabel ?itemDescription
+                SELECT ?search ?item ?itemLabel ?itemDescription ?sitelink
                 WHERE {
                     VALUES ?search {
                         %s
                     }
                     ?item rdfs:label ?search ;
                           wdt:P31 wd:Q7889 .
+                    OPTIONAL {
+                        ?sitelink schema:about ?item ;
+                                  schema:isPartOf ?site .
+                        FILTER(CONTAINS(STR(?site), "wikipedia.org"))
+                    }
                     SERVICE wikibase:label {
                         bd:serviceParam wikibase:language "[AUTO_LANGUAGE],mul,en".
                     }
@@ -290,7 +302,8 @@ final public class RefreshVideogameLists {
                     return result.stream()
                         .map(bs -> new WikidataItem(
                             ((IRI)bs.getValue("item")).getLocalName(),
-                            ((Literal)bs.getValue("search")).stringValue()
+                            ((Literal)bs.getValue("search")).stringValue(),
+                            bs.hasBinding("sitelink") ? ((IRI)bs.getValue("sitelink")).stringValue() : ""
                         ))
                         .toList();
                 } catch (QueryEvaluationException e) {
@@ -305,32 +318,60 @@ final public class RefreshVideogameLists {
     }
 
     private static final String makeMissingMainPage(List<MissingTitle> titles, List<WikidataItem> wikidataItems) {
-        var sb = new StringBuilder();
-        var count = 0;
+        var grouped = wikidataItems.stream().collect(Collectors.groupingBy(WikidataItem::title));
 
-        for (var i = 0; i < titles.size(); i++) {
-            var missingTitleItem = titles.get(i);
+        return titles.stream()
+            .filter(missingTitleItem -> grouped.containsKey(missingTitleItem.title()))
+            .limit(MAX_PROJECT_SUBPAGE_SIZE)
+            .map(missingTitleItem -> {
+                var qid = grouped.get(missingTitleItem.title()).stream()
+                    .collect(Collectors.groupingBy(
+                        WikidataItem::qid,
+                        Collectors.counting()
+                    ))
+                    .entrySet().stream()
+                    .sorted(Comparator.<Map.Entry<String, Long>>comparingLong(Map.Entry::getValue).reversed())
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .get();
 
-            var wikidataItem = wikidataItems.stream()
-                .filter(wdi -> wdi.title().equals(missingTitleItem.title()))
-                .findFirst()
-                .orElse(null);
+                return "* {{Link-interwiki|%s|Q=%s}} (%d)\n"
+                    .formatted(missingTitleItem.title(), qid, missingTitleItem.pagelinks());
+            })
+            .collect(Collectors.joining());
+    }
 
-            if (wikidataItem != null) {
-                sb.append("* {{Link-interwiki|%s|Q=%s}} (%d)\n"
-                    .formatted(missingTitleItem.title(), wikidataItem.qid(), missingTitleItem.pagelinks())
-                );
+    private static final String makeLanglinksMainPage(List<WikidataItem> wikidataItems) {
+        var langlinks = wikidataItems.stream()
+            .collect(Collectors.groupingBy(WikidataItem::qid))
+            .entrySet().stream()
+            .map(entry -> new Langlink(
+                entry.getValue().get(0).title(),
+                entry.getKey(),
+                entry.getValue().stream()
+                    .map(WikidataItem::sitelink)
+                    .filter(sitelink -> !sitelink.isBlank())
+                    .distinct()
+                    .count()
+            ))
+            .collect(Collectors.toMap(
+                Langlink::title,
+                UnaryOperator.identity(),
+                (first, second) -> first.count() >= second.count() ? first : second
+            ))
+            .values().stream()
+            .sorted(Comparator.comparingLong(Langlink::count).reversed())
+            .limit(MAX_PROJECT_SUBPAGE_SIZE)
+            .toList();
 
-                if (++count >= MAX_PROJECT_SUBPAGE_MISSING) {
-                    break;
-                }
-            }
-        }
-
-        return sb.toString();
+        return langlinks.stream()
+            .map(langlink -> "* {{Link-interwiki|%s|Q=%s}} (%d)\n"
+                .formatted(langlink.title(), langlink.qid(), langlink.count()))
+            .collect(Collectors.joining());
     }
 
     record ArticleInfo(String title, int id, int length, long lastChange) {}
     record MissingTitle(String title, int pagelinks) {}
-    record WikidataItem(String qid, String title) {}
+    record WikidataItem(String qid, String title, String sitelink) {}
+    record Langlink(String title, String qid, long count) {}
 }
