@@ -357,7 +357,7 @@ public final class ArchiveThreads {
         }
     }
 
-    private static SortedSet<OffsetDateTime> retrieveTimestamps(String text) {
+    public static SortedSet<OffsetDateTime> retrieveTimestamps(String text) {
         return P_TIMESTAMP.matcher(ParseUtils.removeCommentsAndNoWikiText(text)).results()
             .map(MatchResult::group)
             .<ZonedDateTime>mapMulti((timestamp, consumer) -> {
@@ -379,6 +379,18 @@ public final class ArchiveThreads {
         IGNORE_HEADER
     }
 
+    public static String stripMarkers(String text) {
+        var doc = Jsoup.parse(ParseUtils.removeCommentsAndNoWikiText(text), "", Parser.xmlParser());
+        doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
+        doc.getElementsByTag("s").remove();
+        doc.getElementsByTag("strike").remove();
+        doc.getElementsByTag("del").remove();
+        doc.getElementsByTag("pre").remove();
+        doc.getElementsByTag("syntaxhighlight").remove();
+        doc.getElementsByTag("source").remove();
+        return doc.html();
+    }
+
     private record SectionInfo(Section section, OffsetDateTime earliest, OffsetDateTime latest, EnumSet<ArchiveType> type, List<String> targets) {
         private static List<String> parseTargets(Map<String, String> params, String regex) {
             return params.entrySet().stream()
@@ -391,16 +403,9 @@ public final class ArchiveThreads {
         }
 
         private static EnumSet<ArchiveType> retrieveTargets(String text, List<String> targets) {
-            var doc = Jsoup.parse(ParseUtils.removeCommentsAndNoWikiText(text), "", Parser.xmlParser());
-            doc.getElementsByTag("nowiki").remove(); // already removed along with comments, but why not
-            doc.getElementsByTag("s").remove();
-            doc.getElementsByTag("strike").remove();
-            doc.getElementsByTag("del").remove();
-            doc.getElementsByTag("pre").remove();
-            doc.getElementsByTag("syntaxhighlight").remove();
-            doc.getElementsByTag("source").remove();
+            var stripped = stripMarkers(text);
 
-            var eligibleParams = ParseUtils.getTemplates(TARGET_TEMPLATE, doc.html()).stream()
+            var eligibleParams = ParseUtils.getTemplates(TARGET_TEMPLATE, stripped).stream()
                 .map(ParseUtils::getTemplateParametersWithValue)
                 .filter(params -> !params.getOrDefault("ParamWithoutName1", "").equals("-"))
                 .toList();
