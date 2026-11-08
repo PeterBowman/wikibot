@@ -100,6 +100,18 @@
     <servlet-name>RecursiveCategoryContribs</servlet-name>
     <servlet-class>com.github.wikibot.webapp.RecursiveCategoryContribs</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>MonitorTalkPages</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MonitorTalkPages</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>MonitorTalkPagesAPI</servlet-name>
+    <servlet-class>com.github.wikibot.webapp.MonitorTalkPages</servlet-class>
+    <init-param>
+        <param-name>API</param-name>
+        <param-value>yes</param-value>
+    </init-param>
+  </servlet>
 
   <servlet-mapping>
     <servlet-name>VerifyCitations</servlet-name>
@@ -191,6 +203,14 @@
   <servlet-mapping>
     <servlet-name>RecursiveCategoryContribs</servlet-name>
     <url-pattern>/recursive-category-contribs</url-pattern>
+  </servlet-mapping>
+   <servlet-mapping>
+    <servlet-name>MonitorTalkPages</servlet-name>
+    <url-pattern>/monitor-talk-pages</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>MonitorTalkPagesAPI</servlet-name>
+    <url-pattern>/monitor-talk-pages/api</url-pattern>
   </servlet-mapping>
 
   <resource-ref>
