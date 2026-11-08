@@ -1,11 +1,8 @@
 package com.github.wikibot.tasks.plwiki;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -146,22 +143,10 @@ public final class ReportReviewerActivity {
         Files.writeString(path, TIMESTAMP_FORMATTER.format(ref));
     }
 
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_LOCAL, props);
-        }
-    }
-
-    private static List<Row> queryReviewers(long start, long end) throws SQLException, IOException, ClassNotFoundException {
+    private static List<Row> queryReviewers(long start, long end) throws SQLException {
         var out = new ArrayList<Row>();
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             // masti: https://github.com/masti01/pywikipedia/blob/main/app/review.py
             // MW: https://github.com/wikimedia/mediawiki-extensions-FlaggedRevs/blob/5c2d3a26/frontend/FlaggedRevsReviewLogFormatter.php#L11-L23
             // supported actions: https://www.mediawiki.org/wiki/Manual:Log_actions#Actions
@@ -200,12 +185,12 @@ public final class ReportReviewerActivity {
         return out;
     }
 
-    private static Stats queryStats() throws ClassNotFoundException, SQLException, IOException {
+    private static Stats queryStats() throws SQLException {
         var optTotal = Optional.<Integer>empty();
         var optReviewed = Optional.<Integer>empty();
         var optSynced = Optional.<Integer>empty();
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             final var query = """
                 SELECT
                     frs_stat_key,

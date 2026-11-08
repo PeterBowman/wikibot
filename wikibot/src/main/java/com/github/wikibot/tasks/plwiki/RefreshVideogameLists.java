@@ -5,8 +5,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -100,19 +98,7 @@ final public class RefreshVideogameLists {
         plwiki.purge(true, TARGET_MAIN_PAGE);
     }
 
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_LOCAL, props);
-        }
-    }
-
-    private static final List<ArticleInfo> queryArticleList() throws ClassNotFoundException, SQLException, IOException {
+    private static final List<ArticleInfo> queryArticleList() throws SQLException {
         var articles = new HashSet<ArticleInfo>();
         var visitedCats = new HashSet<String>();
         var targetCategories = TARGET_CATEGORIES.stream().map(cat -> cat.replace(' ', '_')).toList();
@@ -134,7 +120,7 @@ final public class RefreshVideogameLists {
                 lt_title IN (%s);
             """;
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             while (!targetCategories.isEmpty()) {
                 var catArray = targetCategories.stream()
                     .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
@@ -204,7 +190,7 @@ final public class RefreshVideogameLists {
         return sb.toString();
     }
 
-    private static final List<MissingTitle> queryMostLinkedMissing(List<String> titles) throws ClassNotFoundException, SQLException, IOException {
+    private static final List<MissingTitle> queryMostLinkedMissing(List<String> titles) throws SQLException {
         var escapedTitles = titles.stream()
             .map(title -> title.replace("'", "\\'").replace(' ', '_'))
             .collect(Collectors.joining("','"));
@@ -230,7 +216,7 @@ final public class RefreshVideogameLists {
 
         var missingTitles = new ArrayList<MissingTitle>();
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             try (var statement = connection.prepareStatement(query)) {
                 try (var resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {

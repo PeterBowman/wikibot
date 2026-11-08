@@ -5,8 +5,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -140,12 +138,12 @@ public final class MissingWikidataBiograms {
         }
     }
 
-    private static void querySitelinks(List<Item> items) throws SQLException, IOException, ClassNotFoundException {
+    private static void querySitelinks(List<Item> items) throws SQLException {
         Function<Item, String> sanitizeQid = i -> i.qid.substring(1); // remove 'Q' prefix
 
         var mappings = items.stream().collect(Collectors.toMap(sanitizeQid, UnaryOperator.identity()));
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_WDWIKI_URI_SERVER, SQL_WDWIKI_URI_LOCAL)) {
             var query = """
                 SELECT
                     ips_item_id,
@@ -166,16 +164,6 @@ public final class MissingWikidataBiograms {
 
                 mappings.get(qid).sitelinks = count;
             }
-        }
-    }
-
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        try {
-            return DriverManager.getConnection(SQL_WDWIKI_URI_SERVER, DBUtils.prepareSQLProperties());
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_WDWIKI_URI_LOCAL, DBUtils.prepareSQLProperties());
         }
     }
 

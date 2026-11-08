@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.time.OffsetDateTime;
@@ -190,7 +188,7 @@ public final class NewbieActivityReport {
             .collect(Collectors.joining("\n"));
     }
 
-    private static List<UserActivity> getUserActivity() throws ClassNotFoundException, SQLException, IOException {
+    private static List<UserActivity> getUserActivity() throws SQLException {
         var list = new ArrayList<UserActivity>();
 
         var query = """
@@ -214,7 +212,7 @@ public final class NewbieActivityReport {
                 months_ago
             """.formatted(EARLIEST_TIMESTAMP, LATEST_TIMESTAMP);
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var rs = connection.createStatement().executeQuery(query);
 
             while (rs.next()) {
@@ -228,18 +226,6 @@ public final class NewbieActivityReport {
         }
 
         return list;
-    }
-
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_LOCAL, props);
-        }
     }
 
     record UserActivity(int id, String name, int period, int edits) {}

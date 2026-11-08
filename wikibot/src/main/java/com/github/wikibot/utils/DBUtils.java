@@ -3,6 +3,7 @@ package com.github.wikibot.utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -22,6 +24,57 @@ public class DBUtils {
     private static final Pattern P_CONFIG = Pattern.compile("^(.+?) *= *['\"]?(.+?)['\"]?$", Pattern.MULTILINE);
 
     private DBUtils() {}
+
+    public static class Helper {
+        private String sqlUri;
+        private String fallbackSqlUri = "";
+        private String category;
+        private Properties sqlProperties;
+        private int maxDepth = -1;
+        private List<String> ignoredCategories = List.of();
+        private List<Integer> namespaces = List.of();
+        private Collator collator;
+
+        public Helper setSqlProperties(Properties sqlProperties) {
+            this.sqlProperties = sqlProperties;
+            return this;
+        }
+
+        public Helper setSqlUri(String sqlUri) {
+            this.sqlUri = sqlUri;
+            return this;
+        }
+
+        public Helper setFallbackSqlUri(String fallbackSqlUri) {
+            this.fallbackSqlUri = fallbackSqlUri;
+            return this;
+        }
+
+        public Helper setCategory(String category) {
+            this.category = category;
+            return this;
+        }
+
+        public Helper setMaxDepth(int maxDepth) {
+            this.maxDepth = maxDepth;
+            return this;
+        }
+
+        public Helper setIgnoredCategories(List<String> ignoredCategories) {
+            this.ignoredCategories = ignoredCategories;
+            return this;
+        }
+
+        public Helper setNamespaces(List<Integer> namespaces) {
+            this.namespaces = namespaces;
+            return this;
+        }
+
+        public Helper setCollator(Collator collator) {
+            this.collator = collator;
+            return this;
+        }
+    }
 
     public static Properties prepareSQLProperties() throws IOException {
         var defaultSQLProperties = new Properties();
@@ -37,43 +90,41 @@ public class DBUtils {
         return properties;
     }
 
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, int... namespaces) throws SQLException, IOException {
-        var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, -1, category, List.of(), namespaces);
+    public static Connection getConnection(String sqlUri, String fallbackSqlUri) throws SQLException {
+        try {
+            return getConnection(sqlUri, fallbackSqlUri, prepareSQLProperties());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, int maxDepth, String category, int... namespaces) throws SQLException, IOException {
-        var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, List.of(), namespaces);
+    public static Connection getConnection(String sqlUri, String fallbackSqlUri, Properties props) throws SQLException {
+        try {
+            if (props == null) {
+                props = prepareSQLProperties();
+            }
+
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(sqlUri, props);
+        } catch (SQLException e) {
+            if (fallbackSqlUri == null || fallbackSqlUri.isEmpty()) {
+                throw e;
+            }
+
+            return DriverManager.getConnection(fallbackSqlUri, props);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, String category, List<String> ignoredCategories, int... namespaces) throws SQLException, IOException {
-        var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, -1, category, ignoredCategories, namespaces);
-    }
+    public static Set<String> getRecursiveCategoryMembers(Helper options) throws SQLException {
+        Objects.requireNonNull(options);
+        Objects.requireNonNull(options.sqlUri);
+        Objects.requireNonNull(options.category);
 
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, int maxDepth, String category, List<String> ignoredCategories, int... namespaces) throws SQLException, IOException {
-        var props = prepareSQLProperties();
-        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, ignoredCategories, namespaces);
-    }
-
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, int... namespaces) throws SQLException {
-        return getRecursiveCategoryMembers(sqlUri, props, -1, category, List.of(), namespaces);
-    }
-
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, int maxDepth, String category, int... namespaces) throws SQLException {
-        return getRecursiveCategoryMembers(sqlUri, props, maxDepth, category, List.of(), namespaces);
-    }
-
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, String category, List<String> ignoredCategories, int... namespaces) throws SQLException {
-        return getRecursiveCategoryMembers(sqlUri, props, -1, category, ignoredCategories, namespaces);
-    }
-
-    public static Set<String> getRecursiveCategoryMembers(String sqlUri, Properties props, int maxDepth, String category, List<String> ignoredCategories, int... namespaces) throws SQLException {
-        var targetNs = Arrays.stream(namespaces).boxed().toList();
         var articles = new HashSet<String>();
-        var visitedCats = ignoredCategories.stream().map(cat -> cat.replace(' ', '_')).collect(Collectors.toCollection(HashSet::new));
-        var targetCategories = Arrays.asList(category.replace(' ', '_'));
+        var visitedCats = options.ignoredCategories.stream().map(cat -> cat.replace(' ', '_')).collect(Collectors.toCollection(HashSet::new));
+        var targetCategories = Arrays.asList(options.category.replace(' ', '_'));
         var depth = 0;
 
         final var queryFmt = """
@@ -88,7 +139,7 @@ public class DBUtils {
                 lt_title IN (%s);
             """;
 
-        try (var connection = DriverManager.getConnection(sqlUri, props)) {
+        try (var connection = getConnection(options.sqlUri, options.fallbackSqlUri, options.sqlProperties)) {
             while (!targetCategories.isEmpty()) {
                 var catArray = targetCategories.stream()
                     .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
@@ -108,7 +159,7 @@ public class DBUtils {
                         subcats.add(title);
                     }
 
-                    if (targetNs.isEmpty() || targetNs.contains(ns)) {
+                    if (options.namespaces.isEmpty() || options.namespaces.contains(ns)) {
                         members.add(title.replace('_', ' '));
                     }
                 }
@@ -123,30 +174,32 @@ public class DBUtils {
 
                 depth++;
 
-                if (depth != -1 && depth > maxDepth) {
+                if (options.maxDepth != -1 && depth > options.maxDepth) {
                     break;
                 }
             }
         }
 
-        System.out.printf("Got %d category members for category \"%s\" (%d subcategories)%n", articles.size(), category, visitedCats.size() - 1);
+        System.out.printf("Got %d category members for category \"%s\" (%d subcategories)%n",
+                          articles.size(), options.category, visitedCats.size() - 1);
+
         return articles;
     }
 
-    public static CategoryTree getRecursiveCategoryTree(String sqlUri, String category, Collator collator) throws IOException, SQLException {
-        var props = prepareSQLProperties();
-        return getRecursiveCategoryTree(sqlUri, props, category, collator);
-    }
+    public static CategoryTree getRecursiveCategoryTree(Helper options) throws SQLException {
+        Objects.requireNonNull(options);
+        Objects.requireNonNull(options.sqlUri);
+        Objects.requireNonNull(options.category);
+        Objects.requireNonNull(options.collator);
 
-    public static CategoryTree getRecursiveCategoryTree(String sqlUri, Properties props, String category, Collator collator) throws SQLException {
         var visitedCats = new HashSet<String>();
         var nodes = new HashMap<String, CategoryTree.Node>();
-        var targetCategories = Arrays.asList(category.replace(' ', '_'));
+        var targetCategories = Arrays.asList(options.category.replace(' ', '_'));
         var depth = 0;
 
         final CategoryTree tree;
 
-        try (var connection = DriverManager.getConnection(sqlUri, props)) {
+        try (var connection = getConnection(options.sqlUri, options.fallbackSqlUri, options.sqlProperties)) {
             {
                 var query = """
                     SELECT cat_pages - cat_subcats - cat_files AS members
@@ -157,10 +210,10 @@ public class DBUtils {
                 var rs = connection.createStatement().executeQuery(query);
 
                 if (!rs.next()) {
-                    throw new SQLException("Category not found: " + category);
+                    throw new SQLException("Category not found: " + options.category);
                 }
 
-                tree = new CategoryTree(category, rs.getInt("members"), collator);
+                tree = new CategoryTree(options.category, rs.getInt("members"), options.collator);
             }
 
             nodes.put(targetCategories.get(0), tree.getRoot());

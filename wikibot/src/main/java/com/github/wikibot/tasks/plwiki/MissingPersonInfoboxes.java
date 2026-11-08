@@ -8,21 +8,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -64,7 +60,13 @@ public final class MissingPersonInfoboxes {
         var biograms = queryBiograms();
         System.out.println("Biograms: " + biograms.size());
 
-        var infoboxes = getRecursiveCategoryMembers("Infoboksy – biogramy", Wiki.TEMPLATE_NAMESPACE);
+        var options = new DBUtils.Helper()
+            .setSqlUri(SQL_PLWIKI_URI_SERVER)
+            .setFallbackSqlUri(SQL_PLWIKI_URI_LOCAL)
+            .setCategory("Infoboksy – biogramy")
+            .setNamespaces(List.of(Wiki.TEMPLATE_NAMESPACE));
+
+        var infoboxes = DBUtils.getRecursiveCategoryMembers(options);
         System.out.println("Infoboxes: " + infoboxes.size());
 
         var templateLinks = queryTemplateLinks(infoboxes);
@@ -90,7 +92,12 @@ public final class MissingPersonInfoboxes {
         for (var mapping : CATEGORY_MAPPINGS) {
             var category = ((JSONObject)mapping).getString("category");
             var filename = ((JSONObject)mapping).getString("filename");
-            var members = getRecursiveCategoryMembers(category, Wiki.MAIN_NAMESPACE);
+            var members = DBUtils.getRecursiveCategoryMembers(new DBUtils.Helper()
+                .setSqlUri(SQL_PLWIKI_URI_SERVER)
+                .setFallbackSqlUri(SQL_PLWIKI_URI_LOCAL)
+                .setCategory(category)
+                .setNamespaces(List.of(Wiki.MAIN_NAMESPACE))
+            );
             var filtered = results.stream().filter(members::contains).toList();
 
             writeCompressedOutput(filtered, filename);
@@ -137,80 +144,10 @@ public final class MissingPersonInfoboxes {
         }
     }
 
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_LOCAL, props);
-        }
-    }
-
-    private static Set<String> getRecursiveCategoryMembers(String category, int... namespaces) throws SQLException, ClassNotFoundException, IOException {
-        var targetNs = Arrays.stream(namespaces).boxed().toList();
-        var articles = new HashSet<String>();
-        var visitedCats = new HashSet<String>();
-        var targetCategories = Arrays.asList(category.replace(' ', '_'));
-        var depth = 0;
-
-        final var queryFmt = """
-            SELECT
-                DISTINCT page_title AS page_title,
-                page_namespace
-            FROM page
-                LEFT JOIN categorylinks ON cl_from = page_id
-                LEFT JOIN linktarget ON lt_id = cl_target_id
-            WHERE
-                page_is_redirect = 0 AND
-                lt_title IN (%s);
-            """;
-
-        try (var connection = getConnection()) {
-            while (!targetCategories.isEmpty()) {
-                var catArray = targetCategories.stream()
-                    .map(cat -> String.format("'%s'", cat.replace("'", "\\'")))
-                    .collect(Collectors.joining(","));
-
-                var query = String.format(queryFmt, catArray);
-                var rs = connection.createStatement().executeQuery(query);
-
-                var members = new ArrayList<String>();
-                var subcats = new ArrayList<String>();
-
-                while (rs.next()) {
-                    var title = rs.getString("page_title");
-                    var ns = rs.getInt("page_namespace");
-
-                    if (ns == Wiki.CATEGORY_NAMESPACE) {
-                        subcats.add(title);
-                    }
-
-                    if (targetNs.isEmpty() || targetNs.contains(ns)) {
-                        members.add(title.replace('_', ' '));
-                    }
-                }
-
-                articles.addAll(members);
-                visitedCats.addAll(targetCategories);
-
-                System.out.printf("depth = %d, members = %d, subcats = %d%n", depth++, members.size(), subcats.size());
-
-                subcats.removeAll(visitedCats);
-                targetCategories = subcats;
-            }
-        }
-
-        System.out.printf("Got %d category members for category %s%n", articles.size(), category);
-        return articles;
-    }
-
-    private static List<String> queryTemplateLinks(Collection<String> templates) throws SQLException, IOException, ClassNotFoundException {
+    private static List<String> queryTemplateLinks(Collection<String> templates) throws SQLException {
         var links = new ArrayList<String>(400000);
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var templatesStr = templates.stream()
                 .map(title -> String.format("'%s'", title.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));

@@ -5,8 +5,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -103,22 +101,10 @@ public class MissingPolishEntries {
         return titles;
     }
 
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKT_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKT_URI_LOCAL, props);
-        }
-    }
-
-    private static List<String> getAllArticles() throws ClassNotFoundException, SQLException, IOException {
+    private static List<String> getAllArticles() throws SQLException {
         var titles = new ArrayList<String>(1000000);
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKT_URI_SERVER, SQL_PLWIKT_URI_LOCAL)) {
             var query = """
                 SELECT page_title
                 FROM page
@@ -135,10 +121,10 @@ public class MissingPolishEntries {
         return titles;
     }
 
-    private static List<String> getCategoryMembers(String category) throws ClassNotFoundException, SQLException, IOException {
+    private static List<String> getCategoryMembers(String category) throws SQLException {
         var titles = new ArrayList<String>(1000000);
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKT_URI_SERVER, SQL_PLWIKT_URI_LOCAL)) {
             var query = """
                 SELECT
                     page_title

@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -264,21 +262,8 @@ public final class ResolveLinks {
         return line;
     }
 
-    private static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        var props = DBUtils.prepareSQLProperties();
-
-        try {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_SERVER, props);
-        } catch (SQLException e) {
-            return DriverManager.getConnection(SQL_PLWIKI_URI_LOCAL, props);
-        }
-    }
-
-    private static void getRedirectSources(List<String> targets, Map<String, String> sourceToTarget)
-            throws ClassNotFoundException, SQLException, IOException {
-        try (var connection = getConnection()) {
+    private static void getRedirectSources(List<String> targets, Map<String, String> sourceToTarget) throws SQLException {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var targetsString = targets.stream()
                 .map(target -> String.format("'%s'", target.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
@@ -308,9 +293,8 @@ public final class ResolveLinks {
         }
     }
 
-    private static void getRedirectTargets(List<String> sources, Map<String, String> sourceToTarget)
-            throws ClassNotFoundException, SQLException, IOException {
-        try (var connection = getConnection()) {
+    private static void getRedirectTargets(List<String> sources, Map<String, String> sourceToTarget) throws SQLException {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var sourcesString = sources.stream()
                 .map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
@@ -345,7 +329,7 @@ public final class ResolveLinks {
         var backlinkToSources = new TreeMap<String, List<String>>(comparator);
         var sources = sourceToTarget.keySet().stream().toList();
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var sourcesString = sources.stream()
                 .map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
                 .collect(Collectors.joining(","));
@@ -374,7 +358,7 @@ public final class ResolveLinks {
 
                 backlinkToSources.computeIfAbsent(backlink, k -> new ArrayList<>()).add(source);
             }
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (SQLException e) {
             var backlinksPerSource = wb.whatLinksHere(sources, false, false);
 
             for (var i = 0; i < backlinksPerSource.size(); i++) {
@@ -408,7 +392,7 @@ public final class ResolveLinks {
         var map = new HashMap<String, PageInfo>(titles.size());
         var titleList = new ArrayList<>(titles);
 
-        try (var connection = getConnection()) {
+        try (var connection = DBUtils.getConnection(SQL_PLWIKI_URI_SERVER, SQL_PLWIKI_URI_LOCAL)) {
             var titlesString = titleList.stream()
                 .map(wb::removeNamespace)
                 .map(source -> String.format("'%s'", source.replace(' ', '_').replace("'", "\\'")))
@@ -441,7 +425,7 @@ public final class ResolveLinks {
                     map.put(pagename, new PageInfo(isRedirect, isDisambiguation, length));
                 }
             }
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (SQLException e) {
             var props = wb.getPageProperties(titleList);
             var infos = wb.getPageInfo(titleList);
 
