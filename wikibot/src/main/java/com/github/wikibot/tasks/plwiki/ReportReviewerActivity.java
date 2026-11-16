@@ -68,10 +68,7 @@ public final class ReportReviewerActivity {
     private static final Locale LOCALE_PL = Locale.forLanguageTag("pl-PL");
 
     private static final Plural PLURAL_PL = new Plural(PluralRules.POLISH, new WordForms[] {
-        new WordForms(new String[] {"zaakceptował", "zaakceptowali", "zaakceptowało"}),
-        new WordForms(new String[] {"redaktor", "redaktorzy", "redaktorów"}),
-        new WordForms(new String[] {"Przejrzana", "Przejrzane", "Przejrzanych"}),
-        new WordForms(new String[] {"została", "zostały", "zostało"}),
+        new WordForms(new String[] {"redaktora", "redaktorów", "redaktorów"}),
         new WordForms(new String[] {"edycja", "edycje", "edycji"}),
         new WordForms(new String[] {"oczekuje", "oczekują", "oczekuje"}),
         new WordForms(new String[] {"zmieniony", "zmienione", "zmienionych"}),
@@ -82,8 +79,9 @@ public final class ReportReviewerActivity {
     private static final LocalizedNumberFormatter NUMBER_FORMAT_PL = NumberFormatter.withLocale(LOCALE_PL).grouping(GroupingStrategy.MIN2);
 
     private static final String SUMMARY_FMT =
-        "* Informacja nt. [[Wikipedia:Wersje przejrzane|wersji przejrzanych]] artykułów: przynajmniej jedną edycję w minionym tygodniu (%s–%s) %s %s %s. " +
-        "%s %s %s %s. " +
+        "* Informacja nt. [[Wikipedia:Wersje przejrzane|wersji przejrzanych]] artykułów: " +
+        "w minionym tygodniu (%s–%s) przynajmniej jedna edycja została przejrzana przez %s %s " +
+        "(łącznie %s %s). " +
         "Na sprawdzenie [[Specjalna:Statystyki oznaczania|%s]] %s %s i %s %s %s. " +
         "Wersje przejrzane mamy w %s%% artykułów. [https://tools.wikimedia.pl/~masti/review.html#reviewers168h Ponad %s edycji] udostępnili%s: %s. " +
         "Dziękujemy przeglądającym! ~~~~";
@@ -255,11 +253,8 @@ public final class ReportReviewerActivity {
 
         return String.format(SUMMARY_FMT, String.format("%02d.%02d", startDate.getDayOfMonth(), startDate.getMonthValue()),
                                           String.format("%02d.%02d", endDate.getDayOfMonth(), endDate.getMonthValue()),
-                                          PLURAL_PL.pl(summary.editors(), "zaakceptował"),
                                           formatNum(summary.editors()),
-                                          PLURAL_PL.pl(summary.editors(), "redaktor"),
-                                          PLURAL_PL.pl(summary.edits(), "Przejrzana"),
-                                          PLURAL_PL.pl(summary.edits(), "została"),
+                                          PLURAL_PL.pl(summary.editors(), "redaktora"),
                                           formatNum(summary.edits()),
                                           PLURAL_PL.pl(summary.edits(), "edycja"),
                                           PLURAL_PL.pl(summary.changes(), "oczekuje"),
@@ -271,8 +266,7 @@ public final class ReportReviewerActivity {
                                           summary.percentage(),
                                           formatNum(REVIEW_COUNT_THRESHOLD),
                                           wasLimited ? " m.in." : "",
-                                          top
-                                          );
+                                          top);
     }
 
     private record Row(String user, int total, int create, int other, int unapprove) {}
