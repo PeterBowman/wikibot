@@ -435,7 +435,7 @@ public final class ResolveLinks {
                 }
 
                 var isDisambig = props.get(i).containsKey("disambiguation");
-                var title = (String)infos.get(i).get("pagename");
+                var title = (String)infos.get(i).get("inputpagename");
                 var isRedir = (Boolean)infos.get(i).get("redirect");
                 var length = (Integer)infos.get(i).get("size");
 
